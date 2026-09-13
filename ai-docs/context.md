@@ -1,100 +1,95 @@
-# %PROJECT_NAME% — Project Context
+# agent-harness — Project Context
 
-> **Template.** Fill every `%PLACEHOLDER%` and delete the sections that do not apply. This file is read
-> **on demand**, not auto-loaded — keep it factual and dense, and let the code stay the source of truth.
-> Only write down what the code cannot tell a reader: domain vocabulary, cross-module invariants, and the
-> reasons behind non-obvious structure.
+Context for developing **the harness itself**. A consuming project gets its own copy of this file from
+[`templates/project/ai-docs/context.md`](../templates/project/ai-docs/context.md).
 
 ## Overview
 
-One paragraph: what this system does, who uses it, and what it integrates with.
+A Claude Code plugin that ships a spec-driven task workflow, a reactive bugfix loop, skeptical review
+subagents, and enforcement hooks — plus the method documentation they read. Distributed via this repo
+acting as its own plugin marketplace. Consuming projects keep their own profile (`AGENTS.md`,
+`ai-docs/context.md`) and their own learning corpus (`ai-docs/learnings/`).
 
 ---
 
 # System Entities
 
-Domain vocabulary. One `##` section per entity, each answering: what it is, what identifies it, what it is
-often confused with, and where it lives in code.
+## Method file
 
-## %Entity%
+- **What it is.** Any file under `docs/`, `skills/`, `agents/`, `rules/`, `hooks/`. Ships with the plugin
+  and must hold in every project.
+- **Identity.** Its path. Method files may not name a language, build tool, domain entity, or ticket prefix.
+- **Code.** `docs/agents-method.md` is the root of the method surface.
 
-- **What it is.** One or two sentences.
-- **Identity.** The field(s) that identify it, and any second id it is confused with.
-- **Lifecycle.** Created by … / mutated by … / terminal states.
-- **Code.** `path/to/Type` — the authoritative definition.
+## Profile file
 
-> Add an entity here when a `/task` introduces one, or when a correction shows the agent guessed its
-> meaning wrong. Do NOT paste class listings; name the file and move on.
+- **What it is.** Any file under `ai-docs/` or `templates/project/`. Carries project facts.
+- **Identity.** Supplied per project; scaffolded from `templates/project/`.
+
+## Promotion candidate
+
+- **What it is.** A method-level lesson abstracted out of one project's Learning Log, carrying no project
+  identifiers, eligible to be swept into the harness by a future cross-project `/improve-global`.
+- **Status.** Designed, not implemented — step 4 of the split plan.
 
 ---
 
 # System Design
 
-## Services / processes
+## Layout
 
-| Component | Responsibility | Entry point |
-|---|---|---|
-| `%service%` | `%what it owns%` | `%path%` |
-
-## Key modules
-
-| Module | Responsibility |
+| Path | Role |
 |---|---|
-| `%module%` | `%what it owns%` |
+| `.claude-plugin/` | `plugin.json` (manifest) + `marketplace.json` (this repo as its own marketplace) |
+| `skills/<name>/SKILL.md` | The 8 workflow skills |
+| `agents/<name>.md` | The 7 subagents |
+| `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
+| `hooks/hooks.json` | The 12 hooks |
+| `docs/` | Method reference, incl. `agents-method.md` |
+| `templates/project/` | What a consuming project gets scaffolded with |
+| `ai-docs/` | This repo's own profile + plan/learning data |
 
 ## Tech stack
 
 | Concern | Choice |
 |---|---|
-| Language / toolchain | `%LANGUAGES%` |
-| Build | `%BUILD_TOOL%` |
-| Test framework | `%TEST_FRAMEWORK%` |
-| Mocking | `%MOCK_LIB%` |
-| Assertions | `%ASSERTION_LIB%` |
-| Framework / DI | `%FRAMEWORK%` |
-| Persistence | `%DB%` + `%MIGRATION_TOOL%` |
-| Logging | `%LOGGING%` |
-| Metrics | `%METRICS%` |
-| CI | `%CI%` |
+| Language | Markdown instruction files + POSIX shell |
+| Build | none |
+| Test | structural checks — see `AGENTS.md § Build & Test` |
+| CI | none yet |
+
+## Language profile
+
+| Field | Value |
+|---|---|
+| Primary language(s) | Markdown, POSIX shell (`bash`) |
+| New-file rule | Method content is Markdown; executable helpers are `.sh` under `skills/<skill>/scripts/` |
+| Max line length | soft 110 for prose; no hard limit |
+| Formatter | none |
+| Linter (the gate) | `shellcheck` for `.sh`; `jq -e .` for JSON manifests |
+| Source root / test root | n/a — no compiled sources |
 
 ## Build & test commands
 
-The canonical table lives in [`AGENTS.md` § Build & Test](../AGENTS.md#build--test); repeat here only the
-project-specific details that do not fit a one-line cell (module addressing, profile flags, how to run a
-single test, which suites need a container runtime).
-
-## Code organization
-
-```text
-%repo%/
-├── %module-a%/        # …
-├── %module-b%/        # …
-└── ai-docs/           # agent-facing docs (this file, plans, learnings)
-```
-
-- **Source root:** `%SRC_ROOT%` — **test root:** `%TEST_ROOT%`.
-- **Test-file mapping:** `<Name>` → `<Name>Test`, same package/module.
-- **Integration tests:** `%INT_TEST_LAYOUT%` (delete if the project has none).
-
-## Request-scoped logging fields
-
-The MDC/context field names in use, verbatim — agents must reuse these rather than invent variants:
-`%field-one%`, `%field-two%`.
+No build. The four structural checks in `AGENTS.md § Build & Test` are the gate. They are hand-run today;
+mechanising them as a script under `skills/ai-audit/scripts/` is an open task.
 
 ---
 
 # Conventions worth writing down
 
-Use this section for the rules a newcomer (human or agent) gets wrong on their first PR — the ones that
-are conventions of *this repo*, not of the tooling. Each entry: the rule, one sentence of why, and the
-directory to imitate.
-
-- `%rule%` — `%why%`. Imitate: `%path%`.
+- **`${CLAUDE_PLUGIN_ROOT}` for method paths, repo-relative for project data.** A method file that links
+  to `ai-docs/…` breaks for every consumer — name project data in inline code, never as a markdown link.
+- **Skill scripts run via `${CLAUDE_SKILL_DIR}/scripts/<name>`.** A repo-relative invocation resolves
+  against the consuming project and silently fails there while working here.
+- **Plugin skills are invoked namespaced**: `/harness:task`, not `/task`.
 
 ---
 
 # Open questions
 
-Unresolved decisions, with the date raised and who owns the answer. Cleared as decisions land.
-
-- _(none yet)_
+- 2026-09-14 — cross-project `/improve-global` + registry: designed, not built (steps 3–4).
+- 2026-09-14 — hook guards for repos without `ai-docs/` (step 6); until then, prefer enabling the plugin
+  at project scope rather than user scope.
+- 2026-09-14 — `skills/task/SKILL.md` is 211 lines against the 200-line soft target; exemption or
+  extraction, owner's call.

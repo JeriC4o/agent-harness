@@ -1,0 +1,10 @@
+{
+  "name": "harness",
+  "displayName": "Agent Harness",
+  "version": "0.1.0",
+  "description": "Spec-driven task workflow, reactive bugfix loop, and skeptical review subagents, with per-project learning and instruction-surface auditing.",
+  "author": { "name": "JeriC4o" },
+  "repository": "https://github.com/JeriC4o/agent-harness",
+  "keywords": ["workflow", "spec-driven", "code-review", "tdd", "learning-log"],
+  "hooks": "./hooks/hooks.json"
+}

@@ -1,0 +1,106 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"hookSpecificOutput\":{\"hookEventName\":\"SessionStart\",\"additionalContext\":\"REQUIRED SESSION START: read ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md for the harness method rules, and the AGENTS.md + ai-docs/context.md of this project for its profile, before the first tool call. Method rules bind on HOW you work; the project profile binds on project facts and resolves every %PLACEHOLDER% command. Show the user a short summary of the rules in force.\"}}'",
+            "timeout": 30,
+            "statusMessage": "Read session rules..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||'); : \"${base:=main}\"; if echo \"$cmd\" | grep -qE '(^|[ ;&|`])git[[:space:]]+(commit|push)\\b'; then branch=$(git branch --show-current 2>/dev/null || true); if [ \"$branch\" = \"$base\" ]; then printf 'BLOCKED: git commit/push on %s (the default branch) is forbidden — AGENTS.md Workflow AXIOM 1.\\n\\nRecovery (no commits yet):\\n  git checkout -b <TICKET-KEY>-<slug>\\n\\nRecovery (commits already on %s, not yet pushed):\\n  git stash                                  # save uncommitted work\\n  git checkout -b <TICKET-KEY>-<slug>         # branch carries the commits\\n  git checkout %s\\n  git reset --soft origin/%s && git restore --staged .\\n  git checkout <TICKET-KEY>-<slug> && git stash pop\\n\\nNever use git reset --hard. Full procedure: ${CLAUDE_PLUGIN_ROOT}/docs/workflow.md > Recovery from accidental edits on the default branch.\\n' \"$base\" \"$base\" \"$base\" \"$base\" >&2; exit 2; fi; fi",
+            "timeout": 10,
+            "statusMessage": "Checking branch before git commit/push..."
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[ ;&|`])git[[:space:]]+commit\\b'; then status=$(git status --porcelain 2>/dev/null || true); s=\"\"; if echo \"$status\" | grep -qE 'ai-docs/learnings\\.md'; then git add ai-docs/learnings.md 2>/dev/null || true; s=\"ai-docs/learnings.md\"; fi; if echo \"$status\" | grep -qE 'ai-docs/learnings/'; then git add ai-docs/learnings 2>/dev/null || true; s=\"${s:+$s }ai-docs/learnings/\"; fi; if [ -n \"$s\" ]; then printf '[auto-stage-learnings] staged %s alongside this commit (AGENTS.md Workflow rule).\\n' \"$s\" >&2; fi; fi; exit 0",
+            "timeout": 10,
+            "statusMessage": "Auto-staging ai-docs/learnings.md + ai-docs/learnings/..."
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); fw=$(echo \"$cmd\" | awk '{print $1}'); p=\"\"; case \"$fw\" in find|bfs) p=$(echo \"$cmd\" | awk '{print $2}') ;; grep) echo \"$cmd\" | grep -qE '(^|[[:space:]])-[A-Za-z]*[rR]' && p=$(echo \"$cmd\" | awk '{print $NF}') ;; esac; pn=\"${p%/}\"; if [ -n \"$pn\" ] && { [ \"$pn\" = \"${HOME%/}\" ] || [ \"$pn\" = \"~\" ] || [ \"$pn\" = \"/\" ]; }; then printf 'BLOCKED: broad find/bfs/grep -r over %s — it scans the whole filesystem (slow; a backgrounded scan leaks a process).\\nUse type/command -v/which <name> for an installed binary; the Grep tool or rg for code; scope the scan to a known directory. Never run_in_background a filesystem scan.\\n' \"$pn\" >&2; exit 2; fi; exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking for broad filesystem scan..."
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); if echo \"$cmd\" | grep -qE '(^|[ ;&|`])git[[:space:]]+commit\\b'; then bad=0; echo \"$cmd\" | grep -qiE 'Co-Authored-By:' && bad=1; f=$(echo \"$cmd\" | grep -oE -- '-F[[:space:]]+[^[:space:]]+' | head -1 | sed -E 's/^-F[[:space:]]+//'); if [ -n \"$f\" ] && [ -f \"$f\" ] && grep -qiE '^[[:space:]]*Co-Authored-By:' \"$f\"; then bad=1; fi; if [ \"$bad\" = 1 ]; then printf 'BLOCKED: git commit message contains a Co-Authored-By trailer.\\nThe project rule (AGENTS.md § Workflow) OVERRIDES the generic harness \"End commit messages with Co-Authored-By\" default. Strip the Co-Authored-By line (the -F file or the -m string), then retry. Commit body = <TICKET-KEY>: title + summary (+ optional stats) only.\\n' >&2; exit 2; fi; fi; exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking commit message for Co-Authored-By..."
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||'); : \"${base:=main}\"; if echo \"$cmd\" | grep -qE \"(^|[ ;&|\\`])git[[:space:]]+diff([[:space:]]+-[^[:space:]]+)*[[:space:]]+[^[:space:]-][^[:space:]]*\\\\.\\\\.\\\\.\"; then if [ -z \"$(git log \"${base}..HEAD\" --oneline 2>/dev/null)\" ]; then printf 'BLOCKED: `git diff <base>...HEAD` on a branch with NO commits yet returns an EMPTY diff at rc=0 — every gate built on it becomes a silent pass.\\n\\nThis branch has no commits ahead of %s. Use the working-tree form instead:\\n  git diff --stat %s        # working tree vs the default branch (pre-commit)\\n\\nOnce the branch HAS commits, `git diff %s...HEAD` is the correct commit-to-commit form.\\n' \"$base\" \"$base\" \"$base\" >&2; exit 2; fi; fi; exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking for empty-diff range form..."
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); c=$(echo \"$cmd\" | tr -d '\"' | tr -d \"'\"); echo \"$c\" | grep -qE '(^|[ ;&|`])(grep|rg|git[[:space:]]+grep)([[:space:]]|$)' || exit 0; echo \"$c\" | grep -qE 'exclude[=[:space:]]*.?application\\*?\\.properties|!application' && exit 0; hit=\"\"; echo \"$c\" | grep -qE '(--include=|-g[[:space:]]*|-f[[:space:]]*)[^[:space:]]*\\.properties|application[^[:space:]]*\\.properties' && hit='a .properties file filter or path'; if [ -z \"$hit\" ]; then echo \"$c\" | grep -qE '(^|[ ;&|`])(grep[[:space:]]+-[A-Za-z]*[rR][A-Za-z]*|rg)([[:space:]]|$)' && echo \"$c\" | grep -qE 'src/(main|test)/resources|/resources(/|$)' && hit='a recursive search rooted in a resources dir'; fi; if [ -n \"$hit\" ]; then printf 'BLOCKED: this content search can surface deployed-config files (%s) — ASK-gated in AGENTS.md section Permissions. The gate binds on ANY tool that puts the file bytes in context, not just Read.\\n\\nDo one of:\\n  1. Narrow the filter so a gated path cannot match:  -g \"*.{kt,java}\"  /  --include=*.kt\\n  2. Exclude it explicitly. MIND THE SPELLING PER TOOL: plain grep -r takes a GLOB (--exclude=application*.properties); ripgrep takes a NEGATED glob (-g \"!application*.properties\"); a regex-valued exclude flag needs application.*[.]properties$. The glob spelling passed to a regex flag silently misses the profile variants (application-PROFILE.properties), which are the ones carrying deployed overrides.\\n  3. For a setting DEFAULT, read the typed config binder class in source — ungated, authoritative, does not drift with the deployed file.\\n  4. If the DEPLOYED value is genuinely needed, ASK THE USER FIRST, then Read the file directly. AGENTS.md gates this on the HONOUR SYSTEM — settings.json has no ask/deny entry for it, so no prompt will stop you. The ask is yours to make.\\n\\nA clean run of this hook is NOT clearance: it does not catch a bare unfiltered search whose pattern matches a config key.\\n' \"$hit\" >&2; exit 2; fi; exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking for ASK-gated config files in search results..."
+          },
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty' | tr '\\n' ';'); G='(^|[;&|(`])[[:space:]]*(make|cargo|go|npm|pnpm|yarn|gradle|\\./gradlew|mvn|pytest|shellcheck|ruff|eslint|ktlint)[[:space:]]'; bad=''; echo \"$cmd\" | grep -qE \"$G[^|;&]*\\|[&]?[[:space:];]*(head|tail|grep|jq|sed|awk|wc|cut|sort|uniq)\" && bad='piped into a filter or pager'; [ -z \"$bad\" ] && echo \"$cmd\" | grep -qE \"$G[^;&|]*\\|\\|[[:space:];]*[{(]?[[:space:]]*(echo|true|:)\" && bad='fused to a || echo / || true fallback'; [ -z \"$bad\" ] && echo \"$cmd\" | grep -qE \"$G\" && echo \"$cmd\" | grep -qE '(^|[;&])[[:space:]]*(echo|printf)[[:space:]]+.?===' && bad='separated by an echo or printf banner'; if [ -n \"$bad\" ]; then printf 'BLOCKED: a gate (build / test / lint / format / shellcheck) is %s.\\n\\nA pipeline exit code is the LAST command rc, so the gate result is MASKED: a failing test run reports 0 when piped into tail. The same applies to a trailing `|| echo` fallback and to independent diagnostics joined with `;` behind a banner line.\\n\\nDo this instead:\\n  1. Run the gate as its OWN Bash call, bare and un-piped, and read its full output.\\n  2. Limit output with the tool own flags (-m / --max-count, -n), never with head or tail.\\n  3. Run independent diagnostics as PARALLEL tool calls, not one chained call with echo markers.\\n\\nNOT masking, and not blocked: a leading `cd <dir> &&` prefix, a `[ -n ... ] &&` guard that does not swallow a gate rc, and any chain inside a hook or a checked-in .sh. A gate name appearing inside a SEARCH PATTERN is not a gate invocation and is not blocked — the match is anchored at command position.\\n\\nWriting prose that QUOTES a piped gate? Use the Edit / Write tools, not a Bash heredoc — this hook matches the literal command string. See ${CLAUDE_PLUGIN_ROOT}/docs/workflow.md section Hook false-positive guard.\\n\\n(AGENTS.md section Tooling.)\\n' \"$bad\" >&2; exit 2; fi; exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking for masked gates (pipe / || echo / banner)..."
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "file_path=$(jq -r '.tool_input.file_path // empty'); case \"$file_path\" in *AGENTS.md|*.claude/skills/*/SKILL.md|*${CLAUDE_PLUGIN_ROOT}/agents/*.md|*${CLAUDE_PLUGIN_ROOT}/rules/*.md) printf '\\n[propagation-rule-reminder] You are editing %s — AGENTS.md Propagation Rule applies. Before closing this PR, run the sweep:\\n  rg -n --hidden -g \"!.git\" \"<changed-keyword>\" AGENTS.md CLAUDE.md .claude/ ai-docs/\\nName all four paths, pass --hidden (dot-dirs are skipped otherwise), and positive-control an empty result with a keyword you know is present. Apply the corresponding change to every match. See AGENTS.md \"Propagation Rule\" for the sync-group table and ${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md for the sweep rationale.\\n' \"$file_path\" >&2 ;; esac; exit 0",
+            "timeout": 5,
+            "statusMessage": "Propagation Rule reminder..."
+          },
+          {
+            "type": "command",
+            "command": "in=$(cat); fp=$(printf '%s' \"$in\" | jq -r '.tool_input.file_path // empty'); case \"$fp\" in *ai-docs/learnings.md) ;; *) exit 0 ;; esac; if [ \"$(printf '%s' \"$in\" | jq -r 'if .tool_input.content != null then 1 else 0 end')\" = 1 ]; then new=$(printf '%s' \"$in\" | jq -r '.tool_input.content' | grep -c '^### '); old=$(grep -c '^### ' \"$fp\" 2>/dev/null); : \"${old:=0}\"; else new=$(printf '%s' \"$in\" | jq -r '.tool_input.new_string // \"\"' | grep -c '^### '); old=$(printf '%s' \"$in\" | jq -r '.tool_input.old_string // \"\"' | grep -c '^### '); fi; if [ \"$new\" -gt \"$old\" ]; then printf '\\n[archive-protection-reminder] This write ADDS %s new `### ` header(s) to %s. New Learning Log entries belong in ai-docs/learnings/<username>-<branch>.md (derivation: ${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md). IGNORE THIS if the write IS the /improve fold, which legitimately appends archived entries. This hook never blocks. Note: it counts headers, so an in-place REPLACEMENT of one header by another is invisible here — that edit is forbidden outright by AGENTS.md Boundary rule 1.\\n' \"$((new-old))\" \"$fp\" >&2; fi; exit 0",
+            "timeout": 5,
+            "statusMessage": "Archive-protection reminder..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_input.file_path // .tool_response.filePath // empty'); case \"$f\" in *ai-docs/learnings.md|*ai-docs/learnings/*.md) ;; *) exit 0 ;; esac; [ -f \"$f\" ] || exit 0; added=$(git diff -U0 -- \"$f\" 2>/dev/null | awk '/^@@/ { match($0, /\\+[0-9]+/); n = substr($0, RSTART+1, RLENGTH-1) + 0; next } /^\\+\\+\\+/ { next } /^\\+/ { if ($0 ~ /^\\+### /) print n; n++ }' | tail -1); [ -n \"$added\" ] || exit 0; last_h=$(grep -n '^### ' \"$f\" | tail -1 | cut -d: -f1); [ -n \"$last_h\" ] || exit 0; if [ \"$added\" != \"$last_h\" ]; then printf '\\n[learnings-append-check] This edit added a `### ` entry heading at line %s, but the LAST heading in the file is at line %s — so the new entry is NOT last.\\nThat is the misplaced-append failure: `**Kind:** correction` / `**Escalated?** no` repeat in nearly every entry and are NEVER safe patch anchors (${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md rule 4). Anchor on the complete FINAL entry instead.\\nVerify now: tail -8 %s\\nBoundary rule 1 forbids MOVING a committed misplaced entry, so fix it BEFORE staging.\\n' \"$added\" \"$last_h\" \"$f\" >&2; fi; exit 0",
+            "timeout": 10,
+            "statusMessage": "Checking learnings.md append placement..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // empty'); base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||'); : \"${base:=main}\"; if echo \"$cmd\" | grep -qE '(^|[ ;&|`])git[[:space:]]+push\\b'; then branch=$(git branch --show-current 2>/dev/null || true); if [ -n \"$branch\" ] && [ \"$branch\" != \"$base\" ]; then printf '\\n[pr-body-sync] git push on %s — if an open PR exists, re-read the PR body (gh pr view --json title,body) and edit only if scope / AC checklist / cited counts drifted (gh pr edit) — AGENTS.md AXIOM 2. Skip the read iff this push immediately preceded gh pr create (first push opens the PR).\\n' \"$branch\" >&2; fi; fi; exit 0",
+            "timeout": 5,
+            "statusMessage": "PR body sync reminder..."
+          }
+        ]
+      }
+    ]
+  }
+}
