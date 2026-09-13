@@ -1,10 +1,10 @@
 ---
 name: ai-audit
-description: "Two-phase instruction audit. Phase 1 (subagent) verifies every Learning Log `Escalated?` claim — across the union of ai-docs/learnings.md and ai-docs/learnings/*.md — points to a rule that actually exists AND that every `Superseded by:` reference resolves. Phase 2 (main session) reads all instruction files against the documented contracts and proposes fixes."
+description: "Two-phase instruction audit over one of two surfaces. Surface `global` audits the harness method files; `project` audits a consuming project profile (unresolved placeholders, dead commands, registry coherence, candidate hygiene, gitignore coverage). Phase 1 verifies every Learning Log `Escalated?` claim points to a rule that exists; Phase 2 reads the instruction files against the documented contracts and proposes fixes."
 model: opus
 disable-model-invocation: true
-argument-hint: "[scope: 'phase1' | 'phase2' | omit for both]"
-allowed-tools: Bash(grep:*), Bash(rg:*), Bash(find:*), Bash(realpath:*), Bash(jq:*), Bash(awk:*), Bash(wc:*), Bash(basename:*), Bash(git branch:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git diff:*)
+argument-hint: "[global|project] [phase1|phase2]"
+allowed-tools: Bash(grep:*), Bash(rg:*), Bash(find:*), Bash(realpath:*), Bash(jq:*), Bash(awk:*), Bash(wc:*), Bash(basename:*), Bash(git branch:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git diff:*), Bash(git check-ignore:*), Bash(scripts/audit-project.sh:*)
 ---
 
 # AI Audit
@@ -13,11 +13,33 @@ Compliance + structural audit of the project's instruction surface. Complements 
 
 Steps execute strictly in sequence. Stop on any unrecoverable mismatch and surface to user.
 
-## Scope argument
+## Step 0: Resolve the scope
 
-- `phase1` — only the escalation audit subagent.
-- `phase2` — only the main-session instruction audit.
-- omitted (default) — run Phase 1 then Phase 2.
+Two independent dimensions. Both are optional and order does not matter.
+
+**Surface** — *what* is audited:
+
+| Value | Surface | Checklist |
+|---|---|---|
+| `global` | the harness itself: `docs/`, `skills/`, `agents/`, `rules/`, `hooks/` | A–P |
+| `project` | a consuming project's profile: `AGENTS.md`, `ai-docs/**`, `.claude/settings.json` | A, C, L, M, N + Q–U |
+
+**Phase** — *how far*: `phase1` (escalation audit subagent only), `phase2` (instruction audit only), or
+omitted for both.
+
+**When the surface is omitted, detect it — do not assume.** The harness repo is the one carrying its own
+plugin manifest:
+
+```bash
+jq -r '.name // empty' .claude-plugin/plugin.json 2>/dev/null
+```
+
+`harness` → **global**. Anything else, or no such file → **project**. State the resolved surface in your
+first message; a silent guess about which corpus is being audited is how a project audit "passes" by
+checking files that were never there.
+
+> **A `global` run belongs in the harness repo.** If the surface resolves to `global` from somewhere else,
+> stop and say so — the fixes it proposes edit method files, which do not exist in a consuming project.
 
 Argument received: `$ARGUMENTS`
 
@@ -31,7 +53,8 @@ Argument received: `$ARGUMENTS`
 
 ## Phase 1 — Escalation audit (subagent)
 
-Skip if `$ARGUMENTS` is `phase2`.
+Skip if `phase2` was requested. Runs on **either** surface — each has its own Learning Log, and the
+subagent audits whichever repo it is pointed at.
 
 Spawn the subagent in a clean context. The subagent reads `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` for full instructions and audits the Learning Log **union** — `ai-docs/learnings.md` plus every `ai-docs/learnings/*.md`, as one history.
 
@@ -55,7 +78,24 @@ After the subagent reports back:
 
 ## Phase 2 — Instruction audit (main session)
 
-Skip if `$ARGUMENTS` is `phase1`.
+Skip if `phase1` was requested.
+
+**On the `project` surface, start here** — run the mechanical checks first, then apply only the applicable
+letters (A, C, L, M, N) to the profile files:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/audit-project.sh <project-dir>
+```
+
+Output is `severity|check|message`, one per line; exit 1 means at least one blocker. Fold each line into
+the findings table as-is — the script owns Q–U and has already done the work.
+
+Two of those checks are **executed, not read** (`R` runs `command -v` on each recorded command; `U` asks
+`git check-ignore` about a real probe file), because a command table naming a binary nobody has and an
+ignore block that does not actually match both look perfectly correct on the page.
+
+Steps 2.1–2.3 below describe the `global` surface. On `project`, skip the doc fetch (there are no skills
+or agents here to conform) and go straight to Step 2.4.
 
 ### Step 2.1: Pull canonical Claude Code docs
 
@@ -108,6 +148,16 @@ For each violation: record file path, line number, the rule it conflicts with, t
 | N | Bidirectional `## Patterns` ↔ `Kind: validation` coherence — every promoted carrot round-trips both ways |
 | O | Embedded-name clash scan — project-defined Tool / Subagent / Skill / Hook names MUST NOT clash with embedded names in `claude-tools-hierarchy.md` |
 | P | Frontmatter / config improvement recommendations — diff each skill/agent/hook against the full documented Claude Code field set; recommend add/drop/normalize/resolve-asymmetry; emits a per-surface recommendation table |
+
+**Project surface — letters Q–U**, produced mechanically by `scripts/audit-project.sh`:
+
+| Letter | Purpose |
+|---|---|
+| Q | Profile completeness — no unresolved `%PLACEHOLDER%` left in `AGENTS.md` / `ai-docs/context.md` (`blocker`: an unresolved placeholder is a STOP, not a default) |
+| R | Command liveness — the binary each `%*_CMD%` names exists on PATH or in the repo; a gate that cannot run is not a gate |
+| S | Registry coherence — this path is registered, with a valid `scope` |
+| T | Candidate hygiene — every `.promote/*.md` still passes the redaction gate; a refused candidate will silently never be swept |
+| U | Gitignore coverage — `git check-ignore` confirms progress/state files are really ignored |
 
 ### Step 2.4: Categorise findings
 
@@ -168,4 +218,4 @@ If `ai-docs/learnings.md` or anything under `ai-docs/learnings/` was modified or
 
 ---
 
-**Reference:** [`reference.md`](reference.md) — detail body for every checklist letter (A–P), Step 2.6 sub-step 4 anchor-aware cross-reference recipe, Checklist M sub-checks, Checklist N forward / reverse coherence rules, Checklist O embedded-name clash recipe, Checklist P frontmatter/config improvement recipe.
+**Reference:** [`reference.md`](reference.md) — detail body for every checklist letter (A–U), Step 2.6 sub-step 4 anchor-aware cross-reference recipe, Checklist M sub-checks, Checklist N forward / reverse coherence rules, Checklist O embedded-name clash recipe, Checklist P frontmatter/config improvement recipe, Checklists Q–U project-surface checks.

@@ -280,3 +280,40 @@ for f in <changed-files>; do
   done
 done
 ```
+
+## Checklist Q — Profile completeness (project surface)
+
+Mechanical, via `${CLAUDE_PLUGIN_ROOT}/scripts/audit-project.sh`.
+
+- No unresolved `%PLACEHOLDER%` in `AGENTS.md` or `ai-docs/context.md` → `blocker`.
+- **Label tokens are not findings.** The left column of the Build & Test table names each placeholder
+  (`%BUILD_CMD%`, …) and the prose refers to `%PLACEHOLDER%` generically; those are permanent labels. Only
+  a token outside that allowlist is an unfilled value. A checker that flags the labels cries wolf on every
+  correctly-filled profile, which is how a real finding gets ignored.
+
+## Checklist R — Command liveness (project surface)
+
+For each recorded `%*_CMD%` value, take the first token and resolve it (`command -v`, or an executable
+check for a `./`-relative path). Missing → `major`.
+
+This check is **executed, never read**. A command table naming a binary nobody has looks perfectly correct
+on the page, and every later "the gate passed" claim inherits the defect. Same reasoning as
+`design-review`'s rule that an exit gate must be run twice before it is trusted.
+
+## Checklist S — Registry coherence (project surface)
+
+The project's absolute path appears in `~/.claude/harness/registry.json` (or `$HARNESS_REGISTRY`), with
+`scope` ∈ {`shared`, `local`}. Absent → `major` (cross-project sweeps will not see it). No registry at
+all → `minor`.
+
+## Checklist T — Candidate hygiene (project surface)
+
+Every `ai-docs/learnings/.promote/*.md` still passes `check-candidate.sh`. A refused candidate → `major`:
+it will never be swept, and nothing else reports that, so the lesson sits there looking promoted while
+being invisible. Re-checked here because a candidate can be hand-edited after it first passed.
+
+## Checklist U — Gitignore coverage (project surface)
+
+`git check-ignore` against a real probe path under `ai-docs/plans/`. Not ignored → `blocker`: working
+state would be committed. Verified by asking git rather than by reading `.gitignore`, because a pattern
+that looks right and does not match is exactly the failure this check exists to catch.

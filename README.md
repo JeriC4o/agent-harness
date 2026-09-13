@@ -64,6 +64,7 @@ Prefer to do it by hand? Copy `templates/project/` into the repo root, replace `
 | Plan without building | `/harness:interview` — produces a spec, parks it in `ai-docs/plans/deferred/` |
 | Review a whole branch | `/harness:project-review` |
 | Clean up after a merge | `/harness:pr-merged` — from the merged branch |
+| Check the profile is still sound | `/harness:ai-audit project` — placeholders, dead commands, registry, gitignore |
 | Turn repeated corrections into rules | `/harness:improve` — when ≥3 unescalated entries have piled up |
 | Audit the instruction files themselves | `/harness:ai-audit` |
 
@@ -128,7 +129,7 @@ ai-docs/                   this repo's own profile + plan/learning data
 | `/harness:pr-merged` | Post-merge cleanup: switch to the default branch, pull, drop the branch's progress files, delete the branch. |
 | `/harness:improve` | Folds merged learning files into the archive, finds repeating corrections, proposes rule escalations — and drafts promotion candidates for lessons that are about the method. |
 | `/harness:improve-global` | Run in the harness repo: sweeps candidates across every registered project and promotes a rule once ≥2 of them hit it. |
-| `/harness:ai-audit` | Audits the instruction surface itself: broken links, drifted exemptions, name clashes, hook validity. |
+| `/harness:ai-audit [global\|project]` | Audits an instruction surface: `global` checks the harness method files; `project` checks your profile — unresolved placeholders, commands that do not resolve, registry coherence, candidate hygiene, gitignore coverage. Detects the surface if you omit it. |
 | `/harness:harness-init` | Scaffolds the project profile and registers the repo. Run once per project; idempotent. |
 
 Subagents: `spec-writer`, `design`, `design-review`, `self-review`, `review-findings`, `self-improve`,
@@ -170,8 +171,9 @@ anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every s
 
 ## Roadmap
 
-Still open:
+The build-out is complete: the split (1), plugin packaging (2), project bootstrap (3), cross-project
+learning (4), the audit's two surfaces (5), and hook guards (6).
 
-5. `/harness:ai-audit` scope argument (`project` | `global`)
-
-Done: the split (1), plugin packaging (2), project bootstrap (3), cross-project learning (4), hook guards (6).
+What is *designed but not yet evidenced*: the `≥2 distinct projects` promotion threshold is reasoned, not
+observed. It meets evidence the first time two real projects carry candidates — that, rather than more
+building, is the next thing worth doing.
