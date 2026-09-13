@@ -51,7 +51,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 | Path | Role |
 |---|---|
-| `.claude-plugin/` | `plugin.json` (manifest) + `marketplace.json` (this repo as its own marketplace) |
+| `.claude-plugin/` | `plugin.json` (manifest) + `marketplace.json` (this repo as its own marketplace). **Declare a component key only for a NON-default location** — `hooks/hooks.json`, `skills/`, `agents/` are auto-discovered, and re-declaring one makes the plugin refuse to load it twice (`scripts/test-plugin-manifest.sh` guards this) |
 | `skills/<name>/SKILL.md` | The 8 workflow skills |
 | `agents/<name>.md` | The 7 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
