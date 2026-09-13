@@ -1,0 +1,27 @@
+# Agent working state — local-only, never committed
+ai-docs/plans/**/*.progress.md
+ai-docs/plans/*.spec.md.state.md
+ai-docs/bugfix/
+
+# Local harness overrides
+.claude/settings.local.json
+
+# Editor / OS
+.idea/
+.vscode/
+*.iml
+*.swp
+.DS_Store
+
+# Build output
+build/
+dist/
+out/
+target/
+node_modules/
+*.log
+
+# Secrets
+.env
+.env.*
+secrets.json
