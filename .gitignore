@@ -3,7 +3,7 @@ ai-docs/plans/**/*.progress.md
 ai-docs/plans/*.spec.md.state.md
 ai-docs/bugfix/
 
-# Local harness overrides
+# Local overrides
 .claude/settings.local.json
 
 # Editor / OS
