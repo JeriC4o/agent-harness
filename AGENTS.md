@@ -28,8 +28,8 @@ instruction files:
 2. Every markdown relative link resolves, and every `#anchor` exists in its target.
 3. No `${CLAUDE_PLUGIN_ROOT}` path points at a file that does not exist in this repo.
 4. `bash -n` on every `*.sh`, and every test suite green:
-   `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`, `hooks/lib/test-harness-managed.sh`,
-   `skills/harness-init/scripts/test-scaffold.sh`.
+   `scripts/test-plugin-manifest.sh`, `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`,
+   `hooks/lib/test-harness-managed.sh`, `skills/harness-init/scripts/test-scaffold.sh`.
 
 `shellcheck` is **recommended but not required**, and deliberately not named as the gate: it is not
 installed on every machine that edits this repo, and a gate that cannot run is worse than one that is
