@@ -22,8 +22,8 @@ Choose the scope deliberately:
 
 | Scope | Command | Use when |
 |---|---|---|
-| Project | `claude plugin install harness@agent-harness --scope project` | **Recommended today.** Hooks fire only in repos that opted in; the choice is committed in `.claude/settings.json` and your team inherits it. |
-| User | `claude plugin install harness@agent-harness --scope user` | You want it everywhere. Note the hooks are not yet guarded (roadmap item 6), so they will also fire in repos with no harness profile. |
+| User | `claude plugin install harness@agent-harness --scope user` | You work across many repos. Hooks that presuppose a harness profile no-op in repos without one, so this is safe. |
+| Project | `claude plugin install harness@agent-harness --scope project` | You want the choice committed in `.claude/settings.json` so your team inherits it. |
 
 To pin a version instead of tracking `main`: `/plugin marketplace add JeriC4o/agent-harness@v0.1.0`.
 
@@ -158,12 +158,15 @@ anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every s
   `ai-docs/learnings/<user>-<branch>.md` in the project they happened in. Escalating a lesson into the
   *harness* — where it would change behaviour for every project — is deliberately a separate act.
 - **Hooks catch what prose cannot.** Branch protection, gate-masking (`| tail` on a test run), learnings
-  auto-staging, propagation reminders — see [`hooks/hooks.json`](hooks/hooks.json).
+  auto-staging, propagation reminders — see [`hooks/hooks.json`](hooks/hooks.json). Hooks that presuppose
+  a harness profile are guarded and no-op elsewhere; hooks that encode pure method (do not mask a gate,
+  do not scan `$HOME`) hold in every repo by design.
 
 ## Roadmap
 
-Steps 1–3 (split, plugin packaging, project bootstrap) are done. Still open:
+Still open:
 
 4. Promotion candidates with a mechanical redaction gate, and a cross-project `/harness:improve-global`
 5. `/harness:ai-audit` scope argument (`project` | `global`)
-6. Hook guards so an unguarded hook cannot fire in a repo with no harness profile
+
+Done: the split (1), plugin packaging (2), project bootstrap (3), hook guards (6).

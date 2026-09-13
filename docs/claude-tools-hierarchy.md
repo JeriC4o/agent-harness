@@ -76,20 +76,23 @@ Kept here so the audit can compare both sides without grepping the whole tree on
 
 ### Project-defined Hooks
 
-Defined in `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`:
+Defined in `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`. A hook marked **[guarded]** is prefixed with
+`"${CLAUDE_PLUGIN_ROOT}"/hooks/lib/harness-managed.sh || exit 0` and no-ops in a repo with no harness
+profile (no `ai-docs/` and no `AGENTS.md`) — it presupposes that profile. An unmarked hook encodes pure
+method and holds in every repo, which is why it carries no guard.
 
-- SessionStart — rules-load reminder
+- SessionStart — rules-load reminder **[guarded]**
 - PreToolUse(Bash) — broad `find` / `grep -r` over `$HOME` blocker
-- PreToolUse(Bash) — `branch-protection`: blocks `git commit` / `git push` on the default branch, with the recovery recipe in its message
-- PreToolUse(Bash) — `auto-stage-learnings`: stages `ai-docs/learnings.md` **and** the `ai-docs/learnings/` directory on `git commit` (two independent `git status` probes, so a first-write untracked per-branch file is staged too)
-- PreToolUse(Bash) — `co-authored-by`: blocks a `Co-Authored-By` trailer in a `git commit` message (`-m` string or `-F` file)
+- PreToolUse(Bash) — `branch-protection`: blocks `git commit` / `git push` on the default branch, with the recovery recipe in its message **[guarded]**
+- PreToolUse(Bash) — `auto-stage-learnings`: stages `ai-docs/learnings.md` **and** the `ai-docs/learnings/` directory on `git commit` (two independent `git status` probes, so a first-write untracked per-branch file is staged too) **[guarded]**
+- PreToolUse(Bash) — `co-authored-by`: blocks a `Co-Authored-By` trailer in a `git commit` message (`-m` string or `-F` file) **[guarded]**
 - PreToolUse(Bash) — `diff-range-guard`: warns when a gate is built on `git diff <base>...HEAD` on a branch with no commits yet (empty diff at rc=0 → silent pass); points at `git diff <base>` for the working-tree form
 - PreToolUse(Bash) — `config-search-gate`: blocks a content search whose file filter can match an ASK-gated deployed-config file. Catches an explicit `.properties` filter/path and a recursive search rooted in a resources dir; does NOT catch a bare unfiltered search whose pattern happens to match a config key, so a clean run is not clearance
 - PreToolUse(Bash) — `gate-pipe-guard`: blocks a gate (build / test / lint / format / `shellcheck`) whose result is MASKED — piped into `head`/`tail`/`grep`/`jq`/`sed`/`awk`/`wc`/`cut`/`sort`/`uniq`, fused to a trailing `|| echo` / `|| true`, or `;`-joined behind an `echo`/`printf` banner. Carve-outs pass: a `cd <dir> &&` prefix, a `[ -n … ] &&` guard that does not swallow the rc, and any chain inside a hook or checked-in `.sh`. **The gate match is anchored at COMMAND POSITION** (start of string, or after `;` `&` `|` `(` `` ` ``), so a gate name inside a search pattern — the project's own propagation sweep — is not a gate invocation and is not blocked. Newlines are normalised to `;` before matching, so a gate piped across a line break is still caught. There is NO heredoc opt-out: prose that quotes a piped gate at the start of a line is blocked like any other, and the remedy is the `Edit` / `Write` tools per `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Hook false-positive guard`
-- PreToolUse(Edit|Write) — Propagation Rule reminder on AGENTS.md / skill / agent / rules edits
+- PreToolUse(Edit|Write) — Propagation Rule reminder on AGENTS.md / skill / agent / rules edits **[guarded]**
 - PreToolUse(Edit|Write) — `archive-protection-reminder`: advisory nudge when a write ADDS a `### ` header to `ai-docs/learnings.md`, pointing at `ai-docs/learnings/<username>-<branch>.md`. Counts headers before vs after, so a field-only edit and a whole-file rewrite stay silent. Never blocks (`exit 0`) — the `/improve` fold passes through
 - PostToolUse(Write|Edit) — `learnings-append-check`: warns when a new Learning Log entry did not land last in its file
-- PostToolUse(Bash) — PR-body-sync reminder on `git push` to a feature branch
+- PostToolUse(Bash) — PR-body-sync reminder on `git push` to a feature branch **[guarded]**
 
 > **Not configured, but expected per project:** a `PostToolUse(Write|Edit)` formatter hook running `%FORMAT_CMD%` on changed source files. Add it once the project's formatter command is filled in (`AGENTS.md § Build & Test`).
 
