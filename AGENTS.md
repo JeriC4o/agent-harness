@@ -18,7 +18,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%BUILD_CMD%` | Compile the changed module | n/a — no build step |
 | `%TEST_CMD%` | Run a module's tests | n/a — validation is the checks below |
 | `%FORMAT_CMD%` | Auto-format changed files | n/a |
-| `%LINT_CMD%` | Lint as the gate | `shellcheck skills/*/scripts/*.sh` and `jq -e . hooks/hooks.json .claude-plugin/*.json` |
+| `%LINT_CMD%` | Lint as the gate | `bash -n` on every `*.sh` and `jq -e .` on every manifest |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
 **Structural checks that stand in for a test suite** — run all four before any commit that touches
@@ -27,7 +27,13 @@ instruction files:
 1. `jq -e . hooks/hooks.json .claude-plugin/plugin.json .claude-plugin/marketplace.json` — manifests parse.
 2. Every markdown relative link resolves, and every `#anchor` exists in its target.
 3. No `${CLAUDE_PLUGIN_ROOT}` path points at a file that does not exist in this repo.
-4. `bash -n` on every `skills/*/scripts/*.sh`.
+4. `bash -n` on every `*.sh`, and every test suite green:
+   `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`, `hooks/lib/test-harness-managed.sh`,
+   `skills/harness-init/scripts/test-scaffold.sh`.
+
+`shellcheck` is **recommended but not required**, and deliberately not named as the gate: it is not
+installed on every machine that edits this repo, and a gate that cannot run is worse than one that is
+honestly absent. Run it when you have it.
 
 ## VCS
 

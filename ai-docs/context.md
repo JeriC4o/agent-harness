@@ -105,4 +105,6 @@ mechanising them as a script under `skills/ai-audit/scripts/` is an open task.
 - 2026-09-14 — hook guards for repos without `ai-docs/` (step 6); until then, prefer enabling the plugin
   at project scope rather than user scope.
 - 2026-09-14 — `skills/task/SKILL.md` is 211 lines against the 200-line soft target; exemption or
-  extraction, owner's call.
+  extraction, owner's call. `skills/ai-audit/SKILL.md` is now 221 and in the same position.
+- 2026-09-14 — nothing has audited the harness with its own `/harness:ai-audit global` yet. First real
+  run is likely to find drift this build-out introduced.
