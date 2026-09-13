@@ -104,7 +104,8 @@ current project — **per-project learning is a property of the addressing, not 
 skills/<name>/SKILL.md     the 8 workflows below
 agents/<name>.md           the 7 subagents
 rules/ast-index.md         code-search hierarchy, inherited verbatim by subagents
-hooks/hooks.json           the 12 hooks
+hooks/hooks.json           the 12 hooks (hooks/lib/ holds the shared guard)
+scripts/                   utility scripts shared by more than one skill
 docs/
   agents-method.md         the method rule surface, read at session start
   workflow.md              git/GitHub command map, PR shape, reading a test result
@@ -125,7 +126,8 @@ ai-docs/                   this repo's own profile + plan/learning data
 | `/harness:context-reset` | Group handoff for large tasks, and the compaction-recovery protocol every orchestrator re-enters through. |
 | `/harness:project-review` | Whole-branch review: findings table → fix loop → self-review until APPROVE. |
 | `/harness:pr-merged` | Post-merge cleanup: switch to the default branch, pull, drop the branch's progress files, delete the branch. |
-| `/harness:improve` | Folds merged learning files into the archive, finds repeating corrections, proposes rule escalations. |
+| `/harness:improve` | Folds merged learning files into the archive, finds repeating corrections, proposes rule escalations — and drafts promotion candidates for lessons that are about the method. |
+| `/harness:improve-global` | Run in the harness repo: sweeps candidates across every registered project and promotes a rule once ≥2 of them hit it. |
 | `/harness:ai-audit` | Audits the instruction surface itself: broken links, drifted exemptions, name clashes, hook validity. |
 | `/harness:harness-init` | Scaffolds the project profile and registers the repo. Run once per project; idempotent. |
 
@@ -156,7 +158,11 @@ anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every s
   top of its body and a `.progress.md` on disk, so a truncated session re-enters where it left off.
 - **The Learning Log is append-only, and per project.** Corrections go to
   `ai-docs/learnings/<user>-<branch>.md` in the project they happened in. Escalating a lesson into the
-  *harness* — where it would change behaviour for every project — is deliberately a separate act.
+  *harness* — where it would change behaviour for every project — is deliberately a separate act: the
+  lesson must first be abstracted into a **promotion candidate** that passes a mechanical redaction gate
+  (no repo name, ticket key, entity, path or URL), and `/harness:improve-global` promotes it only once
+  **two distinct projects** have hit the same thing. The sweep reads candidates and nothing else, so the
+  boundary is a file selector rather than an instruction to be careful.
 - **Hooks catch what prose cannot.** Branch protection, gate-masking (`| tail` on a test run), learnings
   auto-staging, propagation reminders — see [`hooks/hooks.json`](hooks/hooks.json). Hooks that presuppose
   a harness profile are guarded and no-op elsewhere; hooks that encode pure method (do not mask a gate,
@@ -166,7 +172,6 @@ anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every s
 
 Still open:
 
-4. Promotion candidates with a mechanical redaction gate, and a cross-project `/harness:improve-global`
 5. `/harness:ai-audit` scope argument (`project` | `global`)
 
-Done: the split (1), plugin packaging (2), project bootstrap (3), hook guards (6).
+Done: the split (1), plugin packaging (2), project bootstrap (3), cross-project learning (4), hook guards (6).

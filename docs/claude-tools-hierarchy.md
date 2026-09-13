@@ -73,6 +73,7 @@ Kept here so the audit can compare both sides without grepping the whole tree on
 - `pr-merged`
 - `project-review`
 - `harness-init` (scaffolds the project profile + registers the project)
+- `improve-global` (cross-project sweep over promotion candidates)
 
 ### Project-defined Hooks
 
