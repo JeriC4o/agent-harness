@@ -72,6 +72,7 @@ Kept here so the audit can compare both sides without grepping the whole tree on
 - `ai-audit`
 - `pr-merged`
 - `project-review`
+- `harness-init` (scaffolds the project profile + registers the project)
 
 ### Project-defined Hooks
 

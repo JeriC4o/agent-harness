@@ -9,15 +9,78 @@ the build, test, format and lint commands each project fills in.
 
 ## Install
 
+One-time, per machine:
+
 ```bash
 /plugin marketplace add JeriC4o/agent-harness
 /plugin install harness@agent-harness
 ```
 
-Skills are namespaced by plugin: `/harness:task`, `/harness:bugfix`, and so on.
+Skills are namespaced by plugin, so they are invoked as `/harness:task`, `/harness:bugfix`, and so on.
 
-Install at **project scope** (`.claude/settings.json`) rather than user scope until the hook guards land —
-the hooks are currently unguarded and would fire in repos that have no harness profile.
+Choose the scope deliberately:
+
+| Scope | Command | Use when |
+|---|---|---|
+| Project | `claude plugin install harness@agent-harness --scope project` | **Recommended today.** Hooks fire only in repos that opted in; the choice is committed in `.claude/settings.json` and your team inherits it. |
+| User | `claude plugin install harness@agent-harness --scope user` | You want it everywhere. Note the hooks are not yet guarded (roadmap item 6), so they will also fire in repos with no harness profile. |
+
+To pin a version instead of tracking `main`: `/plugin marketplace add JeriC4o/agent-harness@v0.1.0`.
+
+**Requires:** `git`, `gh` (authenticated — `gh auth login`), and `jq`.
+
+## Set up a project
+
+Run once per repo, from the repo root:
+
+```
+/harness:harness-init
+```
+
+It scaffolds the **profile half** — `AGENTS.md`, `ai-docs/context.md`, the plans/learnings directories,
+`.claude/settings.json`, and a `.gitignore` block — then walks you through resolving the commands the
+workflow needs, and registers the project in `~/.claude/harness/registry.json`.
+
+Three things it does deliberately:
+
+- **It never overwrites an existing file.** Re-running it on an already-set-up repo is an upgrade, not a
+  reset: your hand-edited `AGENTS.md` survives, and a flag you omit does not wipe a value it recorded earlier.
+- **It makes you *run* each command before recording it.** A `%BUILD_CMD%` that was guessed and never
+  executed is the exact defect the review agents reject, so the setup refuses to invent one.
+- **`--scope local` opts a repo out** of any future cross-project learning sweep — use it for client work.
+
+Then fill in what only you know: the overview paragraph and the domain entities in `ai-docs/context.md`.
+Leave the rest as placeholders; `/harness:task` appends entities as it discovers them, which beats a cold guess.
+
+Prefer to do it by hand? Copy `templates/project/` into the repo root, replace `%PROJECT_NAME%`, fill the
+`§ Build & Test` table in `AGENTS.md`, and append `gitignore.snippet` to your `.gitignore`.
+
+## Daily use
+
+| You want to… | Run |
+|---|---|
+| Build a feature properly | `/harness:task <ticket-key or description>` — interview → spec → design → review → implement → verify → self-review → commit |
+| Fix something broken | `/harness:bugfix <what is wrong>` — reproduces and writes a failing test *before* touching the fix |
+| Plan without building | `/harness:interview` — produces a spec, parks it in `ai-docs/plans/deferred/` |
+| Review a whole branch | `/harness:project-review` |
+| Clean up after a merge | `/harness:pr-merged` — from the merged branch |
+| Turn repeated corrections into rules | `/harness:improve` — when ≥3 unescalated entries have piled up |
+| Audit the instruction files themselves | `/harness:ai-audit` |
+
+What accumulates in the repo as you work: specs and designs in `ai-docs/plans/` (moved to `done/` on
+completion), and corrections in `ai-docs/learnings/<user>-<branch>.md`. **The learning log is per project
+and committed with the code** — lessons from one repo never leak into another.
+
+## Update
+
+```bash
+/plugin marketplace update agent-harness
+```
+
+Your project profile is untouched by an update — it lives in your repo, not in the plugin. If a new
+harness version adds template files, `/harness:harness-init` picks them up on a re-run without disturbing
+anything you have edited.
+
 
 ## The split: method vs profile
 
@@ -64,19 +127,10 @@ ai-docs/                   this repo's own profile + plan/learning data
 | `/harness:pr-merged` | Post-merge cleanup: switch to the default branch, pull, drop the branch's progress files, delete the branch. |
 | `/harness:improve` | Folds merged learning files into the archive, finds repeating corrections, proposes rule escalations. |
 | `/harness:ai-audit` | Audits the instruction surface itself: broken links, drifted exemptions, name clashes, hook validity. |
+| `/harness:harness-init` | Scaffolds the project profile and registers the repo. Run once per project; idempotent. |
 
 Subagents: `spec-writer`, `design`, `design-review`, `self-review`, `review-findings`, `self-improve`,
 `learnings-escalation-audit`.
-
-## Adopting it in a project
-
-Until `/harness:harness-init` exists, scaffold by hand — copy `templates/project/` into the repo root:
-
-1. `AGENTS.md` → fill the `§ Build & Test` command table. An unresolved `%PLACEHOLDER%` is a STOP, not a guess.
-2. `ai-docs/context.md` → entities, modules, tech stack, `§ Language profile`.
-3. `ai-docs/learnings/README.md` + `ai-docs/learnings.md` → the (empty) learning corpus.
-4. `.claude/settings.json` → permissions.
-5. Append `gitignore.snippet` to `.gitignore` so progress and state files stay local.
 
 ## Developing the harness itself
 
@@ -108,9 +162,8 @@ anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every s
 
 ## Roadmap
 
-Steps 1–2 (split + plugin packaging) are done. Still open:
+Steps 1–3 (split, plugin packaging, project bootstrap) are done. Still open:
 
-3. `/harness:harness-init` + a project registry at `~/.claude/harness/registry.json`
 4. Promotion candidates with a mechanical redaction gate, and a cross-project `/harness:improve-global`
 5. `/harness:ai-audit` scope argument (`project` | `global`)
 6. Hook guards so an unguarded hook cannot fire in a repo with no harness profile
