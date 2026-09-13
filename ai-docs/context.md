@@ -30,7 +30,9 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 - **What it is.** A method-level lesson abstracted out of one project's Learning Log, carrying no project
   identifiers, eligible to be swept into the harness by a future cross-project `/improve-global`.
-- **Status.** Designed, not implemented — step 4 of the split plan.
+- **Status.** Implemented. Written by `/harness:improve` Step 5b into
+  `ai-docs/learnings/.promote/`, gated by `scripts/check-candidate.sh`, swept by
+  `scripts/collect-candidates.sh` for `/harness:improve-global`.
 
 ## Registry
 
@@ -53,7 +55,8 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `skills/<name>/SKILL.md` | The 8 workflow skills |
 | `agents/<name>.md` | The 7 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
-| `hooks/hooks.json` | The 12 hooks |
+| `hooks/hooks.json` | The 12 hooks; `hooks/lib/` holds the shared guard |
+| `scripts/` | Plugin-level utility scripts shared by more than one skill (the promotion gate and sweep) |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
@@ -97,8 +100,8 @@ mechanising them as a script under `skills/ai-audit/scripts/` is an open task.
 
 # Open questions
 
-- 2026-09-14 — cross-project `/improve-global` + promotion candidates: designed, not built (step 4). The
-  registry itself now exists (`~/.claude/harness/registry.json`, written by `/harness:harness-init`).
+- 2026-09-14 — `/harness:improve-global` has never run against a real multi-project corpus; the threshold
+  (≥2 distinct projects) is reasoned, not yet observed. Revisit once two projects have candidates.
 - 2026-09-14 — hook guards for repos without `ai-docs/` (step 6); until then, prefer enabling the plugin
   at project scope rather than user scope.
 - 2026-09-14 — `skills/task/SKILL.md` is 211 lines against the 200-line soft target; exemption or

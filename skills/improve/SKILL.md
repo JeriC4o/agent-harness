@@ -76,6 +76,41 @@ The subagent will:
 
 Run when **≥3 unescalated correction entries**, **≥2 unescalated validation entries**, or a `🌱 Stale-validation` flag from `/ai-audit` accumulates. Mirror of the threshold line in `AGENTS.md § Learning Log` — keep both in sync per the Propagation Rule.
 
+## Step 5b: Promotion candidates (optional, asks first)
+
+A lesson that is about the METHOD rather than about this codebase does not belong in the project profile —
+but this command may not edit the harness either (see the escalation-target note above). The bridge is a
+promotion candidate.
+
+**Trigger.** A pattern qualifies when its rule survives having every project-specific noun removed and
+still says something. "A gate whose failure mode is empty output reports success when it matched nothing"
+survives; "the DiffSet merge drops rows" does not. Most patterns do not qualify — that ratio is expected,
+not a sign you are being too strict.
+
+For each qualifying pattern:
+
+1. **Ask the user first.** A candidate is never written silently; it is the only thing in this project that
+   is designed to travel.
+2. Draft it to `ai-docs/learnings/.promote/<slug>.md` in the format in
+   `ai-docs/learnings/.promote/README.md` — frontmatter plus `**Rule:**`, `**Why:**`, `**Signal:**`.
+   Write the SHAPE of the failure, never the instance.
+3. **Run the gate** and do not skip it:
+
+   ```bash
+   ${CLAUDE_PLUGIN_ROOT}/scripts/check-candidate.sh ai-docs/learnings/.promote/<slug>.md
+   ```
+
+   A refusal names the offending term. **Rewrite the lesson; never edit the gate, and never work around it
+   by rephrasing just enough to slip a project noun past a substring check.** If a term the gate cannot
+   derive from the repo needs banning, add it to `ai-docs/learnings/.promote/deny-extra.txt`.
+4. Stage the candidate with the rest of the `/improve` change — it is a project file, committed with the
+   project.
+
+The candidate then waits. `/harness:improve-global` promotes a rule into the harness only once **≥2
+distinct projects** carry the same lesson; one project's recurrence, however frequent, is a project
+pattern. Leave the original Learning Log entry exactly as it is — a candidate is an abstraction of it, not
+a replacement, and the log stays append-only either way.
+
 ## Step 6 dispatch contract
 
 The `self-improve` Subagent cannot itself spawn `Agent` calls. After the Subagent returns its proposal, the parent (this skill) reads the `## Step 6 handoff — clean-context eval reproducers` block and dispatches each reproducer via `Agent(subagent_type="general-purpose", prompt=<reproducer-block-verbatim>)`. Collect verdicts; emit a final `Eval: PASS ✅ / FAIL ❌` per pattern.
@@ -85,5 +120,6 @@ The `self-improve` Subagent cannot itself spawn `Agent` calls. After the Subagen
 ## See also
 
 - `/ai-audit` (`${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/SKILL.md`) — passive auditor for already-escalated entries.
+- `/harness:improve-global` (`${CLAUDE_PLUGIN_ROOT}/skills/improve-global/SKILL.md`) — cross-project sweep over the candidates Step 5b produces.
 
 Context from user (if any): $ARGUMENTS
