@@ -32,6 +32,15 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   identifiers, eligible to be swept into the harness by a future cross-project `/improve-global`.
 - **Status.** Designed, not implemented — step 4 of the split plan.
 
+## Registry
+
+- **What it is.** `~/.claude/harness/registry.json` — the list of projects using this harness, one entry
+  per absolute path, written by `/harness:harness-init`.
+- **Identity.** `path` is the key. `scope` (`shared` | `local`) decides whether a project takes part in
+  cross-project learning sweeps.
+- **Invariant.** Paths and labels only, never project content. A consumer skips entries whose path no
+  longer exists rather than failing.
+
 ---
 
 # System Design
@@ -88,7 +97,8 @@ mechanising them as a script under `skills/ai-audit/scripts/` is an open task.
 
 # Open questions
 
-- 2026-09-14 — cross-project `/improve-global` + registry: designed, not built (steps 3–4).
+- 2026-09-14 — cross-project `/improve-global` + promotion candidates: designed, not built (step 4). The
+  registry itself now exists (`~/.claude/harness/registry.json`, written by `/harness:harness-init`).
 - 2026-09-14 — hook guards for repos without `ai-docs/` (step 6); until then, prefer enabling the plugin
   at project scope rather than user scope.
 - 2026-09-14 — `skills/task/SKILL.md` is 211 lines against the 200-line soft target; exemption or
