@@ -95,6 +95,10 @@ mechanising them as a script under `skills/ai-audit/scripts/` is an open task.
 - **Skill scripts run via `${CLAUDE_SKILL_DIR}/scripts/<name>`.** A repo-relative invocation resolves
   against the consuming project and silently fails there while working here.
 - **Plugin skills are invoked namespaced**: `/harness:task`, not `/task`.
+- **Bump `plugin.json` version in the same PR as any change to plugin-loaded content.** The install cache
+  is keyed by version; without a bump the fix reaches nobody, and `marketplace update` reports success
+  while leaving the old payload in place. Content that ships: `skills/`, `agents/`, `rules/`, `hooks/`,
+  `docs/`, `scripts/`, `templates/`.
 
 ---
 

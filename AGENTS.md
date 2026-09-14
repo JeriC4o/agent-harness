@@ -66,3 +66,6 @@ plus POSIX shell; no compiled sources.
   every consumer while still working here.
 - **A skill script is invoked as `${CLAUDE_SKILL_DIR}/scripts/<name>`**, never by a repo-relative path —
   the plugin installs to a variable location.
+- **Any PR touching plugin-loaded content bumps `.claude-plugin/plugin.json`'s patch version.** The
+  install cache is keyed by version, so an unbumped fix silently never reaches an installed copy. See
+  [`README.md` § Releasing](README.md#releasing).
