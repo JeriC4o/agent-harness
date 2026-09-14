@@ -165,8 +165,10 @@ claude --plugin-dir /Users/jc/projects/agent-harness
 ```
 
 There is no build. The gate is four structural checks — JSON manifests parse, every relative link and
-anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script. See
-[`AGENTS.md` § Build & Test](AGENTS.md#build--test).
+anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script — plus two delivery
+gates: `scripts/test-install-smoke.sh` installs the working tree into a throwaway config and requires the
+plugin to actually load, and `scripts/check-release.sh` refuses a branch that changed shipped content
+without a version bump. See [`AGENTS.md` § Build & Test](AGENTS.md#build--test).
 
 ## Design notes
 
