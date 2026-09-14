@@ -50,9 +50,27 @@ honestly absent. Run it when you have it.
 | Setting | Value |
 |---|---|
 | Default branch | `main` |
-| Branch naming | `chore/<slug>` or `<TICKET-KEY>-<slug>` |
-| Ticket key format | `none` — this repo has no tracker; specs carry `**Tracked in:** none — <reason>` |
+| Branch naming | `<TICKET-KEY>-<slug>`, or `chore/<slug>` for work with no issue |
+| Ticket key format | `GH-<issue number>` |
 | Review surface | GitHub PR via `gh` |
+
+**GitHub Issues have no key prefix** — an issue is a bare `#N`, and PRs share the same counter, so the
+numbering is contiguous across both. `GH-` is a *local* prefix this repo adds so an issue number can ride
+in a branch name and a spec header, where a bare `#` does not belong. It maps one-to-one:
+
+| Surface | Form |
+|---|---|
+| The issue itself | `#10` |
+| Branch | `GH-10-<slug>` |
+| Spec header | `**Tracked in:** GH-10` |
+| PR title | `GH-10: <conventional-commits header>` |
+| Any `gh` command | `gh issue view 10` — **strip the prefix**; `gh` knows nothing about `GH-` |
+
+> **Carve-out — `Closes #N` is permitted in a PR body**, and is the one trailer this repo allows despite
+> the summary-only rule. It is an ACTION, not a reference: GitHub closes the issue when the PR merges.
+> That is the intended behaviour here, and the softer cousin of the hazard
+> [`docs/workflow.md` § PR title + body shape](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#pr-title--body-shape)
+> warns about — write it only for the issue the PR actually resolves, never for one it merely mentions.
 
 ## Permissions — project specifics
 

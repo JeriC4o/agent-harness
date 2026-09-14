@@ -106,11 +106,11 @@ structural four as a script is an open task.
 
 # Open questions
 
-- 2026-09-14 — `/harness:improve-global` has never run against a real multi-project corpus; the threshold
-  (≥2 distinct projects) is reasoned, not yet observed. Revisit once two projects have candidates.
-- 2026-09-14 — hook guards for repos without `ai-docs/` (step 6); until then, prefer enabling the plugin
-  at project scope rather than user scope.
-- 2026-09-14 — `skills/task/SKILL.md` is 211 lines against the 200-line soft target; exemption or
-  extraction, owner's call. `skills/ai-audit/SKILL.md` is now 221 and in the same position.
-- 2026-09-14 — nothing has audited the harness with its own `/harness:ai-audit global` yet. First real
-  run is likely to find drift this build-out introduced.
+- `GH-10` — the ≥2-distinct-projects promotion threshold is reasoned, not observed. Revisit once two
+  projects carry candidates.
+- `GH-11` — `/harness:improve` Step 5b has never produced a candidate on a real Learning Log; every part
+  is unit-tested, the path is not.
+- _(closed 2026-09-14 — hook guards shipped in #3; `--scope user` is now the recommended install.)_
+- _(closed 2026-09-14 — both recorded as approved exemptions in `docs/skill-size-exemptions.md`: they are
+  ordered orchestrators, and splitting the sequence costs more than the length does.)_
+- _(closed 2026-09-14 — the first `/harness:ai-audit global` ran and its findings shipped in #9.)_
