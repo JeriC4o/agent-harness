@@ -184,6 +184,14 @@ The carrot-side analog of Checklist C. Every promoted-from-validation carrot mus
 | Reverse | `Kind: validation` entry with `Escalated? ≠ no` AND named target file lacks `## Patterns` block OR back-linking entry | flag (`major`) |
 | Reverse (predicate gate) | `Kind: validation` entry with `Escalated? no` | no flag |
 
+> **Carve-out — inherited Patterns after a corpus reset.** The reverse leg assumes every `## Patterns`
+> entry was promoted from a `Kind: validation` entry in THIS repo's log. A harness distributed as a
+> template starts with an empty Learning Log while carrying Patterns blocks inherited from wherever the
+> method was originally learned, so the reverse leg cannot hold for them and reports every block as
+> orphaned. That is expected, not a finding. **Do not resolve it by writing validation entries** — those
+> lessons were not learned here, and a fabricated entry corrupts the one artefact `/improve` reasons
+> over. The reverse leg becomes meaningful again for Patterns promoted after the reset; audit those.
+
 ## Checklist O — Embedded-name clash scan
 
 Enforces the AGENTS.md `## Propagation Rule` clash-rename AXIOM. Project-defined Tool / Subagent / Skill / Hook names MUST NOT clash with embedded names enumerated in `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md` §§1a/1b/2a/3a/3b. Any match → `major` finding (project side renames; the embedded name is never renamed).
@@ -246,8 +254,8 @@ The model-posture taxonomy is an **auditable two-way rule**. Flag deviations in 
 
 | Surface class | Members | Expected `model:` | Deviation flagged |
 |---|---|---|---|
-| **Non-code reasoning** (SHOULD pin `model: opus`) | skills: `ai-audit`, `improve`; agents: `design`, `design-review`, `learnings-escalation-audit`, `self-improve`, `spec-writer` | `model: opus` present | omits `model:` → flag |
-| **Code-working** (SHOULD inherit — omit `model:`) | skills: `task`, `project-review`, `bugfix`, `interview`, `context-reset`, `pr-merged`; agents: `self-review`, `review-findings` | no `model:` line | pins `model:` → flag |
+| **Non-code reasoning** (SHOULD pin `model: opus`) | skills: `ai-audit`, `improve`, `improve-global`; agents: `design`, `design-review`, `learnings-escalation-audit`, `self-improve`, `spec-writer` | `model: opus` present | omits `model:` → flag |
+| **Code-working** (SHOULD inherit — omit `model:`) | skills: `task`, `project-review`, `bugfix`, `interview`, `context-reset`, `pr-merged`, `harness-init`; agents: `self-review`, `review-findings` | no `model:` line | pins `model:` → flag |
 
 > **SKILL-honored vs SUBAGENT-may-be-ignored (GH #44385).** A SKILL `model: opus` pin is **reliably honored** by the harness. A SUBAGENT (`${CLAUDE_PLUGIN_ROOT}/agents/*.md`) `model:` pin **may be ignored** — the agent can inherit the spawner's session model regardless of its frontmatter. So for agents the frontmatter pin is **intent-level** only; reliable opus comes from the opus-pinned spawning skill (the agent inherits) OR an explicit `model=` at the `Agent()` spawn site. Checklist P treats an agent's `model: opus` pin as correct-intent and does NOT recommend dropping it, but records that the practical guarantee lives at the spawner.
 

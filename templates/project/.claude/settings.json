@@ -10,7 +10,18 @@
       "Bash(git rev-parse:*)",
       "Bash(git grep:*)",
       "Bash(gh pr view:*)",
-      "Bash(gh pr checks:*)"
+      "Bash(gh pr checks:*)",
+      "Bash(grep:*)",
+      "Bash(rg:*)",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(jq:*)",
+      "Bash(wc:*)",
+      "Bash(awk:*)",
+      "Bash(basename:*)",
+      "Bash(realpath:*)",
+      "Bash(stat:*)",
+      "Bash(sleep:*)"
     ],
     "deny": [
       "Edit(**/.env)",
