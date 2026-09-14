@@ -26,7 +26,12 @@ git rev-parse --git-dir >/dev/null 2>&1 || { printf 'check-release: not a git re
 git rev-parse --verify --quiet "$BASE" >/dev/null || {
   printf 'check-release: base ref %s does not exist (fetch first?)\n' "$BASE" >&2; exit 2; }
 
-changed=$(git diff --name-only "${BASE}...HEAD" -- . | grep -E "$SHIPPED" || true)
+# Working-tree form, NOT ${BASE}...HEAD. The three-dot form is commit-to-commit
+# and returns EMPTY before anything is committed -- so running this gate at the
+# natural moment, just before committing, would have reported "no bump needed"
+# for a branch full of shipped changes. That is the silent-pass shape this repo
+# documents in docs/workflow.md; this gate fell into it.
+changed=$(git diff --name-only "$BASE" -- . | grep -E "$SHIPPED" || true)
 if [ -z "$changed" ]; then
   printf 'check-release: no shipped content changed against %s -- no bump needed.\n' "$BASE"
   exit 0

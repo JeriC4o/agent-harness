@@ -8,7 +8,12 @@ Empty by default. Rows added only after a user-approved exemption during an `/ai
 
 | Skill | Line count | Date approved | Reason |
 |---|---|---|---|
-| _(none)_ | — | — | — |
+| `task` | 211 | 2026-09-14 | Orchestrator with a strictly ordered step sequence, each step carrying its own fail-loud gate. Extracting steps into `reference.md` would make the reader follow a link mid-sequence, which is the failure the ordering exists to prevent. Detail already lives in `reference.md`; what remains is the sequence itself. |
+| `ai-audit` | 221 | 2026-09-14 | Same shape, plus two surfaces (`global` / `project`) whose checklist tables must be visible together for the scope decision to be made correctly. Per-letter detail is already extracted to `reference.md`. |
+
+Both sit far below the hard constraint that actually matters — the 40,000-char instruction-file cap
+(`AGENTS.md § Build & Test`): `task` is ~22k, `ai-audit` ~11k. The 200-line target is about keeping a
+body scannable, and an ordered workflow is scannable at 211 lines in a way a fragmented one is not.
 
 ## Approval recipe
 
