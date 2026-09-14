@@ -31,6 +31,16 @@ instruction files:
    `scripts/test-plugin-manifest.sh`, `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`,
    `hooks/lib/test-harness-managed.sh`, `skills/harness-init/scripts/test-scaffold.sh`.
 
+**Delivery gates** — the checks above validate this repository's CONTENTS; these two validate that the
+contents reach a consumer. Both exist because a bug got past all four structural checks:
+
+5. `bash scripts/test-install-smoke.sh` — installs the working tree as a plugin in a throwaway
+   `$CLAUDE_CONFIG_DIR` and requires `✔ enabled` plus a full component inventory. Catches "installs but
+   refuses to load". Requires the `claude` CLI; **exits 2 when it cannot run, which is not a pass.**
+6. `bash scripts/check-release.sh` — refuses a branch that changed shipped content without bumping
+   `.claude-plugin/plugin.json`. Catches "merged but never delivered", which a sandbox install cannot see
+   by construction. Run it before opening a PR.
+
 `shellcheck` is **recommended but not required**, and deliberately not named as the gate: it is not
 installed on every machine that edits this repo, and a gate that cannot run is worse than one that is
 honestly absent. Run it when you have it.

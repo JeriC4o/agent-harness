@@ -83,8 +83,10 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 ## Build & test commands
 
-No build. The four structural checks in `AGENTS.md § Build & Test` are the gate. They are hand-run today;
-mechanising them as a script under `skills/ai-audit/scripts/` is an open task.
+No build. The checks in `AGENTS.md § Build & Test` are the gate: four structural ones over the repo's
+contents, plus two delivery gates (`test-install-smoke.sh`, `check-release.sh`) that answer the question
+the structural ones cannot — does this reach a consumer. They are hand-run today; mechanising the
+structural four as a script is an open task.
 
 ---
 
