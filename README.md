@@ -193,9 +193,18 @@ without a version bump. See [`AGENTS.md` § Build & Test](AGENTS.md#build--test)
 
 ## Roadmap
 
-The build-out is complete: the split (1), plugin packaging (2), project bootstrap (3), cross-project
-learning (4), the audit's two surfaces (5), and hook guards (6).
+The build-out is complete: the method/profile split, plugin packaging, project bootstrap, cross-project
+learning, the audit's two surfaces, hook guards, and two delivery gates.
 
-What is *designed but not yet evidenced*: the `≥2 distinct projects` promotion threshold is reasoned, not
-observed. It meets evidence the first time two real projects carry candidates — that, rather than more
-building, is the next thing worth doing.
+**Next, in this order and for this reason** — each earlier item makes the next one measurable rather than
+intuitive:
+
+| # | Issue | Why it comes when it does |
+|---|---|---|
+| 1 | [`GH-13`](../../issues/13) — trace token spend per workflow stage | Smallest, purely mechanical, and the data already sits in the session transcript. Produces the cost signal the inspector needs. |
+| 2 | [`GH-14`](../../issues/14) — inspector subagent for workflow loops | Reads a finished session and reports where the *harness* misbehaved: loops, skipped gates, caps burned without converging. Structural signatures work standalone; the usage-delta ones need `GH-13`. |
+| 3 | [`GH-15`](../../issues/15) — vector/RAG index over code | **Filed with a recommendation against building it as stated**, and a smaller reframe that keeps the value. Deliberately last: `GH-14`'s job is spotting where search actually wasted turns, which turns this from an intuition into a measurement. |
+
+Validation work, waiting on real use rather than on code:
+[`GH-10`](../../issues/10) (the ≥2-projects threshold has never met a real corpus) and
+[`GH-11`](../../issues/11) (`/harness:improve` Step 5b has never produced a candidate on a real log).
