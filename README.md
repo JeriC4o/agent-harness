@@ -135,6 +135,26 @@ ai-docs/                   this repo's own profile + plan/learning data
 Subagents: `spec-writer`, `design`, `design-review`, `self-review`, `review-findings`, `self-improve`,
 `learnings-escalation-audit`.
 
+## Releasing
+
+The plugin cache is keyed by **version**, so an installed copy only refreshes when
+`.claude-plugin/plugin.json` carries a version it has not seen. A fix shipped without a bump reaches
+nobody — `/plugin marketplace update` will refresh the marketplace metadata, report success, and leave the
+old payload in place.
+
+**Bump the patch version in the same PR as any change to plugin-loaded content** — `skills/`, `agents/`,
+`rules/`, `hooks/`, `docs/`, `scripts/`, `templates/`. A change confined to `README.md` or `ai-docs/`
+(this repo's own profile) does not ship to consumers and needs no bump.
+
+Consumers update with:
+
+```bash
+claude plugin marketplace update agent-harness
+claude plugin install harness@agent-harness --scope user
+```
+
+Then restart the session — hooks are read at start.
+
 ## Developing the harness itself
 
 This repo consumes its own method file directly ([`docs/agents-method.md`](docs/agents-method.md)) rather
