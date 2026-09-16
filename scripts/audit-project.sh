@@ -53,9 +53,23 @@ for f in AGENTS.md ai-docs/context.md; do
 done
 
 # ---- R: command liveness -----------------------------------------------------
-# Read the value column of the Build & Test table, take the first token, and ask
-# the shell whether it exists. A table naming a binary nobody has is a gate that
-# cannot run.
+# Resolve the first token of each recorded command and ask whether it can run.
+#
+# TWO OUTCOMES, deliberately distinguished, because the remedy differs:
+#   - absent everywhere                     -> major: install it; the gate cannot run
+#   - present in a login shell but not in
+#     THIS session's PATH                   -> minor: restart the session
+#
+# The second case is the common one for per-user toolchains (rustup, nvm, pyenv,
+# sdkman) whose PATH export lives in a shell rc file: a long-lived session can
+# predate the line that exports them. Reporting that as "command not found"
+# sends the reader off to install something they already have -- the cry-wolf
+# failure this repo has already hit twice with its own checks.
+#
+# One finding per BINARY, not per table row: four rows naming the same missing
+# tool are one problem, and printing it four times buries the other findings.
+LOGIN_SHELL="${HARNESS_LOGIN_SHELL:-${SHELL:-/bin/sh}}"
+seen_bins=""
 if [ -f "${DIR}/AGENTS.md" ]; then
   while IFS= read -r line; do
     case "$line" in *'%FILL_ME%'*|*'n/a'*) continue ;; esac
@@ -63,12 +77,26 @@ if [ -f "${DIR}/AGENTS.md" ]; then
     [ -n "$val" ] || continue
     case "$val" in 'This project'|'') continue ;; esac
     bin=$(printf '%s' "$val" | awk '{print $1}')
-    case "$bin" in ./*|/*) [ -x "${DIR}/${bin#./}" ] || [ -x "$bin" ] || finding major R "AGENTS.md: '${bin}' is not executable in this repo" ;;
-                   a|the|none|n/a) ;;
-                   *) command -v "$bin" >/dev/null 2>&1 || finding major R "AGENTS.md: command '${bin}' not found on PATH -- the gate it defines cannot run" ;;
+    case " ${seen_bins} " in *" ${bin} "*) continue ;; esac
+    seen_bins="${seen_bins} ${bin}"
+    case "$bin" in
+      ./*|/*)
+        [ -x "${DIR}/${bin#./}" ] || [ -x "$bin" ] \
+          || finding major R "AGENTS.md: '${bin}' is not executable in this repo"
+        ;;
+      a|the|none|n/a) ;;
+      *)
+        if command -v "$bin" >/dev/null 2>&1; then
+          :
+        elif "$LOGIN_SHELL" -lc "command -v ${bin}" >/dev/null 2>&1; then
+          finding minor R "AGENTS.md: '${bin}' resolves in a login shell but is absent from this session PATH -- the session predates the profile line that exports it; restart the session rather than installing anything"
+        else
+          finding major R "AGENTS.md: command '${bin}' not found on PATH or in a login shell -- the gate it defines cannot run"
+        fi
+        ;;
     esac
   done <<EOF
-$(grep -E '^\| *\`%[A-Z_]+%\`' "${DIR}/AGENTS.md" || true)
+$(grep -E '^\| *`%[A-Z_]+%`' "${DIR}/AGENTS.md" || true)
 EOF
 fi
 

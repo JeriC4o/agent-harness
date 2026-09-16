@@ -58,6 +58,35 @@ sed -i '' 's/| `%BUILD_CMD%` | Compile the changed module | `%FILL_ME%` |/| `%BU
 out=$(audit "$R")
 has "flags a command whose binary does not exist" "$out" "definitelynotarealbinary"
 
+printf '\n== a missing command is reported once, not once per table row ==\n'
+V=$(fresh)
+# Four rows, one bogus binary: the finding must not be repeated four times.
+sed -i '' 's/| `%FILL_ME%` |/| `nosuchbinary42 run` |/g' "$V/AGENTS.md"
+out=$(audit "$V")
+n=$(printf '%s' "$out" | grep -c 'nosuchbinary42' || true)
+check "one finding per distinct binary" "$n" "1"
+
+printf '\n== a command present only in a login shell is diagnosed accurately ==\n'
+# The distinction that matters: "not installed" and "installed but absent from
+# THIS session PATH" need different messages, because the fix is different --
+# install it, versus restart the session. Simulated with a real binary placed
+# outside PATH and injected into a login shell via $HARNESS_LOGIN_SHELL.
+W=$(fresh)
+BIN=$(mktemp -d); printf '#!/bin/sh\necho ok\n' > "$BIN/onlyinlogin"; chmod +x "$BIN/onlyinlogin"
+FAKE=$(mktemp -d)/login.sh
+printf '#!/bin/sh\nPATH="%s:$PATH"; export PATH\nshift 2>/dev/null\nexec /bin/sh -c "$@"\n' "$BIN" > "$FAKE"; chmod +x "$FAKE"
+sed -i '' 's/| `%FILL_ME%` |/| `onlyinlogin run` |/g' "$W/AGENTS.md"
+line=$(HARNESS_LOGIN_SHELL="$FAKE" audit "$W" | grep 'onlyinlogin' | head -1)
+case "$line" in
+  *session*) ok "names it as a session-PATH problem, not a missing binary" ;;
+  *)         bad "names it as a session-PATH problem (got: ${line:-<no finding at all>})" ;;
+esac
+case "$line" in
+  major*) bad "severity is not major for a present-but-unexported binary (got: $line)" ;;
+  "")     bad "no finding emitted at all" ;;
+  *)      ok "severity is not major for a present-but-unexported binary" ;;
+esac
+
 printf '\n== registry coherence ==\n'
 S=$(mktemp -d)/unregistered; mkdir -p "$S"; git -C "$S" init -q -b main
 HARNESS_REGISTRY="$REG" bash "$SCAFFOLD" "$S" --name unreg >/dev/null 2>&1
