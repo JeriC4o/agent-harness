@@ -40,6 +40,11 @@ timestamps — never a command line, a path, a prompt, or tool output.
 Add `${CLAUDE_PLUGIN_ROOT}/scripts/trace-tokens.sh <session.jsonl>` when the question is cost rather than
 looping; the two read the same transcript for different purposes.
 
+Add `${CLAUDE_PLUGIN_ROOT}/scripts/backlog-metrics.sh` when the question is whether the ticket tail is
+growing faster than work ships. It reads the repo, not the session, and answers the other half of
+`deferral-candidate`: this skill sees one session filing a ticket, that script sees whether filing has
+become the habit.
+
 **Read `unavailable` yourself, now.** A signature that could not run is the first thing the user needs, and
 it must not wait for the agent's report to surface.
 

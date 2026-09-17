@@ -86,6 +86,21 @@ jq -n \
   --argjson minrep "$MIN_REPEATS" \
   --argjson spike "$SPIKE" '
 
+  # An ALLOWLIST, not a pattern. A branch name matches any reasonable pattern,
+  # and a branch name can carry a project identifier -- so only known subcommand
+  # VERBS survive, and at most two of them. Everything else (flags, paths,
+  # titles, messages, refs) is dropped. This exists because "gh" alone cannot
+  # tell filing a ticket from reading one, which blocked the measurement the
+  # label was needed for in the first place.
+  [ "git", "gh", "make", "cargo", "npm", "yarn", "pnpm", "go", "docker", "jq" ] as $subcmd_hosts
+  | [ "status", "commit", "push", "pull", "fetch", "merge", "rebase", "checkout",
+      "switch", "branch", "diff", "log", "add", "show", "stash", "tag", "remote",
+      "init", "clone", "restore", "worktree", "revert", "cherry-pick", "blame",
+      "issue", "pr", "repo", "api", "release", "run", "auth", "workflow",
+      "create", "list", "view", "edit", "close", "reopen", "comment", "ready",
+      "build", "test", "lint", "fmt", "check", "install", "start", "publish",
+      "clippy", "doc", "bench", "update", "upgrade", "clean", "compose" ] as $subcmds
+  |
   # djb2 over the serialised tool input. One-way and content-free: it lets
   # repetition be COUNTED without the thing repeated ever being printed.
   def fp: tostring | explode
@@ -115,10 +130,12 @@ jq -n \
       | ( reduce .[] as $tok ({done: false, rest: []};
             if .done then .rest += [$tok]
             elif ($tok | test("^[A-Za-z_][A-Za-z0-9_]*=")) then .
-            else .done = true | .rest += [$tok] end ) ).rest
-      | (.[0] // "")
-      | sub("^\\./"; "")
-      | if test("^[A-Za-z0-9][A-Za-z0-9._+-]{0,23}$") then . else "(other)" end );
+            else .done = true | .rest += [$tok] end ) ).rest ) as $toks
+    | ( ($toks[0] // "") | sub("^\\./"; "") ) as $cmd
+    | if ($cmd | test("^[A-Za-z0-9][A-Za-z0-9._+-]{0,23}$") | not) then "(other)"
+      elif ($cmd | IN($subcmd_hosts[])) then
+        ( [ $cmd ] + ( $toks[1:3] | map(select(IN($subcmds[]))) ) ) | join(" ")
+      else $cmd end;
 
   # ---- pass 1: flatten to events ------------------------------------------
   ( reduce $main[] as $e ({turn: 0, skill: null, seq: 0, out: []};
@@ -226,6 +243,20 @@ jq -n \
                    cache_read_per_message: ((.cache_read / .messages) | floor) })
       end ) as $spikes
 
+  # ---- deferral candidates -------------------------------------------------
+  # A task that will not converge has a cheap exit: file a ticket and move on.
+  # A ticket filed during an ordinary turn is planning and is NOT flagged; one
+  # filed inside a turn that already went round and round is the shape worth a
+  # second look. The turn-depth threshold is the same one used above, so the two
+  # signals cannot disagree about what "struggling" means.
+  | ( $spikes | map(.turn) ) as $deep_turns
+  | ( $tools
+      | map(select((.bin // "") | startswith("gh issue create")))
+      | map(select(.turn | IN($deep_turns[])))
+      | map({ kind: "deferral-candidate", turn: .turn, skill: .skill, seq: .seq, at: .ts,
+              turn_messages: ( [ $spikes[] | select(.turn == .turn) ] | first | .messages ) })
+    ) as $deferrals
+
   # ---- step regression -----------------------------------------------------
   | ( $tools | map(select(.progress_step != null)) ) as $steps
   | ( if ($steps | length) < 2 then []
@@ -243,7 +274,7 @@ jq -n \
       unparseable_lines: $bad,
       window_seconds: $window, min_repeats: $minrep, spike_factor: $spike,
       events: $events,
-      signatures: ($repeats + $retries + $spawns + $spikes + $regressions),
+      signatures: ($repeats + $retries + $spawns + $spikes + $deferrals + $regressions),
       unavailable: (
         ( if ($steps | length) < 2
           then [{ kind: "step-regression",

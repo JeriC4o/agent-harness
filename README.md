@@ -69,6 +69,7 @@ Prefer to do it by hand? Copy `templates/project/` into the repo root, replace `
 | Audit the instruction files themselves | `/harness:ai-audit` |
 | See where a session's tokens went | `scripts/trace-tokens.sh <session.jsonl>` — per-turn and per-skill spend |
 | Find out why a run went in circles | `/harness:inspect` — loops, gates re-run with nothing changed, review rounds that burned their cap |
+| Check the ticket tail is not outrunning delivery | `scripts/backlog-metrics.sh` — tickets opened per PR merged, and whether they arrive in bursts or as a drip |
 
 What accumulates in the repo as you work: specs and designs in `ai-docs/plans/` (moved to `done/` on
 completion), and corrections in `ai-docs/learnings/<user>-<branch>.md`. **The learning log is per project
@@ -129,6 +130,32 @@ silent zero, because a silent zero is indistinguishable from clean. And **the in
 edits**: findings become Learning Log entries with `Escalated? no`, and escalation stays with
 `/harness:improve` across accumulated evidence. Fixing the rule in the same breath as judging it is grading
 your own work.
+
+### Is the backlog growing faster than the work ships
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/backlog-metrics.sh
+```
+
+An agent that cannot make a task converge has a cheap way out: file a ticket and move on. Deferring costs
+less than admitting the thing did not work, so the tail grows.
+
+The difficulty is that **a growing backlog is also what a healthy project start looks like** — scope
+genuinely expands as the work is understood. Growth alone therefore means nothing, so four signals are
+reported rather than one score:
+
+| Signal | Deferral | Healthy scope growth |
+|---|---|---|
+| **ratio** — tickets opened per PR merged | sustained above 1 | below 1 |
+| **cadence** — bursts vs drip | filed one at a time, during implementation | filed together, in a planning pass |
+| **age** — median age of the open tail | only climbs | churns |
+| **volume** — opened vs closed | opened only | both move |
+
+The session-side companion is `deferral-candidate` in `/harness:inspect`, which flags a ticket filed from
+inside a turn that had already gone round and round. This script sees whether that has become the habit.
+
+It prints no verdict and no score. Deferral is a **shape over time**, and a single run is a snapshot that
+cannot tell parking work from week one of a project — every run says so in its own output.
 
 ## Update
 
