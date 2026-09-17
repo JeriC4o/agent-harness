@@ -47,6 +47,8 @@ event actually a loop?
 | `error-retry-loop` | the same call fails repeatedly with no change to the input | each retry followed a visible correction — the second attempt had a different fingerprint |
 | `repeated-agent-spawn` | a review or design loop burned its round cap without converging | the spawns were independent parallel work |
 | `turn-depth-spike` | one turn took many model calls circling the same sub-goal | the turn was legitimately long — a big migration, a broad sweep |
+| the ticket is genuine scope discovered while working, filed deliberately rather than as an exit |
+| `deferral-candidate` | a ticket was filed from inside a turn that had already gone round and round, and the work it names is the work that was not converging |
 | `step-regression` | `current_step` moved backwards with no Amendment or REJECT to justify it | an Amendment recipe or a self-review REJECT explains it; both legitimately move the step back |
 
 **Loop-shaped is not loop.** The script already applied a time window and an intervening-edit check; you
@@ -64,6 +66,7 @@ A confirmed loop is evidence. The finding is the **instruction that permitted it
 | a step running twice | two instruction files both claim ownership of the step |
 | a step skipped | the ordering is stated in prose that does not bind, or the skip is reachable by a documented path |
 | a turn that went round and round | the step has no stated stopping condition |
+| a ticket filed instead of finishing | the step has no way to report *not converged* — so deferring is the only exit the workflow offers |
 
 Name the file and, where you can, the line. **Re-derive every anchor** — `grep -n` the actual token; never
 compute a line number from a delta.

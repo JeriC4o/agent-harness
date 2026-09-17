@@ -85,6 +85,59 @@ hasnt "a cd target does not leak"           "$stream" "CANARY_CD"
 has   "the real command behind an assignment still shows" "$stream" "make"
 has   "and a plain command name survives"   "$stream" "git"
 
+printf '\n== subcommands, because "gh" alone cannot tell filing from reading ==\n'
+# The label used to be the first token only, which made `gh issue create`
+# indistinguishable from `gh pr view` -- so the privacy rule blocked the very
+# measurement it was needed for. Up to two further tokens are now kept, each of
+# which must be a KNOWN SUBCOMMAND VERB. An allowlist rather than a pattern is
+# the point: a branch name matches any reasonable pattern, and a branch name can
+# carry a project identifier.
+S=$(newsession)
+tool "$S" 2026-01-01T00:00:10Z Bash '{"command":"git status"}'                          a
+tool "$S" 2026-01-01T00:00:20Z Bash '{"command":"git checkout CANARY-secret-branch"}'   b
+tool "$S" 2026-01-01T00:00:30Z Bash '{"command":"gh issue create --title CANARY_TITLE"}' c
+tool "$S" 2026-01-01T00:00:40Z Bash '{"command":"git commit -m CANARY_MSG"}'            d
+stream=$(bash "$EV" "$S" 2>&1)
+has   "a known subcommand is kept"        "$stream" "git status"
+has   "two levels deep for gh"            "$stream" "gh issue create"
+has   "and the verb before a flag"        "$stream" "git commit"
+hasnt "a branch name is not a subcommand" "$stream" "CANARY-secret-branch"
+hasnt "nor is a commit message"           "$stream" "CANARY_MSG"
+hasnt "nor a ticket title"                "$stream" "CANARY_TITLE"
+
+printf '\n== filing a ticket from inside a struggling turn ==\n'
+# The failure mode: a task will not converge, so the agent files a ticket and
+# moves on -- deferring is cheaper than admitting it did not work. A ticket
+# filed during a normal turn is ordinary planning and must NOT be flagged; one
+# filed inside a turn that already went round and round is the suspicious shape.
+S=$(newsession)
+i=1
+while [ $i -le 6 ]; do
+  uturn "$S" "2026-01-01T00:0${i}:00Z" "turn $i"
+  spend "$S" "2026-01-01T00:0${i}:30Z" "s$i" 1000
+  i=$((i+1))
+done
+uturn "$S" 2026-01-01T00:07:00Z "the one that would not converge"
+j=1
+while [ $j -le 20 ]; do spend "$S" "2026-01-01T00:07:${j}0Z" "d$j" 1000; j=$((j+1)); done
+tool "$S" 2026-01-01T00:07:55Z Bash '{"command":"gh issue create --title later"}' zz
+out=$(S_ "$S")
+check "a ticket filed in a deep turn is flagged" "$(sig "$out" deferral-candidate)" "1"
+check "and it names the turn" \
+  "$(jq -r '[.signatures[]|select(.kind=="deferral-candidate")]|.[0].turn' <<<"$out")" "7"
+
+S=$(newsession)
+i=1
+while [ $i -le 6 ]; do
+  uturn "$S" "2026-01-01T00:0${i}:00Z" "turn $i"
+  spend "$S" "2026-01-01T00:0${i}:30Z" "s$i" 1000
+  i=$((i+1))
+done
+uturn "$S" 2026-01-01T00:07:00Z "plan some work"
+spend "$S" 2026-01-01T00:07:10Z p1 1000
+tool "$S" 2026-01-01T00:07:20Z Bash '{"command":"gh issue create --title planned"}' zz
+check "a ticket filed in a normal turn is not" "$(sig "$(S_ "$S")" deferral-candidate)" "0"
+
 printf '\n== fingerprints are stable and discriminating ==\n'
 S=$(newsession)
 tool "$S" 2026-01-01T00:00:10Z Bash '{"command":"git status"}' a
