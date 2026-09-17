@@ -67,10 +67,40 @@ Prefer to do it by hand? Copy `templates/project/` into the repo root, replace `
 | Check the profile is still sound | `/harness:ai-audit project` — placeholders, dead commands, registry, gitignore |
 | Turn repeated corrections into rules | `/harness:improve` — when ≥3 unescalated entries have piled up |
 | Audit the instruction files themselves | `/harness:ai-audit` |
+| See where a session's tokens went | `scripts/trace-tokens.sh <session.jsonl>` — per-turn and per-skill spend |
 
 What accumulates in the repo as you work: specs and designs in `ai-docs/plans/` (moved to `done/` on
 completion), and corrections in `ai-docs/learnings/<user>-<branch>.md`. **The learning log is per project
 and committed with the code** — lessons from one repo never leak into another.
+
+### Where the tokens went
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/trace-tokens.sh "$(ls -t ~/.claude/projects/*/*.jsonl | head -1)" --top 10
+```
+
+Reads a session transcript and reports spend per turn and per skill. **Three numbers, never one:**
+`fresh` (input + output) is what the work cost; `cache_read` is context re-read volume, which is a
+*loop* signal rather than a cost signal — on a real session it ran 150M against 580k fresh, so
+summing them into a single "tokens" figure buries everything actionable; `cache_creation` is what was
+paid to fill the cache.
+
+Two things it does that reading the transcript naively does not. It **deduplicates by `message.id`** —
+one API message is written as several JSONL lines, one per content block, and every line repeats the
+full usage object (measured: 1,021 lines for 558 messages, a ~45% overcount). And it reads
+**`<session-id>/subagents/*.jsonl`**, which is where subagent spend actually lives; the session file
+itself is 100% `isSidechain: false`, so a tracer that reads only it reports subagent cost as zero —
+making a turn that spawned five agents look cheap exactly when it was expensive.
+
+The unit is a **turn**, not an inferred "workflow stage". Both stage models were tried against a real
+session and both failed: ending a skill's span at the next human turn dumped 95% of spend into
+"(no skill)", because the user answering `/task`'s own questions ended the stage; ending it at the next
+skill invocation instead let one skill absorb 392 messages of unrelated later work. A turn boundary is
+the one thing here that is not a guess. Skill labels come from the runtime's own attribution, which is
+exact but sparse, so the untagged remainder of the *same turn* is reported separately as `carried` —
+an inference is never printed as a measurement.
+
+It emits counts, skill names, timestamps and agent ids only — never transcript content.
 
 ## Update
 
@@ -201,7 +231,7 @@ intuitive:
 
 | # | Issue | Why it comes when it does |
 |---|---|---|
-| 1 | [`GH-13`](../../issues/13) — trace token spend per workflow stage | Smallest, purely mechanical, and the data already sits in the session transcript. Produces the cost signal the inspector needs. |
+| 1 | [`GH-13`](../../issues/13) — trace token spend per workflow stage | **Shipped** as `scripts/trace-tokens.sh`. Produces the cost signal the inspector needs. |
 | 2 | [`GH-14`](../../issues/14) — inspector subagent for workflow loops | Reads a finished session and reports where the *harness* misbehaved: loops, skipped gates, caps burned without converging. Structural signatures work standalone; the usage-delta ones need `GH-13`. |
 | 3 | [`GH-15`](../../issues/15) — vector/RAG index over code | **Filed with a recommendation against building it as stated**, and a smaller reframe that keeps the value. Deliberately last: `GH-14`'s job is spotting where search actually wasted turns, which turns this from an intuition into a measurement. |
 
