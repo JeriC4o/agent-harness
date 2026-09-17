@@ -68,6 +68,7 @@ Prefer to do it by hand? Copy `templates/project/` into the repo root, replace `
 | Turn repeated corrections into rules | `/harness:improve` — when ≥3 unescalated entries have piled up |
 | Audit the instruction files themselves | `/harness:ai-audit` |
 | See where a session's tokens went | `scripts/trace-tokens.sh <session.jsonl>` — per-turn and per-skill spend |
+| Find out why a run went in circles | `/harness:inspect` — loops, gates re-run with nothing changed, review rounds that burned their cap |
 
 What accumulates in the repo as you work: specs and designs in `ai-docs/plans/` (moved to `done/` on
 completion), and corrections in `ai-docs/learnings/<user>-<branch>.md`. **The learning log is per project
@@ -102,6 +103,33 @@ an inference is never printed as a measurement.
 
 It emits counts, skill names, timestamps and agent ids only — never transcript content.
 
+### Why a run went in circles
+
+```bash
+/harness:inspect            # or: /harness:inspect <session.jsonl>
+```
+
+Reads a finished session and reports where the **harness** misbehaved — as opposed to `/harness:ai-audit`,
+which reads what the instructions *say*, and `self-review`, which reads a diff. A rule can be perfectly
+written, perfectly propagated, and still send the agent round in circles; that defect is invisible to both
+and visible here.
+
+`scripts/session-events.sh` reduces the transcript to an event stream — tool name, one-way argument
+fingerprint, turn, skill, error flag — and the `inspector` agent judges a few hundred lines instead of
+thousands. It never sees the transcript itself.
+
+**Loop-shaped is not loop.** Every repetition signature carries a *time* qualifier (the repeats fall inside
+one window) and a *state* qualifier (no `Edit`/`Write` in between — re-running a gate after changing a file
+is the workflow working). Thresholds were calibrated against real sessions rather than guessed: the depth
+factor defaults to 5× the median turn because 3× flagged one turn in five, which is a list nobody reads.
+
+Two things it will tell you that a quieter tool would not. **A signature that could not run says so** — the
+`current_step` checks need progress-file writes, and a session without them reports `unavailable`, never a
+silent zero, because a silent zero is indistinguishable from clean. And **the inspector proposes, it never
+edits**: findings become Learning Log entries with `Escalated? no`, and escalation stays with
+`/harness:improve` across accumulated evidence. Fixing the rule in the same breath as judging it is grading
+your own work.
+
 ## Update
 
 ```bash
@@ -132,8 +160,8 @@ current project — **per-project learning is a property of the addressing, not 
 .claude-plugin/
   plugin.json              manifest
   marketplace.json         this repo as its own marketplace
-skills/<name>/SKILL.md     the 8 workflows below
-agents/<name>.md           the 7 subagents
+skills/<name>/SKILL.md     the 9 workflows below
+agents/<name>.md           the 8 subagents
 rules/ast-index.md         code-search hierarchy, inherited verbatim by subagents
 hooks/hooks.json           the 12 hooks (hooks/lib/ holds the shared guard)
 scripts/                   utility scripts shared by more than one skill
@@ -232,7 +260,7 @@ intuitive:
 | # | Issue | Why it comes when it does |
 |---|---|---|
 | 1 | [`GH-13`](../../issues/13) — trace token spend per workflow stage | **Shipped** as `scripts/trace-tokens.sh`. Produces the cost signal the inspector needs. |
-| 2 | [`GH-14`](../../issues/14) — inspector subagent for workflow loops | Reads a finished session and reports where the *harness* misbehaved: loops, skipped gates, caps burned without converging. Structural signatures work standalone; the usage-delta ones need `GH-13`. |
+| 2 | [`GH-14`](../../issues/14) — inspector subagent for workflow loops | **Shipped** as `/harness:inspect` (`scripts/session-events.sh` + the `inspector` agent). Reports where the *harness* misbehaved: loops, gates re-run with nothing changed, caps burned without converging. |
 | 3 | [`GH-15`](../../issues/15) — vector/RAG index over code | **Filed with a recommendation against building it as stated**, and a smaller reframe that keeps the value. Deliberately last: `GH-14`'s job is spotting where search actually wasted turns, which turns this from an intuition into a measurement. |
 
 Validation work, waiting on real use rather than on code:

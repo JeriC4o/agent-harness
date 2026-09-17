@@ -75,10 +75,10 @@ has "installed version matches the manifest" "$out" "$VERSION"
 printf '\n== every component is present, not just the plugin ==\n'
 det=$(claude plugin details "$NAME" 2>&1)
 has "reports the manifest version" "$det" "$VERSION"
-for comp in task bugfix interview context-reset project-review pr-merged improve improve-global ai-audit harness-init; do
+for comp in task bugfix interview context-reset project-review pr-merged improve improve-global ai-audit harness-init inspect; do
   case "$det" in *"$comp"*) ok "skill: $comp" ;; *) bad "skill: $comp missing from the inventory" ;; esac
 done
-for comp in spec-writer design design-review self-review review-findings self-improve learnings-escalation-audit; do
+for comp in spec-writer design design-review self-review review-findings self-improve learnings-escalation-audit inspector; do
   case "$det" in *"$comp"*) ok "agent: $comp" ;; *) bad "agent: $comp missing from the inventory" ;; esac
 done
 # Hooks are the component that silently vanished in the bug this gate exists for.
