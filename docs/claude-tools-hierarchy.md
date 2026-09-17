@@ -61,6 +61,7 @@ Kept here so the audit can compare both sides without grepping the whole tree on
 - `self-improve`
 - `learnings-escalation-audit`
 - `review-findings`
+- `inspector` (judges a reduced session event stream for harness defects)
 
 ### Project-defined Skills
 
@@ -74,6 +75,7 @@ Kept here so the audit can compare both sides without grepping the whole tree on
 - `project-review`
 - `harness-init` (scaffolds the project profile + registers the project)
 - `improve-global` (cross-project sweep over promotion candidates)
+- `inspect` (session analysis for workflow loops)
 
 ### Project-defined Hooks
 
