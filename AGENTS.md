@@ -29,7 +29,8 @@ instruction files:
 3. No `${CLAUDE_PLUGIN_ROOT}` path points at a file that does not exist in this repo.
 4. `bash -n` on every `*.sh`, and every test suite green:
    `scripts/test-plugin-manifest.sh`, `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`,
-   `hooks/lib/test-harness-managed.sh`, `skills/harness-init/scripts/test-scaffold.sh`.
+   `scripts/test-trace-tokens.sh`, `hooks/lib/test-harness-managed.sh`,
+   `skills/harness-init/scripts/test-scaffold.sh`.
 
 **Delivery gates** — the checks above validate this repository's CONTENTS; these two validate that the
 contents reach a consumer. Both exist because a bug got past all four structural checks:
