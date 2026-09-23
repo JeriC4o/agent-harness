@@ -30,7 +30,7 @@ instruction files:
 4. `bash -n` on every `*.sh`, and every test suite green:
    `scripts/test-plugin-manifest.sh`, `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`,
    `scripts/test-trace-tokens.sh`, `scripts/test-session-events.sh`,
-   `scripts/test-backlog-metrics.sh`,
+   `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`,
    `hooks/lib/test-harness-managed.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`.
 
