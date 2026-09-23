@@ -284,8 +284,21 @@ staging. Catches the common mistake where a moved file's `../foo` link no longer
 
 ## Spec-Amendment group
 
-When a fix diff touches `ai-docs/plans/*.spec.md` or `ai-docs/plans/done/*.spec.md`, that is a Spec
-Amendment trigger — NOT an ordinary code-fix.
+The trigger has **two independent arms**, and the second is the one that is easy to leave out:
+
+- **Arm A — subject.** The finding asserts that something a `*.spec.md` / `*.design.md` states is false,
+  stale, or unsupported. Test: *would closing this finding leave a sentence in the artefact untrue?*
+  Fires **regardless of where the fix lands**.
+- **Arm B — target.** The fix diff touches `ai-docs/plans/**/*.{spec,design}.md`.
+
+Either arm is a Spec/Design Amendment trigger — NOT an ordinary code-fix.
+
+**Arm B alone is not enough, and the gap is structural.** A diff-keyed rule hands the routing decision to
+the same party that then marks the finding `✅ Fixed`. Where a finding admits two valid remedies — ship
+the thing the artefact promised, or correct the artefact — choosing the code side routes to the ordinary
+path *correctly by the table*. The table is satisfied, not violated, and the artefact sentence stays
+false. So Arm A carries a closing gate: a finding that fired it may not be closed until the cited
+sentence is re-read in its file and either confirmed true of the post-fix state or amended.
 
 | Fires in skill | At step |
 |---|---|

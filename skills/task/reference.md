@@ -164,9 +164,9 @@ When the test gate returns FAILED, identify the specific failing test and reprod
 
 ## Step 11 — review-fix narrative (detail)
 
-For each `⬜ Open` finding in the latest `## Self-Review (Round N)` section:
+For each `⬜ Open` finding in the latest `## Self-Review (Round N)` section — **classify before choosing a remedy**, per the Step 11 AXIOM in `SKILL.md`. The first question is not "how do I fix this" but *"would closing this leave a sentence in the spec or design untrue?"*; if yes, it is an amendment however the fix lands.
 
-- **Fix it** → mark `✅ Fixed`, implement the change.
+- **Fix it** → mark `✅ Fixed`, implement the change. **If the finding quoted a spec/design sentence, re-read that sentence in its file first** and either confirm it true of the post-fix state or amend it — shipping what a sentence promised makes the sentence true only if the shipped thing does what it says.
 - **Requires a design change** → trigger the **Design Amendment** recipe (user approval required); on return mark `✅ Fixed (design amended)`.
 - **Requires a spec change** → trigger the **Spec Amendment** recipe; on return mark `✅ Fixed (spec amended)`.
 - **Object to it** (finding is wrong or intentionally out of scope):

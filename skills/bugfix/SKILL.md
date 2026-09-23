@@ -134,7 +134,7 @@ Now open Edit.
 
 **Write progress:** rewrite `**current_step:**` to `Step 5: Fix`; append a bullet recording file(s) and lines touched.
 
-> **Spec Amendment trigger.** If the fix diff touches a `*.spec.md` or `*.design.md` under `ai-docs/plans/`, STOP — that is a Spec/Design Amendment, not an ordinary fix. Route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume here.
+> **Spec Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue? **(B)** Does the fix diff touch one under `ai-docs/plans/`? Either is a Spec/Design Amendment, not an ordinary fix — A fires even when the fix lands entirely in code, and a finding that fired A is not closed until the cited sentence is re-read and either confirmed or amended. STOP and route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume here. Full rationale: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group).
 
 ---
 

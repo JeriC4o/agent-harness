@@ -76,7 +76,7 @@ After every 3 fixes (or when all findings in a subtask are resolved):
 4. Update `## Files touched` and mark subtask `[x]` in progress file.
 5. **Write progress:** rewrite `**current_step:**` to `Phase 2 — fix loop (after N fixes)`; rewrite `**last_passed_gate:**` to `%TEST_CMD% <module-path> | <UTC timestamp> | <git rev-parse HEAD>`.
 
-> **Spec/Design Amendment trigger.** If a fix diff touches a `*.spec.md` or `*.design.md` under `ai-docs/plans/` (including `done/`), STOP — that is an amendment, not an ordinary fix. Route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume the fix loop ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group)).
+> **Spec/Design Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue? It fires even when the fix lands entirely in code, and the finding is not closed until that sentence is re-read and either confirmed or amended. **(B)** The fix diff touches one under `ai-docs/plans/` (including `done/`). Either is an amendment, not an ordinary fix — STOP. Route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume the fix loop ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group)).
 
 **Context handoff rule:** if finding count ≥ 10 and >half remain open, spawn a Subagent per subtask rather than working inline — pass the progress file path.
 
