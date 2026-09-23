@@ -127,8 +127,9 @@ section carries the "is that green real?" detail.
 
 ## Relaying a subagent's conclusion
 
-Linked from `AGENTS.md § Tooling`. Governs what the orchestrator says to the **user** about work a Subagent
-returned.
+Linked from [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling`](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#tooling)
+— the METHOD file, not the project's `AGENTS.md`, which has no such section. Governs what the orchestrator
+says to the **user** about work a Subagent returned.
 
 > **A subagent's HEADLINE conclusion earns LESS trust than its incidental facts, not more** — it is the
 > part most shaped by wanting a result. The signal to watch for is a conclusion that arrives pre-labelled
@@ -137,6 +138,15 @@ returned.
 > or (b) relay it explicitly as unverified: *"the subagent concludes X; the reviewer is checking whether Y
 > breaks it."* Appending "a reviewer is verifying" to a confidently-stated claim does NOT make it
 > provisional in the reader's mind.
+>
+> **CARVE-OUT — counts, sizes, ids and revisions are outside this ranking entirely; re-derive them wherever
+> they appear.** [§ Tooling](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#tooling) puts them in a class of their own, and without this clause the
+> ranking above actively argues the wrong way: a number dropped in passing is *incidental*, therefore on
+> the trusted side. The shape that gets through is exactly that — a subagent mentions "11 containers, one
+> per test" as an aside rather than as its finding, so it reads as the part the ranking says to trust. The
+> real figure was 12, and 15 after later work; it reached the user as fact. **Both worked examples in this
+> section are inferences** — a coverage claim, a mutation claim — so a bare integer does not resemble the
+> thing being warned about, which is why it slips past a reader who has understood the section correctly.
 >
 > **A correct `file:line` citation certifies the QUOTE, not the INFERENCE drawn from it.** The project's
 > anchor discipline catches fabricated references; by construction it cannot catch sound-looking reasoning
