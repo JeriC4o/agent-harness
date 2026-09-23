@@ -26,6 +26,7 @@ Read up front:
 |---|---|---|
 | `no` | Not yet acted on. | Nothing — flag if same mistake repeats ≥2 times unescalated. |
 | `AGENTS.md` | Rule lives in `AGENTS.md`. | Find a section/sentence addressing the mistake. |
+| `agents-method` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` — the METHOD half: § Tooling, the Learning Log contract, every workflow AXIOM. | File exists; rule is there. |
 | `skill:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md`. | File exists; rule is there. |
 | `agent:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/agents/<name>.md`. | File exists; rule is there. |
 | `rules:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/rules/<name>.md`. | File exists; rule is there. |
@@ -82,6 +83,7 @@ For each entry where `Escalated?` is **not** `no`:
   - **`skill:<name>`** — verify `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md` exists, then `grep -rn "<keyword>" ${CLAUDE_PLUGIN_ROOT}/skills/<name>/` across the skill's WHOLE directory, not `SKILL.md` alone: skills routinely extract detail bodies into a sibling `reference.md`, and a rule that lives there is still escalated to that skill. `SKILL.md` missing → blocker. Keyword absent from the whole directory → mismatch.
   - **`agent:<name>`** — `grep -n "<keyword>" ${CLAUDE_PLUGIN_ROOT}/agents/<name>.md`.
   - **`rules:<name>`** — `grep -n "<keyword>" ${CLAUDE_PLUGIN_ROOT}/rules/<name>.md`.
+  - **`agents-method`** — grep `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md`.
   - **`hook`** — read `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`, scan `hooks.*[].hooks[].command` for the keyword.
   - **`settings`** — scan `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` `permissions.allow`, `permissions.deny`, `env`.
   - **`templates:[name]`** — grep `ai-docs/templates/<name>.md`.

@@ -141,7 +141,7 @@ See [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`](${CLAUDE_PLUGIN_ROOT}/docs/code
 > | `AGENTS.md § Learning Log` (Boundary rules, entry format, `Kind:`, `Escalated?` semantics) | `${CLAUDE_PLUGIN_ROOT}/agents/self-improve.md` AND `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` AND `${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md` AND `ai-docs/learnings/README.md` (Learning-Log group) |
 > | `${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` (design-phase / handoff contract) | `${CLAUDE_PLUGIN_ROOT}/agents/design.md` AND `${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` AND `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md` (Task/Design group) |
 > | `${CLAUDE_PLUGIN_ROOT}/agents/design.md` OR `${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` OR `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md` | See *Task/Design group* anchor row above. |
-> | `${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` *Spec Amendment recipe* / *Design Amendment recipe* | `${CLAUDE_PLUGIN_ROOT}/skills/bugfix/SKILL.md` AND `${CLAUDE_PLUGIN_ROOT}/skills/project-review/SKILL.md` AND `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` AND `ai-docs/workflow.md § Spec-Amendment group` (Spec-Amendment group) |
+> | `${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` *Spec Amendment recipe* / *Design Amendment recipe* | `${CLAUDE_PLUGIN_ROOT}/skills/bugfix/SKILL.md` AND `${CLAUDE_PLUGIN_ROOT}/skills/project-review/SKILL.md` AND `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` AND [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Spec-Amendment group`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group) (Spec-Amendment group) |
 > | `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` (new `## Patterns` entry) | Add a `Kind: validation` entry to `ai-docs/learnings/<username>-<branch>.md` (Checklist N coherence) |
 > | `${CLAUDE_PLUGIN_ROOT}/docs/skill-size-exemptions.md` | `${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/SKILL.md` Checklist K (cited line counts must match) |
 > | `${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/SKILL.md` ↔ `${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/reference.md` | Keep the Step 2.3 letter table, the reference.md checklist detail bodies (incl. Checklist M sub-checks), and the `**Reference:**` footer letter range in sync (ai-audit group). |
@@ -227,7 +227,7 @@ On **ANY** instruction violation, write a new entry to `ai-docs/learnings/<usern
 **What happened:** [quote or paraphrase]
 **Rule:** [what to do instead, or what to keep doing]
 **Kind:** correction | validation    (optional; defaults to `correction` when omitted)
-**Escalated?** no | AGENTS.md | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy (comma-separate multiple)
+**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy (comma-separate multiple)
 **Superseded by:** [ref] — [one-line reason]    (optional; omitted when not applicable)
 ```
 

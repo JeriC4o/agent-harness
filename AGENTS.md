@@ -25,12 +25,17 @@ This repo ships instruction files and shell scripts; it has no compiler.
 instruction files:
 
 1. `jq -e . hooks/hooks.json .claude-plugin/plugin.json .claude-plugin/marketplace.json` — manifests parse.
-2. Every markdown relative link resolves, and every `#anchor` exists in its target.
-3. No `${CLAUDE_PLUGIN_ROOT}` path points at a file that does not exist in this repo.
+2. `bash scripts/check-references.sh` — markdown links and `#anchor`s resolve; every
+   `${CLAUDE_PLUGIN_ROOT}` path exists here; and every bare `ai-docs/…` in a method file names a
+   **documented** project-data root rather than a method file written in project spelling. That last
+   class is why the script exists: the Propagation Rule's Spec-Amendment sync group pointed its final
+   member at `ai-docs/workflow.md`, so that member was never once updated by a sweep, and neither
+   hand-run check above could see it.
+3. (folded into 2)
 4. `bash -n` on every `*.sh`, and every test suite green:
    `scripts/test-plugin-manifest.sh`, `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`,
    `scripts/test-trace-tokens.sh`, `scripts/test-session-events.sh`,
-   `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`,
+   `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
    `hooks/lib/test-harness-managed.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`.
 

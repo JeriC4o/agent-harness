@@ -11,7 +11,7 @@ Companion to `AGENTS.md § Learning Log`. Reference, not narrative.
 **What happened:** ...
 **Rule:** ...
 **Kind:** correction | validation              # optional; default `correction`
-**Escalated?** no | AGENTS.md | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy
+**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy
 **Superseded by:** [ref] — [reason]            # optional; omit when not applicable
 ```
 
@@ -30,6 +30,7 @@ Cross-shape (carrot verb on a stick rule, or vice versa) is FORBIDDEN — `/ai-a
 |---|---|---|
 | `no` | Not yet acted on (no project-level rule). | Nothing — but flag if same mistake repeats ≥2 times. |
 | `AGENTS.md` | Rule lives in `AGENTS.md`. | grep for distinctive keyword from `Rule:`. |
+| `agents-method` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` — the METHOD half: § Tooling, the Learning Log contract, every workflow AXIOM. | grep finds rule. |
 | `skill:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/skills/<name>/SKILL.md`. | File exists; grep finds rule. |
 | `agent:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/agents/<name>.md`. | File exists; grep finds rule. |
 | `rules:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/rules/<name>.md`. | File exists; grep finds rule. |

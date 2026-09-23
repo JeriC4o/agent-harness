@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+#
+# Tests for check-references.sh.
+#
+# Run: bash scripts/test-check-references.sh
+#
+# The suite runs the checker against a synthetic tree in which every finding
+# class is planted deliberately, then against this repository, where it must be
+# silent. A checker is a claim-producing instrument: its first output is a
+# statement about the repo that someone will act on, so each class needs an
+# input whose correct answer is known independently.
+
+set -uo pipefail
+HERE=$(cd -- "$(dirname -- "$0")" && pwd)
+CHECK="${HERE}/check-references.sh"
+ROOT=$(cd -- "${HERE}/.." && pwd)
+
+PASS=0; FAIL=0
+ok()  { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
+bad() { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }
+has() { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 -- expected [$3]" ;; esac; }
+hasnt(){ case "$2" in *"$3"*) bad "$1 -- unexpected [$3]" ;; *) ok "$1" ;; esac; }
+check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want [$3], got [$2])"; fi; }
+
+T=$(mktemp -d); trap 'rm -rf "$T"' EXIT INT TERM
+mkdir -p "$T/docs" "$T/skills/demo" "$T/agents" "$T/ai-docs/learnings"
+
+cat > "$T/docs/real.md" <<'EOF'
+# Real Target
+
+## Build & Test
+
+Content.
+
+## Fold contract — owned by `/improve`
+
+More.
+EOF
+
+# Assembled, never written literally: a bare ${CLAUDE_PLUGIN_ROOT}/... in this
+# file would be scanned as a real reference and reported as broken -- the suite
+# would flag its own fixtures. The closing brace before the quote keeps this
+# assignment itself off the scanner's regex, which requires a following slash.
+PR='${CLAUDE_PLUGIN_ROOT}'
+cat > "$T/docs/subject.md" <<EOF
+# Subject
+
+Good relative link: [real](real.md)
+Good anchor, ampersand collapses to two hyphens: [bt](real.md#build--test)
+Good anchor, em dash: [fold](real.md#fold-contract--owned-by-improve)
+Dead link: [nope](does-not-exist.md)
+Dead anchor: [bad](real.md#no-such-heading)
+Issue link, GitHub repo-relative, must be ignored: [i12](../../issues/12)
+Good plugin path: $PR/docs/real.md
+Dead plugin path: $PR/docs/ghost.md
+External, must be ignored: [claude](https://code.claude.com/docs/en/skills)
+Fragment-only, must be ignored: [top](#subject)
+EOF
+
+cat > "$T/agents/paths.md" <<'EOF'
+# Paths
+
+Documented project data, fine: `ai-docs/context.md`, `ai-docs/learnings.md`,
+`ai-docs/plans/done/`, `ai-docs/bugfix/trace-2026-01-01-x.md`.
+Templated, must be skipped: `ai-docs/plans/YYYY-MM-DD-name.spec.md`,
+`ai-docs/learnings/<username>-<branch>.md`, `ai-docs/plans/*.progress.md`.
+Undocumented root, a method file writing project-data spelling: `ai-docs/workflow.md`
+EOF
+
+# A profile file is NOT method: its ai-docs spellings are its own business.
+printf '# Log\n\nSee `ai-docs/whatever-i-like.md`.\n' > "$T/ai-docs/learnings/alice-x.md"
+
+out=$(bash "$CHECK" --root "$T" 2>&1); rc=$?
+
+printf '\n== each planted defect is found ==\n'
+has "dead relative link"                 "$out" "does-not-exist.md"
+has "dead anchor"                        "$out" "no-such-heading"
+has "dead \${CLAUDE_PLUGIN_ROOT} path"    "$out" "ghost.md"
+has "undocumented ai-docs root"          "$out" "ai-docs/workflow.md"
+
+printf '\n== and nothing else is ==\n'
+hasnt "a resolving relative link"        "$out" "real.md#build--test"
+hasnt "an external URL"                  "$out" "code.claude.com"
+hasnt "a fragment-only link"             "$out" "#subject"
+hasnt "a GitHub issue link"              "$out" "issues/12"
+hasnt "a templated project path"         "$out" "YYYY-MM-DD-name"
+hasnt "  a placeholder-bracketed path"   "$out" "<username>"
+hasnt "  a globbed path"                 "$out" "plans/*.progress.md"
+hasnt "documented project data"          "$out" "ai-docs/context.md"
+hasnt "a PROFILE file's ai-docs spelling" "$out" "whatever-i-like"
+check "findings -> rc 1" "$rc" "1"
+
+printf '\n== anchor slugs follow the real rule, not a guessed one ==\n'
+# "Build & Test" -> build--test: punctuation is dropped and each REMAINING
+# space becomes one hyphen; runs are NOT collapsed. Guessing the other way
+# reported 20 false dead anchors on this repo once.
+hasnt "ampersand heading resolves"       "$out" "real.md#build--test"
+hasnt "em-dash heading resolves"         "$out" "fold-contract--owned-by-improve"
+
+printf '\n== the documented-roots list is checked against its source of truth ==\n'
+# The allowed ai-docs roots mirror docs/agents-method.md section Agent Docs.
+# Hardcoding them is fine; letting them drift from the table is not.
+drift=$(bash "$CHECK" --root "$ROOT" --audit-roots 2>&1); rc2=$?
+check "every hardcoded root appears in the Agent Docs table" "$rc2" "0"
+[ "$rc2" = "0" ] || printf '%s\n' "$drift"
+
+printf '\n== this repository is clean ==\n'
+out=$(bash "$CHECK" 2>&1); rc=$?
+check "repo -> rc 0" "$rc" "0"
+[ "$rc" = "0" ] || printf '%s\n' "$out"
+
+printf '\n== usage ==\n'
+bash "$CHECK" --root /nonexistent >/dev/null 2>&1; check "missing root -> 2" "$?" "2"
+
+printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
+[ "$FAIL" -eq 0 ]

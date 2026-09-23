@@ -83,6 +83,7 @@ make_fixture() { # -> path to the working copy
   printf -- '---\nid: candidate-marker\n---\n\n**Rule:** A gate that cannot fail is not a gate.\n' \
                                                                    > "$up/ai-docs/learnings/.promote/candidate-marker.md"
   printf 'denyextra-marker\n'                                      > "$up/ai-docs/learnings/.promote/deny-extra.txt"
+  printf 'looseplain-marker\n'                                     > "$up/ai-docs/learnings/notes.txt"
   printf '### 2026-02-01 — process — merged-a-marker'              > "$up/ai-docs/learnings/alice-merged-a.md"
   printf '### 2026-02-02 — process — merged-b-marker\n'            > "$up/ai-docs/learnings/alice-merged-b.md"
   printf '### 2026-02-03 — process — open-marker\n'                > "$up/ai-docs/learnings/alice-open.md"
@@ -154,6 +155,25 @@ exists "  .promote/README.md survives"        "$W/ai-docs/learnings/.promote/REA
 exists "  deny-extra.txt survives"            "$W/ai-docs/learnings/.promote/deny-extra.txt"
 tracked=$(git -C "$W" ls-files ai-docs/learnings/.promote | wc -l | tr -d ' ')
 check  "all three stay tracked (not git rm-ed)" "$tracked" "3"
+
+# ================================================ the extension guard (G3) ====
+# G1a covers everything NESTED. A non-entry file placed DIRECTLY in the
+# directory is a different hole: it is not nested, it is byte-identical to
+# origin/main, and the archive has no idea what to do with its contents.
+printf '\n== a non-entry file in the directory itself is not folded ==\n'
+hasnt  "a .txt beside the entries is not folded" "$A" "looseplain-marker"
+exists "  its file survives"                     "$W/ai-docs/learnings/notes.txt"
+
+printf '\n== POSITIVE CONTROL: delete the extension guard, the .txt is folded ==\n'
+# Both arms carry the marker, so stripping removes the whole `*.md` / `*`
+# discrimination and lets a non-entry file through -- rather than removing only
+# the accept arm, which would make the catch-all swallow EVERYTHING and prove
+# something else entirely.
+strip '# G3' g3; V="$STRIPPED"
+W6=$(make_fixture)
+run_fold "$W6" "$STUB_OK" "$V"
+has  "without it, the .txt lands in the archive" "$W6/ai-docs/learnings.md" "looseplain-marker"
+gone "without it, the .txt file is deleted"      "$W6/ai-docs/learnings/notes.txt"
 
 printf '\n== POSITIVE CONTROL: delete the nesting guard, the loss returns ==\n'
 strip 'ai-docs/learnings/\*/\*' nested; V="$STRIPPED"
