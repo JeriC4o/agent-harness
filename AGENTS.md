@@ -26,8 +26,9 @@ instruction files:
 
 1. `jq -e . hooks/hooks.json .claude-plugin/plugin.json .claude-plugin/marketplace.json` — manifests parse.
 2. `bash scripts/check-references.sh` — markdown links and `#anchor`s resolve; every
-   `${CLAUDE_PLUGIN_ROOT}` path exists here; and every bare `ai-docs/…` in a method file names a
-   **documented** project-data root rather than a method file written in project spelling. That last
+   `${CLAUDE_PLUGIN_ROOT}` path exists here; every bare `ai-docs/…` in a method file names a
+   **documented** project-data root rather than a method file written in project spelling; and every
+   `AGENTS.md § …` reference names a section a consuming project's `AGENTS.md` actually has. That last
    class is why the script exists: the Propagation Rule's Spec-Amendment sync group pointed its final
    member at `ai-docs/workflow.md`, so that member was never once updated by a sweep, and neither
    hand-run check above could see it.

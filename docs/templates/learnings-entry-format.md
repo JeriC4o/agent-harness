@@ -2,7 +2,7 @@
 
 Read THIS for the Learning Log entry format — do **not** re-read the log just to recall the shape. Reserve reading the log for its CONTENT (recurrence / escalation audit, dedup check, prior entries), and read it as the union: `ai-docs/learnings.md` **plus** every `ai-docs/learnings/*.md` are one single history.
 
-The authoritative rules live in **AGENTS.md § Learning Log**; field semantics in **`${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md`**. This file is the quick-reference template only.
+The authoritative rules live in **${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log**; field semantics in **`${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md`**. This file is the quick-reference template only.
 
 ## Target file
 
@@ -50,7 +50,7 @@ independently and then joined.
 - `Kind: validation` = a working protocol/pattern to KEEP doing (carrot). `Kind: correction` (or omitted) = a violation to STOP doing (stick). **`Kind:` is a CLOSED enum — those two values or omitted, nothing else.** An invented third value (`confirmed-approach`, `insight`, `note`) does not fail loudly: the Correction pass matches `correction`, the Carrot pass matches `validation`, so an off-schema entry falls through BOTH and becomes invisible to `/improve` — the one thing the log exists to feed. It also cannot be repaired in place (Hard rule 1), so the only remedy is appending a correcting entry.
 - Convert relative dates to absolute (`YYYY-MM-DD`).
 
-## Hard rules (see AGENTS.md § Learning Log for the full text)
+## Hard rules (see ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log for the full text)
 
 1. **APPEND-ONLY, on both surfaces.** Never edit / rewrite / reorder / summarise / delete an existing entry — in `ai-docs/learnings.md` or in any `ai-docs/learnings/*.md`, committed or not. "I haven't committed it yet" is NOT a licence to repair a bad entry in place; that is the exact moment the temptation peaks (you have just written the defective line), and a wrong `Kind:` in particular can only ever be fixed by appending. A newer correction that supersedes an older one is a NEW entry that says so; leave the old one intact. (Only `Escalated?` / `Superseded by:` may be updated in-place, and only by the `self-improve` / `learnings-escalation-audit` subagents.)
 2. **No same-turn escalation.** Writing a Learning Log entry — to `ai-docs/learnings/<username>-<branch>.md` or to `ai-docs/learnings.md` — MUST NOT also edit `AGENTS.md`, `CLAUDE.md`, `${CLAUDE_PLUGIN_ROOT}/skills/**`, `${CLAUDE_PLUGIN_ROOT}/agents/**`, `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`, `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, or `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md` in the same turn. Set `Escalated? no` and stop. (Exception: in-flow capture during `/task` Steps 8–12 may append a NEW entry alongside an instruction-file edit when it documents an in-task insight, `Escalated? no`.)

@@ -14,6 +14,8 @@
 #   L3  ${CLAUDE_PLUGIN_ROOT}/<path> -- the file exists in this repo
 #   L4  bare `ai-docs/<path>` in a METHOD file -- names a documented project-data
 #       root, not an invented one
+#   L5  `AGENTS.md § <Section>` in a METHOD file -- names a section a consuming
+#       project's AGENTS.md actually has, not one that exists only in the method file
 #
 # WHY L4 EXISTS. A method file addresses project data as `ai-docs/...` and its
 # own siblings as `${CLAUDE_PLUGIN_ROOT}/docs/...`. Writing the first spelling
@@ -27,6 +29,20 @@
 # The question L4 asks instead is whether the path matches a root that section
 # Agent Docs documents as project data. --audit-roots checks that hardcoded list
 # against that table, so the two cannot drift apart silently.
+#
+# WHY L5 EXISTS. Before the profile/method split there was one AGENTS.md. After
+# it, § Tooling, § Learning Log, § Test Conventions, § Workflow, § Propagation
+# Rule and § Agent Docs live ONLY in docs/agents-method.md -- a consumer's
+# AGENTS.md has none of them. References were never updated, so a reader in a
+# consuming project looks in their AGENTS.md and finds nothing. Observed in a
+# live run: two Learning Log entries cited "AGENTS.md § Tooling" against a
+# project whose AGENTS.md has no § Tooling at all.
+#
+# L5 only fires on a name it RECOGNISES as a method section. An unrecognised
+# name is prose ("a Patterns block in any skill / agent / AGENTS.md section"),
+# not a reference -- so a typo'd section name is invisible to this check. That
+# is the deliberate trade: no false positives on English, at the cost of not
+# catching an invented section name.
 #
 # Tests: scripts/test-check-references.sh
 
@@ -60,6 +76,8 @@ ALLOW='ai-docs/templates'
 
 findings=0
 finding() { printf '%s|%s|%s\n' "$1" "$2" "$3"; findings=$((findings+1)); }
+
+TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT INT TERM
 
 md_files() { find "$ROOT" -name '*.md' -not -path '*/.git/*' | sort; }
 
@@ -167,5 +185,48 @@ $(find "${ROOT}/${dir}" -name '*.md' -o -name '*.json' | sort)
 EOF
 done
 
-[ "$findings" -eq 0 ] && printf 'check-references: links, anchors, plugin-root paths and project-data spellings all resolve.\n'
+# ---- L5 ----------------------------------------------------------------------
+PROJ="${ROOT}/templates/project/AGENTS.md"
+METH="${ROOT}/docs/agents-method.md"
+if [ -f "$PROJ" ] && [ -f "$METH" ]; then
+  # Longest first, so "Build & Test table" matches "Build & Test" and not a
+  # shorter heading that happens to share a prefix.
+  awk '/^## /{sub(/^## /,""); print length($0)"\t"$0}' "$PROJ" | sort -rn | cut -f2- > "$TMP/proj.txt"
+  awk '/^## /{sub(/^## /,""); print length($0)"\t"$0}' "$METH" | sort -rn | cut -f2- > "$TMP/meth.txt"
+
+  starts_with_any() { # <ref> <headings-file>
+    while IFS= read -r h; do
+      [ -n "$h" ] || continue
+      case "$1" in "$h"*) return 0 ;; esac
+    done < "$2"
+    return 1
+  }
+
+  for dir in docs skills agents rules hooks; do
+    [ -d "${ROOT}/${dir}" ] || continue
+    while IFS= read -r f; do
+      rel=${f#"$ROOT"/}
+      case "$rel" in docs/agents-method.md) ;; esac
+      while IFS= read -r m; do
+        [ -n "$m" ] || continue
+        ln=${m%%:*}; ref=${m#*:}
+        ref=${ref#AGENTS.md}
+        ref=${ref#"${ref%%[!  ]*}"}
+        ref=${ref#§}; ref=${ref#section}
+        ref=${ref#"${ref%%[!  ]*}"}
+        ref=${ref#\`}
+        [ -n "$ref" ] || continue
+        starts_with_any "$ref" "$TMP/proj.txt" && continue     # a consumer really has it
+        starts_with_any "$ref" "$TMP/meth.txt" || continue     # not a section name at all -- prose
+        finding major L5 "${rel}:${ln}: 'AGENTS.md § ${ref}' names a section only the METHOD file has -- a consumer's AGENTS.md does not"
+      done <<EOF
+$(grep -noE 'AGENTS\.md[ ]*(§|section)[ ]*[^\`)*.,"\\]{1,60}' "$f" || true)
+EOF
+    done <<EOF
+$(find "${ROOT}/${dir}" \( -name '*.md' -o -name '*.json' \) | sort)
+EOF
+  done
+fi
+
+[ "$findings" -eq 0 ] && printf 'check-references: links, anchors, plugin-root paths, project-data spellings and AGENTS.md section references all resolve.\n'
 exit $([ "$findings" -gt 0 ] && echo 1 || echo 0)

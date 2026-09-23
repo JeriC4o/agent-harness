@@ -91,7 +91,7 @@ Find the single point of failure.
 
 **Test must:**
 
-- Follow `AGENTS.md § Test Conventions` and the project's fixture/mocking conventions in `ai-docs/context.md`.
+- Follow `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions` and the project's fixture/mocking conventions in `ai-docs/context.md`.
 - Verify an invariant (comment out the fix → test fails).
 - Be named as a behaviour description: `should return error when input is empty`.
 

@@ -53,10 +53,10 @@ A passing test doesn't mean it's correct. Mentally comment out the production fi
 - **Mutable state captured in a test fixture-factory closure — is it reachable and reset?** The test context is typically cached per class, so DB fixtures and mock auto-reset restore what the framework knows about but never a plain mutable holder captured by a factory (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Test fixture state`). Flag a hand-enumerated reset that omits a mock or key the class actually mutates → `major`; flag a closure-captured holder with no reset at all → `major`. A setup hook named for partial cleanup (`clearInvocationsOnly`) is itself the tell. Green-when-run-alone is not evidence: the shape only fires once a second test uses the same key.
 - Tests verify invariants, not cosmetics?
   - Mental test: comment out the production fix → does the test fail? If not → cosmetic → **REJECT**.
-- Tests follow `AGENTS.md § Test Conventions` and the project's fixture / mocking / assertion conventions (`ai-docs/context.md`), with no domain mocks where a fixture exists?
+- Tests follow `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions` and the project's fixture / mocking / assertion conventions (`ai-docs/context.md`), with no domain mocks where a fixture exists?
 - All mock call args use matchers (`eq()`, `isNull()`, `any()`) — no raw+matcher mix?
 - `.stub { on { } doReturn }` / `onBlocking {}` preferred over `whenever().thenReturn()`?
-- A standalone field-level mock the test never stubs or verifies (its name appears only at its declaration) → `minor`; it belongs in the class-level mock-declaration list (`AGENTS.md § Test Conventions`).
+- A standalone field-level mock the test never stubs or verifies (its name appears only at its declaration) → `minor`; it belongs in the class-level mock-declaration list (`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions`).
 - `assertEquals` / `assertTrue` only at last resort?
 
 ### 4. Safety and correctness
@@ -162,7 +162,7 @@ Append **exactly** this section:
 | 2 | path/Bar.kt:10 | nit | Unused import | ⬜ Open |
 ```
 
-Every `File:line` is **re-derived, never computed** — cite what `grep -n '<the actual token>' <file>` prints against the tree under review, and anchor on the executable statement rather than the doc-comment describing it. Never reach a line number by adding a delta to a pre-edit one (AGENTS.md § Tooling).
+Every `File:line` is **re-derived, never computed** — cite what `grep -n '<the actual token>' <file>` prints against the tree under review, and anchor on the executable statement rather than the doc-comment describing it. Never reach a line number by adding a delta to a pre-edit one (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling).
 
 Severity levels: `blocker` · `major` · `minor` · `nit`
 

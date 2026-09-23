@@ -81,7 +81,7 @@ The subagent will:
 >
 > **Escalation target — read this before proposing any harness edit.** A project-level `/improve` run escalates into the PROJECT profile (`AGENTS.md`, `ai-docs/context.md`, including its § Language profile overrides). Changing a METHOD file — anything under `${CLAUDE_PLUGIN_ROOT}` — changes behaviour for *every* project using the harness, so it is not this command's call to make: record it as a promotion candidate and let the harness repo's own review decide.
 
-Run when **≥3 unescalated correction entries**, **≥2 unescalated validation entries**, or a `🌱 Stale-validation` flag from `/ai-audit` accumulates. Mirror of the threshold line in `AGENTS.md § Learning Log` — keep both in sync per the Propagation Rule.
+Run when **≥3 unescalated correction entries**, **≥2 unescalated validation entries**, or a `🌱 Stale-validation` flag from `/ai-audit` accumulates. Mirror of the threshold line in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log` — keep both in sync per the Propagation Rule.
 
 ## Step 5b: Promotion candidates (optional, asks first)
 

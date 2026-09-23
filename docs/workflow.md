@@ -1,6 +1,6 @@
 # Workflow narrative
 
-Extracted detail referenced from `AGENTS.md § Workflow` AXIOMs.
+Extracted detail referenced from `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Workflow` AXIOMs.
 
 VCS for this harness is **git**; the review surface is a **GitHub PR** driven through `gh`. The default
 branch is called `main` throughout; if the project uses another name (`master`, `develop`), substitute it
@@ -113,7 +113,7 @@ section carries the "is that green real?" detail.
 >
 > **"The tooling is broken" is the most expensive diagnosis available and needs the strongest evidence, not
 > the weakest.** It converts every behavioural AC into "verify in CI", so it is a feasibility claim put to
-> the user for a decision — AGENTS.md § Tooling already requires running the smallest thing that can
+> the user for a decision — ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling already requires running the smallest thing that can
 > falsify such a claim first. Three cheap checks that get skipped: (a) read the tool's own `--help` before
 > concluding it cannot work; (b) an internal-error message is the tool reporting a fault in its OWN
 > plumbing — under-specified, not terminal, and often fixable by a caller-side flag; (c) reproducing the
@@ -123,7 +123,7 @@ section carries the "is that green real?" detail.
 >
 > **Piping the output deletes the evidence.** Skip/selection lines often do not exist in piped or
 > machine-readable modes, so a criterion above has nothing to match and cannot fire. Do not pipe a gate
-> (AGENTS.md § Tooling).
+> (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling).
 
 ## Relaying a subagent's conclusion
 

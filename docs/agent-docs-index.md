@@ -1,6 +1,6 @@
 # Agent docs index — verbose row bodies
 
-Companion to `AGENTS.md § Agent Docs`. The AGENTS.md table lists paths + one-line purposes; this file carries the writer / lifecycle / special-case notes for each row.
+Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That table lists paths + one-line purposes; this file carries the writer / lifecycle / special-case notes for each row.
 
 ## Agent doc rows
 
