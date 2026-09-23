@@ -32,6 +32,10 @@ This `README.md` is also the keeper that guarantees `ai-docs/learnings/*.md` alw
 operand set stays well-defined and no unexpanded-glob warning reaches stderr to be misread as an
 error. Never delete it, and never fold it.
 
+The directory also has **one subdirectory**, `.promote/`, which plays by different rules: it holds
+promotion candidates bound for the cross-project sweep, not log entries, and its contract is its own
+[`.promote/README.md`](.promote/README.md). The fold never enters it — see the foldable set below.
+
 ## Fold contract — owned by `/improve`
 
 The fold runs in the `/improve` **parent**, before the `self-improve` subagent is spawned. It is
@@ -39,13 +43,17 @@ parent-side because of that ordering, not because of any permission carve-out.
 
 **Foldable set**, in order:
 
-1. **Skip self** — the file this run would itself append to (the live append target for the branch in
+1. **Directly in this directory only** — nothing under a subdirectory, at any depth. The iteration set
+   comes from `git ls-tree -r`, which recurses, so this exclusion has to be written; it does not come
+   for free. It is expressed as *nesting*, not as the name `.promote`, so the next subdirectory added
+   here is safe on the day it is created rather than on the day someone remembers to name it.
+2. **Skip self** — the file this run would itself append to (the live append target for the branch in
    progress).
-2. **Default-branch identity** — keep a candidate only if it exists on the default branch (`main`) AND
+3. **Default-branch identity** — keep a candidate only if it exists on the default branch (`main`) AND
    its working-tree bytes are byte-identical to the bytes there. Everything else is skipped: a
    still-open branch that appended more entries locally differs from `main`, so its file is left alone.
    Existence alone is not the test; identity is.
-3. **Keeper** — this `README.md` is never a candidate.
+4. **Keeper** — this `README.md` is never a candidate.
 
 **Append and delete.** Each folded file's bytes are appended **verbatim at EOF** of
 `ai-docs/learnings.md` — no sort-insert, no re-dating, no renumbering, no reformatting — and the
