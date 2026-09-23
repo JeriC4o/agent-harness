@@ -70,6 +70,24 @@ EOF
 # A profile file is NOT method: its ai-docs spellings are its own business.
 printf '# Log\n\nSee `ai-docs/whatever-i-like.md`.\n' > "$T/ai-docs/learnings/alice-x.md"
 
+# L5 needs both heading sets: what a consumer's AGENTS.md really has, and what
+# only the method file has.
+mkdir -p "$T/templates/project"
+printf '# Project\n\n## Build & Test\n\n## Permissions — project specifics\n\n## VCS\n' > "$T/templates/project/AGENTS.md"
+printf '# Method\n\n## Build & Test\n\n## Permissions\n\n## Tooling\n\n## Learning Log\n\n## Workflow\n' > "$T/docs/agents-method.md"
+
+cat > "$T/skills/demo/SKILL.md" <<'EOF'
+# Demo
+
+Method-only section addressed as project: `AGENTS.md § Tooling`.
+Another, with trailing prose: AGENTS.md § Learning Log Boundary rule 1 Exception.
+The "section" spelling, as a hook message would write it: AGENTS.md section Workflow.
+Ambiguous — method has it, the project heading is longer: `AGENTS.md § Permissions`.
+Genuinely project-side, both files have it: `AGENTS.md § Build & Test`.
+  and with trailing words: AGENTS.md § Build & Test table.
+Plain English, not a section reference: a `## Patterns` block in any skill / agent / AGENTS.md section.
+EOF
+
 out=$(bash "$CHECK" --root "$T" 2>&1); rc=$?
 
 printf '\n== each planted defect is found ==\n'
@@ -89,6 +107,14 @@ hasnt "  a globbed path"                 "$out" "plans/*.progress.md"
 hasnt "documented project data"          "$out" "ai-docs/context.md"
 hasnt "a PROFILE file's ai-docs spelling" "$out" "whatever-i-like"
 check "findings -> rc 1" "$rc" "1"
+
+printf '\n== L5: an AGENTS.md section reference names a section a consumer HAS ==\n'
+has  "method-only section flagged"          "$out" "AGENTS.md § Tooling"
+has  "  even with trailing prose"           "$out" "Learning Log"
+has  "  the 'section' spelling too"         "$out" "Workflow"
+has  "ambiguous name flagged"               "$out" "Permissions"
+hasnt "a section BOTH files have"           "$out" "Build & Test"
+hasnt "plain-English 'AGENTS.md section'"   "$out" "any skill / agent"
 
 printf '\n== anchor slugs follow the real rule, not a guessed one ==\n'
 # "Build & Test" -> build--test: punctuation is dropped and each REMAINING

@@ -114,7 +114,7 @@ The orchestrator parses this block. **Malformed YAML triggers a one-shot retry a
 These rules live in AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`. If a draft question would touch them, drop the question and apply the documented answer:
 
 - **Language of new files** — whatever `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Language profile` mandates. Existing files keep their language unless an explicit migration ticket.
-- **Test framework / assertion library / mocking library** — fixed by the project (`AGENTS.md § Test Conventions` + `ai-docs/context.md`). Don't ask which test library.
+- **Test framework / assertion library / mocking library** — fixed by the project (`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions` + `ai-docs/context.md`). Don't ask which test library.
 - **Line length / formatting** — fixed by the formatter config.
 - **Backwards compatibility** — follow the project's stated compat posture; don't re-ask it per task.
 - **Logging** — the project's logger with lazy/structured args.

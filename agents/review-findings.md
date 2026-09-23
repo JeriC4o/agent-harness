@@ -163,7 +163,7 @@ This Subagent writes the initial values at file creation; subsequent updates are
 
 ## Rules
 
-- Every finding has a file and line number — **re-derived, never computed.** Cite what `grep -n '<the actual token>' <file>` prints against the tree you reviewed, and cite the executable statement rather than the doc-comment describing it. Never arrive at a line number by adding a delta to a pre-edit one (AGENTS.md § Tooling).
+- Every finding has a file and line number — **re-derived, never computed.** Cite what `grep -n '<the actual token>' <file>` prints against the tree you reviewed, and cite the executable statement rather than the doc-comment describing it. Never arrive at a line number by adding a delta to a pre-edit one (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling).
 - Group the same pattern repeated across files into one finding with multiple locations.
 - Maximum 25 findings. If more, list the 25 most severe.
 - Cross-reference done plans before raising a finding — if it's documented there, skip.

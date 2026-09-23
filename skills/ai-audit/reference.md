@@ -86,7 +86,7 @@ A skill directory may contain SKILL.md plus supporting files. Audit checks:
 
 ## Checklist L — Learning-Log field coherence
 
-When AGENTS.md § Learning Log's *Entry format* lists a field maintained by `/improve` and `/ai-audit` (currently `Escalated?` and `Superseded by:`), verify each field is covered in **all five** mandatory locations:
+When ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log's *Entry format* lists a field maintained by `/improve` and `/ai-audit` (currently `Escalated?` and `Superseded by:`), verify each field is covered in **all five** mandatory locations:
 
 | Location | Required content |
 |---|---|
@@ -94,7 +94,7 @@ When AGENTS.md § Learning Log's *Entry format* lists a field maintained by `/im
 | AGENTS.md *Boundary rule 2 Exception* | Explicit authorization for the field's edits to coexist with instruction-file edits in the same `/improve` / `/ai-audit` turn |
 | `${CLAUDE_PLUGIN_ROOT}/agents/self-improve.md` Step 5 (Commit B backfill) | Workflow describing when and how `/improve` writes the field |
 | `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` Steps 2/3/4 | Verification recipe + Category-1 drift fixes, applied to whichever union file the entry lives in |
-| `${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md` *Entry template* | Field mirror — AGENTS.md § Learning Log designates this the DEFAULT read for the entry shape, so a field missing here is invisible to every writer |
+| `${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md` *Entry template* | Field mirror — ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log designates this the DEFAULT read for the entry shape, so a field missing here is invisible to every writer |
 
 A field added to the entry format without parallel coverage in all five targets → `major` finding.
 

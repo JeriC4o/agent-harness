@@ -17,7 +17,7 @@ On-demand rules for any code-search action. Subagents inherit the verbatim block
 - `find /`, or `find` / `grep -r` over `$HOME` (`~`). NEVER `run_in_background` a filesystem scan — a backgrounded `find` leaks a long-running process.
 - `grep -r` from the filesystem root or from `$HOME`. For an installed CLI/binary use `type` / `command -v` / `which`, not a tree scan.
 - **Never** search or `Read` under build-output directories (`target/`, `build/`, `dist/`, `node_modules/`, `.gradle/`) — they hold artefacts, never source, and they are on the read blacklist via `.gitignore`.
-- Any repo-wide content search whose file filter can match an **ASK-gated deployed-config file** (`application*.properties` and friends) — that is a gated read (AGENTS.md § Permissions) regardless of the tool. Exclude it or ask first, and **mind the spelling per tool**: plain `grep -r` takes a glob (`--exclude=application*.properties`); ripgrep takes a negated glob (`-g '!application*.properties'`); a tool whose exclude flag takes a **regex** needs `application.*\.properties$` — passing the glob spelling to a regex flag silently misses `application-<profile>.properties`, the file that actually carries the deployed overrides. Drop the filter only when the PATTERN ITSELF cannot occur in a config file — a code symbol, an annotation, a class name. That is a property of the pattern's syntax, decidable before you run anything; it is NOT a guess about what the results will contain. Never reason "this probably won't hit a config file" — you cannot know a gated path is in the result set until it is already in context, at which point the gate has been breached.
+- Any repo-wide content search whose file filter can match an **ASK-gated deployed-config file** (`application*.properties` and friends) — that is a gated read (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Permissions) regardless of the tool. Exclude it or ask first, and **mind the spelling per tool**: plain `grep -r` takes a glob (`--exclude=application*.properties`); ripgrep takes a negated glob (`-g '!application*.properties'`); a tool whose exclude flag takes a **regex** needs `application.*\.properties$` — passing the glob spelling to a regex flag silently misses `application-<profile>.properties`, the file that actually carries the deployed overrides. Drop the filter only when the PATTERN ITSELF cannot occur in a config file — a code symbol, an annotation, a class name. That is a property of the pattern's syntax, decidable before you run anything; it is NOT a guess about what the results will contain. Never reason "this probably won't hit a config file" — you cannot know a gated path is in the result set until it is already in context, at which point the gate has been breached.
 - Reading files > 2000 lines without an offset/limit.
 - **Backticks inside a double-quoted search pattern** — the shell runs them as command substitution before the tool ever sees the pattern. Backticked test names collide with this constantly: use SINGLE quotes for the whole pattern, or drop the backticks from the pattern entirely.
 - **Free-form prose passed to a CLI through single quotes** — an apostrophe CLOSES the string and the shell re-parses the remainder, so the CLI still runs and posts a **truncated** payload with rc=0. Apostrophes, contractions and Markdown backticks all trip it, and the mangled artefact is visible to other people before it is visible to you. Build every prose payload with a quoted heredoc — `VAR=$(cat <<'EOF' … EOF)` — and pass `"$VAR"`. After any write to a shared surface (PR comment, PR description, issue comment), read the artefact back and check its LENGTH and TAIL: the send returns exit 0 with a summary line even when two thirds of the message is missing.
@@ -26,7 +26,7 @@ On-demand rules for any code-search action. Subagents inherit the verbatim block
 
 ## Propagation sweep
 
-The canonical form for an instruction-file propagation sweep (AGENTS.md § Propagation Rule). One command, three requirements:
+The canonical form for an instruction-file propagation sweep (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Propagation Rule). One command, three requirements:
 
 ```bash
 rg -n --hidden -g '!.git' "<changed-keyword>" AGENTS.md CLAUDE.md skills/ agents/ rules/ docs/ ai-docs/
@@ -66,7 +66,7 @@ NEVER `find` / `grep -r` over `/` or `$HOME`. For an installed binary use `type`
 Never `run_in_background` a filesystem scan.
 
 ASK-GATED CONTENT: deployed-config files (`application*.properties` and friends) are ASK-gated
-(AGENTS.md § Permissions). The gate binds on ANY tool that surfaces the file's CONTENTS — a content
+(${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Permissions). The gate binds on ANY tool that surfaces the file's CONTENTS — a content
 search IS a read of it, and an allow-listed search tool will NOT prompt. Constrain the filter so a
 gated path cannot be in the result set, or ask first. For a setting's DEFAULT, read the typed config
 binder class in source — ungated, and the actual default (a deployed file only ever shows an override).

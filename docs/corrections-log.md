@@ -1,6 +1,6 @@
 # Corrections log — field glossary + boundary carve-outs
 
-Companion to `AGENTS.md § Learning Log`. Reference, not narrative.
+Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log`. Reference, not narrative.
 
 > For the entry SHAPE and for the TARGET FILE a new entry goes to, read [`${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md`](templates/learnings-entry-format.md) (§ Target file — `ai-docs/learnings/<username>-<branch>.md`) — not the tail of the log. This file is the field GLOSSARY (semantics); the template is the quick-reference form.
 

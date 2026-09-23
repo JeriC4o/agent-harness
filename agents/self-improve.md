@@ -144,7 +144,7 @@ Number all proposals. Let user choose.
 
    Both edits are made in whichever union file the entry lives in — `ai-docs/learnings.md` or an `ai-docs/learnings/*.md` — and a `Superseded by:` reference may point across that boundary in either direction. Don't touch any other line. Commit message: `chore(learnings): backfill Escalated? / Superseded by: for entries <date1>, <date2>, ...`.
 
-   Authorised by AGENTS.md § Learning Log → Boundary rule 1 → Exception.
+   Authorised by ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log → Boundary rule 1 → Exception.
 
    **In-flow `/task` carve-out:** Boundary Rule 2 allows `/task` Steps 8–12 (and sub-skills `/bugfix`, `/context-reset` invoked from that range) to append NEW entries to `ai-docs/learnings/<username>-<branch>.md` — the surface new entries are written to — in the same turn as instruction-file edits, when marked `Escalated? no` and documenting an in-flight insight. The `/improve` Subagent does NOT itself append NEW entries on either surface — only edits `Escalated?` / `Superseded by:` on existing ones.
 

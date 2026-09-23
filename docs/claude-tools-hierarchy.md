@@ -101,7 +101,7 @@ method and holds in every repo, which is why it carries no guard.
 
 ## Skill-usage priority
 
-When more than one installed skill can serve a task, pick the highest tier that can do the job. Tie-breaker for ad-hoc selection only — does NOT override a harness skill that invokes a specific skill by name. Codified rule: `AGENTS.md § Tooling → Skill-usage priority`.
+When more than one installed skill can serve a task, pick the highest tier that can do the job. Tie-breaker for ad-hoc selection only — does NOT override a harness skill that invokes a specific skill by name. Codified rule: `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling → Skill-usage priority`.
 
 **This project installs no external skill tiers.** Populate the table below when it does; leave it empty otherwise, and fall back to the built-in tools.
 

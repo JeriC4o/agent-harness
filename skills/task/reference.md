@@ -215,4 +215,4 @@ Per AGENTS.md, `git commit` / `git push` / `gh pr create` are ASK-level for Clau
 - **`auto-stage-learnings`** — auto-stages `ai-docs/learnings.md` and the `ai-docs/learnings/` directory (`git add ai-docs/learnings`) when either has unstaged or untracked changes at `git commit`. The directory form is what covers a per-branch entry file on its **first** write, when it is still untracked.
 - **`archive-protection-reminder`** — advisory `Edit|Write` nudge when a write ADDS a `### ` header to `ai-docs/learnings.md`: new entries belong in `ai-docs/learnings/<username>-<branch>.md`. Exits 0, never blocks — the `/improve` fold and `Escalated?` / `Superseded by:` field edits pass untouched.
 - **`branch-protection`** — blocks `git commit` / `git push` on the default branch as a safety net, and prints the recovery recipe.
-- **`co-authored-by`** — blocks a `Co-Authored-By` trailer in a commit message (AGENTS.md § Workflow overrides the harness default here).
+- **`co-authored-by`** — blocks a `Co-Authored-By` trailer in a commit message (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Workflow overrides the harness default here).

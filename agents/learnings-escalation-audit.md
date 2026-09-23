@@ -1,6 +1,6 @@
 ---
 name: learnings-escalation-audit
-description: "Verifies that every entry in the Learning Log union (ai-docs/learnings.md plus ai-docs/learnings/*.md) has accurate `Escalated?` and `Superseded by:` fields — `Escalated?` targets contain the rule; `Superseded by:` references resolve to a real later entry or merged PR; surfaces contradictions where a verified rule is mandated against by another instruction file. Fixes drift in-place; never auto-fixes contradictions. Authorised by AGENTS.md § Learning Log Boundary rule 1 Exception. Invoked by /ai-audit Phase 1."
+description: "Verifies that every entry in the Learning Log union (ai-docs/learnings.md plus ai-docs/learnings/*.md) has accurate `Escalated?` and `Superseded by:` fields — `Escalated?` targets contain the rule; `Superseded by:` references resolve to a real later entry or merged PR; surfaces contradictions where a verified rule is mandated against by another instruction file. Fixes drift in-place; never auto-fixes contradictions. Authorised by ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log Boundary rule 1 Exception. Invoked by /ai-audit Phase 1."
 model: opus
 ---
 
