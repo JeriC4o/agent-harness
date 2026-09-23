@@ -136,7 +136,12 @@ For each `⚠️ Objected` item:
 
 ## Findings that require Design/Spec Amendment, not a code fix
 
-Any finding whose proposed resolution requires editing `ai-docs/plans/**/*.{spec,design}.md` is a **Spec/Design Amendment trigger** — the orchestrator must re-run design-review (and design, for spec amendments) on the amended artefact BEFORE the code change lands. Do NOT classify such findings as ordinary `nit` / `minor` / `major` code-fix candidates. Surface them explicitly:
+A finding is a **Spec/Design Amendment trigger** on either of two arms:
+
+- **(A) Subject** — would closing this finding leave a sentence in `ai-docs/plans/**/*.{spec,design}.md` untrue? **Fires even when the fix lands entirely in code.** Flag it on this arm and say which sentence; the routing decision is not yours to defer to whoever picks the remedy.
+- **(B) Target** — the proposed resolution requires editing one of those files.
+
+On either arm the orchestrator must re-run design-review (and design, for spec amendments) on the amended artefact BEFORE the code change lands. Do NOT classify such findings as ordinary `nit` / `minor` / `major` code-fix candidates. Surface them explicitly:
 
 > **Design Amendment trigger** — design doc <path>:<line> contradicts the implementation; recipe at `${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` Step 11.
 

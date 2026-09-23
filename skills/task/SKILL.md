@@ -159,14 +159,22 @@ Agent(subagent_type="general-purpose", prompt="
 
 ### Step 11: Review fixes
 
-> **AXIOM — A self-review finding whose proposed fix diff touches `*.design.md` or `*.spec.md` in `ai-docs/plans/` is a Design/Spec Amendment trigger, NOT an ordinary Step-11 code-fix.**
-> Mechanical detection at top of every fix round.
+> **AXIOM — A finding is routed by its SUBJECT, not by the remedy chosen for it. Classify BEFORE choosing a fix.**
+> Two independent arms; check **A first**, because choosing a remedy is what defeats it.
 >
-> | If proposed fix diff includes... | Action |
+> **Arm A — the finding's subject.** Ask one question: **would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue?** If yes, the amendment trigger fires **even when the fix lands entirely in code**.
+>
+> **Arm B — the fix's target.** The proposed fix would edit a `*.spec.md` / `*.design.md` under `ai-docs/plans/` (active or `done/`).
+>
+> | Arm A or B names a… | Action |
 > |---|---|
-> | A `*.design.md` file under `ai-docs/plans/` (active or `done/`) | **STOP.** Trigger Design Amendment — surface, update design, re-run Step 7 (max 3 rounds), then resume Step 11. Mark originating finding `✅ Fixed (design amended)`. |
-> | A `*.spec.md` file under `ai-docs/plans/` (active or `done/`) | **STOP.** Trigger Spec Amendment — surface, update spec, re-run Step 6 → Step 7, then resume Step 11. Mark `✅ Fixed (spec amended)`. |
-> | Only source files / build manifests / non-`ai-docs/plans/` `*.md` | Normal Step 11 code-fix path — apply, re-run gates. |
+> | `*.design.md` under `ai-docs/plans/` | **STOP.** Trigger Design Amendment — surface, update design, re-run Step 7 (max 3 rounds), then resume Step 11. Mark originating finding `✅ Fixed (design amended)`. |
+> | `*.spec.md` under `ai-docs/plans/` | **STOP.** Trigger Spec Amendment — surface, update spec, re-run Step 6 → Step 7, then resume Step 11. Mark `✅ Fixed (spec amended)`. |
+> | Neither arm fires — no artefact claim at stake, fix touches only source / build manifests / non-`ai-docs/plans/` `*.md` | Normal Step 11 code-fix path — apply, re-run gates. |
+>
+> **CLOSING GATE — a finding that fired Arm A may not be marked `✅ Fixed` until the cited sentence has been RE-READ in its file and either (a) confirmed true of the post-fix state, or (b) amended.** Record which. Shipping the thing a sentence promised makes the sentence true only if the shipped thing does what the sentence says it does.
+>
+> **Why Arm A exists.** Keying only on the fix diff hands the routing decision to the same party that then marks the finding `✅ Fixed`. The shape: a finding reports that a design's mitigation cites a check as the thing that catches a failure, and that check has since been deleted. **Both remedies are valid** — ship the check, or correct the sentence. Choosing the code-side remedy routes to the normal path **correctly by a diff-keyed table**: the table is satisfied, not violated, while the sentence stays false. Nothing between "choose fix" and "mark `✅ Fixed`" re-reads it.
 
 For each `⬜ Open` finding in the latest `## Self-Review (Round N)` section: **fix** (mark `✅ Fixed`), **design-amend** (per table), **spec-amend** (per table), or **object** (`nit` / `minor` autonomously; `major` / `blocker` only after user approval — mark `⚠️ Objected: <reason>`).
 
