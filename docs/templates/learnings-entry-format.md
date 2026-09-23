@@ -23,9 +23,13 @@ sed 's/[^A-Za-z0-9._-]/-/g; s/--*/-/g; s/^[-.]*//; s/[-.]*$//'
 
 | Branch | Target file |
 |---|---|
-| `learnings-per-branch-files` | `ai-docs/learnings/maratik-learnings-per-branch-files.md` |
-| `users/maratik/better-pgdriver` | `ai-docs/learnings/maratik-users-maratik-better-pgdriver.md` |
-| `main` | `ai-docs/learnings/maratik-main.md` |
+| `add-retry-logic` | `ai-docs/learnings/alice-add-retry-logic.md` |
+| `users/alice/add-retry-logic` | `ai-docs/learnings/alice-users-alice-add-retry-logic.md` |
+| `main` | `ai-docs/learnings/alice-main.md` |
+
+Row 2 is the one worth reading twice: the username appears **twice** in the result whenever the branch
+name embeds it. That is the pipeline working, not a bug — `username` and `branch` are sanitized
+independently and then joined.
 
 **The default branch is not special-cased.** `branch` is literally `main`, so the target is `ai-docs/learnings/<username>-main.md` — per-user, therefore still conflict-free, and an ordinary foldable file. That name exists so the derivation is *total* (never undefined), **not** as a licence to stay on `main`: AXIOM 1 still requires a feature branch before any PR-targeted edit, entry writes included.
 
@@ -38,7 +42,7 @@ sed 's/[^A-Za-z0-9._-]/-/g; s/--*/-/g; s/^[-.]*//; s/[-.]*$//'
 **What happened:** [quote or paraphrase of the incident / observation]
 **Rule:** [what to do instead, or what to keep doing]
 **Kind:** correction | validation    (optional; defaults to `correction` when omitted)
-**Escalated?** no | AGENTS.md | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy    (comma-separate multiple)
+**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy    (comma-separate multiple)
 **Superseded by:** [ref] — [one-line reason]    (optional; omit when not applicable)
 ```
 
