@@ -16,6 +16,8 @@
 #       root, not an invented one
 #   L5  `AGENTS.md § <Section>` in a METHOD file -- names a section a consuming
 #       project's AGENTS.md actually has, not one that exists only in the method file
+#   L6  the scaffolded copy of the learning-log contract is byte-identical to the
+#       live one, and is PRESENT -- absence is the worse half, see WHY L6 below
 #
 # WHY L4 EXISTS. A method file addresses project data as `ai-docs/...` and its
 # own siblings as `${CLAUDE_PLUGIN_ROOT}/docs/...`. Writing the first spelling
@@ -228,17 +230,31 @@ EOF
   done
 fi
 
-# L6: the scaffolded copy of the learning-log contract must match the live one.
-# It is a mirror rather than a link because a consuming project receives it as a
-# real file, and the Propagation Rule cannot name it: sync groups live in a
-# method file, and templates/ does not exist in a consuming project. So the only
-# thing standing between an edit here and a stale contract shipping to every
-# scaffolded project is this comparison.
+# WHY L6 EXISTS. The scaffolded copy of the learning-log contract is a mirror
+# rather than a link, because a consuming project receives it as a real file --
+# and the Propagation Rule structurally cannot name it, since sync groups live
+# in a method file and templates/ does not exist in a consuming project. So this
+# comparison is the only thing between an edit here and a stale contract
+# shipping to every scaffolded project.
+#
+# ABSENCE IS THE WORSE HALF, and it is the half a presence guard would hide. A
+# stale copy ships an out-of-date contract; a missing copy ships NO contract at
+# all. Guarding the comparison on both files existing makes the check pass
+# silently in exactly that case -- a gate that cannot fire where it matters
+# most, which is the shape AGENTS.md section Build & Test names as worse than an
+# honestly absent gate. The live file is still guarded: a tree that does not
+# carry it is not a harness repo, and the fixtures this script is tested against
+# are exactly that.
 L6_LIVE="${ROOT}/ai-docs/learnings/README.md"
 L6_COPY="${ROOT}/templates/project/ai-docs/learnings/README.md"
-if [ -f "$L6_LIVE" ] && [ -f "$L6_COPY" ]; then
-  cmp -s "$L6_LIVE" "$L6_COPY" || finding major L6 \
-    "templates/project/ai-docs/learnings/README.md differs from ai-docs/learnings/README.md -- the scaffolded copy is what consumers get; mirror it"
+if [ -f "$L6_LIVE" ]; then
+  if [ -f "$L6_COPY" ]; then
+    cmp -s "$L6_LIVE" "$L6_COPY" || finding major L6 \
+      "templates/project/ai-docs/learnings/README.md differs from ai-docs/learnings/README.md -- the scaffolded copy is what consumers get; mirror it"
+  else
+    finding major L6 \
+      "templates/project/ai-docs/learnings/README.md is MISSING -- every scaffolded project would ship without a learning-log contract"
+  fi
 fi
 
 [ "$findings" -eq 0 ] && printf 'check-references: links, anchors, plugin-root paths, project-data spellings, AGENTS.md section references and the scaffolded learnings contract all resolve.\n'

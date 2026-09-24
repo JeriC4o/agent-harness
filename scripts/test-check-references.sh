@@ -145,6 +145,12 @@ if [ -f "$MIRROR/templates/project/ai-docs/learnings/README.md" ]; then
   cp "$MIRROR/ai-docs/learnings/README.md" "$MIRROR/templates/project/ai-docs/learnings/README.md"
   out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
   case "$out" in *L6*) bad "and a matching copy is not" ;; *) ok "and a matching copy is not" ;; esac
+  # Absence is the worse half: a stale copy ships an out-of-date contract, a
+  # missing one ships none at all. A presence guard around the comparison would
+  # pass silently here, which is why this leg exists and why it is separate.
+  rm -f "$MIRROR/templates/project/ai-docs/learnings/README.md"
+  out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
+  case "$out" in *L6*) ok "a MISSING scaffolded copy is flagged too" ;; *) bad "a MISSING scaffolded copy is flagged too" ;; esac
 else
   bad "L6 fixture: the scaffolded copy was not found"
 fi

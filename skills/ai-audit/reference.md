@@ -46,7 +46,7 @@ Per the official Claude Code docs:
 
 ## Checklist G — `agents-method.md` § Propagation Rule coherence
 
-- Every sync group listed in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule still has all listed members present and cross-referenced — including that **every non-anchor member appears as a KEY on a back-reference row**. Checking only that a back-reference row exists tests shape, not coverage, and passes on a group whose row omits half its members — which is exactly how a member goes unreachable while the table looks complete.
+- Every sync group listed in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule still has all listed members present and cross-referenced — and, **for a group of three or more members** (the size at which `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` Procedure 5 requires the anchor-plus-back-reference shape), that **every non-anchor member appears as a KEY on that back-reference row**. A two-member group names its partner directly and has no back-reference row by design — do not flag it. Checking only that a back-reference row exists tests shape, not coverage, and passes on a group whose row omits half its members — which is exactly how a member goes unreachable while the table looks complete.
 - Behaviors described in AGENTS.md and replicated in Subagent checklists agree (e.g., file-size hard/soft limits in `review-findings.md` match AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`).
 - Exemptions in AGENTS.md (e.g., trait-impl doc-convention exemption, Java carve-out) appear in every enforcement file.
 
