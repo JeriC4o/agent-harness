@@ -276,8 +276,13 @@ jq -n \
   | ( $tools
       | map(select((.bin // "") | startswith("gh issue create")))
       | map(select(.turn | IN($deep_turns[])))
-      | map({ kind: "deferral-candidate", turn: .turn, skill: .skill, seq: .seq, at: .ts,
-              turn_messages: ( [ $spikes[] | select(.turn == .turn) ] | first | .messages ) })
+      # $tn is bound BEFORE the spike iteration: inside select(...) the input is
+      # the spike, so `.turn == .turn` compares the spike against itself, which
+      # holds for every spike and silently yields the FIRST one in the session
+      # instead of the matching turn.
+      | map( .turn as $tn
+             | { kind: "deferral-candidate", turn: $tn, skill: .skill, seq: .seq, at: .ts,
+                 turn_messages: ( [ $spikes[] | select(.turn == $tn) ] | first | .messages ) })
     ) as $deferrals
 
   # ---- step regression -----------------------------------------------------

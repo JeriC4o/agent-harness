@@ -126,6 +126,41 @@ check "a ticket filed in a deep turn is flagged" "$(sig "$out" deferral-candidat
 check "and it names the turn" \
   "$(jq -r '[.signatures[]|select(.kind=="deferral-candidate")]|.[0].turn' <<<"$out")" "7"
 
+printf '\n== the depth reported is THIS turn depth, not the first spike in the session ==\n'
+# With one spike in the fixture, reading the matching spike and reading the
+# first spike are the same row, so a self-comparison in the lookup passes
+# unnoticed. Two spikes of DIFFERENT depth, with the ticket filed in the later
+# one, is what tells them apart.
+S=$(newsession)
+i=1
+while [ $i -le 6 ]; do
+  uturn "$S" "2026-01-01T00:0${i}:00Z" "turn $i"
+  spend "$S" "2026-01-01T00:0${i}:30Z" "s$i" 1000
+  i=$((i+1))
+done
+uturn "$S" 2026-01-01T00:07:00Z "first one that would not converge"
+j=1
+while [ $j -le 20 ]; do spend "$S" "2026-01-01T00:07:${j}0Z" "a$j" 1000; j=$((j+1)); done
+uturn "$S" 2026-01-01T00:08:00Z "a quiet turn"
+spend "$S" 2026-01-01T00:08:30Z q1 1000
+uturn "$S" 2026-01-01T00:09:00Z "second one that would not converge"
+k=1
+while [ $k -le 11 ]; do spend "$S" "2026-01-01T00:09:${k}0Z" "b$k" 1000; k=$((k+1)); done
+tool "$S" 2026-01-01T00:09:55Z Bash '{"command":"gh issue create --title later"}' zz
+out=$(S_ "$S")
+
+d7=$(jq -r '[.signatures[]|select(.kind=="turn-depth-spike" and .turn==7)]|.[0].messages' <<<"$out")
+d9=$(jq -r '[.signatures[]|select(.kind=="turn-depth-spike" and .turn==9)]|.[0].messages' <<<"$out")
+# Guard: if the two spikes had equal depth the assertion below could not
+# discriminate, and would pass against the defect.
+if [ "$d7" = "$d9" ]; then bad "fixture guard: the two spikes must differ in depth (both $d7)"
+else ok "fixture guard: the two spikes differ ($d7 vs $d9)"; fi
+check "the ticket is attributed to the later spike" \
+  "$(jq -r '[.signatures[]|select(.kind=="deferral-candidate")]|.[0].turn' <<<"$out")" "9"
+check "and carries THAT turn depth, not the first spike's" \
+  "$(jq -r '[.signatures[]|select(.kind=="deferral-candidate")]|.[0].turn_messages' <<<"$out")" "$d9"
+
+printf '\n== a ticket filed in a normal turn is ordinary planning ==\n'
 S=$(newsession)
 i=1
 while [ $i -le 6 ]; do
