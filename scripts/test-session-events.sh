@@ -290,6 +290,87 @@ check "but --min-repeats 2 makes it one"   "$(sig "$out" repeated-tool-call)" "1
 out=$(bash "$EV" "$S" --signatures --json 2>/dev/null)
 check "the thresholds used are reported"   "$(jq -r '.min_repeats' <<<"$out")" "3"
 
+printf '\n== real transcripts carry fractional seconds; every fixture above does not ==\n'
+# Every timestamp a live transcript writes carries milliseconds, and jq's
+# fromdateiso8601 rejects that spelling. A parse guard yielding 0 on failure
+# collapses both ends of every span, so the window filters become tautologies
+# against exactly the input this script ships for -- while the suite stays green
+# on the one spelling that parses.
+S=$(newsession)
+tool "$S" 2026-01-01T00:00:10.267Z Bash '{"command":"make test"}' a
+tool "$S" 2026-01-01T00:00:20.500Z Bash '{"command":"make test"}' b
+tool "$S" 2026-01-01T00:00:30.966Z Bash '{"command":"make test"}' c
+out=$(S_ "$S")
+check "a fractional-second loop is still a loop" "$(sig "$out" repeated-tool-call)" "1"
+check "and its span is measured, not zeroed" \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-tool-call")]|.[0].span_seconds' <<<"$out")" "20"
+
+printf '\n== the TIME qualifier holds for fractional seconds too ==\n'
+S=$(newsession)
+tool "$S" 2026-01-01T00:00:00.100Z Bash '{"command":"git status"}' a
+tool "$S" 2026-01-01T01:00:00.200Z Bash '{"command":"git status"}' b
+tool "$S" 2026-01-01T02:00:00.300Z Bash '{"command":"git status"}' c
+check "hours apart is not a loop, ms spelling" "$(sig "$(S_ "$S")" repeated-tool-call)" "0"
+
+printf '\n== an unparseable timestamp fails the window CLOSED ==\n'
+# The failure value a guard yields is the whole design. Yielding 0 into a
+# `<=` comparison turns a parse error into a maximally-qualifying row: the
+# candidate is confirmed BECAUSE its input was unreadable.
+S=$(newsession)
+tool "$S" not-a-timestamp Bash '{"command":"make test"}' a
+tool "$S" also-not-a-timestamp Bash '{"command":"make test"}' b
+tool "$S" still-not-a-timestamp Bash '{"command":"make test"}' c
+check "unreadable times do not manufacture a loop" "$(sig "$(S_ "$S")" repeated-tool-call)" "0"
+
+# A timestamp that is not even a string must not take the whole report with it.
+# The guard has to cover the STRIP as well as the parse: jq refuses to match a
+# regex against a number, and that error is fatal to the run, not to the row.
+# Three identical calls, so a group actually FORMS and the timestamps are
+# actually parsed -- a single event never reaches the span computation, and a
+# fixture built from one would pass whether the guard is there or not.
+S=$(newsession)
+for n in 1 2 3; do
+  jq -cn --arg id "n$n" --argjson ts 1767225600 \
+    '{type:"assistant",timestamp:$ts,isSidechain:false,
+      message:{id:$id,role:"assistant",
+               content:[{type:"tool_use",id:("t"+$id),name:"Bash",input:{command:"ls"}}],
+               usage:{input_tokens:1,output_tokens:1,cache_read_input_tokens:0,cache_creation_input_tokens:0}}}' >> "$S"
+done
+bash "$EV" "$S" --signatures >/dev/null 2>&1
+check "a non-string timestamp does not kill the report" "$?" "0"
+
+printf '\n== the report says which filters ran, per signature, at what threshold ==\n'
+# agents/inspector.md USED to tell the judging agent that a time window and an
+# intervening-edit check had already run. That was true of repeated-tool-call and
+# of nothing else. Telling a judge the strongest disconfirming evidence was
+# already checked, when it was not, biases every reading toward confirm -- so the report
+# states per signature what actually applied.
+S=$(newsession)
+for t in 10 20 30; do tool "$S" "2026-01-01T00:00:${t}Z" Bash '{"command":"make test"}' "m$t"; done
+out=$(S_ "$S")
+check "repeated-tool-call got both filters" \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-tool-call")]|.[0].filters|join(",")' <<<"$out")" \
+  "window,intervening-edits"
+check "and reports the threshold it used" \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-tool-call")]|.[0].threshold' <<<"$out")" "3"
+
+S=$(newsession)
+for t in 10 20 30; do
+  tool   "$S" "2026-01-01T00:00:${t}Z" Bash '{"command":"cargo build"}' "m$t"
+  result "$S" "2026-01-01T00:00:${t}Z" true "tm$t" "boom"
+done
+out=$(S_ "$S")
+check "error-retry-loop got the window only" \
+  "$(jq -r '[.signatures[]|select(.kind=="error-retry-loop")]|.[0].filters|join(",")' <<<"$out")" "window"
+check "and reports its OWN threshold, not min_repeats" \
+  "$(jq -r '[.signatures[]|select(.kind=="error-retry-loop")]|.[0].threshold' <<<"$out")" "2"
+
+printf '\n== the entry point the skill invokes by full path is executable ==\n'
+# skills/inspect/SKILL.md invokes this script directly, not via `bash <path>`.
+# A missing execute bit is exit 126 for every consumer following the skill.
+if [ -x "$EV" ]; then ok "session-events.sh carries the execute bit"
+else bad "session-events.sh carries the execute bit"; fi
+
 printf '\n== usage ==\n'
 bash "$EV" >/dev/null 2>&1;                       check "no args -> 2"      "$?" "2"
 bash "$EV" /nonexistent.jsonl >/dev/null 2>&1;    check "missing file -> 2" "$?" "2"
