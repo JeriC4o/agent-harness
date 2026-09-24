@@ -75,7 +75,7 @@ has "installed version matches the manifest" "$out" "$VERSION"
 printf '\n== every component is present, not just the plugin ==\n'
 det=$(claude plugin details "$NAME" 2>&1)
 has "reports the manifest version" "$det" "$VERSION"
-for comp in task bugfix interview context-reset project-review pr-merged improve improve-global ai-audit harness-init inspect; do
+for comp in task bugfix interview context-reset project-review pr-merged improve improve-global ai-audit harness-init inspect report-defect; do
   case "$det" in *"$comp"*) ok "skill: $comp" ;; *) bad "skill: $comp missing from the inventory" ;; esac
 done
 for comp in spec-writer design design-review self-review review-findings self-improve learnings-escalation-audit inspector; do
@@ -84,6 +84,17 @@ done
 # Hooks are the component that silently vanished in the bug this gate exists for.
 for ev in SessionStart PreToolUse PostToolUse; do
   case "$det" in *"$ev"*) ok "hook event: $ev" ;; *) bad "hook event: $ev not registered" ;; esac
+done
+
+# The loops above enumerate COMPONENTS; nothing above asserts that a FILE reached
+# the install. The gate's report mode refuses to run without these two -- it reads
+# them as the marker that a directory is a harness install -- so if either stopped
+# shipping, every report-mode run in a consuming project would exit 2 while every
+# suite here, each building its own fixture root, stayed green.
+printf '\n== the files report mode needs are IN the install, not just in the repo ==\n'
+INSTALLED="${CLAUDE_CONFIG_DIR}/plugins/cache/${MARKET}/${NAME}/${VERSION}"
+for f in docs/agents-method.md .claude-plugin/plugin.json; do
+  if [ -f "${INSTALLED}/${f}" ]; then ok "installed file: $f"; else bad "installed file: $f absent under ${INSTALLED}"; fi
 done
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"

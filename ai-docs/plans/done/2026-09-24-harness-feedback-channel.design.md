@@ -10,26 +10,28 @@
 
 Every mechanism pinned below was executed before it was written down, per the harness rule that a gate
 may not be named as an exit gate without having been run in both directions. The measurements are
-reported inline where they decide something; the four that decide the most:
+reported inline where they decide something; the ones that decide the most:
 
 | Measurement | Result |
 |---|---|
 | Naive widening (`scripts/` appended to the permit alternation) | `scripts/session-events.sh` → 0, `myproject/scripts/deploy-prod.sh` → 0 (**leaked**), `server/core/Merge.kt` → 1. Reproduces the spec's fixture triple exactly. |
 | **Today's shipped gate on nine prose slash-pairs** | `read/write`, `client/server`, `GET/POST`, `he/she`, `TCP/IP`, `24/7`, `N/A` → **all REFUSED** as `file path`; only the two hardcoded literals `and/or` and `input/output` pass. A **pre-existing** trap, not one this design introduces — but it becomes load-bearing here; see § 1b. |
-| Existence-check + path-claim prototype, 19 rows, against a **pinned fixture harness root** | all 19 verdicts as designed — table in § 1d below (r16 and r17 pin the two residue directions of § 1b; r18 and r19 pin the two contracts that a plausible wrong implementation would otherwise satisfy) |
+| Existence-check + path-claim prototype, 21 rows, against a **pinned fixture harness root** | all 21 verdicts as designed — table in § 1d below (r16, r17 and r21 pin the **three** residue directions of § 1b; r18, r19 and r20 pin the three contracts that a plausible wrong implementation would otherwise satisfy) |
+| **The chosen mechanism against the rejected one, over the whole suite** | the existence check at `scripts/check-candidate.sh:147` swapped for the anchored alternation of § 1d on a scratch copy → `bash scripts/test-promotion.sh` **0 failed, and the pass count unchanged** at the **pre-amendment** total of 138. (138 is a snapshot of this branch *before* r20, r21, t1 and t2 land — each of those raises it. The invariant is `0 failed` plus the 25 assertions inherited from `main`, never the total; see § Test Design, AC4.) The suite could not see the substitution. The behaviour lost is real: `**Evidence:** scripts/deploy-prod.sh` against a root holding `scripts/session-events.sh` and no `scripts/deploy-prod.sh` → shipped gate **rc 1**, `file path: scripts/deploy-prod.sh (no such path under the harness root)`; mutant **rc 0, exported**. r2 cannot see it (its first segment is a project noun, so both mechanisms refuse it). Pinned as **row r20** |
+| **The refusal trailer, both modes** | on a report-mode refusal the **pre-implementation** gate printed `Rewrite the lesson so it names the SHAPE of the failure, not the instance.` — the wrong noun, and an instruction to do the thing AC8 and `SKILL.md` § FORBIDDEN forbid. Measured, the *substring* `Rewrite the lesson` is **not** unique to the gate: `grep -rn 'Rewrite the lesson' scripts/ skills/ docs/` returned **two** hits — the `printf` at `scripts/check-candidate.sh:260` **and** `skills/improve/SKILL.md:118`; widening the pattern to also match `SHAPE of the failure` returned **three** (adding `skills/improve/SKILL.md:111`). **Both counts were measured before this increment:** t1 and t2 put the string into `scripts/test-promotion.sh` (`:125` and `:228`), so the same two commands now return **four** and **five** — that rise is the change this row argues for, not drift to be re-closed. **That second hit is a substring match, not a copy.** The exact trailer occurs **nowhere** under `skills/` or `docs/`: `grep -rn 'Rewrite the lesson so it names the SHAPE of the failure, not the instance' --include='*.md' skills/ docs/` → **zero hits**, with the positive control `grep -rn 'never edit the gate' --include='*.md' .` → `skills/improve/SKILL.md:118` proving the search is not mis-filtered. What `SKILL.md` carries is a **paraphrase split across two non-adjacent lines** — `:111` *"Write the SHAPE of the failure, never the instance."* and `:118` *"A refusal names the offending term. **Rewrite the lesson; never edit the gate…**"* — different verb, different negation, different order, seven lines apart. **Neither file quotes the other.** Rule mode keeps its line byte-for-byte because **AC4 requires default-mode behaviour to be unchanged**, a reason that is self-sufficient and depends on no other file; separately and more weakly, `skills/improve/SKILL.md` instructs the promoting agent *in its own words* to do what the trailer advises, so rewording the gate desynchronises a **description**, not a quotation (§ 3a). Separately measured, and phrased so its success is not an empty result: `grep -rc 'Rewrite the lesson'` over all twelve test scripts in the tree printed a line per file and every line read `:0`, while the identical `grep -rc check-candidate` over the same twelve prints `scripts/test-promotion.sh:5` — so the probe is proven able to come back non-zero, and **no test asserted the trailer in either mode**. **Measured before this increment; t1 and t2 now assert it, which is the change** — the same `-rc` probe reads `scripts/test-promotion.sh:2` once they land, so this is not a coverage gap awaiting a fix. Mode-aware prototype measured in both directions and over the whole suite — see § 3a |
 | **The Surface contract, body-scoped vs line-scoped, over four rows** | r14 and r15 score **identically under both** (rc=1, `structure`) — so neither discriminates. A body carrying `**Surface:** read/write` *and* `Evidence: scripts/session-events.sh`: body-scoped → **rc=0, no finding**; line-scoped → **rc=1, `structure`**. That one row is the whole discriminator — see § 1a and row r18 |
 | **The ledger read, five states, with `jq -r '.filed[$h].issue // empty'`** | valid+hit → the URL; **valid+miss, zero-byte, truncated and ABSENT → empty stdout, all four** (rc 0 / 0 / 5 / 2, discarded by the usual `2>/dev/null`). One indistinguishable "proceed to `gh`" over a miss and two damaged files — the fix and its measured replacement are in § 5 |
 | **The `file` verb's write path, three runs against a recording `gh` stub** | run 1 on an **absent** ledger → `gh` invoked once, ledger created, row carries hash / issue / `harness_version`; run 2, same hash → refused, **`gh` total still 1** (zero further invocations), read from the ledger run 1 wrote; run 3 on a **truncated** ledger → **exit 2**, `gh` not invoked, file byte-identical |
 | **The ambiguity warning, both directions, plus the counterfactual** | `ai-docs/context.md` (in both trees) → PASS **+ warning**; `scripts/check-candidate.sh` (harness only) → PASS, **no warning**. A warn-on-every-permitted-claim implementation warns on *both* — so the second row is what fails it, and the first is what proves the same grep can come back non-empty |
 | **Root-side `pwd -P`, counterfactual** | with logical `pwd` on the **root** side, root-reached-through-a-symlink scores **0 — guard evaded** — for both the nested and the equal project. Physicalising both sides scores 2 for both. See § 1c |
 | `CLAUDE_PLUGIN_ROOT` / `CLAUDE_SKILL_DIR` inside a Bash call | **both UNSET.** The `$0`-derived root is therefore the PRODUCTION path, not a testability nicety — see § 1c |
-| Harness-root validation, five planted failures | non-harness dir → 2; root == project → 2; root == project **with markers planted** → 2 (containment, not markers); root strictly containing the project, markers present → 2; unresolvable root → 2. Disjoint-root negative control → 0 |
-| Project-dir derivation on an `ai-docs/feedback/` path | **today's derivation silently PASSES a report carrying a domain entity** — see § 2, the most serious finding in this design |
+| Harness-root validation, **five** planted failures + **two** negative controls | unmarked (non-harness) dir → 2; unresolvable root → 2; root == project → 2, and still 2 **with markers planted** (containment, not markers); root strictly containing the project, markers present → 2; project reached through a **symlink** whose target is inside the root → 2. Negative controls: disjoint marked root → 0; shared-prefix sibling → 0. § 1c's table is the canonical list |
+| Project-dir derivation on an `ai-docs/feedback/` path | **the pre-implementation derivation silently PASSED a report carrying a domain entity** — see § 2, the most serious finding in this design; § 2's guards 1 and 2 are what close it |
 | Guard 2 in isolation (report at `…/ai-docs/feedback/sub/r.md`, no `--project-dir`) | **exit 2**, reason named — not 1, not 0. Without guard 2 the derivation lands on `<proj>/ai-docs` and the run goes green |
 | **The path-claim test on three-or-more-term prose** | `read/write/execute`, `input/output/error`, `client/server/proxy`, `he/she/they` → **all four REFUSED** against the real fixture root, because `≥ 2 separators` makes a token a path claim regardless of shape. Residue in the STRICT direction — see § 1b, row r16 |
 | **The containment comparison, four shapes** | naive prefix test refuses the *sibling* `…/base/root-proj` against root `…/base/root` (**false exit 2**); `/`-terminated `case` on `pwd -P` values → **0**. A project reached by symlink into `…/root/inner`: logical `pwd` → **0** (guard evaded), `pwd -P` → **2**. Equality and plain nesting still → 2 under the chosen form |
 | **`file` against a ledger that already holds the hash** | exit 1, the three-line message, **0 `gh` invocations** (recording stub), ledger byte-identical; negative control on a miss → `gh` invoked once, exit 0 |
-| **What an INSTALL actually contains** | sandbox install of the working tree lands at `$CLAUDE_CONFIG_DIR/plugins/cache/<market>/<name>/<version>/`; `docs/agents-method.md` and `.claude-plugin/plugin.json` both **present**, `skills/report-defect/SKILL.md` and a planted non-file both **absent** — so the inventory assertion is falsifiable |
+| **What an INSTALL actually contains** | sandbox install of the working tree lands at `$CLAUDE_CONFIG_DIR/plugins/cache/<market>/<name>/<version>/`; `docs/agents-method.md` and `.claude-plugin/plugin.json` both **present**, `skills/report-defect/SKILL.md` (**not yet written when this was measured**; Task 5 creates it) and a planted non-file both **absent** — so the inventory assertion is falsifiable |
 | Full structural battery on `main` | manifests ok; `check-references` 0; `bash -n` clean; 10 suites green (`test-promotion` 25/0) |
 
 ### 1a. The permitted-path decision (the load-bearing part)
@@ -39,6 +41,10 @@ two syntactic refusals.** In `--mode report`, the file-path leg stops being an u
 alternation and becomes a per-token decision:
 
 1. Extract slash tokens with a regex that, unlike the default mode's, **also captures a leading `/`**.
+   The LEFT anchor is otherwise unchanged from default mode — start-of-line, whitespace or a backtick
+   — so a token whose left neighbour is other punctuation is not extracted at all. That is deliberate
+   for this increment, measured, and pinned as row r21; see § 1b's *loose by capture* direction and
+   the matching Risks bullet.
 2. Strip trailing sentence punctuation (`[.,;:)]*$`) from each token. (A `file:line` suffix needs no
    handling: `:` is outside the token character class, so `scripts/foo.sh:14` is captured as
    `scripts/foo.sh` — measured, row r1.)
@@ -121,7 +127,8 @@ client/server/proxy REFUSED   he/she/they        REFUSED
 ```
 
 Those are the same "prose describing behaviour" register this section argues is unavoidable in a
-defect report, so this is residue, not a corner. It is named here, pinned as row r16, named again
+defect report, so this is residue, not a corner. It is one of three directions of residue this section
+carries — see the table below. It is named here, pinned as row r16, named again
 under Risks, and handled by a drafting rule rather than by a lexical fix.
 
 **No lexical fix is available, and none should be invented.** Any relaxation of the `≥ 2 separators`
@@ -131,30 +138,69 @@ cases are the same shape to any rule that reads only the token. Weakening the cl
 `read/write/execute` would trade a measured project-path leak for a drafting convenience, which is the
 wrong direction.
 
-**The residue this section opens runs in BOTH directions, and the whole tradeoff is here.** A reader
-should not have to assemble it from two places:
+**The residue this section opens runs in THREE directions — and two of them are loose by DIFFERENT
+mechanisms, which is why they are listed as separate rows rather than merged into one.** A reader
+should not have to assemble the tradeoff from several places:
 
 | Direction | Shape | Verdict | Consequence |
 |---|---|---|---|
-| **Loose** (report mode weaker than default) | one slash, no extension, non-numeric — `services/billing` | **PASS** (r17) | a project-structure token escapes this leg |
+| **Loose, by classification** (report mode weaker than default) | one slash, no extension, non-numeric — `services/billing` | **PASS** (r17) | the token IS captured, and the path-claim test then rules it prose |
+| **Loose, by capture** (report mode identical to default) | any path token whose LEFT neighbour is punctuation — a parenthesis, a double quote, a square bracket, an angle bracket or an em-dash, as in the parenthesised `(src/main/billing/Invoice.kt)` | **PASS** (r21) | the token is never extracted at all, so the path leg never classifies it — a silent escape |
 | **Strict** (report mode stronger than default) | three or more slash-joined prose terms — `read/write/execute` | **REFUSED** (r16) | a legitimate report is refused until reworded |
 
-Both are accepted, for reasons that are not "it is unlikely":
+All three are accepted, for reasons that are not "it is unlikely":
 
-- *The loose direction.* Such a token is still subject to the derived-vocabulary leg, the `KEY-123` leg
-  and the URL leg, which are the legs that actually carry project identity; a lexical discriminator
-  that could separate `client/server` from `acme/billing` would need a dictionary, which is not
-  portable and would be a silent-failure machine of its own; and the alternative — keeping the blanket
-  refusal — makes the channel unusable, which the spec names as its own top failure mode.
-- *The strict direction.* The failure is **loud and recoverable**: the gate names the offending token
+- *The loose-by-classification direction (r17).* Such a token is still subject to the
+  derived-vocabulary leg, the `KEY-123` leg and the URL leg, which are the legs that actually carry
+  project identity; a lexical discriminator that could separate `client/server` from `acme/billing`
+  would need a dictionary, which is not portable and would be a silent-failure machine of its own; and
+  the alternative — keeping the blanket refusal — makes the channel unusable, which the spec names as
+  its own top failure mode.
+- *The loose-by-capture direction (r21) — and why it is NOT the row above it.* In the
+  loose-by-classification direction the token **is** captured and is then ruled prose by the
+  path-claim test of this section. Here the token is **never captured**, so no classification is
+  attempted and the path-claim test is never reached. Same verdict, two different mechanisms: a change
+  to the path-claim test moves r17 and leaves r21 exactly where it is, and a change to the token regex
+  moves r21 and leaves r17 exactly where it is. Merging the two rows would let a fix to either one read
+  as a fix to both, which is the failure this document's own trailer warns about.
+
+  **Measured against the running gate, not against the regex alone.** Report mode's token regex
+  (`scripts/check-candidate.sh:138`) admits only start-of-line, whitespace or a backtick immediately
+  before a token. A complete report carrying `**Evidence:** (src/main/billing/Invoice.kt)`, run
+  against a purpose-built fixture root, scores **rc 0 with nothing on stderr** — the token is
+  exported. So do the double-quoted, square-bracketed, angle-bracketed and em-dashed spellings: **five
+  shapes, five rc 0, five silent.** The control is the same token with the punctuation removed, which
+  scores **rc 1**, `file path: src/main/billing/Invoice.kt (no such path under the harness root)`.
+  **Default mode scores the identical six**: its own regex (`scripts/check-candidate.sh:239`) carries
+  the same left anchor, and a rule-shaped candidate over the same six inputs gave five rc 0 and one
+  rc 1 naming the token. So this is **parity with the shipped gate, not a regression this branch
+  introduces.**
+
+  **Why parity is not on its own the argument, and what the real reason to defer is.** Parity would be
+  too weak a defence here: § 1b relaxes the prose class *because report mode's payload is markdown
+  prose about a codebase*, and a parenthesised or quoted path is that same register — this document
+  may not invoke that premise when it cuts toward relaxation and decline it when it cuts toward a
+  leak. The reason to defer is a **measured interaction**, not the parity. Widening the left anchor to
+  `(^|[^A-Za-z0-9_.-])` does buy back all five punctuation shapes; it **also** begins capturing
+  `//host/wiki/page` out of `see https://host/wiki/page for more` — measured, the two regexes run side
+  by side on the same string, today's capturing nothing and the widened one capturing that token. It
+  begins with `/`, so step 3 of § 1a refuses it as an **absolute path**, which means a URL-bearing
+  report that today yields only a `url` finding (the leg at `scripts/check-candidate.sh:245`) would
+  additionally yield a `file path` one. A widening therefore reclassifies URL-bearing text and needs
+  its own rows and its own fixture cases. That is a separate change, not a free one — so it is
+  **deferred rather than declared harmless**, pinned as row **r21** so a later widening is deliberate
+  and visible, named under Risks, and mitigated at draft time by Task 5's rule that `Evidence`
+  describes project files in words rather than naming them as paths.
+- *The strict direction (r16).* The failure is **loud and recoverable**: the gate names the offending token
   and the drafter rewrites `read/write/execute` as "read, write and execute", which costs nothing and
   loses no meaning. A false refusal that prints the token it refused is a different class of harm from
   a silent export. Task 5 therefore carries the drafting rule — **slash-joined runs of three or more
   words are written as separate words** — so the case is handled at draft time rather than rediscovered
   at gate time.
 
-The asymmetry is deliberate: errors in the loose direction are silent and bounded by the other legs;
-errors in the strict direction are visible and fixable by the drafter in one edit.
+The asymmetry is deliberate: errors in **both** loose directions are silent and bounded by the other
+legs — the derived-vocabulary, `KEY-123` and URL legs run over the same text in either case; errors in
+the strict direction are visible and fixable by the drafter in one edit.
 
 ### 1c. Resolving the harness root
 
@@ -223,7 +269,7 @@ project's own vocabulary legs are the right defence, not a refusal to run at all
 bite in both directions would buy nothing measurable and would add a second false-exit-2 shape of the
 kind the sibling case already shows is fatal to the channel.
 
-`pwd -P` is confined to the report-mode guard and to a **local** `PHYS_PROJECT`. **Line 56's
+`pwd -P` is confined to the report-mode guard and to a **local** `PHYS_PROJECT`. **Line 87's
 `PROJECT_DIR=$(cd -- "$PROJECT_DIR" && pwd)` is not touched** — it is default-mode code on the shared
 path, and changing it would put AC4 at risk for a comparison that only report mode makes. The
 `/`-termination is what separates the sibling from the descendant; equality still refuses, because
@@ -259,6 +305,13 @@ them.** Both are bugs the existence check *introduces* and that a three-row fixt
   vocabulary leg (`acmecorp` is a word, `/` is a word boundary), but that is coverage by accident, and
   an absolute path with no project noun in it passes. Report mode captures it and refuses it outright.
 
+  **Step 3 closes ONE instance of that anchor's blind spot, not the shape.** The same "the left
+  neighbour is not whitespace and `^` does not hold mid-line" reasoning applies to every other
+  punctuation neighbour — `(`, `"`, `[`, `<`, an em-dash — and step 3's widening buys back only the
+  leading `/`. The remaining shapes are **measured, tolerated, and pinned as row r21**; the direction
+  is named in § 1b's residue table as *loose by capture* and under Risks. It is recorded here so this
+  paragraph is not read as having closed the class it names.
+
 Both were planted as failures and both fire — rows r6 and r8 below.
 
 ### 1d. Measured verdicts — against a PINNED fixture harness root
@@ -288,6 +341,15 @@ eleven:**
    ambiguity warning of § 1e.
 9. `AGENTS.md` — backs no table row; it is there so the fixture root reads as a plausible harness tree.
 
+**Neither r20 nor r21 adds anything to that list, and neither must.** r21's token
+`src/main/billing/Invoice.kt` is a **non-harness** path: its parenthesised form is never captured and
+its bare control is refused *because the path is absent from the root*, so both halves of the row are
+backed by an absence as well. Creating the file would invert the control. As for r20: its token
+`scripts/deploy-prod.sh` is refused
+*because* it is absent from the root, so the row is backed by an **absence** rather than by a file —
+the nine-file inventory above is unchanged, and item 3's `scripts/session-events.sh` already supplies
+r20's positive control (r1). Writing the file would invert the row.
+
 The suite exports `CLAUDE_PLUGIN_ROOT` to that root, alongside a fixture project that is **disjoint**
 from it. Verdicts then depend on the fixture and on nothing else. The derived branch, being production, is pinned the
 same way and separately exercised: a copy of the gate is placed at `<fixture root>/scripts/` and run
@@ -312,9 +374,11 @@ verdicts.
 | r14 | `**Surface:** myproject/src/Foo.kt` | REFUSED — `file path` **and** `structure: Surface names no path that exists under the harness root` | the Surface contract, positive control |
 | r15 | `**Surface:** read/write` | REFUSED — `structure` only | Surface contract against a *prose* token: passing the path leg is not enough |
 | r16 | `read/write/execute input/output/error client/server/proxy he/she/they` — all four in one body | **REFUSED** — `file path`, no such path under the root | **the strict-direction residue of § 1b, pinned rather than rediscovered.** Three-or-more-term prose trips the `≥ 2 separators` clause. Task 5's drafting rule is what keeps it out of real reports |
-| r17 | `services/billing` | **PASS** | **the loose-direction residue of § 1b, pinned in the contract and not only in prose**: one slash, no extension, non-numeric → prose to this leg. The vocabulary, `KEY-123` and URL legs still run over it |
+| r17 | `services/billing` | **PASS** | **the loose-by-*classification* residue of § 1b, pinned in the contract and not only in prose** (distinct from r21, which is loose by *capture*: there the token never reaches this test at all): one slash, no extension, non-numeric → prose to this leg. The vocabulary, `KEY-123` and URL legs still run over it |
 | r18 | `**Surface:** read/write` **together with** `**Evidence:** scripts/session-events.sh …` in one body | **REFUSED** — `structure` (the path leg itself says nothing: `read/write` is prose, `scripts/session-events.sh` is permitted) | **the Surface-contract discriminator.** r14 and r15 score identically under a body-scoped and a line-scoped implementation, so neither can fail the shortcut; this row fails the body-scoped one (measured rc=0) and passes the line-scoped one (rc=1). § 1a |
 | r19 | `scripts/check-candidate.sh` | **PASS**, and **stderr carries NO ambiguity warning** | **the negative direction of the § 1e warning.** The token exists under the fixture root and **not** under the fixture project. r13 alone scores a warn-on-every-permitted-claim implementation as a pass; this row fails it (measured: the bad implementation warns on both). Conversely r13 is this row's falsifiability proof — the same `grep 'ambiguity warning'` on the same code path comes back non-empty there, so "no warning" is not an assertion that can never fail |
+| r20 | `scripts/deploy-prod.sh` — a token whose **first segment IS a harness directory name** and which does **not** exist under the resolved root | **REFUSED** — `file path`, no such path under the harness root | **the mechanism discriminator: it separates the existence check from the rejected anchored alternation.** Under the chosen mechanism the token is refused because `${HARNESS_ROOT}/scripts/deploy-prod.sh` does not exist; under a first-segment *name* match it is permitted and **exported** (measured: shipped gate rc=1 naming the token, mutant rc=0 silent). r2 cannot stand in for it — `myproject/scripts/deploy-prod.sh` has a project noun in the first segment, so **both** mechanisms refuse it, and the whole suite scored **0 failed** at the **pre-amendment** total of 138 passed under the substitution. Its positive control is r1: the same first segment, a token that **does** exist → PASS, so "refuse everything under `scripts/`" does not score as a pass either |
+| r21 | `**Evidence:** Also in (src/main/billing/Invoice.kt) here.` — a non-harness path token whose LEFT neighbour is a parenthesis | **PASS** — rc 0, no finding, **nothing on stderr** | **the loose-by-*capture* residue of § 1b, pinned rather than left implicit.** The token regex (`scripts/check-candidate.sh:138`) admits only start-of-line, whitespace or a backtick before a token, so a path preceded by punctuation is never extracted and the path leg never runs on it. Measured against the real gate in report mode: the parenthesised, double-quoted, square-bracketed, angle-bracketed and em-dashed spellings all score **rc 0, silent**, and default mode (`:239`) scores the identical five — **parity, not a regression**. Its positive control is the **same token unparenthesised**, which scores **rc 1** naming `src/main/billing/Invoice.kt (no such path under the harness root)`, so an "always pass" leg does not score as a pass; and because the two rows differ only in one punctuation character, the pair reads on the left anchor and on nothing else. The row exists so that widening the anchor later is a **deliberate, visible** change — it flips r21 and must be argued — rather than a silent one. Note the fixture project's vocabulary must not contain `src`, `main`, `billing` or `Invoice`, or the row would pass for the wrong reason — the vocabulary leg would refuse the token whatever the anchor did, and the pair would stop reading on the left anchor at all. The pinned fixture satisfies this: `mkproject reportville` gives the derived vocabulary `reportville` plus the entities `DiffSet` / `ReviewRequest`, and the `orderflow` / `ORD` registry fixture is exported only for the AC2 identifier cases, not for the path table. **The control stays inside r21 and is deliberately NOT promoted to its own row identifier:** the suite already carries an unnumbered control beside a numbered trio (`row "positive control: Surface names a harness path"` sits next to r14/r15/r18 in `scripts/test-promotion.sh`), so an unnumbered control is the established in-tree idiom and this design does not invent a second shape for the same job. It does get a **stable label in the suite's own output** — `row "r21 control: unparenthesised" …` — so deleting it shows up as a removed `ok` line in a suite diff: the visibility of a separate identifier without splitting the atomic pair |
 
 **Alternative considered and rejected: anchoring the alternation at the start of the token**
 (`grep -vE '^(ai-docs|scripts|docs|skills|...)/'`). It reproduces the three spec rows, so the spec
@@ -322,6 +386,19 @@ would admit it. It is rejected because it is a *name* match: it permits any firs
 a harness directory, so a consuming project that has its own `scripts/`, `docs/` or `agents/`
 directory — which is most of them — gets every path under it exported. It closes the exact fixture and
 leaves the class open. The existence check is the same cost and closes the class.
+
+**That rejection is now pinned by a row rather than argued in prose only — which is the whole reason
+r20 exists.** It was argued in prose here through four review rounds while the suite could not tell the
+two mechanisms apart: substituting the anchored alternation for the existence check at
+`scripts/check-candidate.sh:147` left `scripts/test-promotion.sh` at **0 failed**, at its
+pre-amendment total of 138 passed. **All nineteen rows that existed at that point (r1–r19)**, and not
+one of them read on the central decision of § 1a. The gap is structural, not an
+oversight in row selection: every row that involves a project path puts a project noun in the FIRST
+segment (r2, r3, r14), which both mechanisms refuse, and every row with a harness first segment names a
+token that EXISTS (r1, r4, r5, r7, r10, r11, r13, r19), which both mechanisms permit. The uncovered quadrant —
+harness-shaped first segment, token absent from the root — is exactly r20, and it is the only shape in
+which the two mechanisms disagree. A prose-only rejection is a decision the next change can undo
+silently; a row is one it cannot.
 
 ### 1e. Coincident spellings — and why the earlier justification for tolerating them was wrong
 
@@ -428,7 +505,7 @@ not run in report mode.
 
 **Known limit of "structural", recorded so the next change does not over-read it.** The two
 frontmatter-key checks are whole-**body** substring tests — the same `case "$BODY" in *"…"*` shape as
-the five existing section checks (`scripts/check-candidate.sh:63-65`), which is exactly why § 3 can
+the five existing section checks (`scripts/check-candidate.sh:157-158`), which is exactly why § 3 can
 call the mechanism unchanged. So a report that writes `hash:` in its prose but omits it from the
 frontmatter passes the leg. **This is parity with the existing checks, not a regression, and it is
 deliberately NOT fixed here**: narrowing these two keys to a frontmatter-scoped test while the five
@@ -436,7 +513,11 @@ section checks stay body-scoped would put two spellings of "structure" in one ga
 therefore "the key is present somewhere in the file", not "the key is present in the frontmatter" —
 enough to stop a silently key-less report, and the guarantee a later change should start from.
 
-**The path leg is the ONLY leg that branches by mode.** Every other leg is untouched and runs in both:
+**Apart from the structure leg described just above, the path leg is the ONLY findings-producing leg
+that branches by mode.** The exception is named in the sentence rather than left to the paragraph that
+follows, because an unqualified "ONLY" is a claim this document's own next paragraph has to walk back
+— and a contract a reader has to repair as they go is not a contract. Every other leg is untouched and
+runs in both:
 derived vocabulary (project dir name, registry `name`, ticket prefix, `context.md` entity headings,
 `deny-extra.txt`), the `KEY-123` structural check, and the URL-host check. That is AC2, and it is
 satisfied by *not* branching, which is the cheapest way to satisfy it and the only way that cannot
@@ -444,6 +525,155 @@ drift. Naming the branch narrowly matters for AC4: the default mode's path leg �
 literals, no existence check, no path-claim test, `../../..` derivation, no harness root at all — is
 reached only when `--mode` is absent or `rule`, and every existing caller is in that case (verified
 above).
+
+**Scope of that claim — it is about CHECKS, not about the script's output.** A "leg" here is a
+findings-producing check: something that can add to `findings` and therefore decide the exit code. The
+sentence is read narrowly on purpose, and it has to be. The structure leg described two paragraphs
+above **also** branches by mode — that branch is the subject of this section, not a counterexample to
+it — which is why the sentence now carries the exception in its own text rather than relying on this
+paragraph to supply it. What the claim actually forbids is a **second identifier check** that
+behaves differently in the two modes: that is the drift AC2 exists to prevent, because an identifier
+check which is weaker in report mode is a silent export, and one which is weaker in rule mode is a
+silent regression of AC4.
+
+The refusal **trailer** is outside that claim entirely. It adds no finding, is printed only after the
+verdict is already decided, and cannot change an exit code in either direction — `QUIET` already
+suppresses it without altering the result. So making the trailer mode-aware (§ 3a) is not a second
+thing that varies by *mode* in the sense the claim is about, and the sentence stands unamended. The
+cost of the narrow reading is that it is easy to misread later, which is why this paragraph exists and
+why § 3a's behaviour is pinned by two assertions rather than left to the reading.
+
+### 3a. The refusal trailer — the gate currently tells a report drafter to do what the skill forbids
+
+**Measured, on a report-mode refusal against the pinned fixture root.** After the finding, the gate
+prints (`scripts/check-candidate.sh`):
+
+```
+  Rewrite the lesson so it names the SHAPE of the failure, not the instance.
+```
+
+Two faults, and the second is the one that decides this section:
+
+1. **Wrong noun.** The payload in report mode is a defect report, not a lesson.
+2. **It instructs a rewrite-and-retry, which is the loop the spec forbids.** Spec AC8 requires that the
+   skill "aborts without retrying … No rewrite-and-recheck loop exists in the skill's instructions",
+   `skills/report-defect/SKILL.md` § FORBIDDEN lists "rewriting the report to get past a refusal", and
+   § 7's whole division of labour rests on the gate being a boundary rather than something a drafter
+   may iterate against. So the most authoritative-looking source in the transcript — the tool's own
+   stderr — currently issues the opposite instruction to the one the skill carries.
+
+   **Scope, stated so the next reader does not over-read it.** AC8's literal subject is *the skill's
+   instructions*; the gate's stderr is not one of them, so AC8 is already satisfiable without touching
+   the trailer. t1 is therefore a guard this design **adds beyond** the spec AC, not a sign the spec
+   was written wrong — see the AC8 row of § Test Design. **No spec amendment follows from this
+   section.**
+
+**Decision: the trailer becomes mode-aware; rule mode keeps its line byte-for-byte.**
+
+```sh
+if [ "$MODE" = report ]
+  then printf '  Do not rewrite the report to get past this. Abort, name the term above, and let the user decide.\n' >&2
+  else printf '  Rewrite the lesson so it names the SHAPE of the failure, not the instance.\n' >&2
+fi
+```
+
+**The two rejected options, and why neither survives contact with the measurement.**
+
+- *Leave it and argue AC8 survives anyway.* The argument would be that AC8 is a property of
+  `SKILL.md`, which is asserted by grep, and that the gate's stderr is advisory. It fails on the
+  channel's own terms: the skill's Step 3 hands the agent a refusal and the agent reads the gate's
+  output in the same breath. An instruction that contradicts the skill, emitted by the thing the skill
+  just invoked, is the single likeliest way the forbidden loop gets run — and it would be run
+  *without* any instruction file having been edited, so no review of `SKILL.md` would ever catch it.
+  This design refuses that shape everywhere else (§ 2's silent derivation, § 5's silent duplicate); it
+  cannot accept it here because the fix is four lines.
+- *Make the trailer mode-aware and leave it unasserted.* Rejected under this document's own rule: at the
+  time of writing the string was **unasserted by any test, in either mode** — t1 and t2 below are
+  the assertions this section adds, and they are what change that. That is a narrower statement than "the
+  string occurs once in the tree", which an earlier draft of this document asserted and which is
+  **false**. What was actually run, and what each command returned — **every count in the four
+  bullets below was measured BEFORE this increment.** t1 and t2 add the string to
+  `scripts/test-promotion.sh` (`:125` and `:228`), so the first, second and fourth bullets now read
+  four hits, five hits and `scripts/test-promotion.sh:2`. That rise is exactly what this section
+  prescribes; the third bullet's **zero** is the one that has to stay zero, and it does:
+
+  - `grep -rn 'Rewrite the lesson' scripts/ skills/ docs/` → **two** hits:
+    `scripts/check-candidate.sh:260` (the `printf`) and `skills/improve/SKILL.md:118`. **Both of those
+    are counts of a four-word *substring*, and the second is not a copy of the trailer** — see the
+    next bullet.
+  - `grep -rn 'Rewrite the lesson\|SHAPE of the failure' scripts/ skills/ docs/` → **three** hits: the
+    two above, plus `skills/improve/SKILL.md:111` (`Write the SHAPE of the failure, never the
+    instance.`).
+  - The **full-sentence** probe, which is the one that settles whether either file quotes the other:
+    `grep -rn 'Rewrite the lesson so it names the SHAPE of the failure, not the instance' --include='*.md' skills/ docs/`
+    → **zero hits**. Positive control for the same command form:
+    `grep -rn 'never edit the gate' --include='*.md' .` → `skills/improve/SKILL.md:118`, so the probe
+    is proven able to come back non-empty and its empty result is a finding rather than a mis-filtered
+    search.
+  - `grep -rc 'Rewrite the lesson'` over the twelve test scripts in the tree
+    (`hooks/lib/test-harness-managed.sh`, `scripts/test-*.sh`, `skills/*/scripts/test-*.sh`) → one line
+    per file, **every line `:0`**. The probe is proven able to come back non-zero: the identical
+    `grep -rc check-candidate` over the same twelve files prints `scripts/test-promotion.sh:5`. The
+    `-rc` form is deliberate — an assertion whose evidence is *empty* grep output is the shape this
+    repo forbids, so the evidence here is a non-empty listing whose **contents** are the finding.
+
+  A behaviour change with no assertion is the shape every other section of this design was rewritten to
+  remove.
+
+  **The second hit is a paraphrase, not a quotation — and the distinction changes what t2 is for.**
+  `skills/improve/SKILL.md` instructs the promoting agent to do what the trailer advises, but it does so
+  **in its own words**, across two non-adjacent lines: `:111` *"Write the SHAPE of the failure, never
+  the instance."* and `:118` *"A refusal names the offending term. **Rewrite the lesson; never edit the
+  gate…**"*. Different verb (`Write` / `names`), different negation (`never` / `not`), different order,
+  seven lines apart. The full-sentence probe above returns **zero hits**: **no verbatim copy of the
+  trailer exists in either direction.**
+
+  So the correct reason t2 pins the rule-mode line **byte-for-byte** is the simple one, and it is
+  self-sufficient: **AC4 requires default-mode behaviour to be unchanged**, and byte-for-byte is what
+  "unchanged" means for an observable string. That reason stands on its own and depends on no other
+  file.
+
+  Separately and **more weakly**, there is a real coupling worth naming at its real strength: rewording
+  the `printf` would leave `skills/improve/SKILL.md` describing advice the gate no longer gives — it
+  desynchronises a **description**, not a quotation. This is a documentation-consistency hazard, not a
+  contract break, and it is **not** what t2 detects. See the honest statement of t2's reach below.
+
+**Why rule mode is not touched.** Its trailer is correct there: `skills/improve/SKILL.md:118` tells the
+promoting agent "a refusal names the offending term. **Rewrite the lesson**; never edit the gate" — so
+in rule mode rewrite-and-recheck is the *documented* workflow, and the two modes genuinely want
+opposite advice. That asymmetry is the reason the trailer branches rather than being replaced by one
+neutral sentence that would be wrong for both.
+
+**This is the same `skills/improve/SKILL.md:118` counted in the grep above** — the file is both the
+reason rule mode wants the opposite advice *and* the second hit that makes the four-word *substring*
+non-unique. The two facts are one fact.
+
+**What t2 can and cannot see, stated honestly.** t2 asserts the rule-mode line **byte-for-byte** rather
+than merely asserting that *a* trailer is printed because **AC4 requires default-mode behaviour to be
+unchanged**, and only a byte-for-byte assertion can see an "unchanged" string change. That is the whole
+of t2's subject. **t2 pins the gate's half only.** Because `skills/improve/SKILL.md` holds no copy of
+the string, **no assertion on the gate's stderr can detect that file drifting** — a reword of the
+skill's paraphrase leaves t2 green, and always will. The skill-side consistency is maintained by review,
+not by this test, and this design does not claim otherwise.
+
+**Pinned in both directions, and neither assertion can be satisfied by deleting the other:**
+
+| # | Case | Assertion | Measured |
+|---|---|---|---|
+| **t1** | any report-mode refusal (r20's body reused) | stderr **carries** `let the user decide` **and does NOT carry** `Rewrite the lesson` | yes — prototype rc=1 printing only the report line; **falsifiable**: today's shipped gate prints `Rewrite the lesson` on the identical input, so t1 is red before the change |
+| **t2** | any rule-mode refusal (an existing `refuse()` case) | stderr **carries** `Rewrite the lesson so it names the SHAPE of the failure, not the instance.` **and does NOT carry** `let the user decide` | yes — prototype output byte-identical to today's; **falsifiable**: a gate with the trailer deleted prints neither line and t2 goes red (measured on a trailer-stripped copy) |
+
+t1's "must not" is what fails "leave it alone"; t2's "must" is what fails "just delete the trailer";
+t2's "must not" and t1's "must not" together fail "print both lines always". The `row` helper in
+`scripts/test-promotion.sh` already takes a *must-name* and a *must-not-name* argument (used by r15 and
+r19), so t1 needs no new harness; t2 is an assertion added beside an existing rule-mode refusal case.
+
+**AC4 is untouched**, and now more strongly than before: the default mode's observable output is
+byte-identical, and t2 is the first assertion in the tree that says so. Whole-suite regression measured
+with the change applied: `bash scripts/test-promotion.sh` → **0 failed**, at this branch's
+**pre-amendment** total of 138 passed. The total is deliberately not the invariant — r20, r21, t1 and
+t2 each add assertions and raise it. What must hold is `0 failed` **and** the 25 pre-existing
+assertions inherited from `main` (measured there: `25 passed, 0 failed`) all still present and green.
 
 ### 4. Idempotency hash — open question 1
 
@@ -655,8 +885,8 @@ satisfied without any network read.
 
 | # | Task | Files | Depends on |
 |---|------|-------|------------|
-| 1 | Add `--mode rule\|report` to the gate: report-mode section list (+ required `harness_version:` / `hash:` frontmatter keys + `**Surface:**` must carry a permitted harness path claim), report-mode path leg (widened token regex, punctuation strip, absolute + `..` refusal, **path-claim test**, existence check under `HARNESS_ROOT`, **ambiguity warning**), **harness-root resolution with `$0` primary and marker + disjointness validation (exit 2)**, report-mode project-dir derivation (`../..`) with loud exit-2 validation. Default mode byte-for-byte unchanged. | `scripts/check-candidate.sh` | — |
-| 2 | Gate tests, **all against a fixture harness root the suite builds and pins** (§ Test Design): AC1 (both paths, both modes), AC2 (seven identifier classes, each an observed refusal), AC3 (each of five sections missing in turn, **plus `harness_version:` and `hash:` omitted in turn**), AC5 (the fixture triple), the 19-row path table including the **nine-pair prose false-refusal row**, both residue rows (**r16 strict, r17 loose**), all three Surface-contract rows (**r14, r15 and r18 — r18 being the only one that fails a body-scoped implementation**) and **r19, the no-warning negative**, the five harness-root planted failures plus **three** negative controls (disjoint project, shared-prefix sibling, and the symlinked-project planted failure), the derived-`$0` branch, and **separate assertions for project-dir guards 1 and 2**. | `scripts/test-promotion.sh` | 1 |
+| 1 | Add `--mode rule\|report` to the gate: report-mode section list (+ required `harness_version:` / `hash:` frontmatter keys + `**Surface:**` must carry a permitted harness path claim), report-mode path leg (token regex widened **only** to capture a leading `/` — the LEFT anchor stays as default mode's, per § 1b's *loose by capture* direction and row r21 — trailing punctuation strip, absolute + `..` refusal, **path-claim test**, existence check under `HARNESS_ROOT`, **ambiguity warning**), **harness-root resolution with `$0` primary and marker + disjointness validation (exit 2)**, report-mode project-dir derivation (`../..`) with loud exit-2 validation, **and the mode-aware refusal trailer of § 3a** (report mode says abort-and-tell-the-user; rule mode keeps its line byte-for-byte). Default mode byte-for-byte unchanged. | `scripts/check-candidate.sh` | — |
+| 2 | Gate tests, **all against a fixture harness root the suite builds and pins** (§ Test Design): AC1 (both paths, both modes), AC2 (seven identifier classes, each an observed refusal), AC3 (each of five sections missing in turn, **plus `harness_version:` and `hash:` omitted in turn**), AC5 (the fixture triple), the 21-row path table including the **nine-pair prose false-refusal row**, all **three** residue rows (**r16 strict, r17 loose-by-classification, r21 loose-by-capture — r21 with its unparenthesised control, which keeps r21's identifier, carries the stable output label `r21 control: unparenthesised`, and requires a fixture project whose derived vocabulary holds none of `src`, `main`, `billing`, `Invoice`**), all three Surface-contract rows (**r14, r15 and r18 — r18 being the only one that fails a body-scoped implementation**), **r19, the no-warning negative**, and **r20, the mechanism discriminator — the only row that separates the existence check from the rejected anchored alternation, under which every other row scores identically and the whole suite stays at 0 failed**, the **two trailer assertions t1 and t2 of § 3a**, the five harness-root planted failures of § 1c (unmarked root, unresolvable root, root == project, root strictly containing the project, and the **symlinked project**) plus the **two** negative controls (disjoint project, shared-prefix sibling), the derived-`$0` branch, and **separate assertions for project-dir guards 1 and 2**. | `scripts/test-promotion.sh` | 1 |
 | 3 | Register the `ai-docs/feedback` project-data root: `DOC_ROOTS`, the § Agent Docs table row, and the matching verbose body. | `scripts/check-references.sh`, `docs/agents-method.md`, `docs/agent-docs-index.md` | — |
 | 4 | `file-report.sh` (`hash` / `check` / `file`) + its test suite; **`file` re-reads the ledger first and refuses on a hit before any `gh` call** (§ 5); **an absent ledger is empty and is created by `file` on first success, an unparseable one is exit 2 with a named reason and no write** (§ 5); **the success path writes the row** (hash / issue / `harness_version`); `check`-on-a-hit prints **URL + recorded `harness_version` + the override instruction**; `file` stamps **version and root-resolution branch** into the issue body. Register the suite in AGENTS.md § Build & Test item 4. | `skills/report-defect/scripts/file-report.sh`, `skills/report-defect/scripts/test-file-report.sh`, `AGENTS.md` | — |
 | 5 | The skill: frontmatter + `allowed-tools`, drafting rules (write generically from the start; never name the local report path, never paste a URL; **`Surface` names the harness file at fault, an affected project file is described in words in `Evidence`**; **slash-joined runs of three or more words are written as separate words — "read, write and execute", never `read/write/execute`**, per § 1b / r16), **resolve any Surface ambiguity warning before the show-and-approve step** (§ 1e part 2), gate invocation with **explicit `--project-dir`**, abort-on-refusal with no retry loop, show-and-approve, the **ledger-row override** instruction, then the script. ≤ 200 lines. | `skills/report-defect/SKILL.md` | 1, 3, 4 |
@@ -666,7 +896,7 @@ satisfied without any network read.
 too large to land as one change the seam is **harness-root resolution + validation (§ 1c)** versus
 **the report-mode path leg (§ 1a, § 1b)**. The first is a precondition of the second — the existence
 check has nothing to check against until a validated root exists — and it carries its own five planted
-failures plus three controls, so it is independently verifiable rather than a fragment. The
+failures plus two controls, so it is independently verifiable rather than a fragment. The
 decomposition is **left at six tasks**: splitting pre-emptively would add a handoff boundary and a
 second round of fixture setup for a size problem that has not been observed. This is recorded so a
 later split is a known seam rather than an improvisation.
@@ -717,11 +947,29 @@ permitted `1..3`.
   `agent-harness`, but only sometimes.) Not a real constraint — from inside this repo filing is one
   `gh` command — and the exit-2 reason says so. It is, however, why the *test suite* must build a
   fixture root disjoint from its fixture project rather than pointing at the worktree.
-- **The prose-slash residue, LOOSE direction: a one-slash, no-extension, non-numeric token
+- **The prose-slash residue, LOOSE-BY-CLASSIFICATION direction: a one-slash, no-extension, non-numeric token
   (`services/billing`) is prose to report mode and passes.** Report mode is deliberately looser than
   default mode here. *Mitigation:* the derived-vocabulary, `KEY-123` and URL legs still run unchanged
   over the same text, and the drafting rules steer `Evidence` toward described behaviour rather than
   named paths. Argued at length in § 1b; pinned as row r17 so it is a contract rather than a remark.
+- **The prose-slash residue, LOOSE-BY-CAPTURE direction: a path token whose LEFT neighbour is
+  punctuation escapes the path leg entirely** — a parenthesis, a double quote, a square bracket, an
+  angle bracket or an em-dash. The token regex (`scripts/check-candidate.sh:138`) admits only
+  start-of-line, whitespace or a backtick there, so `(src/main/billing/Invoice.kt)` is never extracted
+  and is **exported silently**. Measured against the running gate: all five spellings **rc 0, no
+  stderr**; the same token unparenthesised **rc 1**, naming it. This is a **different mechanism** from
+  the r17 residue above — there the token is captured and then ruled prose, here it is never captured
+  — so a fix to one does not touch the other. *Mitigation, in three parts:* (a) it is **parity with
+  default mode**, whose own regex (`:239`) carries the same left anchor and scored the identical five
+  rc 0 on the same inputs, so this branch neither introduces nor widens the hole; (b) the lexical
+  widening is **deferred, not free** — measured, widening the left anchor to `(^|[^A-Za-z0-9_.-])`
+  also starts capturing `//host/wiki/page` out of `https://host/wiki/page`, which step 3 then refuses
+  as an **absolute path**, so text that today produces only a `url` finding would additionally produce
+  a `file path` one; that reclassification needs its own rows and fixture cases and is a separate
+  change; (c) at draft time, Task 5's rule that `Evidence` **describes** project files in words rather
+  than naming them as paths keeps the shape out of real reports in the first place. Pinned as row
+  **r21**, with its unparenthesised control, so a later widening is deliberate and visible rather than
+  silent.
 - **The prose-slash residue, STRICT direction: three or more slash-joined prose words
   (`read/write/execute`, `input/output/error`, `client/server/proxy`, `he/she/they`) are classified as
   path claims by the `≥ 2 separators` clause and are REFUSED.** Measured, all four. This is the same
@@ -806,16 +1054,18 @@ Scenarios:
   `hash:`. § 3 makes these keys "what makes AC9 structural", but without these two cases the
   requirement could be deleted from the gate and nothing would fail — AC9's other assertions all live
   in `test-file-report.sh` and none of them reads the gate. Same `case "$BODY" in *"…"*` shape as the
-  five existing section checks (`scripts/check-candidate.sh:63-65`), so the assertion follows the
+  five existing section checks (`scripts/check-candidate.sh:157-158`), so the assertion follows the
   existing `refuse()` pattern: `rc=1` **and** the term named;
-- **the 19-row path table of § 1d, row by row** — including r9 (nine prose pairs in one body → PASS),
+- **the 21-row path table of § 1d, row by row** — including r9 (nine prose pairs in one body → PASS),
   r11 (`skills/report-defect/SKILL.md` → PASS, which only holds because the root is pinned), r12
   (date), r13 (PASS **and** the ambiguity warning present on stderr), r14 and r15 (the Surface
   contract, from both directions), **r16 (four three-term prose runs in one body → REFUSED, the strict
-  residue) and r17 (`services/billing` → PASS, the loose residue)** — the two rows that stop § 1b's
-  tradeoff from being prose only, and that make a later relaxation of the `≥ 2 separators` clause fail
-  the suite rather than pass it silently — **plus the two rows that discriminate a plausible wrong
-  implementation from a right one**:
+  residue), r17 (`services/billing` → PASS, the loose-by-classification residue) and r21
+  (`(src/main/billing/Invoice.kt)` → PASS, the loose-by-capture residue)** — the **three** rows that
+  stop § 1b's tradeoff from being prose only, and that make a later relaxation of the `≥ 2 separators`
+  clause (r16/r17) or of the token regex's left anchor (r21) fail the suite rather than pass it
+  silently — **plus the two rows that discriminate a plausible wrong implementation from a right
+  one**:
   - **r18** — `**Surface:** read/write` in a body that *also* carries
     `**Evidence:** scripts/session-events.sh` → `rc=1`, `structure`. Measured: a body-scoped
     permitted-claim test returns **rc=0** here and r14/r15 cannot tell the two apart, so this is the
@@ -826,25 +1076,78 @@ Scenarios:
     asserted symmetrically with r13. Measured falsifiable: the same `grep 'ambiguity warning'` returns
     non-empty on r13's run, so this is not an assertion that can never fail, and a
     warn-on-every-permitted-claim implementation (which r13 alone passes) fails it;
-- **the five harness-root planted failures of § 1c**, each asserting exit **2** and the reason named,
-  plus **three** controls the containment comparison needs: the **disjoint negative control** → 0
-  (without which "always exit 2" would score as a pass), the **shared-prefix sibling**
+  - **r20** — `**Evidence:** Also in scripts/deploy-prod.sh here.` with `**Surface:**
+    scripts/session-events.sh` → `rc=1` naming `scripts/deploy-prod.sh`. Measured: the anchored
+    alternation of § 1d returns **rc=0, no output** here, and returns the *same* verdict as the
+    existence check on **every other row then in the table (r1–r19)** — the whole suite stayed at
+    **0 failed**, at the pre-amendment total of 138 passed, under the substitution, so this is the
+    only case that reads on the central decision of § 1a. Its positive
+    control is r1 (same first segment, token present → PASS), so a leg that refused everything under a
+    harness directory name would not score as a pass either;
+  - **r21** — `**Evidence:** Also in (src/main/billing/Invoice.kt) here.` with `**Surface:**
+    scripts/session-events.sh` → `rc=0` and **no output at all**, asserted as a *pair* with its
+    control: the same body with the parentheses removed → `rc=1` naming
+    `src/main/billing/Invoice.kt`. The pair is the whole point — the two bodies differ by one
+    punctuation character, so the assertion reads on the token regex's left anchor
+    (`scripts/check-candidate.sh:138`) and on nothing else, and an "always pass" leg fails the
+    control. Measured in both directions against the running gate, and in default mode too (`:239`,
+    identical verdicts), so the row records **parity with the shipped gate rather than a regression**.
+    Its purpose is to make a later widening of the anchor **visible**: such a change flips r21 and
+    must then be argued, instead of silently reclassifying URL text (§ 1b, Risks).
+    **Fixture constraint, restated here because this bullet is where the fixture is specified:** the
+    fixture project's derived vocabulary must hold none of `src`, `main`, `billing` or `Invoice`, or
+    the row passes for the wrong reason — the vocabulary leg would refuse the token whatever the
+    anchor did, and the pair would stop reading on the anchor. The pinned fixture satisfies this
+    (`mkproject reportville` → vocabulary `reportville`, entities `DiffSet` / `ReviewRequest`; the
+    `orderflow` / `ORD` registry fixture is exported only for the AC2 identifier cases, not for the
+    path table). **The control keeps r21's identifier rather than taking one of its own** — the
+    suite's existing unnumbered `row "positive control: Surface names a harness path"` beside
+    r14/r15/r18 is the in-tree idiom — but it carries the stable output label
+    `row "r21 control: unparenthesised" …`, so deleting it shows as a removed `ok` line in a suite
+    diff;
+- **the two refusal-trailer assertions of § 3a**, which are the first assertions in the tree to read
+  that output at all — measured as a non-empty listing rather than as empty grep output:
+  **before this increment,** `grep -rc 'Rewrite the lesson'` over the twelve test scripts printed one
+  line per file and **every line read `:0`**, against the control `grep -rc check-candidate` over the
+  same twelve, which prints `scripts/test-promotion.sh:5`. The four-word *substring*
+  `Rewrite the lesson` then occurred **twice** in the tree — at `scripts/check-candidate.sh:260` and
+  at `skills/improve/SKILL.md:118` — and the **full trailer** only in the gate (full-sentence `grep`
+  over `skills/` and `docs/` → zero hits, against a proven-non-empty positive control; § 3a).
+  **t1 and t2 are what move both counts, and that is the change rather than drift:** landing them puts
+  the substring at `scripts/test-promotion.sh:125` and `:228` and the full trailer at `:125`, so the
+  `-rc` probe reads `scripts/test-promotion.sh:2`. The `skills/`/`docs/` full-sentence probe stays at
+  **zero**, which is the claim t2's reach actually rests on. t2's byte-for-byte assertion therefore
+  pins the **gate's half only**, and it does so because **AC4 requires default-mode behaviour to be
+  unchanged** — it cannot and does not detect `skills/improve/SKILL.md` drifting (§ 3a): **t1** — a report-mode refusal's stderr carries `let the user decide` and **not** `Rewrite the
+  lesson` (red against the pre-implementation gate, measured); **t2** — a rule-mode refusal's stderr still carries
+  `Rewrite the lesson so it names the SHAPE of the failure, not the instance.` and **not** `let the
+  user decide` (red against a trailer-stripped gate, measured). t1 uses the `row` helper's existing
+  must-name / must-not-name arguments; t2 is added beside an existing rule-mode `refuse()` case;
+- **the five harness-root planted failures of § 1c** — the **unmarked root**, the root that **does not
+  resolve**, **root == project**, root **strictly containing** the project, and the **symlinked
+  project** whose target is inside the root → **2** (logical `pwd` scores 0 here, so this case is what
+  fails a non-`pwd -P` implementation) — each asserting exit **2** and the reason named, plus the
+  **two** negative controls the containment comparison needs: the **disjoint negative control** → 0
+  (without which "always exit 2" would score as a pass) and the **shared-prefix sibling**
   (`base/root` vs `base/root-proj`) → **0** (a bare prefix test scores 2 here, so this case is what
-  fails a naive implementation), and the **symlinked project** whose target is inside the root → **2**
-  (logical `pwd` scores 0 here, so this case is what fails a non-`pwd -P` implementation). The two
-  controls point in opposite directions on purpose: satisfying one by dropping the other is not
-  possible;
+  fails a naive implementation). The shared-prefix sibling (→ 0) and the symlinked project (→ 2) point
+  in opposite directions on purpose: satisfying one by dropping the other is not possible;
 - **project-dir guards 1 and 2 as two separate cases** (§ 2 table): guard 1 → exit 1 with `DiffSet`
   named; guard 2 (`ai-docs/feedback/sub/r.md`, no `--project-dir`) → exit **2** with the reason named,
   asserted as `= 2` so that neither 1 nor 0 scores as a pass.
 
 Directionality: every new leg has a case that must FAIL as well as one that must pass. The planted
 failures are `..`, the absolute path, the three Surface rows (r14, r15, **r18**), the two omitted
-frontmatter keys, the five root failures, the symlinked project, r16, both project-dir guards, and the
-identifier positive controls. The mirror-image controls are r9 and r17 (a leg that refuses everything
-would fail them), **r19** (a leg that warns on everything would fail it), the `**Surface:**
-scripts/session-events.sh` control (a contract that always finds `structure` would fail it) and the
-shared-prefix sibling (a containment test that refuses everything shared-looking would fail it).
+frontmatter keys, the five root failures (the symlinked project among them), r16, **r20**, **r21's
+unparenthesised control** (`rc=1` naming the token — without it r21 alone would be satisfied by a leg
+that passes everything), **t1**, both project-dir guards, and the identifier positive controls. The
+mirror-image controls are r9, r17 and **r21** (a leg that refuses everything would fail all three),
+**r19** (a leg that warns on everything would fail it),
+**r1 as r20's control** (a leg that refused every token under a harness directory name would fail it),
+**t2** (a gate that simply deleted the trailer, or printed the report-mode line in both modes, would
+fail it), the `**Surface:** scripts/session-events.sh` control (a contract that always finds
+`structure` would fail it) and the shared-prefix sibling (a containment test that refuses everything
+shared-looking would fail it).
 
 **Task 4 — `skills/report-defect/scripts/test-file-report.sh`**
 - Scenarios: `hash` determinism across 3 runs; `hash` stable under a rewritten `Repro`, a case change
@@ -891,16 +1194,17 @@ falsifiable — on a file carrying the phrase `grep -n` printed the line and exi
 printed nothing and exited 1.
 
 **Task 6 — the install inventory, `scripts/test-install-smoke.sh`.** The existing loops assert
-*components* against `claude plugin details` output; nothing asserts that a **file** reached the
-install. Report mode's marker check depends on two, so both are asserted directly against the
+*components* against `claude plugin details` output; **before this increment** nothing asserted that a
+**file** reached the install. Report mode's marker check depends on two, so both are asserted directly against the
 installed tree. Measured layout: a sandbox install of the working tree lands at
 `${CLAUDE_CONFIG_DIR}/plugins/cache/${MARKET}/${NAME}/${VERSION}/`, where all three variables are
 already computed at the top of the script from the two manifests.
 
 - assert `docs/agents-method.md` and `.claude-plugin/plugin.json` exist under that path — both
   measured **present** in a real sandbox install;
-- falsifiability measured in the same install: `skills/report-defect/SKILL.md` (not yet written) and a
-  planted `docs/no-such-file.md` both came back **absent**, so the assertion can fail and is not an
+- falsifiability measured in the same install: `skills/report-defect/SKILL.md` (**not yet written when
+  this was measured** — Task 5 creates it, after which the planted path is the standing falsifier) and
+  a planted `docs/no-such-file.md` both came back **absent**, so the assertion can fail and is not an
   always-true probe;
 - the `report-defect` skill row goes in the existing hardcoded component loop as before.
 
@@ -917,11 +1221,11 @@ verdict is a property of the fixture and not of whichever tree happens to be ins
 | AC1 | `bash scripts/test-promotion.sh` — cases `report mode admits scripts/…`, `report mode admits .claude-plugin/…`, `rule mode still refuses both with a file path finding` |
 | AC2 | `bash scripts/test-promotion.sh` — seven `refuse()`-shaped cases in report mode, each asserting `rc=1` *and* that the term is named (dir name, registry `name`, ticket prefix, `KEY-123`, `context.md` entity, `deny-extra.txt`, URL host) |
 | AC3 | `bash scripts/test-promotion.sh` — five cases, one per omitted section, each asserting `rc=1` and a `structure` finding, **plus two more for the required frontmatter keys `harness_version:` and `hash:`, each omitted in turn** (§ 3; see AC9) |
-| AC4 | `bash scripts/test-promotion.sh` — the 25 pre-existing assertions, untouched (baseline measured green on `main`: `25 passed, 0 failed`). The default mode's path leg keeps its alternation **and its two literal exemptions**: `and/or` and `input/output` still pass and `read/write` is still refused there, exactly as measured today. Report mode is a separate branch and changes none of it |
-| AC5 | `bash scripts/test-promotion.sh` — the three fixture rows asserted individually: `scripts/session-events.sh` → 0, `myproject/scripts/deploy-prod.sh` → 1, `server/core/Merge.kt` → 1 |
+| AC4 | `bash scripts/test-promotion.sh` — the 25 pre-existing assertions, untouched (baseline measured green on `main`: `25 passed, 0 failed`). The default mode's path leg keeps its alternation **and its two literal exemptions**: `and/or` and `input/output` still pass and `read/write` is still refused there, exactly as measured today. Report mode is a separate branch and changes none of it. **The rule-mode refusal trailer is likewise byte-identical, and case t2 (§ 3a) is the first assertion in the tree that says so** — measured green with § 3a applied: **`0 failed`**. The pass TOTAL is not the invariant and must not be pinned: the pre-amendment total on this branch is 138 and r20, r21, t1 and t2 each raise it. What AC4 requires is `0 failed` plus all **25** `main` assertions still present and green |
+| AC5 | `bash scripts/test-promotion.sh` — the three fixture rows asserted individually: `scripts/session-events.sh` → 0, `myproject/scripts/deploy-prod.sh` → 1, `server/core/Merge.kt` → 1. **Plus r20 (§ 1d), which the spec does not require and which is what makes AC5 a test of the chosen mechanism rather than of any mechanism reproducing three rows**: the rejected anchored alternation satisfies all three of these and the rest of the suite (measured: **0 failed**, at the pre-amendment total of 138 passed) while exporting `scripts/deploy-prod.sh` |
 | AC6 | `bash scripts/test-promotion.sh` exits 0 |
 | AC7 | `bash skills/report-defect/scripts/test-file-report.sh` (`check` / ledger behaviour) + `grep -n 'ai-docs/feedback' skills/report-defect/SKILL.md` returning **non-empty** + **`grep -n -- '--project-dir' skills/report-defect/SKILL.md` returning non-empty** (guard 3 of § 2, which is otherwise the one guard with no assertion at all) + **`grep -n 'ambiguity warning' skills/report-defect/SKILL.md` returning non-empty** (§ 1e part 2's consumer: the instruction that a Surface ambiguity warning is resolved *before* show-and-approve — without it the warning is emitted and read by nothing), plus review of the show-and-approve step |
-| AC8 | `grep -n 'Abort' skills/report-defect/SKILL.md` returning **non-empty**; the absence of a retry loop is a review item, recorded as a review item and not as a mechanical gate — a grep whose success is empty output is the shape this repo forbids |
+| AC8 | `grep -n 'Abort' skills/report-defect/SKILL.md` returning **non-empty**; the absence of a retry loop in the *skill* stays a review item, recorded as a review item and not as a mechanical gate — a grep whose success is empty output is the shape this repo forbids. **Plus the gate-side half, which is mechanical: `bash scripts/test-promotion.sh` case t1 (§ 3a) — a report-mode refusal's stderr carries `let the user decide` and does NOT carry `Rewrite the lesson`.** Without it the gate keeps instructing the drafter to run the loop AC8 forbids, and no review of `SKILL.md` could see it, because the instruction is not in `SKILL.md`. **Scope note — t1 is a guard this design ADDS beyond AC8; it is not evidence that AC8 is mis-specified.** Spec AC8's literal scope is *the skill's instructions*, and the gate's stderr is not among them, so on the spec's own terms AC8 is satisfied by the `SKILL.md` half alone. t1 exists because the gate's output reaches the same agent in the same breath and contradicts those instructions — a hole the spec's wording does not cover and does not need to cover. **The spec is not to be amended for this** |
 | AC9 | `bash skills/report-defect/scripts/test-file-report.sh` — cases asserting the emitted body carries the manifest `version`, the computed hash and the root-provenance line, and that the `-R` argument comes from the manifest `repository`. Asserted **first with `CLAUDE_PLUGIN_ROOT` unset**, since the `$0` derivation is the production branch (measured: both plugin env vars are unset inside a Bash call), then again with the override set. **Plus `bash scripts/test-promotion.sh` — the two frontmatter-key cases (`harness_version:` and `hash:` omitted in turn → `rc=1`, `structure`).** Without them AC9's "structural" half rests on a gate requirement no test reads: every other AC9 assertion lives in `test-file-report.sh`, which never invokes the gate, so the requirement could be deleted from `check-candidate.sh` and the whole suite would stay green |
 | AC10 | `bash skills/report-defect/scripts/test-file-report.sh` — **the four cases of § 5 together, because the stop is only as good as the write it reads: (a) success on an ABSENT ledger → `gh` invoked once, the ledger is created, and the row's hash / issue / `harness_version` match; (b) the same `file` call repeated against only the ledger (a) wrote → non-zero, and the recording stub logs ZERO further invocations; (c) a pre-seeded hit → non-zero, ZERO invocations, ledger byte-identical; (d) a truncated ledger → exit 2, `gh` not invoked, file byte-identical.** (b) is the load-bearing one: every other case pre-seeds `filed.json`, so a `file` verb that reads correctly and never writes passes them all and fails AC10 only in production. (c) is the assertion AC10 was previously resting on alone, because it makes the stop a property of the script rather than of the skill remembering to call `check` first — no sequencing instruction is mechanically assertable, and § 7 rejects that shape for AC11 and AC12. Negative control for all three refusals: case (a), where the same stub **is** invoked once, so "never files anything" does not score as a pass. Secondarily, the `check`-on-a-hit case prints **three** things, each its own assertion (recorded issue URL, recorded `harness_version` next to the current one, ledger-row override instruction), and `grep -n 'filed.json' skills/report-defect/SKILL.md` returns **non-empty** so the override exists as an instruction and not only in this document |
 | AC11 | `bash skills/report-defect/scripts/test-file-report.sh` — the title passed to `gh` starts with `[harness-feedback]`. Selection proven runnable and proven able to return non-empty: `gh issue list -R <slug> -S '"[harness-feedback]" in:title'` |
