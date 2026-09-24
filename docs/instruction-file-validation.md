@@ -51,7 +51,7 @@ Replace prose ("when the situation requires", "for edge cases") with one of:
 
 ### Stale cross-reference
 
-Repair the link **and** add a Propagation Rule row in AGENTS.md so future renames trigger sister-file updates.
+Repair the link **and** add a Propagation Rule row in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule — that is where the sync-group table lives — so future renames trigger sister-file updates.
 
 ### Surface mismatch
 

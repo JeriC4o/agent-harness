@@ -112,9 +112,12 @@ plus POSIX shell; no compiled sources.
 - **`templates/project/ai-docs/learnings/README.md` is a byte-identical copy of this repo's own
   `ai-docs/learnings/README.md`, and the Fold group cannot name it.** That group lives in a method file,
   and `templates/` does not exist in a consuming project — so the obligation is recorded here instead:
-  whenever the fold contract changes, mirror it and confirm with `cmp`. The copy is what every
-  scaffolded project receives, so a gap there reaches consumers who cannot see the implementation it
-  describes.
+  **any** edit to `ai-docs/learnings/README.md` mirrors to it. Not "whenever the fold contract
+  changes" — that file is a Learning-Log group member as well, so a boundary-rule or entry-format
+  change lands there just as readily, and a trigger naming only the fold is the narrower-and-still-wrong
+  shape. `scripts/check-references.sh` enforces the mirror, so this is a gate rather than a hope. The
+  copy is what every scaffolded project receives, so a gap there reaches consumers who cannot see the
+  implementation it describes.
 - **Any PR touching plugin-loaded content bumps `.claude-plugin/plugin.json`'s patch version.** The
   install cache is keyed by version, so an unbumped fix silently never reaches an installed copy. See
   [`README.md` § Releasing](README.md#releasing).

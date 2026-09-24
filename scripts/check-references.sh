@@ -228,5 +228,18 @@ EOF
   done
 fi
 
-[ "$findings" -eq 0 ] && printf 'check-references: links, anchors, plugin-root paths, project-data spellings and AGENTS.md section references all resolve.\n'
+# L6: the scaffolded copy of the learning-log contract must match the live one.
+# It is a mirror rather than a link because a consuming project receives it as a
+# real file, and the Propagation Rule cannot name it: sync groups live in a
+# method file, and templates/ does not exist in a consuming project. So the only
+# thing standing between an edit here and a stale contract shipping to every
+# scaffolded project is this comparison.
+L6_LIVE="${ROOT}/ai-docs/learnings/README.md"
+L6_COPY="${ROOT}/templates/project/ai-docs/learnings/README.md"
+if [ -f "$L6_LIVE" ] && [ -f "$L6_COPY" ]; then
+  cmp -s "$L6_LIVE" "$L6_COPY" || finding major L6 \
+    "templates/project/ai-docs/learnings/README.md differs from ai-docs/learnings/README.md -- the scaffolded copy is what consumers get; mirror it"
+fi
+
+[ "$findings" -eq 0 ] && printf 'check-references: links, anchors, plugin-root paths, project-data spellings, AGENTS.md section references and the scaffolded learnings contract all resolve.\n'
 exit $([ "$findings" -gt 0 ] && echo 1 || echo 0)

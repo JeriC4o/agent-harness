@@ -44,7 +44,7 @@ Per the official Claude Code docs:
 - Timeouts are reasonable (≤30s default, longer only when the work demands it).
 - Commands quote `$CLAUDE_PROJECT_DIR` and other env vars correctly — no shell injection footguns.
 
-## Checklist G — AGENTS.md "Propagation Rule" coherence
+## Checklist G — `agents-method.md` § Propagation Rule coherence
 
 - Every sync group listed in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule still has all listed members present and cross-referenced — including that each group of three or more carries an anchor row plus a back-reference row rather than a silently incomplete set of one-way rows.
 - Behaviors described in AGENTS.md and replicated in Subagent checklists agree (e.g., file-size hard/soft limits in `review-findings.md` match AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`).
@@ -194,7 +194,7 @@ The carrot-side analog of Checklist C. Every promoted-from-validation carrot mus
 
 ## Checklist O — Embedded-name clash scan
 
-Enforces the AGENTS.md `## Propagation Rule` clash-rename AXIOM. Project-defined Tool / Subagent / Skill / Hook names MUST NOT clash with embedded names enumerated in `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md` §§1a/1b/2a/3a/3b. Any match → `major` finding (project side renames; the embedded name is never renamed).
+Enforces the `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule clash-rename AXIOM. Project-defined Tool / Subagent / Skill / Hook names MUST NOT clash with embedded names enumerated in `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md` §§1a/1b/2a/3a/3b. Any match → `major` finding (project side renames; the embedded name is never renamed).
 
 **Recipe.** Enumerate two sorted lists and intersect them; empty intersection passes.
 
