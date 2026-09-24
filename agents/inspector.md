@@ -25,7 +25,12 @@ that defect is invisible to both, and visible here.
 |---|---|
 | `signatures` | mechanically detected candidates, each with counts, a time span, and a qualifier result |
 | `unavailable` | signatures that could NOT run, with the reason |
-| `events` | the reduced stream: seq, ts, turn, skill, kind, tool, bin, fingerprint |
+
+**You do NOT receive the per-event stream, and must not ask for it or go looking.** The producer
+strips it in the mode this skill invokes, and the transcript itself is off limits. So every judgement
+you make rests on the summary rows above — say so when a candidate needs more than they carry, rather
+than inferring a sequence you were not shown. "Unjudgeable, and here is what would settle it" is a
+result; a confident verdict built on counts alone is not.
 
 ## Step 1: Read `unavailable` FIRST
 
@@ -47,6 +52,7 @@ event actually a loop?
 | `error-retry-loop` | the same call fails repeatedly with no change to the input | each retry followed a visible correction — the second attempt had a different fingerprint |
 | `repeated-agent-spawn` | a review or design loop burned its round cap without converging | the spawns were independent parallel work |
 | `turn-depth-spike` | one turn took many model calls circling the same sub-goal | the turn was legitimately long — a big migration, a broad sweep |
+| | **Expect to report this one unjudgeable.** Separating the two requires the ORDER of what the turn did, and the summary row carries only its depth. Do not settle it from the depth figure or from `cache_read`, which trends with context size rather than with struggle. Say what would settle it. | |
 | `deferral-candidate` | a ticket was filed from inside a turn that had already gone round and round, and the work it names is the work that was not converging | the ticket is genuine scope discovered while working, filed deliberately rather than as an exit |
 | `step-regression` | `current_step` moved backwards with no Amendment or REJECT to justify it | an Amendment recipe or a self-review REJECT explains it; both legitimately move the step back |
 
@@ -101,7 +107,7 @@ Return the entries as text. The orchestrator writes them.
 ## FORBIDDEN
 
 - Opening the session `.jsonl`, or any file the transcript referenced.
-- Emitting a command line, file path, prompt, or tool output recovered from the events. Counts, tool
+- Emitting a command line, file path, prompt, or tool output recovered from anything you were given. Counts, tool
   names, fingerprints and step names only.
 - Editing any instruction file, or any file at all.
 - Reporting a clean result without first stating which signatures could not run.
