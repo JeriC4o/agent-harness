@@ -15,7 +15,7 @@ to `ai-docs/learnings/<username>-<branch>.md` ([§ Target file](${CLAUDE_PLUGIN_
 **What happened:** [quote or paraphrase of the correction/confirmation]
 **Rule:** [what should happen instead, or what to keep doing]
 **Kind:** correction | validation    (optional; defaults to `correction` when omitted)
-**Escalated?** no | AGENTS.md | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy (comma-separate multiple)
+**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | gate:[script] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy (comma-separate multiple)
 **Superseded by:** [ref] — [one-line reason]    (optional; omitted when not applicable)
 ```
 

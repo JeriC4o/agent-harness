@@ -11,7 +11,7 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log`. Refe
 **What happened:** ...
 **Rule:** ...
 **Kind:** correction | validation              # optional; default `correction`
-**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy
+**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | gate:[script] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy
 **Superseded by:** [ref] — [reason]            # optional; omit when not applicable
 ```
 
@@ -35,6 +35,7 @@ Cross-shape (carrot verb on a stick rule, or vice versa) is FORBIDDEN — `/ai-a
 | `agent:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/agents/<name>.md`. | File exists; grep finds rule. |
 | `rules:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/rules/<name>.md`. | File exists; grep finds rule. |
 | `templates:[name]` | Rule lives in `ai-docs/templates/<name>.md`. | File exists; grep finds rule. |
+| `gate:[script]` | Rule is enforced by an executable assertion in a checked-in test / check script. | Script exists AND an assertion addressing the mistake can FAIL — verified by re-introducing the defect, never by reading the script. |
 | `hook` | Rule is a hook in `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`. | A hook matcher+command references the relevant tool/behavior. |
 | `settings` | Non-hook setting (permission allow/deny, env). | Listed in `permissions.*` or `env`. |
 | `doc-convention` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`. | grep finds rule. |

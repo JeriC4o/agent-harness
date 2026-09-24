@@ -51,7 +51,7 @@ independently and then joined.
 **What happened:** [quote or paraphrase of the incident / observation]
 **Rule:** [what to do instead, or what to keep doing]
 **Kind:** correction | validation    (optional; defaults to `correction` when omitted)
-**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy    (comma-separate multiple)
+**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | gate:[script] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy    (comma-separate multiple)
 **Superseded by:** [ref] — [one-line reason]    (optional; omit when not applicable)
 ```
 

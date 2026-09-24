@@ -28,7 +28,7 @@ Walk the union — `ai-docs/learnings.md` **and** every `ai-docs/learnings/*.md`
 - By recurrence (same mistake count)
 - By escalation status:
   - **Unescalated** (`no`): no project-level rule was added.
-  - **Escalated** (`AGENTS.md`, `agents-method`, `skill:[name]`, `hook`, `settings`, `agent:[name]`, `rules:[name]`, `templates:[name]`, `doc-convention`, `code-style`, `workflow`, `context.md`, `claude-tools-hierarchy`): rule is in project instructions.
+  - **Escalated** (`AGENTS.md`, `agents-method`, `skill:[name]`, `hook`, `settings`, `agent:[name]`, `rules:[name]`, `templates:[name]`, `gate:[script]`, `doc-convention`, `code-style`, `workflow`, `context.md`, `claude-tools-hierarchy`): rule is in project instructions.
 
 ### Step 1b: Find patterns (Carrot pass)
 

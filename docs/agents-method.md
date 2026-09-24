@@ -228,7 +228,7 @@ On **ANY** instruction violation, write a new entry to `ai-docs/learnings/<usern
 **What happened:** [quote or paraphrase]
 **Rule:** [what to do instead, or what to keep doing]
 **Kind:** correction | validation    (optional; defaults to `correction` when omitted)
-**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy (comma-separate multiple)
+**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | gate:[script] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy (comma-separate multiple)
 **Superseded by:** [ref] — [one-line reason]    (optional; omitted when not applicable)
 ```
 

@@ -31,6 +31,7 @@ Read up front:
 | `agent:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/agents/<name>.md`. | File exists; rule is there. |
 | `rules:[name]` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/rules/<name>.md`. | File exists; rule is there. |
 | `templates:[name]` | Rule lives in `ai-docs/templates/<name>.md`. | File exists; rule is there. |
+| `gate:[script]` | Rule is enforced by an executable assertion in a checked-in test / check script. | Script exists AND an assertion addressing the mistake can FAIL — verify by re-introducing the defect and watching it go red, never by reading the script. A gate that has never failed is not known to work. |
 | `hook` | Rule is a hook in `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`. | A hook with matcher + command addresses the mistake. |
 | `settings` | Non-hook setting (permission allow/deny, env). | Listed in `permissions.*` or `env`. |
 | `doc-convention` | Rule lives in `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`. | File exists; rule is there. |
@@ -87,6 +88,7 @@ For each entry where `Escalated?` is **not** `no`:
   - **`hook`** — read `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`, scan `hooks.*[].hooks[].command` for the keyword.
   - **`settings`** — scan `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` `permissions.allow`, `permissions.deny`, `env`.
   - **`templates:[name]`** — grep `ai-docs/templates/<name>.md`.
+  - **`gate:[script]`** — locate the script, then RUN it after re-introducing the defect it claims to catch; a grep that finds an assertion proves the text exists, not that it can fail.
   - **`doc-convention`** — grep `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`.
   - **`code-style`** — grep `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`.
   - **`workflow`** — grep `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md`.
