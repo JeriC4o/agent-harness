@@ -89,7 +89,12 @@ Per Boundary rule 2, a Learning Log write triggers **no other instruction-file e
 
 Thresholds are tuned against real sessions, not guessed: `--spike-factor` defaults to 5× the median turn
 because 3× flagged one turn in five on a real session, which is a list nobody reads. `--window` (600s) and
-`--min-repeats` (3) carry the time and repetition qualifiers.
+`--min-repeats` (3) carry the time and repetition qualifiers — but `--min-repeats` governs
+`repeated-tool-call` and `repeated-agent-spawn` only: `error-retry-loop` fires at two, because two failures
+of the same call with no change between them is already the shape. Each of those three repetition
+signatures reports the `threshold` it actually used and the `filters` that actually ran on it; read those
+rather than assuming the top-level numbers applied. `turn-depth-spike`, `deferral-candidate` and
+`step-regression` carry neither field.
 
 **Expect to tune before trusting.** The first runs against a new project will be noisy. A signature that
 keeps producing dismissals is a threshold to adjust, and saying that out loud beats quietly ignoring it.

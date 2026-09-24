@@ -47,12 +47,19 @@ event actually a loop?
 | `error-retry-loop` | the same call fails repeatedly with no change to the input | each retry followed a visible correction — the second attempt had a different fingerprint |
 | `repeated-agent-spawn` | a review or design loop burned its round cap without converging | the spawns were independent parallel work |
 | `turn-depth-spike` | one turn took many model calls circling the same sub-goal | the turn was legitimately long — a big migration, a broad sweep |
-| the ticket is genuine scope discovered while working, filed deliberately rather than as an exit |
-| `deferral-candidate` | a ticket was filed from inside a turn that had already gone round and round, and the work it names is the work that was not converging |
+| `deferral-candidate` | a ticket was filed from inside a turn that had already gone round and round, and the work it names is the work that was not converging | the ticket is genuine scope discovered while working, filed deliberately rather than as an exit |
 | `step-regression` | `current_step` moved backwards with no Amendment or REJECT to justify it | an Amendment recipe or a self-review REJECT explains it; both legitimately move the step back |
 
-**Loop-shaped is not loop.** The script already applied a time window and an intervening-edit check; you
-apply the reading those cannot. Dismissing a candidate with a stated reason is as much a result as
+**Loop-shaped is not loop.** The three repetition signatures — `repeated-tool-call`,
+`error-retry-loop`, `repeated-agent-spawn` — each carry `filters`, the qualifiers the script actually
+applied to THAT row, and `threshold`, the count it fired at. Read both before weighing one: only
+`repeated-tool-call` receives the intervening-edit check, so a row whose `filters` say `window` alone has
+had nothing disconfirming applied to it beyond timing, and the top-level `min_repeats` is not every
+shape's threshold. **`turn-depth-spike`, `deferral-candidate` and `step-regression` carry neither field** —
+no qualifier beyond their own detection rule has run on them at all. Never assume a check ran because
+another signature got it. You apply the reading the script cannot.
+
+Dismissing a candidate with a stated reason is as much a result as
 confirming one, and a dismissal is what keeps the next run trustworthy.
 
 ## Step 3: Locate the harness defect, not the symptom

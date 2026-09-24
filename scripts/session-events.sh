@@ -23,10 +23,13 @@
 # repetition can be detected without reproducing what was repeated.
 #
 # LOOP-SHAPED IS NOT LOOP. Every repetition signature carries a TIME qualifier
-# (the repeats must fall inside one window) and a STATE qualifier (no Edit/Write
-# in between -- re-running a gate after changing a file is the workflow working,
-# not a loop). Without both, this becomes the check that cries wolf, which this
-# repo has already shipped twice and had to repair.
+# (the repeats must fall inside one window). Only repeated-tool-call also carries
+# the STATE qualifier (no Edit/Write in between -- re-running a gate after
+# changing a file is the workflow working, not a loop); error-retry-loop and
+# repeated-agent-spawn get the window alone. Each row therefore reports the
+# `filters` that actually ran on it and the `threshold` it fired at, because a
+# judge told a check ran when it did not reads every candidate toward confirm --
+# and a check that cries wolf is a failure this repo has shipped twice already.
 #
 # THRESHOLDS ARE CALIBRATED AGAINST REAL SESSIONS, not guessed. The depth
 # factor defaults to 5x the median turn, because 3x flagged 15 of 67 turns on a
@@ -114,7 +117,22 @@ jq -n \
            | startswith("<task-notification>") or startswith("<local-command-")
              or startswith("<system-reminder>") ) | not);
 
-  def secs: if . == null then 0 else (try (. | fromdateiso8601) catch 0) end;
+  # A transcript timestamp carries milliseconds ("…:22.267Z") and fromdateiso8601
+  # rejects that spelling, so the fractional part is stripped before the parse.
+  # What a FAILED parse yields is the load-bearing half: null, never 0. A 0 fed
+  # into the `<= $window` comparisons below turns an unreadable timestamp into a
+  # maximally-qualifying row -- the candidate confirmed BECAUSE its input could
+  # not be read. A null span fails every window filter instead.
+  def secs: if . == null then null
+            else ( try (sub("\\.[0-9]+"; "") | fromdateiso8601) catch null ) end;
+  def span_of: (.first | secs) as $a | (.last | secs) as $b
+               | if $a == null or $b == null then null else $b - $a end;
+
+  # error-retry-loop fires at two, while $minrep (3) governs the repeat shapes.
+  # Two failures of the same call is already a retry loop; a third is the bar for
+  # calls that SUCCEEDED. The number is named so the report can state it per
+  # signature instead of advertising one min_repeats that this shape ignores.
+  def retry_min: 2;
 
   # A Bash command contributes a validated command NAME or nothing. "git" is the
   # same risk class as the command table in AGENTS.md; the full line is not, and
@@ -177,8 +195,10 @@ jq -n \
       | $r + { intervening_edits:
                  ( [ $edits[] | select(.seq > $r.first_seq and .seq < $r.last_seq) ] | length ) } );
 
-    def qualified: with_edits
-      | map(select(.span_seconds <= $window and .intervening_edits == 0));
+    def in_window: map(select(.span_seconds != null and .span_seconds <= $window));
+
+    def qualified: with_edits | in_window
+      | map(select(.intervening_edits == 0));
 
     ( $tools | map(select(.tool != "Agent")) | group_by([.tool, .fingerprint])
       | map( select(length >= $minrep)
@@ -187,21 +207,23 @@ jq -n \
                  count: length, errors: (map(select(.is_error == true)) | length),
                  turn: .[0].turn, skill: .[0].skill,
                  first_seq: (map(.seq) | min), last_seq: (map(.seq) | max),
-                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last) } )
-      | map(. + {span_seconds: ((.last | secs) - (.first | secs))})
+                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last),
+                 threshold: $minrep, filters: ["window", "intervening-edits"] } )
+      | map(. + {span_seconds: span_of})
       | qualified ) as $repeats
 
   | ( $tools | map(select(.tool != "Agent" and .is_error == true))
       | group_by([.tool, .fingerprint])
-      | map( select(length >= 2)
+      | map( select(length >= retry_min)
              | { kind: "error-retry-loop",
                  tool: .[0].tool, bin: .[0].bin, fingerprint: .[0].fingerprint,
                  count: length, errors: length,
                  turn: .[0].turn, skill: .[0].skill,
                  first_seq: (map(.seq) | min), last_seq: (map(.seq) | max),
-                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last) } )
-      | map(. + {span_seconds: ((.last | secs) - (.first | secs))})
-      | map(select(.span_seconds <= $window)) ) as $retries
+                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last),
+                 threshold: retry_min, filters: ["window"] } )
+      | map(. + {span_seconds: span_of})
+      | in_window ) as $retries
 
   | ( $tools | map(select(.tool == "Agent")) | group_by(.bin)
       | map( select(length >= $minrep)
@@ -209,9 +231,10 @@ jq -n \
                  subagent_type: .[0].bin, count: length,
                  turn: .[0].turn, skill: .[0].skill,
                  first_seq: (map(.seq) | min), last_seq: (map(.seq) | max),
-                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last) } )
-      | map(. + {span_seconds: ((.last | secs) - (.first | secs))})
-      | map(select(.span_seconds <= $window)) ) as $spawns
+                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last),
+                 threshold: $minrep, filters: ["window"] } )
+      | map(. + {span_seconds: span_of})
+      | in_window ) as $spawns
 
   # ---- turn depth (the GH-13 signal, recalibrated) -------------------------
   # GH-14 proposed cache_read spikes. Measured, cache_read TRENDS -- early turns

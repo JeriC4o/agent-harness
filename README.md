@@ -120,9 +120,12 @@ fingerprint, turn, skill, error flag — and the `inspector` agent judges a few 
 thousands. It never sees the transcript itself.
 
 **Loop-shaped is not loop.** Every repetition signature carries a *time* qualifier (the repeats fall inside
-one window) and a *state* qualifier (no `Edit`/`Write` in between — re-running a gate after changing a file
-is the workflow working). Thresholds were calibrated against real sessions rather than guessed: the depth
-factor defaults to 5× the median turn because 3× flagged one turn in five, which is a list nobody reads.
+one window); `repeated-tool-call` also carries a *state* qualifier (no `Edit`/`Write` in between — re-running
+a gate after changing a file is the workflow working). Every repetition row reports which qualifiers
+actually ran on it and at what threshold, so a reader never has to assume — the depth, deferral and
+step-regression signatures carry no such fields, because no qualifier beyond their own detection rule
+applies to them. Thresholds were calibrated against real sessions rather than guessed: the depth factor
+defaults to 5× the median turn because 3× flagged one turn in five, which is a list nobody reads.
 
 Two things it will tell you that a quieter tool would not. **A signature that could not run says so** — the
 `current_step` checks need progress-file writes, and a session without them reports `unavailable`, never a
