@@ -151,6 +151,18 @@ if [ -f "$MIRROR/templates/project/ai-docs/learnings/README.md" ]; then
   rm -f "$MIRROR/templates/project/ai-docs/learnings/README.md"
   out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
   case "$out" in *L6*) ok "a MISSING scaffolded copy is flagged too" ;; *) bad "a MISSING scaffolded copy is flagged too" ;; esac
+  # And the same the other way round, which is the WORSE case by the severity
+  # ordering the check itself states: no live contract at all. Guarding on the
+  # live file was the same defect pointed the other way, and it survived a round
+  # of review because only the copy side had a leg here.
+  cp "$MIRROR/ai-docs/learnings/README.md" "$MIRROR/templates/project/ai-docs/learnings/README.md"
+  rm -f "$MIRROR/ai-docs/learnings/README.md"
+  out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
+  case "$out" in *L6*) ok "a MISSING live contract is flagged" ;; *) bad "a MISSING live contract is flagged" ;; esac
+  # Neither present is silent: nothing to mirror.
+  rm -f "$MIRROR/templates/project/ai-docs/learnings/README.md"
+  out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
+  case "$out" in *L6*) bad "but a tree with neither is silent" ;; *) ok "but a tree with neither is silent" ;; esac
 else
   bad "L6 fixture: the scaffolded copy was not found"
 fi

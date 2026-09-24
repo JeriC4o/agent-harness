@@ -242,13 +242,18 @@ fi
 # all. Guarding the comparison on both files existing makes the check pass
 # silently in exactly that case -- a gate that cannot fire where it matters
 # most, which is the shape AGENTS.md section Build & Test names as worse than an
-# honestly absent gate. The live file is still guarded: a tree that does not
-# carry it is not a harness repo, and the fixtures this script is tested against
-# are exactly that.
+# honestly absent gate. That applies to EITHER file: guarding on the live one is
+# the same defect pointed the other way, and by this paragraph own severity
+# ordering a missing live contract is the worse of the two. Only a tree carrying
+# neither is silent -- that is a tree with nothing to mirror, which is what the
+# fixtures without either file are.
 L6_LIVE="${ROOT}/ai-docs/learnings/README.md"
 L6_COPY="${ROOT}/templates/project/ai-docs/learnings/README.md"
-if [ -f "$L6_LIVE" ]; then
-  if [ -f "$L6_COPY" ]; then
+if [ -f "$L6_LIVE" ] || [ -f "$L6_COPY" ]; then
+  if [ ! -f "$L6_LIVE" ]; then
+    finding major L6 \
+      "ai-docs/learnings/README.md is MISSING -- this repo has no learning-log contract to mirror"
+  elif [ -f "$L6_COPY" ]; then
     cmp -s "$L6_LIVE" "$L6_COPY" || finding major L6 \
       "templates/project/ai-docs/learnings/README.md differs from ai-docs/learnings/README.md -- the scaffolded copy is what consumers get; mirror it"
   else
