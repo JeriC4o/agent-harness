@@ -12,7 +12,7 @@ Derive the path mid-task from two commands — no directory listing, no lookup:
 
 | Component | Source |
 |---|---|
-| `username` | `whoami` |
+| `username` | `git config user.name` |
 | `branch` | `git branch --show-current` |
 
 Sanitize `username` and `branch` **independently** through this pipeline — replace every character outside the allowed set with `-`, collapse each run of `-`, then strip leading/trailing `-` and `.`. **This is the tree's ONLY copy; every other file links here instead of restating it.**
@@ -20,6 +20,18 @@ Sanitize `username` and `branch` **independently** through this pipeline — rep
 ```
 sed 's/[^A-Za-z0-9._-]/-/g; s/--*/-/g; s/^[-.]*//; s/[-.]*$//'
 ```
+
+**`username` is the git identity, NOT the OS account.** An OS account name is frequently a machine
+account — `ubuntu`, `runner`, `root` inside a container or on CI — shared by every human who works
+there, which defeats the disjointness this whole scheme exists for. The git identity is per-person by
+construction, needs no network, and is the name the branch and the review surface already carry.
+**The fold and the entry writer MUST derive it identically:** the fold's skip-self guard compares
+composed paths, so a divergence makes it protect a path that does not exist. The fold's
+derivation-mismatch guard catches that **only when a file for this branch already exists under the
+other username** — which is the case that has teeth, since that file is the live append target. Where
+no such file exists yet the glob matches nothing, the fold proceeds with a wrong composed path, and
+the next entry written under the other derivation is unprotected from then on. Where `user.name` is unset the derivation yields an empty name, and the fold's
+emptiness guard turns that into a loud abort; that is the intended behaviour, not a regression.
 
 | Branch | Target file |
 |---|---|
@@ -42,7 +54,7 @@ independently and then joined.
 **What happened:** [quote or paraphrase of the incident / observation]
 **Rule:** [what to do instead, or what to keep doing]
 **Kind:** correction | validation    (optional; defaults to `correction` when omitted)
-**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy    (comma-separate multiple)
+**Escalated?** no | AGENTS.md | agents-method | skill:[name] | hook | settings | agent:[name] | rules:[name] | templates:[name] | gate:[script] | doc-convention | code-style | workflow | context.md | claude-tools-hierarchy    (comma-separate multiple)
 **Superseded by:** [ref] — [one-line reason]    (optional; omit when not applicable)
 ```
 

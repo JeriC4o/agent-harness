@@ -26,7 +26,12 @@ d=$(mktemp -d); mkdir -p "$d/sub"; : > "$d/AGENTS.md"
 ( cd "$d/sub" && unset CLAUDE_PROJECT_DIR && bash "$GUARD" ); check "falls back to PWD when no project dir" "$?" "1"
 
 printf '\n== guarded hooks no-op in an unmanaged repo ==\n'
-UNMANAGED=$(mktemp -d); git -C "$UNMANAGED" init -q -b main; git -C "$UNMANAGED" commit -q --allow-empty -m x
+# The identity is pinned per-invocation: a sandbox with no global git identity
+# makes `commit --allow-empty` fail, and the suite then runs its checks against
+# a repo with no HEAD while still reporting green -- a setup step failing
+# silently is exactly what the fixtures are supposed to rule out.
+UNMANAGED=$(mktemp -d); git -C "$UNMANAGED" init -q -b main
+git -C "$UNMANAGED" -c user.email=t@t -c user.name=t commit -q --allow-empty -m x
 
 # branch-protection would otherwise BLOCK this commit on the default branch.
 cmd=$(jq -r '.hooks.PreToolUse[] | select(.matcher=="Bash") | .hooks[] | select(.statusMessage|test("branch before")) | .command' "$HOOKS_JSON")
@@ -35,7 +40,8 @@ out=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$
 check "branch-protection allows commit in unmanaged repo" "$rc" "0"
 check "  and stays silent" "$out" ""
 
-MANAGED=$(mktemp -d); git -C "$MANAGED" init -q -b main; git -C "$MANAGED" commit -q --allow-empty -m x
+MANAGED=$(mktemp -d); git -C "$MANAGED" init -q -b main
+git -C "$MANAGED" -c user.email=t@t -c user.name=t commit -q --allow-empty -m x
 mkdir -p "$MANAGED/ai-docs"
 out=$(cd "$MANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$MANAGED" \
       bash -c "$cmd" <<< '{"tool_input":{"command":"git commit -m x"}}' 2>&1); rc=$?
@@ -47,6 +53,42 @@ cmd=$(jq -r '.hooks.PreToolUse[] | select(.matcher=="Bash") | .hooks[] | select(
 out=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$UNMANAGED" \
       bash -c "$cmd" <<< '{"tool_input":{"command":"pytest tests | tail -20"}}' 2>&1); rc=$?
 check "gate-pipe-guard blocks even in an unmanaged repo" "$rc" "2"
+
+# A suite made of shell scripts was invisible to this guard: the gate anchor
+# listed build tools by name and `bash` was not among them, so in a repository
+# whose every gate is `bash scripts/test-*.sh` the hook guarded nothing at all.
+# The second arm keys on a shell interpreter invoking a SCRIPT FILE whose
+# basename carries a gate word -- never on a bare interpreter, which is what
+# keeps `bash -c ... | jq` legitimate.
+gate_case() { # <label> <command> <want-rc>
+  o=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$UNMANAGED" \
+      bash -c "$cmd" <<< "{\"tool_input\":{\"command\":$(jq -Rn --arg c "$2" '$c')}}" 2>&1); r=$?
+  check "$1" "$r" "$3"
+}
+gate_case "a shell test suite piped into tail is blocked" \
+          'bash scripts/test-session-events.sh 2>&1 | tail -3' 2
+gate_case "a shell check script fused to || echo is blocked" \
+          'bash scripts/check-references.sh || echo ok' 2
+gate_case "a lint script piped into grep is blocked" \
+          'sh tools/lint-all.sh | grep FAIL' 2
+gate_case "but a bare interpreter with -c is not a gate" \
+          "bash -c 'printf hi' | jq ." 0
+gate_case "nor is a non-gate script piped into jq" \
+          'bash scripts/session-events.sh x.jsonl | jq .' 0
+gate_case "and the suite run bare is not blocked" \
+          'bash scripts/test-session-events.sh' 0
+
+# A redirection before the pipe defeated the anchor entirely: the gap between
+# the gate word and the pipe excludes `&`, so `2>&1` -- the most ordinary way
+# anyone pipes a gate -- could not be crossed. This was blind for EVERY
+# language, not only for shell suites, so it is tested on a build tool too.
+# Redirections are now normalised out of the command before matching.
+gate_case "a redirection before the pipe no longer hides a gate" \
+          'pytest tests 2>&1 | tail -20' 2
+gate_case "same for a shell suite" \
+          'bash scripts/test-fold.sh 2>&1 | grep FAIL' 2
+gate_case "and >&2 in a non-gate command still passes" \
+          'printf oops >&2 | cat' 0
 
 printf '\n== SessionStart emits nothing when unmanaged, JSON when managed ==\n'
 cmd=$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$HOOKS_JSON")
