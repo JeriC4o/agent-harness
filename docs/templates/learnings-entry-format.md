@@ -26,8 +26,11 @@ account — `ubuntu`, `runner`, `root` inside a container or on CI — shared by
 there, which defeats the disjointness this whole scheme exists for. The git identity is per-person by
 construction, needs no network, and is the name the branch and the review surface already carry.
 **The fold and the entry writer MUST derive it identically:** the fold's skip-self guard compares
-composed paths, so a divergence between them does not fail loudly — it silently stops protecting the
-live append target. Where `user.name` is unset the derivation yields an empty name, and the fold's
+composed paths, so a divergence makes it protect a path that does not exist. The fold's
+derivation-mismatch guard catches that **only when a file for this branch already exists under the
+other username** — which is the case that has teeth, since that file is the live append target. Where
+no such file exists yet the glob matches nothing, the fold proceeds with a wrong composed path, and
+the next entry written under the other derivation is unprotected from then on. Where `user.name` is unset the derivation yields an empty name, and the fold's
 emptiness guard turns that into a loud abort; that is the intended behaviour, not a regression.
 
 | Branch | Target file |

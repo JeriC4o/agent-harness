@@ -26,7 +26,12 @@ d=$(mktemp -d); mkdir -p "$d/sub"; : > "$d/AGENTS.md"
 ( cd "$d/sub" && unset CLAUDE_PROJECT_DIR && bash "$GUARD" ); check "falls back to PWD when no project dir" "$?" "1"
 
 printf '\n== guarded hooks no-op in an unmanaged repo ==\n'
-UNMANAGED=$(mktemp -d); git -C "$UNMANAGED" init -q -b main; git -C "$UNMANAGED" commit -q --allow-empty -m x
+# The identity is pinned per-invocation: a sandbox with no global git identity
+# makes `commit --allow-empty` fail, and the suite then runs its checks against
+# a repo with no HEAD while still reporting green -- a setup step failing
+# silently is exactly what the fixtures are supposed to rule out.
+UNMANAGED=$(mktemp -d); git -C "$UNMANAGED" init -q -b main
+git -C "$UNMANAGED" -c user.email=t@t -c user.name=t commit -q --allow-empty -m x
 
 # branch-protection would otherwise BLOCK this commit on the default branch.
 cmd=$(jq -r '.hooks.PreToolUse[] | select(.matcher=="Bash") | .hooks[] | select(.statusMessage|test("branch before")) | .command' "$HOOKS_JSON")
@@ -35,7 +40,8 @@ out=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$
 check "branch-protection allows commit in unmanaged repo" "$rc" "0"
 check "  and stays silent" "$out" ""
 
-MANAGED=$(mktemp -d); git -C "$MANAGED" init -q -b main; git -C "$MANAGED" commit -q --allow-empty -m x
+MANAGED=$(mktemp -d); git -C "$MANAGED" init -q -b main
+git -C "$MANAGED" -c user.email=t@t -c user.name=t commit -q --allow-empty -m x
 mkdir -p "$MANAGED/ai-docs"
 out=$(cd "$MANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$MANAGED" \
       bash -c "$cmd" <<< '{"tool_input":{"command":"git commit -m x"}}' 2>&1); rc=$?

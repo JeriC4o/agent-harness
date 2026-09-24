@@ -54,6 +54,17 @@ parent-side because of that ordering, not because of any permission carve-out.
    still-open branch that appended more entries locally differs from `main`, so its file is left alone.
    Existence alone is not the test; identity is.
 4. **Keeper** — this `README.md` is never a candidate.
+5. **Entry files only** — a non-entry file placed directly in this directory (a `.txt`, a stray note) is
+   not the archive's to take.
+6. **Non-empty** — a zero-byte file would compare identical to anything and must not qualify on that.
+
+**Before any of the above runs, the fold checks its own name derivation**, because every filter in the
+list depends on it. Three failure shapes are refused, loudly and before the archive is touched at all:
+an empty name, a non-zero exit from the derivation, and — the one the other two structurally cannot
+see — a derivation that SUCCEEDS and is WRONG, detected by finding a file for this branch under a
+different username. That last case is the dangerous one: it returns a plausible name, so nothing about
+it looks like a failure, and the skip-self filter then protects a path that does not exist while the
+live append target stays eligible.
 
 **Append and delete.** Each folded file's bytes are appended **verbatim at EOF** of
 `ai-docs/learnings.md` — no sort-insert, no re-dating, no renumbering, no reformatting — and the
