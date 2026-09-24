@@ -48,6 +48,42 @@ out=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$
       bash -c "$cmd" <<< '{"tool_input":{"command":"pytest tests | tail -20"}}' 2>&1); rc=$?
 check "gate-pipe-guard blocks even in an unmanaged repo" "$rc" "2"
 
+# A suite made of shell scripts was invisible to this guard: the gate anchor
+# listed build tools by name and `bash` was not among them, so in a repository
+# whose every gate is `bash scripts/test-*.sh` the hook guarded nothing at all.
+# The second arm keys on a shell interpreter invoking a SCRIPT FILE whose
+# basename carries a gate word -- never on a bare interpreter, which is what
+# keeps `bash -c ... | jq` legitimate.
+gate_case() { # <label> <command> <want-rc>
+  o=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$UNMANAGED" \
+      bash -c "$cmd" <<< "{\"tool_input\":{\"command\":$(jq -Rn --arg c "$2" '$c')}}" 2>&1); r=$?
+  check "$1" "$r" "$3"
+}
+gate_case "a shell test suite piped into tail is blocked" \
+          'bash scripts/test-session-events.sh 2>&1 | tail -3' 2
+gate_case "a shell check script fused to || echo is blocked" \
+          'bash scripts/check-references.sh || echo ok' 2
+gate_case "a lint script piped into grep is blocked" \
+          'sh tools/lint-all.sh | grep FAIL' 2
+gate_case "but a bare interpreter with -c is not a gate" \
+          "bash -c 'printf hi' | jq ." 0
+gate_case "nor is a non-gate script piped into jq" \
+          'bash scripts/session-events.sh x.jsonl | jq .' 0
+gate_case "and the suite run bare is not blocked" \
+          'bash scripts/test-session-events.sh' 0
+
+# A redirection before the pipe defeated the anchor entirely: the gap between
+# the gate word and the pipe excludes `&`, so `2>&1` -- the most ordinary way
+# anyone pipes a gate -- could not be crossed. This was blind for EVERY
+# language, not only for shell suites, so it is tested on a build tool too.
+# Redirections are now normalised out of the command before matching.
+gate_case "a redirection before the pipe no longer hides a gate" \
+          'pytest tests 2>&1 | tail -20' 2
+gate_case "same for a shell suite" \
+          'bash scripts/test-fold.sh 2>&1 | grep FAIL' 2
+gate_case "and >&2 in a non-gate command still passes" \
+          'printf oops >&2 | cat' 0
+
 printf '\n== SessionStart emits nothing when unmanaged, JSON when managed ==\n'
 cmd=$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$HOOKS_JSON")
 out=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$UNMANAGED" bash -c "$cmd" 2>&1)
