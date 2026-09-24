@@ -230,5 +230,23 @@ abort_case "rc 7, no output"      'derive_name() { return 7; }'
 abort_case "rc 3, WITH output"    'derive_name() { printf "alice-se"; return 3; }'
 abort_case "undefined"            '# derive_name is deliberately not defined'
 
+# The SIXTH stub, and the only one the other five cannot stand in for: a
+# derivation that returns a syntactically valid username which is simply not the
+# one this branch's file was created under. rc=0, output non-empty -- both
+# guards above are satisfied -- and $self then names a file that does not exist,
+# so the skip-self guard protects a phantom while the real file stays eligible.
+# This was the live state of this repository: the documented source resolved to
+# the OS account while every file on disk carried the git identity.
+STUB_WRONG='derive_name() { printf "bob-self.md"; }'
+abort_case "valid but WRONG username" "$STUB_WRONG"
+
+printf '\n== POSITIVE CONTROL: delete G2b, the wrong derivation eats the self file ==\n'
+strip 'derivation mismatch' g2b
+W7=$(make_fixture)
+run_fold "$W7" "$STUB_WRONG" "$STRIPPED"
+gone "without it, the self file is consumed" "$W7/ai-docs/learnings/alice-self.md"
+if grep -q 'self-marker' "$W7/ai-docs/learnings.md"; then ok "without it, its entry lands in the archive"
+else bad "without it, its entry lands in the archive"; fi
+
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
