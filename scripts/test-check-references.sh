@@ -130,6 +130,44 @@ drift=$(bash "$CHECK" --root "$ROOT" --audit-roots 2>&1); rc2=$?
 check "every hardcoded root appears in the Agent Docs table" "$rc2" "0"
 [ "$rc2" = "0" ] || printf '%s\n' "$drift"
 
+printf '\n== L6: the scaffolded learnings contract mirrors the live one ==\n'
+# The Propagation Rule cannot name the scaffolded copy -- sync groups live in a
+# method file and templates/ does not exist in a consuming project -- so this
+# comparison is the only thing between an edit and a stale contract shipping to
+# every scaffolded project. A control that only ever sees them matching cannot
+# tell the check from a no-op, so the divergence is planted.
+MIRROR=$(mktemp -d)
+cp -R "$ROOT/ai-docs" "$ROOT/templates" "$ROOT/docs" "$MIRROR/" 2>/dev/null
+if [ -f "$MIRROR/templates/project/ai-docs/learnings/README.md" ]; then
+  printf 'STRAY\n' >> "$MIRROR/templates/project/ai-docs/learnings/README.md"
+  out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
+  case "$out" in *L6*) ok "a diverged scaffolded copy is flagged" ;; *) bad "a diverged scaffolded copy is flagged" ;; esac
+  cp "$MIRROR/ai-docs/learnings/README.md" "$MIRROR/templates/project/ai-docs/learnings/README.md"
+  out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
+  case "$out" in *L6*) bad "and a matching copy is not" ;; *) ok "and a matching copy is not" ;; esac
+  # Absence is the worse half: a stale copy ships an out-of-date contract, a
+  # missing one ships none at all. A presence guard around the comparison would
+  # pass silently here, which is why this leg exists and why it is separate.
+  rm -f "$MIRROR/templates/project/ai-docs/learnings/README.md"
+  out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
+  case "$out" in *L6*) ok "a MISSING scaffolded copy is flagged too" ;; *) bad "a MISSING scaffolded copy is flagged too" ;; esac
+  # And the same the other way round, which is the WORSE case by the severity
+  # ordering the check itself states: no live contract at all. Guarding on the
+  # live file was the same defect pointed the other way, and it survived a round
+  # of review because only the copy side had a leg here.
+  cp "$MIRROR/ai-docs/learnings/README.md" "$MIRROR/templates/project/ai-docs/learnings/README.md"
+  rm -f "$MIRROR/ai-docs/learnings/README.md"
+  out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
+  case "$out" in *L6*) ok "a MISSING live contract is flagged" ;; *) bad "a MISSING live contract is flagged" ;; esac
+  # Neither present is silent: nothing to mirror.
+  rm -f "$MIRROR/templates/project/ai-docs/learnings/README.md"
+  out=$(bash "$CHECK" --root "$MIRROR" 2>&1)
+  case "$out" in *L6*) bad "but a tree with neither is silent" ;; *) ok "but a tree with neither is silent" ;; esac
+else
+  bad "L6 fixture: the scaffolded copy was not found"
+fi
+rm -rf "$MIRROR"
+
 printf '\n== this repository is clean ==\n'
 out=$(bash "$CHECK" 2>&1); rc=$?
 check "repo -> rc 0" "$rc" "0"

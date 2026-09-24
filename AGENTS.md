@@ -28,8 +28,11 @@ instruction files:
 2. `bash scripts/check-references.sh` — markdown links and `#anchor`s resolve; every
    `${CLAUDE_PLUGIN_ROOT}` path exists here; every bare `ai-docs/…` in a method file names a
    **documented** project-data root rather than a method file written in project spelling; and every
-   `AGENTS.md § …` reference names a section a consuming project's `AGENTS.md` actually has. That last
-   class is why the script exists: the Propagation Rule's Spec-Amendment sync group pointed its final
+   `AGENTS.md § …` reference names a section a consuming project's `AGENTS.md` actually has; and the
+   scaffolded copy of the learning-log contract is present and byte-identical to the live one — absence
+   is checked separately from divergence, because a missing copy ships no contract at all and a guard
+   that skipped it would pass silently in the worse case. That `AGENTS.md § …` class is why the script
+   exists: the Propagation Rule's Spec-Amendment sync group pointed its final
    member at `ai-docs/workflow.md`, so that member was never once updated by a sweep, and neither
    hand-run check above could see it.
 3. (folded into 2)
@@ -109,6 +112,15 @@ plus POSIX shell; no compiled sources.
   every consumer while still working here.
 - **A skill script is invoked as `${CLAUDE_SKILL_DIR}/scripts/<name>`**, never by a repo-relative path —
   the plugin installs to a variable location.
+- **`templates/project/ai-docs/learnings/README.md` is a byte-identical copy of this repo's own
+  `ai-docs/learnings/README.md`, and the Fold group cannot name it.** That group lives in a method file,
+  and `templates/` does not exist in a consuming project — so the obligation is recorded here instead:
+  **any** edit to `ai-docs/learnings/README.md` mirrors to it. Not "whenever the fold contract
+  changes" — that file is a Learning-Log group member as well, so a boundary-rule or entry-format
+  change lands there just as readily, and a trigger naming only the fold is the narrower-and-still-wrong
+  shape. `scripts/check-references.sh` enforces the mirror, so this is a gate rather than a hope. The
+  copy is what every scaffolded project receives, so a gap there reaches consumers who cannot see the
+  implementation it describes.
 - **Any PR touching plugin-loaded content bumps `.claude-plugin/plugin.json`'s patch version.** The
   install cache is keyed by version, so an unbumped fix silently never reaches an installed copy. See
   [`README.md` § Releasing](README.md#releasing).
