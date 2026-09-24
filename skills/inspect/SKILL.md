@@ -53,7 +53,7 @@ it must not wait for the agent's report to surface.
 ```
 Agent(subagent_type="inspector", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/inspector.md and follow it exactly.
-  Here is the reduced event stream and the signatures: <paste the --signatures JSON>
+  Here are the signatures and the unavailable list: <paste the --signatures JSON>
   Do NOT open the transcript; you have everything you are permitted to see.
   Report: (a) signatures that could not run and why, (b) confirmed defects with the instruction at fault,
   (c) dismissed candidates with the reason, (d) proposed Learning Log entries.
