@@ -18,7 +18,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%BUILD_CMD%` | Compile the changed module | n/a — no build step |
 | `%TEST_CMD%` | Run a module's tests | n/a — validation is the checks below |
 | `%FORMAT_CMD%` | Auto-format changed files | n/a |
-| `%LINT_CMD%` | Lint as the gate | `bash -n` on every `*.sh` and `jq -e .` on every manifest |
+| `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4 |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
 **Structural checks that stand in for a test suite** — run all four before any commit that touches
@@ -33,7 +33,13 @@ instruction files:
    member at `ai-docs/workflow.md`, so that member was never once updated by a sweep, and neither
    hand-run check above could see it.
 3. (folded into 2)
-4. `bash -n` on every `*.sh`, and every test suite green:
+4. `bash -n` on every `*.sh` — **as `git ls-files -z '*.sh' | xargs -0 -n1 bash -n`, and not otherwise.**
+   The three natural spellings all report success on a file that does not parse, verified against a
+   deliberately broken fixture: `-exec bash -n {} +` batches, so only the first file is parsed and the
+   rest become positional parameters (rc 0, no output at all — the quietest possible false green);
+   `-exec … \;` prints the error but `find` still exits 0; and a `for` loop exits with the LAST
+   iteration's status, so an earlier failure is erased. Only the `xargs -0 -n1` form propagates a
+   failure. Then every test suite green:
    `scripts/test-plugin-manifest.sh`, `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`,
    `scripts/test-trace-tokens.sh`, `scripts/test-session-events.sh`,
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
