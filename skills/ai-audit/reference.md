@@ -16,7 +16,7 @@ Static reference content extracted from `SKILL.md`. Loaded on demand when `/ai-a
 
 ## Checklist C — Dead references
 
-- Skills/agents named in `AGENTS.md` Propagation Rule sync-group rows must exist.
+- Skills/agents named in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule sync-group rows must exist. **The table is in the method file, not in `AGENTS.md`** — looking for it in the profile finds nothing and the check silently passes.
 - Agent names referenced in skills must match a file under `${CLAUDE_PLUGIN_ROOT}/agents/`.
 - `ai-docs/plans/done/` references in Subagent checklists must still resolve.
 
@@ -46,7 +46,7 @@ Per the official Claude Code docs:
 
 ## Checklist G — AGENTS.md "Propagation Rule" coherence
 
-- Every "sync group" listed in AGENTS.md still has all listed members present and cross-referenced.
+- Every sync group listed in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule still has all listed members present and cross-referenced — including that each group of three or more carries an anchor row plus a back-reference row rather than a silently incomplete set of one-way rows.
 - Behaviors described in AGENTS.md and replicated in Subagent checklists agree (e.g., file-size hard/soft limits in `review-findings.md` match AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`).
 - Exemptions in AGENTS.md (e.g., trait-impl doc-convention exemption, Java carve-out) appear in every enforcement file.
 

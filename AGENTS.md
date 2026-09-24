@@ -109,6 +109,12 @@ plus POSIX shell; no compiled sources.
   every consumer while still working here.
 - **A skill script is invoked as `${CLAUDE_SKILL_DIR}/scripts/<name>`**, never by a repo-relative path —
   the plugin installs to a variable location.
+- **`templates/project/ai-docs/learnings/README.md` is a byte-identical copy of this repo's own
+  `ai-docs/learnings/README.md`, and the Fold group cannot name it.** That group lives in a method file,
+  and `templates/` does not exist in a consuming project — so the obligation is recorded here instead:
+  whenever the fold contract changes, mirror it and confirm with `cmp`. The copy is what every
+  scaffolded project receives, so a gap there reaches consumers who cannot see the implementation it
+  describes.
 - **Any PR touching plugin-loaded content bumps `.claude-plugin/plugin.json`'s patch version.** The
   install cache is keyed by version, so an unbumped fix silently never reaches an installed copy. See
   [`README.md` § Releasing](README.md#releasing).
