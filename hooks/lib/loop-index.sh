@@ -16,6 +16,14 @@
 # session maps to several transcripts, and without this field a cross-agent
 # finding cannot be expanded into detail later.
 #
+# `cwd` is stored because the ledger is GLOBAL -- one directory for every project
+# -- and pooling projects is meaningless: thresholds that fit one codebase say
+# nothing about another. The project is technically recoverable from the
+# transcript path, whose directory encodes it by replacing "/" with "-", but that
+# encoding is LOSSY: a directory whose own name contains a hyphen is
+# indistinguishable from a path separator, so the recovered path can be wrong
+# without any sign that it is. cwd arrives exact.
+#
 # THE KEY IS THE HASH ALONE; agent_id is a FIELD beside it. Putting agent_id in
 # the key would stop the same hash from two agents matching, which defeats the
 # one case a shared ledger exists for. One index then answers two questions:
@@ -62,7 +70,8 @@ out=$(printf '%s' "$in" | jq -r '
     | (.tool_name // "-") as $tool
     | ([(.session_id // "-"), $tool, $f, $agent] | @tsv),
       ({ts: (now | todate), kind: "call", agent_id: $agent, tool: $tool, fp: $f,
-        tool_use_id: (.tool_use_id // "-"), transcript: $tp} | tojson)
+        tool_use_id: (.tool_use_id // "-"), transcript: $tp,
+        cwd: (.cwd // "-")} | tojson)
   ' 2>/dev/null) || exit 0
 [ -n "$out" ] || exit 0
 
