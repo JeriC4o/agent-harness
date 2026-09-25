@@ -163,9 +163,36 @@ cannot tell parking work from week one of a project — every run says so in its
 
 ## Update
 
+Moving an installed copy to a newer version takes **two** commands, in this order:
+
 ```bash
-/plugin marketplace update agent-harness
+claude plugin marketplace update agent-harness
+claude plugin update harness@agent-harness
 ```
+
+The first refreshes this machine's local copy of the marketplace catalog; the second is the one that
+moves the installed payload.
+
+**`claude plugin install` is not an upgrade path.** Against an existing installation it short-circuits,
+prints `✔ Plugin "harness@agent-harness" is already installed (scope: user)`, and exits 0 — a success
+message with the payload untouched. `claude plugin marketplace update` on its own refreshes catalog
+metadata and nothing else. Run together they read like an upgrade and are not one.
+
+`update` applies to the scope you installed into and defaults to `user`. If you installed with
+`--scope project`, pass `--scope project` here too.
+
+**Then start a *new* session.** Two different things get called "restarting", and only one of them
+picks up a new plugin version:
+
+| What you do | What it picks up |
+|---|---|
+| Resume a session (`claude --resume`) | your **project profile** — `AGENTS.md`, `ai-docs/` — re-read on resume |
+| Start a **new** session | the **plugin** — skills, agents and hooks, at the newly installed version |
+
+A resumed session keeps the plugin version it started with, however many times it re-reads your project
+files. `claude plugin list` reports the new version as soon as the update lands — but that is a statement
+about the cache on disk, not about the session you are sitting in. The only confirmation that a session
+is running the new version is that the session was started after the update.
 
 Your project profile is untouched by an update — it lives in your repo, not in the plugin. If a new
 harness version adds template files, `/harness:harness-init` picks them up on a re-run without disturbing
@@ -236,14 +263,7 @@ old payload in place.
 `rules/`, `hooks/`, `docs/`, `scripts/`, `templates/`. A change confined to `README.md` or `ai-docs/`
 (this repo's own profile) does not ship to consumers and needs no bump.
 
-Consumers update with:
-
-```bash
-claude plugin marketplace update agent-harness
-claude plugin install harness@agent-harness --scope user
-```
-
-Then restart the session — hooks are read at start.
+Consumers update with the procedure in [§ Update](README.md#update): `claude plugin update`, then a new session.
 
 ## Developing the harness itself
 
@@ -254,11 +274,13 @@ than through an install, so edits take effect without reinstalling. To exercise 
 claude --plugin-dir /Users/jc/projects/agent-harness
 ```
 
-There is no build. The gate is four structural checks — JSON manifests parse, every relative link and
-anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script — plus two delivery
-gates: `scripts/test-install-smoke.sh` installs the working tree into a throwaway config and requires the
-plugin to actually load, and `scripts/check-release.sh` refuses a branch that changed shipped content
-without a version bump. See [`AGENTS.md` § Build & Test](AGENTS.md#build--test).
+There is no build. The gate is five structural checks — JSON manifests parse, every relative link and
+anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script, and this README
+documents an update procedure that actually updates — plus three delivery gates:
+`scripts/test-install-smoke.sh` installs the working tree into a throwaway config and requires the plugin
+to actually load, `scripts/check-release.sh` refuses a branch that changed shipped content without a
+version bump, and `scripts/test-upgrade-smoke.sh` runs this README's own update commands against a
+lowered install and requires the payload to move. See [`AGENTS.md` § Build & Test](AGENTS.md#build--test).
 
 ## Design notes
 
@@ -284,7 +306,7 @@ without a version bump. See [`AGENTS.md` § Build & Test](AGENTS.md#build--test)
 ## Roadmap
 
 The build-out is complete: the method/profile split, plugin packaging, project bootstrap, cross-project
-learning, the audit's two surfaces, hook guards, and two delivery gates.
+learning, the audit's two surfaces, hook guards, and three delivery gates.
 
 **Next, in this order and for this reason** — each earlier item makes the next one measurable rather than
 intuitive:

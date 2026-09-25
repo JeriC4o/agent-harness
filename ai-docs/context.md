@@ -56,7 +56,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `agents/<name>.md` | The 7 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
 | `hooks/hooks.json` | The 12 hooks; `hooks/lib/` holds the shared guard |
-| `scripts/` | Plugin-level utility scripts shared by more than one skill (the promotion gate and sweep) |
+| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`) and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
@@ -83,10 +83,10 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 ## Build & test commands
 
-No build. The checks in `AGENTS.md § Build & Test` are the gate: four structural ones over the repo's
-contents, plus two delivery gates (`test-install-smoke.sh`, `check-release.sh`) that answer the question
-the structural ones cannot — does this reach a consumer. They are hand-run today; mechanising the
-structural four as a script is an open task.
+No build. The checks in `AGENTS.md § Build & Test` are the gate: five structural ones over the repo's
+contents, plus three delivery gates (`test-install-smoke.sh`, `check-release.sh`,
+`test-upgrade-smoke.sh`) that answer the question the structural ones cannot — does this reach a
+consumer. They are hand-run today; wrapping the structural five in a single command is an open task.
 
 ---
 
