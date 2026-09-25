@@ -65,7 +65,7 @@ done
 
 # Project-data roots a method file may legitimately name. Mirrors
 # docs/agents-method.md section Agent Docs; --audit-roots proves the mirror holds.
-DOC_ROOTS='ai-docs/context.md ai-docs/plans ai-docs/bugfix ai-docs/learnings.md ai-docs/learnings'
+DOC_ROOTS='ai-docs/context.md ai-docs/plans ai-docs/bugfix ai-docs/learnings.md ai-docs/learnings ai-docs/feedback'
 
 # Known-absent by design. Every entry needs a reason, because an allowlist with
 # no reason is indistinguishable from a bug someone silenced.

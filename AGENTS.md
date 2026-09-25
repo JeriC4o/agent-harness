@@ -47,7 +47,8 @@ instruction files:
    `scripts/test-trace-tokens.sh`, `scripts/test-session-events.sh`,
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
    `hooks/lib/test-harness-managed.sh`,
-   `skills/harness-init/scripts/test-scaffold.sh`.
+   `skills/harness-init/scripts/test-scaffold.sh`,
+   `skills/report-defect/scripts/test-file-report.sh`.
 
 **Delivery gates** — the checks above validate this repository's CONTENTS; these two validate that the
 contents reach a consumer. Both exist because a bug got past all four structural checks:

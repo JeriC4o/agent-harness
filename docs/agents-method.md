@@ -198,6 +198,7 @@ Interpret user phrasing literally and conservatively. When uncertain — ask, do
 | `ai-docs/bugfix/trace-*.md` | Bugfix trace + durable-state surface — deleted on resolution |
 | `ai-docs/learnings.md` | Corrections log ARCHIVE — history + `/improve` fold destination |
 | `ai-docs/learnings/` | Per-branch entry files — where NEW entries go; union with the archive |
+| `ai-docs/feedback/` | Defect reports filed back to the harness — one file per report, committed |
 | `${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md` | On-demand code-search hierarchy + verbatim block subagents inherit |
 
 See [`${CLAUDE_PLUGIN_ROOT}/docs/agent-docs-index.md`](${CLAUDE_PLUGIN_ROOT}/docs/agent-docs-index.md) for the verbose body of each row (writers, lifecycle, special cases).

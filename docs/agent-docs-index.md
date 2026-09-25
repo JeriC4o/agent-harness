@@ -126,3 +126,10 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Lifecycle.** Append-only per file; a file is deleted only by `/improve`'s fold, once it is identical to the copy on the default branch.
 **When to read.** Derivation of the filename: `${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md` § Target file. Directory contract + fold: `ai-docs/learnings/README.md`.
 
+### `ai-docs/feedback/`
+
+**Purpose.** Defect reports about the HARNESS ITSELF, drafted in a consuming project and filed upstream — one file per report, carrying Symptom / Repro / Expected / Surface / Evidence plus the installed harness version and an idempotency hash. Distinct from `ai-docs/learnings/`, which carries abstracted RULES: a report names a harness `file:line` and is never promoted as a lesson.
+**Writer.** The report-drafting skill; never written by hand during ordinary work.
+**Lifecycle.** Committed with the project — the local file is the evidence a filing had a source, and it survives a failed `gh` call so the text can be pasted manually. The directory is created on first use rather than scaffolded, since an empty directory cannot be committed.
+**When to read.** Before filing, to see whether the same defect already went upstream.
+

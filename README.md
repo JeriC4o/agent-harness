@@ -70,6 +70,7 @@ Prefer to do it by hand? Copy `templates/project/` into the repo root, replace `
 | See where a session's tokens went | `scripts/trace-tokens.sh <session.jsonl>` — per-turn and per-skill spend |
 | Find out why a run went in circles | `/harness:inspect` — loops, gates re-run with nothing changed, review rounds that burned their cap |
 | Check the ticket tail is not outrunning delivery | `scripts/backlog-metrics.sh` — tickets opened per PR merged, and whether they arrive in bursts or as a drip |
+| Report a harness defect from the project that hit it | `/harness:report-defect` — drafts a report, runs it through the redaction gate, and files it upstream only after you approve the text |
 
 What accumulates in the repo as you work: specs and designs in `ai-docs/plans/` (moved to `done/` on
 completion), and corrections in `ai-docs/learnings/<user>-<branch>.md`. **The learning log is per project
@@ -219,6 +220,7 @@ ai-docs/                   this repo's own profile + plan/learning data
 | `/harness:improve-global` | Run in the harness repo: sweeps candidates across every registered project and promotes a rule once ≥2 of them hit it. |
 | `/harness:ai-audit [global\|project]` | Audits an instruction surface: `global` checks the harness method files; `project` checks your profile — unresolved placeholders, commands that do not resolve, registry coherence, candidate hygiene, gitignore coverage. Detects the surface if you omit it. |
 | `/harness:harness-init` | Scaffolds the project profile and registers the repo. Run once per project; idempotent. |
+| `/harness:report-defect` | Files a defect in the *harness* from the project that hit it: drafts a report into `ai-docs/feedback/`, runs it through `check-candidate.sh --mode report`, shows it to you, and only then files it against the repository named in the installed manifest — so a fork files against itself. A local ledger stops the same defect being filed twice. |
 
 Subagents: `spec-writer`, `design`, `design-review`, `self-review`, `review-findings`, `self-improve`,
 `learnings-escalation-audit`.
