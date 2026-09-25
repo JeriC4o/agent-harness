@@ -149,3 +149,23 @@ agent to distrust the supplied list of affected locations** — three separate r
 list was incomplete, which is the single most reliable finding-generator observed here.
 **Kind:** validation
 **Escalated?** no
+
+### 2026-09-25 — test-fidelity — the suite invoked the script differently from how the skill invokes it, hiding a rc-126 blocker
+**What happened:** `skills/report-defect/SKILL.md` invokes `"${CLAUDE_SKILL_DIR}"/scripts/file-report.sh`
+directly by full path. The file was committed `100644`, so a consumer following the skill gets
+`permission denied`, exit 126, on the skill's second step. Every one of the suite's 76 assertions ran
+it as `bash "$PROD"`, which does not need the execute bit — so the suite was green precisely because
+it did not run the script the way the skill runs it. Five review rounds (three self-review, two
+design-review) missed it; the delivery gate missed it because it asserts a file *reached* the install,
+not that it is *runnable*. This repo had already hit this exact defect on `scripts/session-events.sh`
+and had already written the assertion for it in `scripts/test-session-events.sh` — the lesson was
+recorded and the bug shipped again on the next script.
+**Rule:** A suite must invoke the entry point **the way its caller invokes it**. When a skill calls a
+script by path, at least one assertion must call it by path, or must assert `[ -x ]` directly — the
+`bash <path>` form is convenient and it silently removes the execute bit from the contract. Check the
+committed **mode**, not just the content: `git ls-files -s '*.sh'` shows it, and in this repo
+everything under `skills/*/scripts/` is `100755`. Generalisation worth keeping: when a defect class
+already has a named assertion somewhere in the tree, adding a new file of the same kind means copying
+that assertion, not trusting that the lesson transferred.
+**Kind:** correction
+**Escalated?** no

@@ -267,6 +267,13 @@ out=$(CLAUDE_PLUGIN_ROOT="${BARE}/nope" bash "$SRC" hash "$R" 2>&1); rc=$?
 check "an unresolvable root is exit 2" "$rc" "2"
 has "  reason named" "$out" "does not resolve"
 
+printf '\n== the entry point the skill invokes by full path is executable ==\n'
+# SKILL.md invokes this script directly, not via `bash <path>`, while every case
+# above runs it as `bash "$PROD"` — which masks a missing execute bit completely.
+# Without the bit a consumer following the skill gets exit 126 on the first step.
+if [ -x "$SRC" ]; then ok "file-report.sh carries the execute bit"
+else bad "file-report.sh carries the execute bit"; fi
+
 printf '\n== usage ==\n'
 out=$(prod bogus "$R" 2>&1); rc=$?
 check "an unknown verb is exit 2" "$rc" "2"
