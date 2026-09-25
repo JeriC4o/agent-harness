@@ -51,6 +51,7 @@ instruction files:
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
    `scripts/test-check-readme-update.sh`,
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
+   `hooks/lib/test-loop-verdict.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`.
 5. `bash scripts/check-readme-update.sh` — refuses a `README.md` whose update surface names a verb that

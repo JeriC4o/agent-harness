@@ -88,6 +88,49 @@ has "  and reports the count" "$o3" "3 times"
 e3=$(fire_err Bash "git status" "$MAIN_TP")
 has "  the stderr half carries it too" "$e3" "[loop-index] loop"
 
+printf '\n== two record classes, and the reader must filter on kind ==\n'
+reset
+fire Bash "git status" "$MAIN_TP" >/dev/null
+check "an observation declares its kind" "$(jq -r '.kind' < "$LED")" "call"
+fire Bash "git status" "$MAIN_TP" >/dev/null
+fire Bash "git status" "$MAIN_TP" >/dev/null   # this one fires
+check "a firing appends a verdict line too" "$(jq -r 'select(.kind=="verdict") | .kind' < "$LED")" "verdict"
+v=$(jq -c 'select(.kind=="verdict")' < "$LED")
+check "  it records the tier"      "$(printf '%s' "$v" | jq -r '.tier')"      "1"
+check "  the signal"               "$(printf '%s' "$v" | jq -r '.signal')"    "loop"
+check "  the decision"             "$(printf '%s' "$v" | jq -r '.decision')"  "ask"
+check "  and the settings it fired under" \
+      "$(printf '%s' "$v" | jq -r '"\(.window)/\(.threshold)"')" "20/3"
+check "the verdict lands AFTER the call it is about" \
+      "$(jq -r '.kind' < "$LED" | tr '\n' ',')" "call,call,call,verdict,"
+
+# THE COUPLING. A verdict line carries "tool" and "fp", so a reader that does not
+# filter on kind counts it as a call -- and then every firing makes the next one
+# more likely, a detector that feeds itself. The 4th identical call must report 4.
+o=$(fire Bash "git status" "$MAIN_TP")
+has "the verdict is NOT counted as a call" "$o" "4 times"
+hasnt "  (5 would mean it counted itself)" "$o" "5 times"
+
+printf '\n== POSITIVE CONTROL: drop the kind filter, the detector feeds itself ==\n'
+# Without the filter the same sequence reports 5, because the verdict line it
+# just wrote is indistinguishable from a call. Asserted by re-reading the same
+# ledger through an awk that omits the guard.
+tally() { # $1: 1 = with the kind filter, 0 = without
+  tail -n 20 "$LED" | awk -v want_fp="$(jq -r 'select(.kind=="call") | .fp' < "$LED" | tail -1)" \
+                          -v filter="$1" '
+    { k=""; if (match($0, /"kind":"[^"]*"/)) k=substr($0,RSTART+8,RLENGTH-9)
+      if (filter == 1 && k != "call") next
+      f=""; if (match($0, /"fp":"[^"]*"/)) f=substr($0,RSTART+6,RLENGTH-7)
+      if (f == want_fp) n++ }
+    END { print n+0 }'
+}
+# 4 calls; the 3rd and the 4th each fired, so there are 2 verdict lines carrying
+# the same fp. Unfiltered that reads as 6 -- the excess IS the self-feeding.
+check "with the filter, the ledger holds 4 calls" "$(tally 1)" "4"
+check "without it, the same ledger reads as 6"    "$(tally 0)" "6"
+check "  and the excess is exactly the verdicts" \
+      "$(jq -rs '[.[] | select(.kind=="verdict")] | length' < "$LED")" "2"
+
 printf '\n== a DIFFERENT call never counts toward it ==\n'
 reset
 fire Bash "git status" "$MAIN_TP" >/dev/null
