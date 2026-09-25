@@ -42,7 +42,10 @@ instruction files:
    rest become positional parameters (rc 0, no output at all — the quietest possible false green);
    `-exec … \;` prints the error but `find` still exits 0; and a `for` loop exits with the LAST
    iteration's status, so an earlier failure is erased. Only the `xargs -0 -n1` form propagates a
-   failure. Then every test suite green:
+   failure. **`git ls-files` lists TRACKED files only.** On a task that CREATES scripts, run
+   `git add -N <new paths>` first and check the file COUNT the gate processed, not only its exit
+   status — a gate that silently narrows its own input set is the quietest false green there is.
+   Then every test suite green:
    `scripts/test-plugin-manifest.sh`, `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`,
    `scripts/test-trace-tokens.sh`, `scripts/test-session-events.sh`,
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,

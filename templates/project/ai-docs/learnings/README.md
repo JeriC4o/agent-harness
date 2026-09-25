@@ -9,7 +9,10 @@ is not an index — there is no index file.
 `ai-docs/learnings/<username>-<branch>.md`. The derivation — the two commands it reads, the
 sanitization it applies, the worked examples, and the default-branch case — is stated **once**, in
 [`${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md` § Target file](${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md#target-file).
-Link to it; never restate it here or anywhere else. A second copy is a drift surface.
+Link to it; never restate it here or anywhere else. A second copy is a drift surface. The one thing
+worth repeating, because the fold's skip-self guard depends on it: that derivation returns the
+**basename including `.md`**, and the fold appends no extension of its own — a stem-only derivation
+disables the skip-self guard silently and lets the fold eat this branch's live entry file.
 
 Files in this directory use the **same entry format** as the archive — no per-file front matter, no
 per-file `## Format` block, no new fields.

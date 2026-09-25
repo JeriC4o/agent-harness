@@ -273,6 +273,8 @@ The table is emitted at audit runtime (Step 2.5 output) — it is NOT stored in 
 
 For every relative link the audit touched, confirm the target file exists AND the anchor (if present) matches a heading slug. Anchor-aware check rather than naive `realpath -m`:
 
+> **This block is a checker, so it is a gate** ([`${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md` § Propagation sweep, item 3](${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md)). As written it reports through `echo` and always exits 0, so a caller cannot tell "no dead anchors" from "the slugifier matched nothing". Before reading its output as findings: run it once against a link you KNOW is broken and confirm it prints, and collect the misses into a counter the block exits non-zero on. **This block hits three of the masking shapes at once** — a `for` loop, `>/dev/null`, and `|| echo` — and [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Tooling](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md) names **search** among the gates, so `grep -Fx` is one. The block is not carved out: it is a gate written in a forbidden shape, kept here only because rewriting a documented recipe is a separate change. Do not read it as licence for the shape anywhere else, and do not "fix" it by adding a counter incremented inside the `while` — that `while` is the TAIL of a pipeline, which `bash` runs in a SUBSHELL (shape 4), so the counter reads back as 0 while looking repaired; measured, `bash` gives 0 where `zsh` gives 2. Write misses to a FILE and exit on its size, or restructure the loop over a here-string.
+
 ```bash
 for f in <changed-files>; do
   grep -oE '\(\.\./[./]*[^)#]+(#[^)]*)?\)' "$f" | sort -u | while read ref; do
