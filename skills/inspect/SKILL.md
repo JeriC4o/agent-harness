@@ -1,6 +1,6 @@
 ---
 name: inspect
-description: "Analyse a finished session for harness defects: loops, gates re-run without a state change, review rounds that burned their cap, turns that went round and round. A script reduces the transcript; the inspector agent judges. Proposes Learning Log entries and never edits an instruction file."
+description: "Analyse a finished session for harness defects: loops, gates re-run without a state change, review rounds that burned their cap, turns that went round and round. A script finds the candidates; the inspector agent reads the run where they point and judges. Proposes Learning Log entries and never edits an instruction file."
 model: opus
 disable-model-invocation: true
 argument-hint: "[session.jsonl path, or omitted for the most recent session of this project]"
@@ -33,9 +33,9 @@ If nothing resolves, ask for the path. Do not guess at another project's transcr
 ${CLAUDE_PLUGIN_ROOT}/scripts/session-events.sh <session.jsonl> --signatures
 ```
 
-A real session runs to thousands of entries. Handing that to a model is not an option, and most of it is
-content the inspector must not see. The script emits counts, tool names, one-way fingerprints and
-timestamps — never a command line, a path, a prompt, or tool output.
+A real session runs to thousands of entries and does not fit in a context. This pass is what makes the
+run navigable: counts, tool names, fingerprints and timestamps, so the agent knows which turns and which
+seq ranges are worth its attention before it opens anything.
 
 Add `${CLAUDE_PLUGIN_ROOT}/scripts/trace-tokens.sh <session.jsonl>` when the question is cost rather than
 looping; the two read the same transcript for different purposes.
@@ -54,13 +54,22 @@ it must not wait for the agent's report to surface.
 Agent(subagent_type="inspector", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/inspector.md and follow it exactly.
   Here are the signatures and the unavailable list: <paste the --signatures JSON>
-  Do NOT open the transcript; you have everything you are permitted to see.
+  The transcript is at <path>. Start from the signatures, then read the run where they point —
+  by seq range, turn, or timestamp span. Do not read it front to back; it does not fit.
+  Quote the run where the quote is the evidence; do not copy a credential into an entry.
   Report: (a) signatures that could not run and why, (b) confirmed defects with the instruction at fault,
   (c) dismissed candidates with the reason, (d) proposed Learning Log entries.
 ")
 ```
 
-Pass the JSON **in the prompt**. Handing over a path invites the agent to read the transcript beside it.
+Pass the JSON **in the prompt** and the transcript **as a path**. The JSON is what tells the agent where
+to look; without it in front of them, an agent handed a path reads from the top and burns the context it
+needs for judging.
+
+> **Why the agent reads the run.** A repetition is a loop or a retry depending on what happened between
+> the repeats; a deep turn is circling or sweeping depending on the order of what it did. Neither is in
+> the counts, so an inspector judging from counts alone returns "unjudgeable" on exactly the candidates
+> that matter. It is looking for where this harness wastes its own effort, and it needs the run to find it.
 
 ## Step 3: Surface before writing
 
@@ -109,8 +118,9 @@ keeps producing dismissals is a threshold to adjust, and saying that out loud be
 
 ## FORBIDDEN
 
-- Reading the session `.jsonl` yourself, or letting the agent read it. The script is the only reader.
-- Emitting a command line, path, prompt or tool output recovered from a session.
+- Writing an entry that carries a credential recovered from the run. Say a value was read, not what it was.
+- Reading the transcript yourself to double-check the agent. The agent judges; re-reading the run in the
+  orchestrator spends the context the user is waiting on and duplicates work already done.
 - Editing any instruction file from this skill — including "while we are here" fixes for a defect it found.
 - Reporting a clean result without first stating which signatures could not run.
 - Running this as a `Stop` hook. Transcript analysis after every turn is absurd cost for a signal that only

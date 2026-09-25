@@ -11,16 +11,19 @@
 #
 # Exit: 0 on success (an empty transcript is success), 2 on usage error.
 #
-# WHY A PRE-PASS. A real session runs to thousands of entries; handing that to a
-# model is not an option, and most of it is content the inspector must not see
-# anyway. This emits one line per event -- tool name, argument fingerprint, turn,
-# skill, error flag -- so the agent reasons over a few hundred lines.
+# WHY A PRE-PASS. A real session runs to thousands of entries and does not fit
+# in a context. This emits one line per event -- tool name, argument fingerprint,
+# turn, skill, error flag -- so the inspector can see the SHAPE of the whole run
+# in a few hundred lines and know which turns and seq ranges are worth opening.
+# It is a map, not a wall: the inspector reads the transcript where this points.
 #
-# PRIVACY: a transcript holds everything the session saw, including ASK-gated
-# files. This script emits tool NAMES, the first token of a Bash command, one-way
-# fingerprints, timestamps and counts. It never emits a command line, a file
-# path, a prompt, or any tool output. The fingerprint exists precisely so
-# repetition can be detected without reproducing what was repeated.
+# WHAT THE LABELS CARRY. Tool names, the command name of a Bash call, one-way
+# fingerprints, timestamps and counts -- never a full command line, a path, a
+# prompt or tool output. This is about the OUTPUT BEING A SUMMARY: a label
+# column that smuggles in an absolute path is a bug (one shipped, via a leading
+# VAR=/path assignment), and the fingerprint exists so repetition can be counted
+# without reprinting what was repeated. The canaries in the test suite hold that
+# line.
 #
 # LOOP-SHAPED IS NOT LOOP. Every repetition signature carries a TIME qualifier:
 # enough of the repeats must fall inside one window. The window SLIDES -- the
