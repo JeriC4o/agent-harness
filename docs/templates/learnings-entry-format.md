@@ -21,6 +21,8 @@ Sanitize `username` and `branch` **independently** through this pipeline — rep
 sed 's/[^A-Za-z0-9._-]/-/g; s/--*/-/g; s/^[-.]*//; s/[-.]*$//'
 ```
 
+**The derivation yields the BASENAME, and the basename INCLUDES the `.md` extension** — `<username>-<branch>.md`, sanitized halves joined, then `.md` appended. It is not the directory-relative stem, and the caller does not add the extension. This is a contract, not a formatting note: `/improve`'s fold composes its skip-self path as `ai-docs/learnings/$name` with nothing appended, so a derivation that stops at `<username>-<branch>` produces a `self` no candidate can ever equal. **G2 and G2b then both disable silently** — G2b's glob `*-<branch_suffix>` inherits the same truncation and matches nothing, so it cannot report the divergence either — the fold exits 0, and the branch's live append target is consumed into the append-only archive, where Boundary rule 1 makes it unremovable. Both guards key on the derivation FAILING; this shape succeeds and is wrong, which is why neither catches it and why the extension is stated here rather than left to the reader.
+
 **`username` is the git identity, NOT the OS account.** An OS account name is frequently a machine
 account — `ubuntu`, `runner`, `root` inside a container or on CI — shared by every human who works
 there, which defeats the disjointness this whole scheme exists for. The git identity is per-person by

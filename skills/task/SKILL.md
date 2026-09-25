@@ -209,6 +209,7 @@ Each gate is enforced inline as the **First action** of its step; the consolidat
 Validated approaches `/task` should keep applying (carrot signals; soft verbs). Each is stated in full at its point of execution — this index exists so the rule is findable without reading every step.
 
 - **Default to** resuming the SAME agent from its transcript (`SendMessage`) on a transport-level drop, with exponential backoff from the 2nd consecutive failure, rather than cold-spawning a replacement that discards its gathered context. Full rule: [Step 8](#step-8-implementation); re-stated for the design phase in [Design Amendment](#design-amendment-re-entrant--triggered-from-step-8-or-step-11).
+- **Prefer** marking every factual claim in a spawn prompt with how it was obtained — "measured, output below" versus "my reading, re-derive it" — and prefer pasting the command with its raw output over stating the conclusion drawn from it. A subagent cannot tell which lines of a context section were measured and which are paraphrase; everything in it arrives with equal authority, and an artefact written from an unmarked paraphrase is indistinguishable from one written from a measurement. Keep restating the governing rules in spawn prompts — a receiving agent self-caught and disclosed a violation because of one — but **treat restatement as a reminder, never as enforcement**: measured over one session it reduced neither the orchestrator's nor the subagent's violation rate to zero. The loaded hook is the control.
 
 ## FORBIDDEN
 

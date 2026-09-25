@@ -90,6 +90,64 @@ gate_case "same for a shell suite" \
 gate_case "and >&2 in a non-gate command still passes" \
           'printf oops >&2 | cat' 0
 
+# Three further shapes returned success over a failing gate while no rule and
+# no hook named them. A loop exits with the LAST iteration status, so every
+# earlier failure is erased; /dev/null discards the line naming WHICH assertion
+# failed, so even a correct rc leaves nothing to act on. The loop leg keys on
+# the loop BODY invoking a gate, which is what keeps an ordinary loop legitimate.
+gate_case "a loop over gates is blocked" \
+          'for s in a b; do bash scripts/test-$s.sh >/dev/null 2>&1 && echo PASS || echo FAIL; done' 2
+gate_case "a loop running bash -n over files is blocked" \
+          'for f in *.sh; do bash -n "$f" || echo FAIL; done' 2
+gate_case "a loop over a named build tool is blocked" \
+          'for m in a b; do pytest tests/$m; done' 2
+gate_case "but a loop whose body runs no gate is not" \
+          'for f in docs/*.md; do grep -c THING "$f"; done' 0
+gate_case "a gate redirected into /dev/null is blocked" \
+          'bash scripts/test-fold.sh >/dev/null 2>&1; echo done' 2
+gate_case "same with the &> spelling the normaliser strips" \
+          'bash scripts/test-fold.sh &>/dev/null' 2
+gate_case "but a gate redirected into a FILE is the documented remedy" \
+          'bash scripts/test-fold.sh > out.txt 2>&1' 0
+gate_case "and a non-gate silenced with /dev/null still passes" \
+          'command -v shellcheck >/dev/null 2>&1 || echo missing' 0
+
+# The || leg had the SAME defect the pipe leg was fixed for: its gap could not
+# cross an `&`, so the idiomatic PASS/FAIL line -- gate && echo PASS || echo FAIL
+# -- slipped past while the bare `gate || echo` form was caught. The fix that
+# taught the pipe leg to cross `&` was never applied here.
+gate_case "an intervening && no longer defeats the || leg" \
+          'bash scripts/test-fold.sh && echo PASS || echo FAIL' 2
+gate_case "same for a named build tool" \
+          'pytest tests && echo ok || echo bad' 2
+gate_case "but a cd prefix is still not masking" \
+          'cd /tmp && bash scripts/test-fold.sh' 0
+gate_case "nor is a guard that does not swallow the rc" \
+          '[ -n "$x" ] && bash scripts/test-fold.sh' 0
+
+printf '\n== sh-syntax-check fires on a broken .sh and only on .sh ==\n'
+# FIFTH self-numbered recurrence of the apostrophe-in-a-single-quoted-program
+# hazard, the last one costing a wall of 50 unrelated test failures before the
+# shape was recognised. Prose in two instruction files and a gate covering ONE
+# surface did not stop it, so it is a hook now. Unguarded for the same reason
+# gate-pipe-guard is: a shell syntax error is never project-specific.
+shcmd=$(jq -r '.hooks.PostToolUse[] | select(.matcher=="Write|Edit") | .hooks[] | select(.command|test("sh-syntax-check")) | .command' "$HOOKS_JSON")
+printf '%s\n' '#!/bin/bash' "jq -r '.a # the row's own bounds' x" > "$UNMANAGED/broken.sh"
+printf '%s\n' '#!/bin/bash' 'echo ok' > "$UNMANAGED/good.sh"
+printf '%s\n' 'not shell at all: (' > "$UNMANAGED/notes.md"
+sh_case() { # <label> <path> <want-rc>
+  o=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$UNMANAGED" \
+      bash -c "$shcmd" <<< "{\"tool_input\":{\"file_path\":$(jq -Rn --arg p "$2" '$p')}}" 2>&1); r=$?
+  check "$1" "$r" "$3"
+}
+sh_case "a .sh that no longer parses is blocked" "$UNMANAGED/broken.sh" 2
+sh_case "a .sh that parses is not" "$UNMANAGED/good.sh" 0
+sh_case "a non-shell file is never checked" "$UNMANAGED/notes.md" 0
+sh_case "a path that does not exist is silent" "$UNMANAGED/gone.sh" 0
+o=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$UNMANAGED" \
+    bash -c "$shcmd" <<< "{\"tool_input\":{\"file_path\":$(jq -Rn --arg p "$UNMANAGED/broken.sh" '$p')}}" 2>&1)
+case "$o" in *apostrophe*) ok "  and names the commonest cause" ;; *) bad "  and names the commonest cause" ;; esac
+
 printf '\n== SessionStart emits nothing when unmanaged, JSON when managed ==\n'
 cmd=$(jq -r '.hooks.SessionStart[0].hooks[0].command' "$HOOKS_JSON")
 out=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$UNMANAGED" bash -c "$cmd" 2>&1)

@@ -153,6 +153,14 @@ says to the **user** about work a Subagent returned.
 > over real ones — only execution catches that. Before relaying a coverage claim ("test X catches mutation
 > Y"), either run the mutation or label the claim as unverified inference. **This applies with extra force
 > when relaying a subagent's conclusion: inheriting a claim does not transfer its verification.**
+>
+> **Prose about a guard is a claim about the guard, at the same evidentiary level as a comment asserting
+> an invariant — never a substitute for having seen the guard fail.** Before accepting that a guard set is
+> complete, read what the GATE STUBS: whatever is stubbed is exactly what has never run under test, and it
+> is usually the thing the prose is most confident about. A file that calls itself the full contract for a
+> mechanism earns a re-read against that mechanism every time the mechanism changes — the claim of
+> completeness is what makes a gap a defect rather than a summary, and when such a file also ships as a
+> template, the gap reaches consumers who cannot see the implementation it describes.
 
 ## Git + GitHub command map
 

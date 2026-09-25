@@ -22,6 +22,7 @@ On-demand rules for any code-search action. Subagents inherit the verbatim block
 - **Backticks inside a double-quoted search pattern** — the shell runs them as command substitution before the tool ever sees the pattern. Backticked test names collide with this constantly: use SINGLE quotes for the whole pattern, or drop the backticks from the pattern entirely.
 - **Free-form prose passed to a CLI through single quotes** — an apostrophe CLOSES the string and the shell re-parses the remainder, so the CLI still runs and posts a **truncated** payload with rc=0. Apostrophes, contractions and Markdown backticks all trip it, and the mangled artefact is visible to other people before it is visible to you. Build every prose payload with a quoted heredoc — `VAR=$(cat <<'EOF' … EOF)` — and pass `"$VAR"`. After any write to a shared surface (PR comment, PR description, issue comment), read the artefact back and check its LENGTH and TAIL: the send returns exit 0 with a summary line even when two thirds of the message is missing.
 - **An unquoted `$var` adjacent to shell-significant punctuation** — in zsh, `$B:path/f` parses `:a` as the absolute-path parameter modifier and silently corrupts the value; and an unquoted `$FILES` is **not** word-split, so a multi-file tool call receives one argument, matches nothing, and exits 0. Always brace-and-quote: `"${rev}:${path}"`, `"${arr[@]}"`. Treat any unquoted `$var` next to `:` `;` `&` `|` as a defect on sight.
+- **Constructing a text transformation to change a file, where `Edit` would do.** Two shapes, both silent: a `sed` substitution whose DELIMITER also occurs inside the replacement text (a structured line whose own format uses `|` as a separator meets `s|…|…|` and fails with `bad flag in substitute command`) — so look at the REPLACEMENT before choosing a delimiter, not only at the pattern; and a span replacement between two anchors that assumes their ORDER. Assert `start < end`, never merely that both exist: a backwards slice does not fail, it DUPLICATES, and in a language where the last definition wins the duplicate is invisible until behaviour contradicts the source. A recurrence of a known delimiter collision is a signal to change TOOLS, not to change the delimiter — `Edit` takes both sides literally and needs no delimiter at all.
 - **Feeding one command's path output back into another's pathspec without checking the path space.** Paths printed relative to the repo root and paths interpreted relative to CWD are different spaces, and the mismatch fails **silently** — `git diff --name-only main -- <path-from-a-subdir>` returns EMPTY at rc=0, which reads as "nothing changed". Positive-control any pathspec filter with a path you KNOW is in the unfiltered output; the control must come back NON-EMPTY. Removing the filter and seeing output is not that control — it proves the command works, not that the filter matched.
 
 ## Propagation sweep
@@ -84,6 +85,15 @@ back and check its LENGTH and TAIL.
 BRACE-AND-QUOTE every `$var` next to shell-significant punctuation. In zsh `$B:path/f` parses `:a` as
 the absolute-path modifier and silently corrupts the value; an unquoted `$FILES` is NOT word-split, so
 a multi-file tool call gets ONE argument, matches nothing, and exits 0. Write "${rev}:${path}", "${arr[@]}".
+
+NEVER construct a text transformation to change a file where `Edit` would do. Two silent shapes: a
+`sed` substitution whose DELIMITER also occurs inside the REPLACEMENT text (a line whose own format
+uses `|` as a separator meets s|…|…| and dies with "bad flag in substitute command") — look at the
+replacement before picking a delimiter, not only at the pattern; and a span replacement between two
+anchors that assumes their ORDER. Assert start < end, never merely that both exist: a backwards slice
+does not fail, it DUPLICATES, and where the last definition wins the duplicate stays invisible until
+behaviour contradicts the source. A recurrence of a known delimiter collision means change TOOLS, not
+the delimiter — `Edit` takes both sides literally and needs no delimiter at all.
 
 Before Reading any file over 500 lines, FIRST run a heading scan:
   grep -nE '^(class|func|fun|def|type|interface|##) ' <file>

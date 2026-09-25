@@ -85,5 +85,14 @@ printf '\n== case 7: usage errors fail loudly ==\n'
 run 2>/dev/null; check "no args -> rc 2" "$?" "2"
 run /nonexistent/path --name x >/dev/null 2>&1; check "missing dir -> rc 2" "$?" "2"
 
+printf '\n== the entry point the skill invokes by full path is executable ==\n'
+# skills/harness-init/SKILL.md invokes this script BY PATH, not via `bash <path>`.
+# Every assertion above runs it through the interpreter, which does not need the
+# execute bit -- so the suite would stay green while the bit went missing and
+# every consumer following the skill got exit 126. Both sibling suites carry this
+# assertion; a new file of the same kind means copying it, not re-deriving it.
+if [ -x "$SCAFFOLD" ]; then ok "scaffold.sh carries the execute bit"
+else bad "scaffold.sh carries the execute bit"; fi
+
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

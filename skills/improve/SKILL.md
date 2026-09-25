@@ -27,7 +27,7 @@ abort() {                                            # a derivation failure is L
 
 name=$(derive_name) || abort "derive_name failed (rc=$?)"     # a plain assignment DOES propagate rc — but only if it is TESTED
 [ -n "$name" ] || abort "derive_name produced an empty name"  # the empty-SUCCESS case: rc=0, so the line above misses it
-self="ai-docs/learnings/$name"                       # § Target file rule — the tree's only copy of the pipeline
+self="ai-docs/learnings/$name"                       # § Target file rule — $name INCLUDES .md; nothing is appended here
 
 branch_suffix="${name#*-}"                           # G2b — a derivation that SUCCEEDS and is WRONG
 for g in ai-docs/learnings/*-"$branch_suffix"; do    #       passes both guards above and disables G2
