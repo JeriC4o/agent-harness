@@ -242,6 +242,108 @@ tool "$S" 2026-01-01T03:00:00Z Agent '{"subagent_type":"general-purpose","prompt
 tool "$S" 2026-01-01T06:00:00Z Agent '{"subagent_type":"general-purpose","prompt":"c"}' c
 check "spawns spread over hours are not a loop" "$(sig "$(S_ "$S")" repeated-agent-spawn)" "0"
 
+printf '\n== a burst is found WHEREVER it sits in a long session ==\n'
+# The window asks whether $min_repeats calls fall inside ANY window, not whether
+# the first and last call of the group do. The difference is the whole signal:
+# the same command run once in the morning and once at night used to VETO a
+# tight burst between them, so in a session of any length nothing could fire.
+# Measured on a real transcript: 6 of 6 tool groups and 5 of 5 agent groups
+# were discarded that way, a design + design-review pair among them.
+S=$(newsession)
+tool "$S" 2026-01-01T00:00:00Z Bash '{"command":"git status"}' a
+tool "$S" 2026-01-01T05:00:00Z Bash '{"command":"git status"}' b
+tool "$S" 2026-01-01T05:00:10Z Bash '{"command":"git status"}' c
+tool "$S" 2026-01-01T05:00:20Z Bash '{"command":"git status"}' d
+tool "$S" 2026-01-01T09:00:00Z Bash '{"command":"git status"}' e
+out=$(S_ "$S")
+check "an embedded burst is a loop"      "$(sig "$out" repeated-tool-call)" "1"
+check "the count is the burst"           \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-tool-call")]|.[0].count' <<<"$out")" "3"
+check "the group size stays visible"     \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-tool-call")]|.[0].total_in_session' <<<"$out")" "5"
+check "the span is the burst, not the group" \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-tool-call")]|.[0].span_seconds' <<<"$out")" "20"
+
+printf '\n== POSITIVE CONTROL: stop the window sliding, the burst is lost ==\n'
+# Anchoring the window at the first member of the group is the shape this
+# replaced. Without the slide the burst four hours in is never counted, and the
+# signature returns the silent zero that read as a clean session.
+PATCHED=$(mktemp); sed 's/range(0; $s | length)/range(0; 1)/' "$EV" > "$PATCHED"
+check "without it, the embedded burst is missed" \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-tool-call")]|length' \
+      <<<"$(bash "$PATCHED" "$S" --signatures 2>/dev/null)")" "0"
+rm -f "$PATCHED"
+
+printf '\n== the STATE qualifier applies to the burst, not to the whole group ==\n'
+# An edit hours before a burst says nothing about whether the burst changed
+# anything. Counting it cleared real loops: three identical gate runs inside
+# twenty seconds are a loop no matter what was edited that morning.
+S=$(newsession)
+tool "$S" 2026-01-01T00:00:00Z Bash '{"command":"make test"}' a
+tool "$S" 2026-01-01T00:30:00Z Edit '{"file_path":"/x.c","old_string":"a","new_string":"b"}' e1
+tool "$S" 2026-01-01T05:00:00Z Bash '{"command":"make test"}' b
+tool "$S" 2026-01-01T05:00:10Z Bash '{"command":"make test"}' c
+tool "$S" 2026-01-01T05:00:20Z Bash '{"command":"make test"}' d
+check "an edit outside the burst does not clear it" \
+  "$(sig "$(S_ "$S")" repeated-tool-call)" "1"
+
+printf '\n== spawns MINUTES apart are re-entries, and are the confirm case ==\n'
+# inspector.md states the qualifier: seconds apart is a fan-out to dismiss,
+# minutes apart is a round cap re-entering. A fixed-width admission window
+# inverts it -- a 4-round design loop fits no 10-minute window while a 12-second
+# fan-out fits every one, so the detector selected against the shape it exists
+# for. Measured on a real session: that loop produced zero rows.
+S=$(newsession)
+tool "$S" 2026-01-01T17:37:20Z Agent '{"subagent_type":"harness:design","prompt":"r1"}' a
+tool "$S" 2026-01-01T17:56:01Z Agent '{"subagent_type":"harness:design","prompt":"r2"}' b
+tool "$S" 2026-01-01T18:11:50Z Agent '{"subagent_type":"harness:design","prompt":"r3"}' c
+tool "$S" 2026-01-01T18:24:54Z Agent '{"subagent_type":"harness:design","prompt":"r4"}' d
+tool "$S" 2026-01-01T18:36:33Z Agent '{"subagent_type":"harness:design","prompt":"r5"}' e
+out=$(S_ "$S")
+check "a four-round design loop is found" "$(sig "$out" repeated-agent-spawn)" "1"
+check "every re-entry is in the chain"    \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].count' <<<"$out")" "5"
+check "the widest gap is reported"        \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].gap_seconds.max' <<<"$out")" "1121"
+check "and the narrowest"                 \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].gap_seconds.min' <<<"$out")" "699"
+check "the row says which filter ran"     \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].filters[0]' <<<"$out")" "spawn-gap"
+
+printf '\n== POSITIVE CONTROL: narrow the gap to a window width, the loop is lost ==\n'
+# 600s was the shared width before spawns got their own. Restoring it here
+# reproduces the defect exactly, so this suite fails if the chain is reverted.
+PATCHED=$(mktemp); sed 's/SPAWNGAP=1800/SPAWNGAP=600/' "$EV" > "$PATCHED"
+check "at 600s the design loop disappears" \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|length' \
+      <<<"$(bash "$PATCHED" "$S" --signatures 2>/dev/null)")" "0"
+rm -f "$PATCHED"
+
+printf '\n== a fan-out still reports, and carries the gaps that dismiss it ==\n'
+# It is NOT filtered out -- the qualifier does that, and it needs the number.
+S=$(newsession)
+tool "$S" 2026-01-01T09:22:11Z Agent '{"subagent_type":"general-purpose","prompt":"a"}' a
+tool "$S" 2026-01-01T09:22:15Z Agent '{"subagent_type":"general-purpose","prompt":"b"}' b
+tool "$S" 2026-01-01T09:22:19Z Agent '{"subagent_type":"general-purpose","prompt":"c"}' c
+tool "$S" 2026-01-01T09:22:23Z Agent '{"subagent_type":"general-purpose","prompt":"d"}' d
+out=$(S_ "$S")
+check "the fan-out is reported"     "$(sig "$out" repeated-agent-spawn)" "1"
+check "with gaps of seconds"        \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].gap_seconds.max' <<<"$out")" "4"
+check "and the gap default is stated" \
+  "$(jq -r '.spawn_gap_seconds' <<<"$out")" "1800"
+
+printf '\n== a spawn burst inside a long session is found too ==\n'
+S=$(newsession)
+tool "$S" 2026-01-01T00:00:00Z Agent '{"subagent_type":"harness:design","prompt":"a"}' a
+tool "$S" 2026-01-01T04:00:00Z Agent '{"subagent_type":"harness:design","prompt":"b"}' b
+tool "$S" 2026-01-01T04:01:00Z Agent '{"subagent_type":"harness:design","prompt":"c"}' c
+tool "$S" 2026-01-01T04:02:00Z Agent '{"subagent_type":"harness:design","prompt":"d"}' d
+out=$(S_ "$S")
+check "a design loop four hours in is a loop" "$(sig "$out" repeated-agent-spawn)" "1"
+check "reporting the burst count"             \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].count' <<<"$out")" "3"
+
 printf '\n== turn depth, because the cache_read proxy does not survive real data ==\n'
 # GH-14 proposed cache_read spikes as the proxy for "the agent re-read the same
 # context again". Measured on a real session, cache_read TRENDS: early turns ran

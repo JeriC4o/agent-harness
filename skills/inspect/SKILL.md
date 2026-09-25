@@ -1,6 +1,6 @@
 ---
 name: inspect
-description: "Analyse a finished session for harness defects: loops, gates re-run without a state change, review rounds that burned their cap, turns that went round and round. A script reduces the transcript; the inspector agent judges. Proposes Learning Log entries and never edits an instruction file."
+description: "Analyse a finished session for harness defects: loops, gates re-run without a state change, review rounds that burned their cap, turns that went round and round. A script finds the candidates; the inspector agent reads the run where they point and judges. Proposes Learning Log entries and never edits an instruction file."
 model: opus
 disable-model-invocation: true
 argument-hint: "[session.jsonl path, or omitted for the most recent session of this project]"
@@ -33,9 +33,9 @@ If nothing resolves, ask for the path. Do not guess at another project's transcr
 ${CLAUDE_PLUGIN_ROOT}/scripts/session-events.sh <session.jsonl> --signatures
 ```
 
-A real session runs to thousands of entries. Handing that to a model is not an option, and most of it is
-content the inspector must not see. The script emits counts, tool names, one-way fingerprints and
-timestamps — never a command line, a path, a prompt, or tool output.
+A real session runs to thousands of entries and does not fit in a context. This pass is what makes the
+run navigable: counts, tool names, fingerprints and timestamps, so the agent knows which turns and which
+seq ranges are worth its attention before it opens anything.
 
 Add `${CLAUDE_PLUGIN_ROOT}/scripts/trace-tokens.sh <session.jsonl>` when the question is cost rather than
 looping; the two read the same transcript for different purposes.
@@ -54,13 +54,22 @@ it must not wait for the agent's report to surface.
 Agent(subagent_type="inspector", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/inspector.md and follow it exactly.
   Here are the signatures and the unavailable list: <paste the --signatures JSON>
-  Do NOT open the transcript; you have everything you are permitted to see.
+  The transcript is at <path>. Start from the signatures, then read the run where they point —
+  by seq range, turn, or timestamp span. Do not read it front to back; it does not fit.
+  Quote the run where the quote is the evidence; do not copy a credential into an entry.
   Report: (a) signatures that could not run and why, (b) confirmed defects with the instruction at fault,
   (c) dismissed candidates with the reason, (d) proposed Learning Log entries.
 ")
 ```
 
-Pass the JSON **in the prompt**. Handing over a path invites the agent to read the transcript beside it.
+Pass the JSON **in the prompt** and the transcript **as a path**. The JSON is what tells the agent where
+to look; without it in front of them, an agent handed a path reads from the top and burns the context it
+needs for judging.
+
+> **Why the agent reads the run.** A repetition is a loop or a retry depending on what happened between
+> the repeats; a deep turn is circling or sweeping depending on the order of what it did. Neither is in
+> the counts, so an inspector judging from counts alone returns "unjudgeable" on exactly the candidates
+> that matter. It is looking for where this harness wastes its own effort, and it needs the run to find it.
 
 ## Step 3: Surface before writing
 
@@ -93,16 +102,32 @@ because 3× flagged one turn in five on a real session, which is a list nobody r
 `repeated-tool-call` and `repeated-agent-spawn` only: `error-retry-loop` fires at two, because two failures
 of the same call with no change between them is already the shape. Each of those three repetition
 signatures reports the `threshold` it actually used and the `filters` that actually ran on it; read those
-rather than assuming the top-level numbers applied. `turn-depth-spike`, `deferral-candidate` and
-`step-regression` carry neither field.
+rather than assuming the top-level numbers applied.
+
+**`--window` is a sliding window, and a row reports two counts because of it.** The question is whether
+the threshold is met inside *any* window, not whether every occurrence of that call fits in one — asking
+the latter passes only a call that happens nowhere else in the session, which is why the signature
+returned a structural zero before. `count` is the burst the window found; `total_in_session` is how many
+times that call ran in all. A large gap between them is not itself a defect: it means the call is routine
+and went tight somewhere. `turn-depth-spike`, `deferral-candidate` and `step-regression` carry neither
+field.
+
+**`repeated-agent-spawn` does not use `--window` at all — it chains on `--spawn-gap` (1800s).** Its
+qualifier *is* the gap: seconds apart is a fan-out, minutes apart is a round cap re-entering. A width
+filter would therefore decide the question the judge is there to answer, and it did — a four-round design
+loop with 11-to-18-minute gaps fits no ten-minute window, so on a real session it produced zero rows while
+a 12-second fan-out produced one. The chain admits both and puts `gap_seconds` (`min`/`median`/`max`) on
+the row. `--spawn-gap` is the idle threshold that ends a chain, not a loop threshold: raise it and
+unrelated stretches of work join up; lower it toward a window width and the re-entries vanish again.
 
 **Expect to tune before trusting.** The first runs against a new project will be noisy. A signature that
 keeps producing dismissals is a threshold to adjust, and saying that out loud beats quietly ignoring it.
 
 ## FORBIDDEN
 
-- Reading the session `.jsonl` yourself, or letting the agent read it. The script is the only reader.
-- Emitting a command line, path, prompt or tool output recovered from a session.
+- Writing an entry that carries a credential recovered from the run. Say a value was read, not what it was.
+- Reading the transcript yourself to double-check the agent. The agent judges; re-reading the run in the
+  orchestrator spends the context the user is waiting on and duplicates work already done.
 - Editing any instruction file from this skill — including "while we are here" fixes for a defect it found.
 - Reporting a clean result without first stating which signatures could not run.
 - Running this as a `Stop` hook. Transcript analysis after every turn is absurd cost for a signal that only
