@@ -21,7 +21,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4 |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
-**Structural checks that stand in for a test suite** — run all four before any commit that touches
+**Structural checks that stand in for a test suite** — run all five before any commit that touches
 instruction files:
 
 1. `jq -e . hooks/hooks.json .claude-plugin/plugin.json .claude-plugin/marketplace.json` — manifests parse.
@@ -46,19 +46,31 @@ instruction files:
    `scripts/test-plugin-manifest.sh`, `scripts/test-promotion.sh`, `scripts/test-audit-project.sh`,
    `scripts/test-trace-tokens.sh`, `scripts/test-session-events.sh`,
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
+   `scripts/test-check-readme-update.sh`,
    `hooks/lib/test-harness-managed.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`.
+5. `bash scripts/check-readme-update.sh` — refuses a `README.md` whose update surface names a verb that
+   cannot upgrade: a fenced `plugin install` outside the Install section, a fenced `marketplace update`
+   with no `plugin update` beside it, or an Update section carrying no upgrade verb at all. Needs no
+   `claude` CLI, so it runs wherever the checks above it run.
 
-**Delivery gates** — the checks above validate this repository's CONTENTS; these two validate that the
-contents reach a consumer. Both exist because a bug got past all four structural checks:
+**Delivery gates** — the checks above validate this repository's CONTENTS; these three validate that the
+contents reach a consumer. The five structural checks cannot see delivery by construction: the first two
+gates exist because a bug got past every check there was at the time, the third because nothing above it
+walks an upgrade against a *pre-existing* install:
 
-5. `bash scripts/test-install-smoke.sh` — installs the working tree as a plugin in a throwaway
+6. `bash scripts/test-install-smoke.sh` — installs the working tree as a plugin in a throwaway
    `$CLAUDE_CONFIG_DIR` and requires `✔ enabled` plus a full component inventory. Catches "installs but
    refuses to load". Requires the `claude` CLI; **exits 2 when it cannot run, which is not a pass.**
-6. `bash scripts/check-release.sh` — refuses a branch that changed shipped content without bumping
+7. `bash scripts/check-release.sh` — refuses a branch that changed shipped content without bumping
    `.claude-plugin/plugin.json`. Catches "merged but never delivered", which a sandbox install cannot see
    by construction. Run it before opening a PR.
+8. `bash scripts/test-upgrade-smoke.sh` — extracts `README.md`'s own documented update commands and runs
+   them against a deliberately lowered install, then requires the installed payload to have moved.
+   Catches "the documented procedure reports success and upgrades nothing" — invisible to gate 6, which
+   installs into an EMPTY sandbox where the short-circuit that defines the failure cannot fire. Requires
+   the `claude` CLI; **exits 2 when it cannot run, which is not a pass.**
 
 `shellcheck` is **recommended but not required**, and deliberately not named as the gate: it is not
 installed on every machine that edits this repo, and a gate that cannot run is worse than one that is
