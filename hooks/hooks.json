@@ -116,6 +116,30 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/loop-verdict.sh",
+            "timeout": 60,
+            "statusMessage": "Judging whether this stretch was circling..."
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/loop-verdict.sh",
+            "timeout": 60,
+            "statusMessage": "Judging whether this stretch was circling..."
+          }
+        ]
+      }
     ]
   }
 }

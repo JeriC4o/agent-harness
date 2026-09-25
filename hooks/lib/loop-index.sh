@@ -61,7 +61,7 @@ out=$(printf '%s' "$in" | jq -r '
     | ((.tool_input // {}) | fp) as $f
     | (.tool_name // "-") as $tool
     | ([(.session_id // "-"), $tool, $f, $agent] | @tsv),
-      ({ts: (now | todate), agent_id: $agent, tool: $tool, fp: $f,
+      ({ts: (now | todate), kind: "call", agent_id: $agent, tool: $tool, fp: $f,
         tool_use_id: (.tool_use_id // "-"), transcript: $tp} | tojson)
   ' 2>/dev/null) || exit 0
 [ -n "$out" ] || exit 0
@@ -87,6 +87,17 @@ if [ -s "$ledger" ]; then
       -v want_fp="$fp" -v want_tool="$tool" -v thr="$THRESHOLD" -v cur="$agent" '
     BEGIN { n = 0; first = 0; changed = 0 }
     {
+      # TWO RECORD CLASSES SHARE THIS FILE, so every reader must filter on kind.
+      # A verdict line carries "tool" and "fp" too: counted as a call it would
+      # inflate the very count that produced it, and each firing would make the
+      # next one more likely. Strict, not tolerant -- a line whose kind this
+      # build does not know is skipped rather than guessed at, so a future kind
+      # cannot silently enter the count. The cost is that a ledger written by a
+      # build with no kind field is ignored, i.e. a session in flight across an
+      # upgrade restarts its window. That is the safe direction.
+      k = ""
+      if (match($0, /"kind":"[^"]*"/))     { k = substr($0, RSTART + 8,  RLENGTH - 9)  }
+      if (k != "call") next
       t = ""; f = ""; a = ""
       if (match($0, /"tool":"[^"]*"/))     { t = substr($0, RSTART + 8,  RLENGTH - 9)  }
       if (match($0, /"fp":"[^"]*"/))       { f = substr($0, RSTART + 6,  RLENGTH - 7)  }
@@ -119,6 +130,20 @@ else
   why=$(printf 'this exact call (same tool, same arguments) has run %s times within the last %s steps, with no Edit or Write in between -- so nothing it depends on has changed and the answer will be the answer it already gave. Before approving, say what is expected to differ this time; if nothing is, the loop is the finding.' \
         "$count" "$TAIL_N")
 fi
+
+# The verdict line goes in AFTER the observation it is about, which is what makes
+# the OUTCOME derivable without ever writing one: a hook cannot see its own effect
+# (`ask` hands the decision to the permission system and hears nothing back), but
+# the observations that follow are the answer -- the same fp again means the call
+# went ahead, its absence means it was abandoned, a different fp on the same tool
+# means it was reformulated. window/threshold are recorded because a later reader
+# otherwise cannot tell a wrong call from a since-changed setting.
+jq -nc --arg s "$kind" --arg t "$tool" --arg f "$fp" \
+       --argjson c "$count" --argjson a "$agents" \
+       --argjson w "$TAIL_N" --argjson th "$THRESHOLD" \
+   '{ts: (now|todate), kind: "verdict", tier: 1, signal: $s, tool: $t, fp: $f,
+     count: $c, agents: $a, decision: "ask", window: $w, threshold: $th}' \
+   >> "$ledger" 2>/dev/null
 
 # `ask`, not `deny`. The project rule is that the inspector is a diagnostic ally
 # rather than a gate, and a first-tier detector keyed on an exact hash is exactly
