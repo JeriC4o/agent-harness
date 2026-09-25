@@ -76,6 +76,17 @@
             "statusMessage": "Archive-protection reminder..."
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/loop-index.sh",
+            "timeout": 10,
+            "statusMessage": "Checking for a repeated call..."
+          }
+        ]
       }
     ],
     "PostToolUse": [
