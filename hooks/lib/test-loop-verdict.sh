@@ -113,14 +113,59 @@ printf 'called\n' >> "${STUB_CALLS:-/dev/null}"
 STUB
 chmod +x "$WORK/bin/claude"
 
-printf '\n== the model can say no, and no is respected ==\n'
+printf '\n== the model can say no, and no is recorded rather than dropped ==\n'
 varied_window 6
 STUB_ANSWER="PROGRESS
 each call searched a different module" fire >/dev/null
-check "PROGRESS writes no verdict" "$(verdicts)" "0"
+check "a decline still writes a verdict line" "$(verdicts)" "1"
+d=$(jq -c 'select(.kind=="verdict" and .tier==2)' < "$LED")
+check "  recorded as progress"   "$(printf '%s' "$d" | jq -r '.verdict')" "progress"
+check "  with the reason"        "$(printf '%s' "$d" | jq -r '.reason')" "each call searched a different module"
+e=$(STUB_ANSWER="PROGRESS
+nothing to see" fire_err)
+check "  and reported to nobody -- a decline is data, not news" "$e" ""
+
+printf '\n== a DECLINED window is not re-asked either ==\n'
+# The already-judged guard keys on a tier-2 verdict line existing. While a decline
+# wrote none, the same window was re-judged on EVERY Stop until it slid out --
+# measured at one model call per Stop, against one for the whole window when the
+# answer was circling. Progress is the common case, so it was paid constantly.
+varied_window 6
+: > "$STUB_CALLS"
+STUB_ANSWER="PROGRESS
+distinct steps" fire >/dev/null
+STUB_ANSWER="PROGRESS
+distinct steps" fire >/dev/null
+STUB_ANSWER="PROGRESS
+distinct steps" fire >/dev/null
+STUB_ANSWER="PROGRESS
+distinct steps" fire >/dev/null
+check "four Stops, one model call" "$(stub_calls)" "1"
+check "  and one verdict"          "$(verdicts)" "1"
+
+printf '\n== POSITIVE CONTROL: drop the decline record, the model is re-asked ==\n'
+MUT0="${WORK}/mut-decline.sh"
+perl -0pe 's/  \*PROGRESS\*\) call_it=progress ;;/  *PROGRESS*) exit 0 ;;/' "$HOOK" > "$MUT0"
+check "the mutation applied" "$(grep -c 'call_it=progress' "$MUT0")" "0"
+varied_window 6
+: > "$STUB_CALLS"
+# EXPORTED, not prefixed to the jq on the left of the pipe: a var assignment
+# there applies to jq and never reaches the hook, which would leave the stub on
+# its default CIRCLING answer -- the control would then be blocked by the
+# already-judged guard instead of by the thing under test, and report 1.
+export STUB_ANSWER="PROGRESS
+distinct steps"
+for _ in 1 2 3 4; do
+  jq -nc --arg s "$SID" '{session_id:$s}' | bash "$MUT0" >/dev/null 2>&1
+done
+unset STUB_ANSWER
+check "without it, four Stops -> four model calls" "$(stub_calls)" "4"
+check "  and nothing recorded to calibrate against" "$(verdicts)" "0"
+
+printf '\n== an unparseable answer is neither, and records nothing ==\n'
 varied_window 6
 STUB_ANSWER="I am not sure, possibly" fire >/dev/null
-check "an unparseable answer is not a finding" "$(verdicts)" "0"
+check "no verdict for an answer that is not a verdict" "$(verdicts)" "0"
 
 printf '\n== the same window is judged once, not on every Stop ==\n'
 varied_window 6

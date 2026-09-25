@@ -124,19 +124,33 @@ answer=$(printf '%s' "$prompt" | claude -p --model "$MODEL" 2>/dev/null) || exit
 first=$(printf '%s\n' "$answer" | sed -n 1p | tr '[:lower:]' '[:upper:]')
 reason=$(printf '%s\n' "$answer" | sed -n 2p)
 case "$first" in
-  *CIRCLING*) call_it=yes ;;
-  *PROGRESS*) exit 0 ;;
-  *)          exit 0 ;;   # an unparseable answer is not a finding
+  *CIRCLING*) call_it=circling ;;
+  *PROGRESS*) call_it=progress ;;
+  *)          exit 0 ;;   # an unparseable answer is neither, so record nothing
 esac
-[ "$call_it" = yes ] || exit 0
 
-jq -nc --arg t "$tool" --arg r "$reason" --arg m "$MODEL" \
+# A DECLINE IS RECORDED TOO, and that is not a reversal of "non-firings are not
+# logged". For tier 1 that rule holds: every call is a line, so an absent
+# adjacent verdict IS the non-firing. Here the gate firing is itself unrecorded,
+# so a decline would leave no trace anywhere -- and it costs twice. The
+# already-judged guard keys on a tier-2 verdict line existing, so without this
+# the SAME window is re-judged on every Stop until it slides out; measured, that
+# is one model call per Stop against one for the whole window when the answer is
+# circling. Progress is the common case, so it is paid constantly -- a loop
+# detector asking the same question in a loop. And it costs the calibration
+# number that matters most: how often the structural gate fires and the model
+# disagrees is the gate's false-positive rate, unmeasurable while a decline is
+# silent.
+jq -nc --arg t "$tool" --arg r "$reason" --arg m "$MODEL" --arg v "$call_it" \
        --argjson c "$calls" --argjson d "$distinct" --argjson tot "$total" \
        --argjson w "$WINDOW" --argjson mc "$MIN_CALLS" --argjson mf "$MIN_DISTINCT" \
    '{ts: (now|todate), kind: "verdict", tier: 2, signal: "semantic-repeat",
-     tool: $t, calls: $c, distinct_fps: $d, window_calls: $tot, verdict: "circling",
+     tool: $t, calls: $c, distinct_fps: $d, window_calls: $tot, verdict: $v,
      model: $m, reason: $r, window: $w, min_calls: $mc, min_distinct: $mf}' \
    >> "$ledger" 2>/dev/null
+
+# Only a finding is reported; a decline is data, not news.
+[ "$call_it" = circling ] || exit 0
 
 printf '[loop-index] tier 2: %s calls to %s in this stretch, %s of them textually distinct, judged as one intent retried rather than distinct steps. %s\nIf that is wrong, the thresholds are in the verdict line and are meant to be tuned. If it is right, say what new information the next attempt would use.\n' \
   "$calls" "$tool" "$distinct" "$reason" >&2
