@@ -26,6 +26,11 @@ that defect is invisible to both, and visible here.
 | `signatures` | mechanically detected candidates, each with counts, a time span, and a qualifier result |
 | `unavailable` | signatures that could NOT run, with the reason |
 
+On a repetition row, `count` is the burst the sliding window found and `total_in_session` is how often
+that call ran in all. **`total_in_session` being much larger is not evidence either way** — it says the
+call is routine, which is true of every gate in the workflow. The burst is the finding; the total is there
+so you cannot mistake a slice for the whole run.
+
 **You do NOT receive the per-event stream, and must not ask for it or go looking.** The producer
 strips it in the mode this skill invokes, and the transcript itself is off limits. So every judgement
 you make rests on the summary rows above — say so when a candidate needs more than they carry, rather
@@ -51,6 +56,7 @@ event actually a loop?
 | `repeated-tool-call` | the same call repeats with nothing between it that could change the answer | the repeats bracket a state change the script cannot see (a remote job finishing, a file written by another process, a user action) |
 | `error-retry-loop` | the same call fails repeatedly with no change to the input | each retry followed a visible correction — the second attempt had a different fingerprint |
 | `repeated-agent-spawn` | a review or design loop burned its round cap without converging | the spawns were independent parallel work |
+| | **`span_seconds` next to `count` separates these two.** Spawns seconds apart were launched together — that is a fan-out, whatever the count. Spawns minutes apart are re-entries: each one waited for the last to come back, which is what a round cap looks like from outside. | |
 | `turn-depth-spike` | one turn took many model calls circling the same sub-goal | the turn was legitimately long — a big migration, a broad sweep |
 | | **Expect to report this one unjudgeable.** Separating the two requires the ORDER of what the turn did, and the summary row carries only its depth. Do not settle it from the depth figure or from `cache_read`, which trends with context size rather than with struggle. Say what would settle it. | |
 | `deferral-candidate` | a ticket was filed from inside a turn that had already gone round and round, and the work it names is the work that was not converging | the ticket is genuine scope discovered while working, filed deliberately rather than as an exit |

@@ -93,7 +93,15 @@ because 3× flagged one turn in five on a real session, which is a list nobody r
 `repeated-tool-call` and `repeated-agent-spawn` only: `error-retry-loop` fires at two, because two failures
 of the same call with no change between them is already the shape. Each of those three repetition
 signatures reports the `threshold` it actually used and the `filters` that actually ran on it; read those
-rather than assuming the top-level numbers applied. `turn-depth-spike`, `deferral-candidate` and
+rather than assuming the top-level numbers applied.
+
+**`--window` is a sliding window, and a row reports two counts because of it.** The question is whether
+the threshold is met inside *any* window, not whether every occurrence of that call fits in one — asking
+the latter passes only a call that happens nowhere else in the session, which is why the signature
+returned a structural zero before. `count` is the burst the window found; `total_in_session` is how many
+times that call ran in all. A large gap between them is not itself a defect: it means the call is routine
+and went tight somewhere. Read `span_seconds` next to `count` — four spawns in 12 seconds is a parallel
+fan-out, three across 425 seconds is a loop re-entering. `turn-depth-spike`, `deferral-candidate` and
 `step-regression` carry neither field.
 
 **Expect to tune before trusting.** The first runs against a new project will be noisy. A signature that

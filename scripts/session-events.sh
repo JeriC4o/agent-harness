@@ -22,10 +22,15 @@
 # path, a prompt, or any tool output. The fingerprint exists precisely so
 # repetition can be detected without reproducing what was repeated.
 #
-# LOOP-SHAPED IS NOT LOOP. Every repetition signature carries a TIME qualifier
-# (the repeats must fall inside one window). Only repeated-tool-call also carries
-# the STATE qualifier (no Edit/Write in between -- re-running a gate after
-# changing a file is the workflow working, not a loop); error-retry-loop and
+# LOOP-SHAPED IS NOT LOOP. Every repetition signature carries a TIME qualifier:
+# enough of the repeats must fall inside one window. The window SLIDES -- the
+# question is whether the threshold is met in ANY window, not whether the whole
+# group fits in one. Asking the latter can only pass a call that occurs nowhere
+# else in the session, so on a real transcript it discarded every candidate
+# there was; a row therefore reports `count` (the burst) beside
+# `total_in_session` (the group). Only repeated-tool-call also carries the STATE
+# qualifier (no Edit/Write inside the burst -- re-running a gate after changing a
+# file is the workflow working, not a loop); error-retry-loop and
 # repeated-agent-spawn get the window alone. Each row therefore reports the
 # `filters` that actually ran on it and the `threshold` it fired at, because a
 # judge told a check ran when it did not reads every candidate toward confirm --
@@ -122,11 +127,9 @@ jq -n \
   # What a FAILED parse yields is the load-bearing half: null, never 0. A 0 fed
   # into the `<= $window` comparisons below turns an unreadable timestamp into a
   # maximally-qualifying row -- the candidate confirmed BECAUSE its input could
-  # not be read. A null span fails every window filter instead.
+  # not be read. A null drops the row from the slide in `densest` instead.
   def secs: if . == null then null
             else ( try (sub("\\.[0-9]+"; "") | fromdateiso8601) catch null ) end;
-  def span_of: (.first | secs) as $a | (.last | secs) as $b
-               | if $a == null or $b == null then null else $b - $a end;
 
   # error-retry-loop fires at two, while $minrep (3) governs the repeat shapes.
   # Two failures of the same call is already a retry loop; a third is the bar for
@@ -188,53 +191,83 @@ jq -n \
   | ($p.out | map(del(.tool_use_id))) as $events
 
   # ---- pass 2: signatures --------------------------------------------------
-  | ( $events | map(select(.kind == "tool")) ) as $tools
+  | ( $events | map(select(.kind == "tool")) | map(. + {ts_s: (.ts | secs)}) ) as $tools
   | ( $tools | map(select(.tool == "Edit" or .tool == "Write" or .tool == "NotebookEdit")) ) as $edits
 
   | def with_edits: map( . as $r
       | $r + { intervening_edits:
                  ( [ $edits[] | select(.seq > $r.first_seq and .seq < $r.last_seq) ] | length ) } );
 
-    def in_window: map(select(.span_seconds != null and .span_seconds <= $window));
+    # THE WINDOW IS A SUB-WINDOW, NOT THE WHOLE EXTENT OF A GROUP. Asking
+    # whether the FIRST and LAST occurrence of a group fall within $window can
+    # only ever pass a call that occurs nowhere else in the session -- so in a
+    # session of any length the filter rejects every candidate, including the
+    # ones it exists to catch. Measured on a real transcript before this was
+    # written: 6 of 6 tool-call groups and 5 of 5 agent groups discarded, among
+    # them a design + design-review pair that spawned 11 and 6 times. The
+    # question is instead whether $threshold of them fall inside ANY $window,
+    # which is the densest run: slide the window to each member timestamp and
+    # keep the fullest. A burst is then found wherever it sits in the session,
+    # and the earlier or later occurrences of the same call no longer veto it.
+    #
+    # Fails closed: a member whose timestamp would not parse is dropped before
+    # the slide rather than defaulting to a qualifying value -- the same
+    # discipline the `secs` guard above exists for.
+    def densest: map(select(.ts_s != null))
+      | if length == 0 then null
+        else sort_by(.ts_s) as $s
+             | [ range(0; $s | length) as $i
+                 | [ $s[] | select(.ts_s >= $s[$i].ts_s
+                                   and .ts_s <= ($s[$i].ts_s + $window)) ] ]
+               | max_by(length)
+        end;
 
-    def qualified: with_edits | in_window
-      | map(select(.intervening_edits == 0));
+    # The reported row describes the BURST; `total_in_session` keeps the full
+    # size of the group visible, so a judge can see that the burst is a slice of
+    # something larger rather than everything there was.
+    def burst_row: . as $all | (densest) as $w
+      | if $w == null then empty
+        else { count: ($w | length),
+               total_in_session: ($all | length),
+               turn: $w[0].turn, skill: $w[0].skill,
+               first_seq: ($w | map(.seq) | min), last_seq: ($w | map(.seq) | max),
+               first: ($w | map(.ts) | sort | first), last: ($w | map(.ts) | sort | last),
+               span_seconds: (($w | map(.ts_s) | max) - ($w | map(.ts_s) | min)),
+               window_members: $w }
+        end;
 
     ( $tools | map(select(.tool != "Agent")) | group_by([.tool, .fingerprint])
-      | map( select(length >= $minrep)
-             | { kind: "repeated-tool-call",
-                 tool: .[0].tool, bin: .[0].bin, fingerprint: .[0].fingerprint,
-                 count: length, errors: (map(select(.is_error == true)) | length),
-                 turn: .[0].turn, skill: .[0].skill,
-                 first_seq: (map(.seq) | min), last_seq: (map(.seq) | max),
-                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last),
-                 threshold: $minrep, filters: ["window", "intervening-edits"] } )
-      | map(. + {span_seconds: span_of})
-      | qualified ) as $repeats
+      | map( burst_row
+             | select(.count >= $minrep)
+             | . + { kind: "repeated-tool-call",
+                     tool: .window_members[0].tool,
+                     bin: .window_members[0].bin,
+                     fingerprint: .window_members[0].fingerprint,
+                     errors: (.window_members | map(select(.is_error == true)) | length),
+                     threshold: $minrep, filters: ["window", "intervening-edits"] } )
+      | with_edits
+      | map(select(.intervening_edits == 0))
+      | map(del(.window_members)) ) as $repeats
 
   | ( $tools | map(select(.tool != "Agent" and .is_error == true))
       | group_by([.tool, .fingerprint])
-      | map( select(length >= retry_min)
-             | { kind: "error-retry-loop",
-                 tool: .[0].tool, bin: .[0].bin, fingerprint: .[0].fingerprint,
-                 count: length, errors: length,
-                 turn: .[0].turn, skill: .[0].skill,
-                 first_seq: (map(.seq) | min), last_seq: (map(.seq) | max),
-                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last),
-                 threshold: retry_min, filters: ["window"] } )
-      | map(. + {span_seconds: span_of})
-      | in_window ) as $retries
+      | map( burst_row
+             | select(.count >= retry_min)
+             | . + { kind: "error-retry-loop",
+                     tool: .window_members[0].tool,
+                     bin: .window_members[0].bin,
+                     fingerprint: .window_members[0].fingerprint,
+                     errors: .count,
+                     threshold: retry_min, filters: ["window"] } )
+      | map(del(.window_members)) ) as $retries
 
   | ( $tools | map(select(.tool == "Agent")) | group_by(.bin)
-      | map( select(length >= $minrep)
-             | { kind: "repeated-agent-spawn",
-                 subagent_type: .[0].bin, count: length,
-                 turn: .[0].turn, skill: .[0].skill,
-                 first_seq: (map(.seq) | min), last_seq: (map(.seq) | max),
-                 first: (map(.ts) | sort | first), last: (map(.ts) | sort | last),
-                 threshold: $minrep, filters: ["window"] } )
-      | map(. + {span_seconds: span_of})
-      | in_window ) as $spawns
+      | map( burst_row
+             | select(.count >= $minrep)
+             | . + { kind: "repeated-agent-spawn",
+                     subagent_type: .window_members[0].bin,
+                     threshold: $minrep, filters: ["window"] } )
+      | map(del(.window_members)) ) as $spawns
 
   # ---- turn depth (the GH-13 signal, recalibrated) -------------------------
   # GH-14 proposed cache_read spikes. Measured, cache_read TRENDS -- early turns
