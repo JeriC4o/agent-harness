@@ -96,7 +96,18 @@ per_session() {
               settings: { window: $v.window, threshold: ($v.threshold // null),
                           min_calls: ($v.min_calls // null),
                           min_distinct: ($v.min_distinct // null) } } ] ) as $rows
+    # A session belongs to ONE project, so the project is read off the session
+    # rather than stored on every line twice. cwd is exact; the transcript path
+    # is the fallback for lines written before cwd was recorded, and it is only a
+    # fallback because its directory encodes the path by replacing "/" with "-",
+    # which a directory name containing a hyphen makes ambiguous with no sign.
+    | ( [ $calls[] | .cwd? // empty | select(. != "-") ] | first ) as $cwd
+    | ( [ $calls[] | .transcript? // empty ] | first ) as $tp0
     | { session: $sid,
+        project: ( $cwd
+                   // ( $tp0 | if . == null then "unknown"
+                        else (split("/") | if length > 1 then .[-2] else "unknown" end) end ) ),
+        project_exact: ($cwd != null),
         calls: ($calls | length),
         tools: ($calls | map(.tool) | unique | length),
         agents: ($calls | map(.agent_id) | unique | length),
@@ -123,22 +134,39 @@ for f in "${FILES[@]}"; do
 done
 [ -s "$tmp" ] || die "every ledger was empty"
 
+# PROJECTS ARE NEVER POOLED. A rate over a mixed corpus answers no question: the
+# thresholds that fit one codebase say nothing about another, and a single busy
+# project would dominate every figure while looking like a general result. The
+# roll-up therefore groups first and totals only inside a group.
 report=$(jq -s '
-  { sessions: .,
-    totals:
-      { sessions: length,
-        calls:    (map(.calls)    | add // 0),
-        verdicts: (map(.verdicts) | add // 0),
-        tier2:    { asked:    (map(.tier2.asked)    | add // 0),
-                    circling: (map(.tier2.circling) | add // 0),
-                    progress: (map(.tier2.progress) | add // 0) },
-        outcomes: ( map(.outcomes) | map(to_entries) | add // []
-                    | group_by(.key) | map({ (.[0].key): (map(.value) | add) }) | add // {} ) } }
-  # A rate needs its denominator beside it or it invites being read as a result.
-  | .totals.abandonment =
-      ( (.totals.outcomes.abandoned // 0) as $a
-        | ( [ .totals.outcomes | to_entries[] | select(.key != "n/a") | .value ] | add // 0 ) as $d
-        | if $d == 0 then null else { abandoned: $a, of: $d } end )
+  ( group_by(.project) | map({ project: .[0].project,
+                               exact: .[0].project_exact,
+                               sessions: length,
+                               calls:    (map(.calls)    | add // 0),
+                               verdicts: (map(.verdicts) | add // 0),
+                               tier2: { asked:    (map(.tier2.asked)    | add // 0),
+                                        circling: (map(.tier2.circling) | add // 0),
+                                        progress: (map(.tier2.progress) | add // 0) },
+                               outcomes: ( map(.outcomes) | map(to_entries) | add // []
+                                           | group_by(.key)
+                                           | map({ (.[0].key): (map(.value) | add) }) | add // {} ) })
+  ) as $projects
+  | { projects:
+        # A rate needs its denominator beside it or it invites being read as a
+        # result -- and it belongs to ONE project, never to a mixed corpus.
+        ( $projects | map( . + { abandonment:
+            ( (.outcomes.abandoned // 0) as $a
+              | ( [ .outcomes | to_entries[] | select(.key != "n/a") | .value ] | add // 0 ) as $d
+              | if $d == 0 then null else { abandoned: $a, of: $d } end ) } ) ),
+      sessions: .,
+      # Totals are an INVENTORY, deliberately: how much was seen, never a rate
+      # over it. Outcome shares, tier-2 agreement and abandonment live per
+      # project above, because pooling them would let one busy codebase set a
+      # figure that reads as general.
+      totals: { sessions: length,
+                projects: ($projects | length),
+                calls:    (map(.calls)    | add // 0),
+                verdicts: (map(.verdicts) | add // 0) } }
 ' "$tmp") || die "could not roll up"
 
 if [ "$AS_JSON" -eq 1 ]; then
@@ -147,28 +175,32 @@ if [ "$AS_JSON" -eq 1 ]; then
 fi
 
 printf '%s' "$report" | jq -r '
-  "loop ledger -- \(.totals.sessions) session(s), \(.totals.calls) call(s), \(.totals.verdicts) verdict(s)",
+  . as $r
+  | "loop ledger -- \($r.totals.projects) project(s), \($r.totals.sessions) session(s), " +
+    "\($r.totals.calls) call(s), \($r.totals.verdicts) verdict(s)",
   "",
-  ( if .totals.verdicts == 0 then
-      "Nothing fired. That is a result, not an empty report: \(.totals.calls) calls passed the detector without a repeat."
-    else
-      ( "outcome of each verdict (derived from the calls that follow it):",
-        ( .totals.outcomes | to_entries[] | "  \(.key): \(.value)" ),
-        "",
-        ( if .totals.abandonment == null then "abandonment: not computable -- no verdict carried a derivable outcome"
-          else "abandonment: \(.totals.abandonment.abandoned) of \(.totals.abandonment.of) -- the nearest stand-in for calls not made"
-          end ),
-        "",
-        "tier 2: asked \(.totals.tier2.asked), circling \(.totals.tier2.circling), progress \(.totals.tier2.progress)",
-        ( if .totals.tier2.asked == 0 then "  the structural gate never fired, so the model was never consulted"
-          elif .totals.tier2.progress == 0 then "  the model agreed every time -- check whether its verdict is adding anything"
-          elif .totals.tier2.circling == 0 then "  the model declined every time -- the structural gate is too loose"
-          else "  both answers occur, which is what makes the rate meaningful"
-          end ) )
-    end ),
-  "",
+  ( $r.projects[]
+    | "\(.project)\(if .exact then "" else "   [recovered from the transcript path; may be wrong where a directory name contains a hyphen]" end)",
+      "  \(.sessions) session(s), \(.calls) call(s), \(.verdicts) verdict(s)",
+      ( if .verdicts == 0 then
+          "  nothing fired -- a result, not an empty report: \(.calls) calls passed without a repeat"
+        else
+          ( "  outcome of each verdict, from the calls that follow it:",
+            ( .outcomes | to_entries[] | "    \(.key): \(.value)" ),
+            ( if .abandonment == null then "  abandonment: not computable here -- no verdict carried a derivable outcome"
+              else "  abandonment: \(.abandonment.abandoned) of \(.abandonment.of) -- the nearest stand-in for calls not made"
+              end ),
+            "  tier 2: asked \(.tier2.asked), circling \(.tier2.circling), progress \(.tier2.progress)",
+            ( if .tier2.asked == 0 then "    the structural gate never fired, so the model was never consulted"
+              elif .tier2.progress == 0 then "    the model agreed every time -- check whether its verdict adds anything"
+              elif .tier2.circling == 0 then "    the model declined every time -- the structural gate is too loose"
+              else "    both answers occur, which is what makes the rate meaningful"
+              end ) )
+        end ),
+      "" ),
   "per session:",
-  ( .sessions[] | "  \(.session): \(.calls) calls, \(.tools) tool(s), \(.agents) agent(s), \(.verdicts) verdict(s)" ),
+  ( $r.sessions[] | "  [\(.project)] \(.session): \(.calls) calls, \(.tools) tool(s), \(.agents) agent(s), \(.verdicts) verdict(s)" ),
   "",
+  "Rates are per project and are never pooled: thresholds that fit one codebase say nothing about another.",
   "One run is not a trend. Thresholds are recorded per verdict; compare them before comparing rates."
 '

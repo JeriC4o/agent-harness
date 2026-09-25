@@ -22,6 +22,10 @@ new() { : > "$L"; }
 call() { jq -nc --arg t "$1" --arg f "$2" --arg id "$3" \
          '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:$t,fp:$f,
            tool_use_id:$id,transcript:"/tmp/x.jsonl"}' >> "$L"; }
+# Same, but carrying cwd -- the exact project, as the hook records it today.
+callp() { jq -nc --arg t "$1" --arg f "$2" --arg id "$3" --arg c "$4" \
+         '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:$t,fp:$f,
+           tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:$c}' >> "$L"; }
 v1()   { jq -nc --arg t "$1" --arg f "$2" \
          '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:1,signal:"loop",tool:$t,
            fp:$f,count:3,agents:1,decision:"ask",window:20,threshold:3}' >> "$L"; }
@@ -44,20 +48,20 @@ printf '\n== the outcome is derived from POSITION, not from the clock ==\n'
 # count as a call that followed it.
 new; call Bash a t1; call Bash a t2; call Bash a t3; v1 Bash a
 check "no call after the verdict -> abandoned" \
-      "$(j | jq -r '.totals.outcomes.abandoned')" "1"
-check "  and not went_ahead" "$(j | jq -r '.totals.outcomes.went_ahead // 0')" "0"
+      "$(j | jq -r '.projects[0].outcomes.abandoned')" "1"
+check "  and not went_ahead" "$(j | jq -r '.projects[0].outcomes.went_ahead // 0')" "0"
 
 new; call Bash a t1; call Bash a t2; call Bash a t3; v1 Bash a; call Bash a t4
 check "the same fp afterwards -> went_ahead" \
-      "$(j | jq -r '.totals.outcomes.went_ahead')" "1"
+      "$(j | jq -r '.projects[0].outcomes.went_ahead')" "1"
 
 new; call Bash a t1; call Bash a t2; call Bash a t3; v1 Bash a; call Bash b t4
 check "a different fp on the same tool -> reformulated" \
-      "$(j | jq -r '.totals.outcomes.reformulated')" "1"
+      "$(j | jq -r '.projects[0].outcomes.reformulated')" "1"
 
 new; call Bash a t1; call Bash a t2; call Bash a t3; v1 Bash a; call Grep z t4
 check "a call to ANOTHER tool does not decide it" \
-      "$(j | jq -r '.totals.outcomes.abandoned')" "1"
+      "$(j | jq -r '.projects[0].outcomes.abandoned')" "1"
 
 printf '\n== POSITIVE CONTROL: key the outcome on ts, everything reads as went_ahead ==\n'
 # Every fixture line shares a ts, so a reader comparing ts >= verdict.ts readmits
@@ -68,26 +72,26 @@ perl -0pe 's/select\(\.i > \$vi\.i and \.e\.kind == "call" and \.e\.tool == \$v\
   "$READER" > "$MUT"
 check "the mutation applied" "$(grep -c '\.e\.ts >= \$v\.ts' "$MUT")" "1"
 new; call Bash a t1; call Bash a t2; call Bash a t3; v1 Bash a
-check "with position, the abandoned case is seen" "$(j | jq -r '.totals.outcomes.abandoned')" "1"
+check "with position, the abandoned case is seen" "$(j | jq -r '.projects[0].outcomes.abandoned')" "1"
 check "keyed on ts, the same ledger reads as went_ahead" \
-      "$(bash "$MUT" "$L" --json | jq -r '.totals.outcomes.went_ahead')" "1"
+      "$(bash "$MUT" "$L" --json | jq -r '.projects[0].outcomes.went_ahead')" "1"
 
 printf '\n== tier 2 agreement is countable, which is why a decline is recorded ==\n'
 new; call Grep a t1; v2 Grep circling; call Grep b t2; v2 Grep progress
 r=$(j)
-check "asked"    "$(printf '%s' "$r" | jq -r '.totals.tier2.asked')"    "2"
-check "circling" "$(printf '%s' "$r" | jq -r '.totals.tier2.circling')" "1"
-check "progress" "$(printf '%s' "$r" | jq -r '.totals.tier2.progress')" "1"
+check "asked"    "$(printf '%s' "$r" | jq -r '.projects[0].tier2.asked')"    "2"
+check "circling" "$(printf '%s' "$r" | jq -r '.projects[0].tier2.circling')" "1"
+check "progress" "$(printf '%s' "$r" | jq -r '.projects[0].tier2.progress')" "1"
 check "a tier-2 verdict has no fp, so its outcome is not invented" \
-      "$(printf '%s' "$r" | jq -r '.totals.outcomes["n/a"]')" "2"
+      "$(printf '%s' "$r" | jq -r '.projects[0].outcomes["n/a"]')" "2"
 
 printf '\n== the abandonment rate carries its denominator ==\n'
 new; call Bash a t1; v1 Bash a; call Bash a t2; call Bash c t3; v1 Bash c
 r=$(j)
-check "abandoned count" "$(printf '%s' "$r" | jq -r '.totals.abandonment.abandoned')" "1"
-check "out of"          "$(printf '%s' "$r" | jq -r '.totals.abandonment.of')"        "2"
+check "abandoned count" "$(printf '%s' "$r" | jq -r '.projects[0].abandonment.abandoned')" "1"
+check "out of"          "$(printf '%s' "$r" | jq -r '.projects[0].abandonment.of')"        "2"
 check "n/a rows are excluded from the denominator" \
-      "$(new; call Grep a t1; v2 Grep progress; j | jq -r '.totals.abandonment')" "null"
+      "$(new; call Grep a t1; v2 Grep progress; j | jq -r '.projects[0].abandonment')" "null"
 
 printf '\n== an unknown kind never joins a count ==\n'
 new; call Bash a t1; call Bash a t2
@@ -99,7 +103,7 @@ check "verdicts unchanged" "$(printf '%s' "$r" | jq -r '.totals.verdicts')" "0"
 printf '\n== a quiet ledger is a result, not an empty report ==\n'
 new; call Bash a t1; call Read b t2
 out=$(bash "$READER" "$L")
-has "it says nothing fired" "$out" "Nothing fired"
+has "it says nothing fired" "$out" "nothing fired"
 has "  and how many calls passed" "$out" "2 calls"
 has "  and refuses to read one run as a trend" "$out" "not a trend"
 
@@ -119,6 +123,48 @@ check "both sessions"     "$(printf '%s' "$r" | jq -r '.totals.sessions')" "2"
 check "calls are summed"  "$(printf '%s' "$r" | jq -r '.totals.calls')"    "3"
 check "and not pooled -- a per-session row survives" \
       "$(printf '%s' "$r" | jq -r '[.sessions[].session] | sort | join(",")')" "s1,s2"
+L="$W/sess-a.jsonl"
+
+printf '\n== the project comes from cwd, exactly ==\n'
+new; callp Bash a t1 /Users/me/work/alpha; callp Bash a t2 /Users/me/work/alpha
+r=$(j)
+check "the project is the cwd verbatim" \
+      "$(printf '%s' "$r" | jq -r '.projects[0].project')" "/Users/me/work/alpha"
+check "  and it is flagged as exact"   "$(printf '%s' "$r" | jq -r '.projects[0].exact')" "true"
+
+printf '\n== without cwd it degrades, and SAYS it degraded ==\n'
+new; call Bash a t1
+r=$(j)
+check "falls back to the transcript path" "$(printf '%s' "$r" | jq -r '.projects[0].project')" "tmp"
+check "  and is NOT flagged exact"        "$(printf '%s' "$r" | jq -r '.projects[0].exact')" "false"
+out=$(bash "$READER" "$L")
+has "the report admits the recovery may be wrong" "$out" "may be wrong"
+
+printf '\n== PROJECTS ARE NEVER POOLED ==\n'
+# Two projects in one directory, each with its own verdict. A pooled rate would
+# report one figure over both and read as a general result; the point of the
+# ledger is per-codebase thresholds, so a mixed rate answers no question.
+D2="$W/mixed"; mkdir -p "$D2"
+L="$D2/alpha.jsonl"; new
+callp Bash a t1 /Users/me/work/alpha; callp Bash a t2 /Users/me/work/alpha
+callp Bash a t3 /Users/me/work/alpha; v1 Bash a
+L="$D2/beta.jsonl";  new
+callp Grep z t1 /Users/me/work/beta; callp Grep z t2 /Users/me/work/beta
+callp Grep z t3 /Users/me/work/beta; v1 Grep z; callp Grep z t4 /Users/me/work/beta
+r=$(HARNESS_LOOP_DIR="$D2" bash "$READER" --all --json)
+check "two projects, kept apart" "$(printf '%s' "$r" | jq -r '.totals.projects')" "2"
+check "alpha abandoned its call" \
+      "$(printf '%s' "$r" | jq -r '.projects[] | select(.project|endswith("alpha")) | .outcomes.abandoned')" "1"
+check "beta went ahead with its" \
+      "$(printf '%s' "$r" | jq -r '.projects[] | select(.project|endswith("beta")) | .outcomes.went_ahead')" "1"
+check "abandonment is per project, not one pooled figure" \
+      "$(printf '%s' "$r" | jq -r '[.projects[].abandonment.of] | join(",")')" "1,1"
+check "totals stay an INVENTORY -- no pooled rate exists to misread" \
+      "$(printf '%s' "$r" | jq -r '.totals | has("abandonment") or has("outcomes")')" "false"
+out=$(HARNESS_LOOP_DIR="$D2" bash "$READER" --all)
+has "and the report says rates are never pooled" "$out" "never pooled"
+has "  naming the first project"  "$out" "/Users/me/work/alpha"
+has "  and the second"            "$out" "/Users/me/work/beta"
 L="$W/sess-a.jsonl"
 
 printf '\n== usage errors are loud ==\n'
