@@ -287,6 +287,52 @@ tool "$S" 2026-01-01T05:00:20Z Bash '{"command":"make test"}' d
 check "an edit outside the burst does not clear it" \
   "$(sig "$(S_ "$S")" repeated-tool-call)" "1"
 
+printf '\n== spawns MINUTES apart are re-entries, and are the confirm case ==\n'
+# inspector.md states the qualifier: seconds apart is a fan-out to dismiss,
+# minutes apart is a round cap re-entering. A fixed-width admission window
+# inverts it -- a 4-round design loop fits no 10-minute window while a 12-second
+# fan-out fits every one, so the detector selected against the shape it exists
+# for. Measured on a real session: that loop produced zero rows.
+S=$(newsession)
+tool "$S" 2026-01-01T17:37:20Z Agent '{"subagent_type":"harness:design","prompt":"r1"}' a
+tool "$S" 2026-01-01T17:56:01Z Agent '{"subagent_type":"harness:design","prompt":"r2"}' b
+tool "$S" 2026-01-01T18:11:50Z Agent '{"subagent_type":"harness:design","prompt":"r3"}' c
+tool "$S" 2026-01-01T18:24:54Z Agent '{"subagent_type":"harness:design","prompt":"r4"}' d
+tool "$S" 2026-01-01T18:36:33Z Agent '{"subagent_type":"harness:design","prompt":"r5"}' e
+out=$(S_ "$S")
+check "a four-round design loop is found" "$(sig "$out" repeated-agent-spawn)" "1"
+check "every re-entry is in the chain"    \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].count' <<<"$out")" "5"
+check "the widest gap is reported"        \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].gap_seconds.max' <<<"$out")" "1121"
+check "and the narrowest"                 \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].gap_seconds.min' <<<"$out")" "699"
+check "the row says which filter ran"     \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].filters[0]' <<<"$out")" "spawn-gap"
+
+printf '\n== POSITIVE CONTROL: narrow the gap to a window width, the loop is lost ==\n'
+# 600s was the shared width before spawns got their own. Restoring it here
+# reproduces the defect exactly, so this suite fails if the chain is reverted.
+PATCHED=$(mktemp); sed 's/SPAWNGAP=1800/SPAWNGAP=600/' "$EV" > "$PATCHED"
+check "at 600s the design loop disappears" \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|length' \
+      <<<"$(bash "$PATCHED" "$S" --signatures 2>/dev/null)")" "0"
+rm -f "$PATCHED"
+
+printf '\n== a fan-out still reports, and carries the gaps that dismiss it ==\n'
+# It is NOT filtered out -- the qualifier does that, and it needs the number.
+S=$(newsession)
+tool "$S" 2026-01-01T09:22:11Z Agent '{"subagent_type":"general-purpose","prompt":"a"}' a
+tool "$S" 2026-01-01T09:22:15Z Agent '{"subagent_type":"general-purpose","prompt":"b"}' b
+tool "$S" 2026-01-01T09:22:19Z Agent '{"subagent_type":"general-purpose","prompt":"c"}' c
+tool "$S" 2026-01-01T09:22:23Z Agent '{"subagent_type":"general-purpose","prompt":"d"}' d
+out=$(S_ "$S")
+check "the fan-out is reported"     "$(sig "$out" repeated-agent-spawn)" "1"
+check "with gaps of seconds"        \
+  "$(jq -r '[.signatures[]|select(.kind=="repeated-agent-spawn")]|.[0].gap_seconds.max' <<<"$out")" "4"
+check "and the gap default is stated" \
+  "$(jq -r '.spawn_gap_seconds' <<<"$out")" "1800"
+
 printf '\n== a spawn burst inside a long session is found too ==\n'
 S=$(newsession)
 tool "$S" 2026-01-01T00:00:00Z Agent '{"subagent_type":"harness:design","prompt":"a"}' a

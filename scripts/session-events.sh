@@ -7,7 +7,8 @@
 # Usage:
 #   session-events.sh <session.jsonl> [--json]
 #   session-events.sh <session.jsonl> --signatures [--json]
-#                     [--window N] [--min-repeats N] [--spike-factor N]
+#                     [--window N] [--spawn-gap N] [--min-repeats N]
+#                     [--spike-factor N]
 #
 # Exit: 0 on success (an empty transcript is success), 2 on usage error.
 #
@@ -33,8 +34,11 @@
 # there was; a row therefore reports `count` (the burst) beside
 # `total_in_session` (the group). Only repeated-tool-call also carries the STATE
 # qualifier (no Edit/Write inside the burst -- re-running a gate after changing a
-# file is the workflow working, not a loop); error-retry-loop and
-# repeated-agent-spawn get the window alone. Each row therefore reports the
+# file is the workflow working, not a loop); error-retry-loop gets the window
+# alone. repeated-agent-spawn uses neither: its qualifier is the GAP between
+# spawns, so a width filter would decide the very thing the judge is asked to
+# decide -- it chains on --spawn-gap and reports the distribution instead. Each
+# row therefore reports the
 # `filters` that actually ran on it and the `threshold` it fired at, because a
 # judge told a check ran when it did not reads every candidate toward confirm --
 # and a check that cries wolf is a failure this repo has shipped twice already.
@@ -58,21 +62,22 @@ die()  { printf 'session-events: %s\n' "$1" >&2; exit 2; }
 warn() { printf 'session-events: %s\n' "$1" >&2; }
 
 SESSION=""; AS_JSON=0; MODE=events
-WINDOW=600; MIN_REPEATS=3; SPIKE=5
+WINDOW=600; SPAWNGAP=1800; MIN_REPEATS=3; SPIKE=5
 while [ $# -gt 0 ]; do
   case "$1" in
     --json)        AS_JSON=1 ;;
     --signatures)  MODE=signatures ;;
     --window)      shift; [ $# -gt 0 ] || die "--window needs a number"; WINDOW="$1" ;;
+    --spawn-gap)   shift; [ $# -gt 0 ] || die "--spawn-gap needs a number"; SPAWNGAP="$1" ;;
     --min-repeats) shift; [ $# -gt 0 ] || die "--min-repeats needs a number"; MIN_REPEATS="$1" ;;
     --spike-factor)shift; [ $# -gt 0 ] || die "--spike-factor needs a number"; SPIKE="$1" ;;
-    -h|--help)     sed -n '2,10p' "$0"; exit 0 ;;
+    -h|--help)     sed -n '2,11p' "$0"; exit 0 ;;
     -*)            die "unknown option: $1" ;;
     *)  [ -z "$SESSION" ] || die "more than one transcript given"; SESSION="$1" ;;
   esac
   shift
 done
-for v in "$WINDOW" "$MIN_REPEATS" "$SPIKE"; do
+for v in "$WINDOW" "$SPAWNGAP" "$MIN_REPEATS" "$SPIKE"; do
   case "$v" in ''|*[!0-9]*) die "thresholds must be whole numbers, got: $v" ;; esac
 done
 
@@ -94,6 +99,7 @@ jq -n \
   --arg path "$SESSION" \
   --argjson bad "$BAD" \
   --argjson window "$WINDOW" \
+  --argjson spawngap "$SPAWNGAP" \
   --argjson minrep "$MIN_REPEATS" \
   --argjson spike "$SPIKE" '
 
@@ -239,6 +245,46 @@ jq -n \
                window_members: $w }
         end;
 
+    # A CHAIN, NOT A WINDOW, FOR SPAWNS -- because the GAP is the evidence.
+    # What separates a fan-out from a review loop re-entering is how far apart
+    # the spawns are: launched together means seconds, each-waited-for-the-last
+    # means minutes. Using a fixed width as the ADMISSION filter therefore
+    # selects against the confirm case, which is the reverse of the intent. A
+    # 4-round design loop with 11-to-18-minute gaps fits no 10-minute window; a
+    # 4-spawn fan-out 12 seconds wide fits every one. Measured on a real
+    # session that is exactly what happened -- the design loop produced ZERO
+    # rows and the fan-out produced one.
+    #
+    # So chain instead: consecutive spawns of one subagent_type belong together
+    # while the gap between them stays under $spawngap, and the row carries the
+    # gap distribution. Admission stops deciding what the qualifier is meant to
+    # decide, and the judge gets the number its own contract tells it to read.
+    def chain: ( map(select(.ts_s != null)) | sort_by(.ts_s) ) as $s
+      | if ($s | length) == 0 then null
+        else ( reduce $s[] as $e ([];
+                 if (length == 0) or (($e.ts_s - .[-1][-1].ts_s) > $spawngap)
+                 then . + [[$e]]
+                 else .[0:-1] + [ .[-1] + [$e] ] end ) )
+             | max_by(length)
+        end;
+
+    def gap_row: . as $all | (chain) as $c
+      | if $c == null then empty
+        else ( [ range(1; $c | length) as $i
+                 | ($c[$i].ts_s - $c[$i-1].ts_s) ] ) as $gaps
+        | { count: ($c | length),
+            total_in_session: ($all | length),
+            turn: $c[0].turn, skill: $c[0].skill,
+            first_seq: ($c | map(.seq) | min), last_seq: ($c | map(.seq) | max),
+            first: $c[0].ts, last: $c[-1].ts,
+            span_seconds: ($c[-1].ts_s - $c[0].ts_s),
+            gap_seconds: { min: ($gaps | min), max: ($gaps | max),
+                           median: ( if ($gaps | length) == 0 then null
+                                     else ($gaps | sort | .[ (length / 2 | floor) ])
+                                     end ) },
+            chain_members: $c }
+        end;
+
     ( $tools | map(select(.tool != "Agent")) | group_by([.tool, .fingerprint])
       | map( burst_row
              | select(.count >= $minrep)
@@ -265,12 +311,12 @@ jq -n \
       | map(del(.window_members)) ) as $retries
 
   | ( $tools | map(select(.tool == "Agent")) | group_by(.bin)
-      | map( burst_row
+      | map( gap_row
              | select(.count >= $minrep)
              | . + { kind: "repeated-agent-spawn",
-                     subagent_type: .window_members[0].bin,
-                     threshold: $minrep, filters: ["window"] } )
-      | map(del(.window_members)) ) as $spawns
+                     subagent_type: .chain_members[0].bin,
+                     threshold: $minrep, filters: ["spawn-gap"] } )
+      | map(del(.chain_members)) ) as $spawns
 
   # ---- turn depth (the GH-13 signal, recalibrated) -------------------------
   # GH-14 proposed cache_read spikes. Measured, cache_read TRENDS -- early turns
@@ -336,7 +382,8 @@ jq -n \
       tool_calls: ($tools | length),
       turns: (($events | map(.turn) | max) // 0),
       unparseable_lines: $bad,
-      window_seconds: $window, min_repeats: $minrep, spike_factor: $spike,
+      window_seconds: $window, spawn_gap_seconds: $spawngap,
+      min_repeats: $minrep, spike_factor: $spike,
       events: $events,
       signatures: ($repeats + $retries + $spawns + $spikes + $deferrals + $regressions),
       unavailable: (

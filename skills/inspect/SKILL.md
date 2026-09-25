@@ -109,9 +109,16 @@ the threshold is met inside *any* window, not whether every occurrence of that c
 the latter passes only a call that happens nowhere else in the session, which is why the signature
 returned a structural zero before. `count` is the burst the window found; `total_in_session` is how many
 times that call ran in all. A large gap between them is not itself a defect: it means the call is routine
-and went tight somewhere. Read `span_seconds` next to `count` — four spawns in 12 seconds is a parallel
-fan-out, three across 425 seconds is a loop re-entering. `turn-depth-spike`, `deferral-candidate` and
-`step-regression` carry neither field.
+and went tight somewhere. `turn-depth-spike`, `deferral-candidate` and `step-regression` carry neither
+field.
+
+**`repeated-agent-spawn` does not use `--window` at all — it chains on `--spawn-gap` (1800s).** Its
+qualifier *is* the gap: seconds apart is a fan-out, minutes apart is a round cap re-entering. A width
+filter would therefore decide the question the judge is there to answer, and it did — a four-round design
+loop with 11-to-18-minute gaps fits no ten-minute window, so on a real session it produced zero rows while
+a 12-second fan-out produced one. The chain admits both and puts `gap_seconds` (`min`/`median`/`max`) on
+the row. `--spawn-gap` is the idle threshold that ends a chain, not a loop threshold: raise it and
+unrelated stretches of work join up; lower it toward a window width and the re-entries vanish again.
 
 **Expect to tune before trusting.** The first runs against a new project will be noisy. A signature that
 keeps producing dismissals is a threshold to adjust, and saying that out loud beats quietly ignoring it.
