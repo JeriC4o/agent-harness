@@ -1,38 +1,52 @@
 #!/usr/bin/env bash
-# Stop / SubagentStop loop verdict -- tier 2. GH-62.
+# Stop / SubagentStop -- the COARSE stage of the loop cascade. GH-62, GH-67.
 #
-# Tier 1 (loop-index.sh) catches BYTE-IDENTICAL repetition. This is the other
-# class: one intent spelled different ways -- another path, a reworded prompt, a
-# changed flag -- which djb2 cannot see by construction and which is the commoner
-# shape of getting stuck.
+# The cascade is: exact hash -> coarse hash -> model -> deep analysis. Tier 1
+# (loop-index.sh) catches byte-identical repetition on the way in. This stage
+# catches the shape tier 1 cannot see -- one intent retried with another path,
+# another pattern, another flag -- and its job in the cascade is to CUT OFF model
+# runs, not to judge.
 #
-# THE GATE IS NOT TIER 1, AND THAT IS THE WHOLE POINT. Gating this on a tier-1
-# signal would mean only ever seeing the class tier 1 already caught, making this
-# strictly redundant -- the defect ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md
-# § Testing names: a filter keyed on the property the qualifier separates on
-# structurally excludes the case the qualifier exists to confirm. So the gate is
-# keyed on the OPPOSITE of byte-identity: one tool repeated many times with many
-# DISTINCT fingerprints, dominating the window.
+# WHAT THE FIRST REAL SESSION KILLED. The previous gate counted DISTINCT
+# fingerprints and required one tool to dominate the window. Measured over 110
+# calls in 5 turns it fired on healthy work and the model declined every time:
+#   - distinctness does not discriminate. "Same intent, different bytes" yields
+#     distinct fingerprints -- and so does ordinary varied work. Both read as
+#     "all distinct", so the condition was satisfied MAXIMALLY by the healthy
+#     case. Both verdicts recorded calls:20, distinct_fps:20.
+#   - concentration is vacuous in a single-tool session: 77 of 78 calls were
+#     Bash, 98.7%, so any threshold under ~98% passed automatically.
 #
-# The model runs only on what survives that, because the structural signal cannot
-# tell circling from methodical breadth -- ten Reads of ten different files look
-# identical to it. Structure narrows; the model judges.
+# WHAT REPLACED IT, also measured: repeats of the COARSE bin within ONE TURN.
+# Per turn that session gave 11x grep, 5x sed, 4x, 3x, 2x -- a spread, where
+# session-wide figures were identical for every turn and carried no information.
+# The coarse bin is the discriminator because it requires ACTUAL repetition of a
+# normalised form, which is the property the old gate lacked.
+#
+# THE TURN IS THE FRAME, and the marker is why. The ledger carries ts and session
+# but no turn index, because PreToolUse does not know one. Stop IS the turn
+# boundary, so this writes a kind:"turn" line on every stop and scopes the gate to
+# the calls after the previous one. That also makes re-judging impossible by
+# construction: a turn is judged once because the marker moves past it.
+#
+# THE MODEL IS OFF BY DEFAULT. Until the coarse gate has produced a distribution
+# worth judging, paying for a verdict per turn is the cost this cascade exists to
+# avoid. Set HARNESS_T3_MODEL to a model name to enable the judging stage.
 #
 # IT NEVER BLOCKS. A Stop hook returning exit 2 forces the conversation to
 # continue, so a loop detector spelled that way becomes the thing it exists to
-# catch. Reporting is stderr plus a verdict line.
+# catch.
 #
-# THRESHOLDS ARE A HYPOTHESIS, NOT A SPECIFICATION. They cannot be validated
-# without a corpus of real sessions. Each verdict records the values it fired
-# under, so the first real runs are the measurement rather than the confirmation.
+# THRESHOLDS ARE A HYPOTHESIS FROM ONE SESSION. 8 was chosen to sit above that
+# session's second-place turn (5x) and below its first (11x). Every verdict
+# records the value it fired under, so the next sessions are the measurement.
 set -u
 
+HERE_JQ=$(cd -- "$(dirname -- "$0")/../../scripts" 2>/dev/null && pwd) || HERE_JQ=""
 LEDGER_DIR="${HARNESS_LOOP_DIR:-${HOME}/.claude/harness/loops}"
-WINDOW="${HARNESS_T2_WINDOW:-40}"        # steps of ledger to consider
-MIN_CALLS="${HARNESS_T2_MIN_CALLS:-5}"   # of one tool, within the window
-MIN_DISTINCT="${HARNESS_T2_MIN_FPS:-3}"  # distinct fingerprints among them
-MODEL="${HARNESS_T2_MODEL:-haiku}"
-MAX_ARG="${HARNESS_T2_MAX_ARG:-300}"     # chars of each argument shown to the model
+MIN_BIN="${HARNESS_T2_MIN_BIN:-8}"        # repeats of one bin within the turn
+MODEL="${HARNESS_T3_MODEL:-off}"          # "off" disables the judging stage
+MAX_ARG="${HARNESS_T3_MAX_ARG:-300}"      # chars of each argument shown to it
 
 in=$(cat 2>/dev/null) || exit 0
 [ -n "$in" ] || exit 0
@@ -43,115 +57,97 @@ sid=$(printf '%s' "$in" | jq -r '.session_id // empty' 2>/dev/null) || exit 0
 ledger="${LEDGER_DIR}/${sid}.jsonl"
 [ -s "$ledger" ] || exit 0
 
-# --- structural gate -------------------------------------------------------
-# One pass over the tail. Only kind:"call" lines count -- a verdict carries tool
-# and fp too, and counting one would let each firing make the next more likely.
-gate=$(tail -n "$WINDOW" "$ledger" 2>/dev/null | awk \
-    -v min_calls="$MIN_CALLS" -v min_fps="$MIN_DISTINCT" '
-  {
-    k = ""; if (match($0, /"kind":"[^"]*"/)) k = substr($0, RSTART + 8, RLENGTH - 9)
+mark_turn() {
+  jq -nc '{ts: (now|todate), kind: "turn"}' >> "$ledger" 2>/dev/null
+  exit 0
+}
+
+# --- the coarse gate, scoped to this turn ----------------------------------
+# The WHOLE ledger is read, not a tail: this runs once per turn, not per call,
+# and a tail deep enough for a long turn is a guess. One turn in the measured
+# session held 54 calls.
+#
+# Only kind:"call" lines count. A verdict carries tool and bin too, and counting
+# one would let each firing make the next more likely.
+gate=$(awk -v minbin="$MIN_BIN" '
+  { k = ""; if (match($0, /"kind":"[^"]*"/)) k = substr($0, RSTART + 8, RLENGTH - 9)
+    if (k == "turn") { delete c; n = 0; next }        # a new turn starts here
     if (k != "call") next
-    t = ""; if (match($0, /"tool":"[^"]*"/)) t = substr($0, RSTART + 8, RLENGTH - 9)
-    f = ""; if (match($0, /"fp":"[^"]*"/))   f = substr($0, RSTART + 6, RLENGTH - 7)
-    if (t == "" || f == "") next
-    calls[t]++; total++
-    if (!((t SUBSEP f) in seenfp)) { seenfp[t SUBSEP f] = 1; fps[t]++ }
-  }
+    b = ""; if (match($0, /"bin":"[^"]*"/)) b = substr($0, RSTART + 7, RLENGTH - 8)
+    if (b == "") next
+    c[b]++; n++ }
   END {
-    if (total == 0) exit
+    if (n == 0) exit
     best = ""; bestn = 0
-    for (t in calls) if (calls[t] > bestn) { bestn = calls[t]; best = t }
-    if (best == "") exit
-    # Many calls AND many DISTINCT fingerprints: the same tool tried different
-    # ways. Either alone is ordinary -- five identical calls are tier 1 work, and
-    # five distinct ones spread across a varied window are just breadth.
-    if (bestn < min_calls) exit
-    if (fps[best] < min_fps) exit
-    # Concentration, the cheap stand-in for "this turn went round on one thing".
-    # Without it a long productive turn trips the gate purely by being long.
-    if (bestn * 100 < total * 60) exit
-    printf "%s %d %d %d\n", best, bestn, fps[best], total
-  }')
-[ -n "$gate" ] || exit 0
-set -- $gate
-tool="$1"; calls="$2"; distinct="$3"; total="$4"
+    for (b in c) if (c[b] > bestn) { bestn = c[b]; best = b }
+    if (bestn < minbin) exit
+    printf "%s\t%d\t%d\n", best, bestn, n
+  }' "$ledger")
+[ -n "$gate" ] || mark_turn
 
-# --- do not re-judge a window already judged -------------------------------
-# Every Stop would otherwise re-flag the same tail and call the model again: a
-# loop detector in a loop. A tier-2 verdict for this tool inside the window means
-# the question has been asked.
-already=$(tail -n "$WINDOW" "$ledger" 2>/dev/null | awk -v t="$tool" '
-  { k=""; if (match($0, /"kind":"[^"]*"/)) k=substr($0,RSTART+8,RLENGTH-9)
-    if (k != "verdict") next
-    if ($0 !~ /"tier":2/) next
-    tt=""; if (match($0, /"tool":"[^"]*"/)) tt=substr($0,RSTART+8,RLENGTH-9)
-    if (tt == t) n++ }
-  END { print n+0 }')
-[ "${already:-0}" -eq 0 ] || exit 0
+IFS=$(printf '\t') read -r bin repeats turn_calls <<<"$gate"
+[ -n "${bin:-}" ] || mark_turn
 
-# --- resolve the pointers into detail --------------------------------------
-# The ledger stores an INDEX; the arguments live in the transcript. Resolve per
-# entry against its OWN transcript, because a subagent writes its own file.
-detail=$(tail -n "$WINDOW" "$ledger" 2>/dev/null \
-  | jq -r --arg t "$tool" 'select(.kind == "call" and .tool == $t)
-                           | "\(.tool_use_id)\t\(.transcript)"' 2>/dev/null \
+# --- record the structural firing ------------------------------------------
+# Recorded even with the model off: how often this gate fires IS the calibration
+# the previous design could not produce, and it is the number that decides
+# whether the judging stage is worth enabling at all.
+jq -nc --arg b "$bin" --argjson r "$repeats" --argjson n "$turn_calls" \
+       --argjson mb "$MIN_BIN" --arg m "$MODEL" \
+   '{ts: (now|todate), kind: "verdict", tier: 2, signal: "coarse-repeat",
+     bin: $b, repeats: $r, turn_calls: $n, scope: "turn",
+     min_bin_repeats: $mb, judged: ($m != "off")}' >> "$ledger" 2>/dev/null
+
+printf '[loop-index] coarse repeat: %s ran %s times in this turn of %s calls, under different arguments each time. Same shape of command, no exact repeat -- which is what retrying one intent looks like. If that is what happened, say what the next attempt would do differently; if it was distinct work, the threshold is in the verdict line and is meant to be tuned.\n' \
+  "$bin" "$repeats" "$turn_calls" >&2
+
+[ "$MODEL" != "off" ] || mark_turn
+
+# --- tier 3: the model judges what the coarse stage flagged -----------------
+detail=$(awk '
+  { k = ""; if (match($0, /"kind":"[^"]*"/)) k = substr($0, RSTART + 8, RLENGTH - 9)
+    if (k == "turn") { delete keep; m = 0; next }
+    if (k != "call") next
+    keep[++m] = $0 }
+  END { for (i = 1; i <= m; i++) print keep[i] }' "$ledger" \
+  | jq -r --arg b "$bin" 'select(.bin == $b) | "\(.tool_use_id)\t\(.transcript)"' 2>/dev/null \
   | while IFS=$(printf '\t') read -r tuid tpath; do
       [ -f "$tpath" ] || continue
       jq -r --arg id "$tuid" --argjson n "$MAX_ARG" '
-        select(.message.content? != null)
-        | .message.content
+        select(.message.content? != null) | .message.content
         | if type == "array" then .[] else empty end
         | select(.type? == "tool_use" and .id? == $id)
         | (.input | tostring)[0:$n]' "$tpath" 2>/dev/null
     done)
-[ -n "$detail" ] || exit 0
-
-# --- the model judges ------------------------------------------------------
-# Absent CLI, a failure, or an unparseable answer all end the run silently: a
-# hook that breaks is worse than one that is absent, and the structural signal
-# alone is not strong enough to report on its own.
-command -v claude >/dev/null 2>&1 || exit 0
+[ -n "$detail" ] || mark_turn
+command -v claude >/dev/null 2>&1 || mark_turn
 
 prompt=$(printf '%s\n\n%s\n\n%s\n%s\n' \
-  "Below are the arguments of ${calls} calls to the ${tool} tool made by a coding agent within one stretch of work, in order. ${distinct} of them are textually distinct." \
+  "A coding agent made ${repeats} calls of the same shape (${bin}) within one stretch of work, each with different arguments. Their arguments follow, in order." \
   "$detail" \
-  "Question: are these calls one intent being retried with variations -- the agent circling the same sub-goal without new information -- or are they distinct steps of deliberate work?" \
-  "Answer with exactly one word on the first line: CIRCLING or PROGRESS. On a second line give one short sentence of reason.")
+  "Question: is this one intent being retried with variations -- circling the same sub-goal without new information -- or distinct steps of deliberate work?" \
+  "Answer with exactly one word on the first line: CIRCLING or PROGRESS. Then one short sentence of reason on the same line, after a space.")
 
-answer=$(printf '%s' "$prompt" | claude -p --model "$MODEL" 2>/dev/null) || exit 0
-[ -n "$answer" ] || exit 0
+answer=$(printf '%s' "$prompt" | claude -p --model "$MODEL" 2>/dev/null) || mark_turn
+[ -n "$answer" ] || mark_turn
 
-first=$(printf '%s\n' "$answer" | sed -n 1p | tr '[:lower:]' '[:upper:]')
-reason=$(printf '%s\n' "$answer" | sed -n 2p)
-case "$first" in
-  *CIRCLING*) call_it=circling ;;
-  *PROGRESS*) call_it=progress ;;
-  *)          exit 0 ;;   # an unparseable answer is neither, so record nothing
+# The reason is taken from the WHOLE first line, not from a second line: asking
+# for line 2 lost it every time, because the model answers on one line.
+line1=$(printf '%s\n' "$answer" | sed -n 1p)
+upper=$(printf '%s' "$line1" | tr '[:lower:]' '[:upper:]')
+case "$upper" in
+  *CIRCLING*) v=circling ;;
+  *PROGRESS*) v=progress ;;
+  *)          mark_turn ;;    # an answer that is neither is not a verdict
 esac
 
-# A DECLINE IS RECORDED TOO, and that is not a reversal of "non-firings are not
-# logged". For tier 1 that rule holds: every call is a line, so an absent
-# adjacent verdict IS the non-firing. Here the gate firing is itself unrecorded,
-# so a decline would leave no trace anywhere -- and it costs twice. The
-# already-judged guard keys on a tier-2 verdict line existing, so without this
-# the SAME window is re-judged on every Stop until it slides out; measured, that
-# is one model call per Stop against one for the whole window when the answer is
-# circling. Progress is the common case, so it is paid constantly -- a loop
-# detector asking the same question in a loop. And it costs the calibration
-# number that matters most: how often the structural gate fires and the model
-# disagrees is the gate's false-positive rate, unmeasurable while a decline is
-# silent.
-jq -nc --arg t "$tool" --arg r "$reason" --arg m "$MODEL" --arg v "$call_it" \
-       --argjson c "$calls" --argjson d "$distinct" --argjson tot "$total" \
-       --argjson w "$WINDOW" --argjson mc "$MIN_CALLS" --argjson mf "$MIN_DISTINCT" \
-   '{ts: (now|todate), kind: "verdict", tier: 2, signal: "semantic-repeat",
-     tool: $t, calls: $c, distinct_fps: $d, window_calls: $tot, verdict: $v,
-     model: $m, reason: $r, window: $w, min_calls: $mc, min_distinct: $mf}' \
+jq -nc --arg b "$bin" --arg v "$v" --arg m "$MODEL" --arg r "$line1" \
+       --argjson rep "$repeats" --argjson n "$turn_calls" \
+   '{ts: (now|todate), kind: "verdict", tier: 3, signal: "semantic-repeat",
+     bin: $b, repeats: $rep, turn_calls: $n, verdict: $v, model: $m, reason: $r}' \
    >> "$ledger" 2>/dev/null
 
-# Only a finding is reported; a decline is data, not news.
-[ "$call_it" = circling ] || exit 0
+[ "$v" = circling ] && \
+  printf '[loop-index] tier 3: judged as one intent retried rather than distinct steps. %s\n' "$line1" >&2
 
-printf '[loop-index] tier 2: %s calls to %s in this stretch, %s of them textually distinct, judged as one intent retried rather than distinct steps. %s\nIf that is wrong, the thresholds are in the verdict line and are meant to be tuned. If it is right, say what new information the next attempt would use.\n' \
-  "$calls" "$tool" "$distinct" "$reason" >&2
-exit 0
+mark_turn

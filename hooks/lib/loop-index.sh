@@ -39,6 +39,12 @@
 # history deep analysis wants.
 set -u
 
+# The coarse normalisation lives in one file, shared with the reader and pinned
+# against session-events.sh's copy by scripts/test-bin-of.sh. Resolved from this
+# script's own location so it works from an installed plugin, whose root is not
+# a fixed path.
+HERE_JQ=$(cd -- "$(dirname -- "$0")/../../scripts" 2>/dev/null && pwd) || HERE_JQ=""
+
 LEDGER_DIR="${HARNESS_LOOP_DIR:-${HOME}/.claude/harness/loops}"
 TAIL_N="${HARNESS_LOOP_TAIL:-20}"
 THRESHOLD="${HARNESS_LOOP_THRESHOLD:-3}"
@@ -58,7 +64,7 @@ command -v jq >/dev/null 2>&1 || exit 0
 # fp is djb2, byte-identical to the definition in scripts/session-events.sh.
 # The two MUST agree: if they drift, /inspect and this hook are talking about
 # different fingerprints while both calling them fingerprints.
-out=$(printf '%s' "$in" | jq -r '
+out=$(printf '%s' "$in" | jq -r -L "${HERE_JQ}" 'include "bin-of";
     def fp: tostring | explode
             | reduce .[] as $c (5381; ((. * 33) + $c) % 4294967296)
             | tostring;
@@ -70,6 +76,7 @@ out=$(printf '%s' "$in" | jq -r '
     | (.tool_name // "-") as $tool
     | ([(.session_id // "-"), $tool, $f, $agent] | @tsv),
       ({ts: (now | todate), kind: "call", agent_id: $agent, tool: $tool, fp: $f,
+        bin: ((.tool_input // {}) | bin_for($tool)),
         tool_use_id: (.tool_use_id // "-"), transcript: $tp,
         cwd: (.cwd // "-")} | tojson)
   ' 2>/dev/null) || exit 0

@@ -29,10 +29,15 @@ callp() { jq -nc --arg t "$1" --arg f "$2" --arg id "$3" --arg c "$4" \
 v1()   { jq -nc --arg t "$1" --arg f "$2" \
          '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:1,signal:"loop",tool:$t,
            fp:$f,count:3,agents:1,decision:"ask",window:20,threshold:3}' >> "$L"; }
-v2()   { jq -nc --arg t "$1" --arg v "$2" \
-         '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:2,signal:"semantic-repeat",
-           tool:$t,calls:6,distinct_fps:6,verdict:$v,model:"haiku",reason:"r",
-           window:40,min_calls:5,min_distinct:3}' >> "$L"; }
+# The COARSE gate firing: tier 2, no model verdict. This is what the hook writes.
+v2()   { jq -nc --arg b "$1" --argjson j "$2" \
+         '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:2,signal:"coarse-repeat",
+           bin:$b,repeats:8,turn_calls:8,scope:"turn",min_bin_repeats:8,judged:$j}' >> "$L"; }
+# The MODEL verdict on what tier 2 flagged: tier 3.
+v3()   { jq -nc --arg b "$1" --arg v "$2" \
+         '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:3,signal:"semantic-repeat",
+           bin:$b,repeats:8,turn_calls:8,verdict:$v,model:"haiku",reason:"r"}' >> "$L"; }
+turn() { jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"turn"}' >> "$L"; }
 j() { bash "$READER" "$L" --json; }
 
 printf '\n== it counts the two record classes apart ==\n'
@@ -76,14 +81,50 @@ check "with position, the abandoned case is seen" "$(j | jq -r '.projects[0].out
 check "keyed on ts, the same ledger reads as went_ahead" \
       "$(bash "$MUT" "$L" --json | jq -r '.projects[0].outcomes.went_ahead')" "1"
 
-printf '\n== tier 2 agreement is countable, which is why a decline is recorded ==\n'
-new; call Grep a t1; v2 Grep circling; call Grep b t2; v2 Grep progress
+printf '\n== the coarse gate and the model are counted SEPARATELY ==\n'
+# They answer different questions: how often the cheap gate fires decides whether
+# the judging stage is worth paying for, and what the model then says decides
+# whether the gate is tuned right. One counter for both would conflate them.
+new; turn; call Grep a t1; v2 grep false; turn; call Grep b t2; v2 grep true; v3 grep progress
 r=$(j)
-check "asked"    "$(printf '%s' "$r" | jq -r '.projects[0].tier2.asked')"    "2"
-check "circling" "$(printf '%s' "$r" | jq -r '.projects[0].tier2.circling')" "1"
-check "progress" "$(printf '%s' "$r" | jq -r '.projects[0].tier2.progress')" "1"
-check "a tier-2 verdict has no fp, so its outcome is not invented" \
-      "$(printf '%s' "$r" | jq -r '.projects[0].outcomes["n/a"]')" "2"
+check "coarse firings" "$(printf '%s' "$r" | jq -r '.projects[0].tier2.fired')"  "2"
+check "  of which judged" "$(printf '%s' "$r" | jq -r '.projects[0].tier2.judged')" "1"
+check "  the busiest bin" "$(printf '%s' "$r" | jq -r '.projects[0].tier2.top_bin')" "grep"
+check "turns counted"  "$(printf '%s' "$r" | jq -r '.projects[0].turns')"        "2"
+check "model asked"    "$(printf '%s' "$r" | jq -r '.projects[0].tier3.asked')"    "1"
+check "  and declining" "$(printf '%s' "$r" | jq -r '.projects[0].tier3.progress')" "1"
+check "a verdict with no fp has no invented outcome" \
+      "$(printf '%s' "$r" | jq -r '.projects[0].outcomes["n/a"]')" "3"
+
+printf '\n== a ledger from the PREVIOUS schema is read, not miscounted ==\n'
+# Before the gate was replaced, tier 2 carried the model verdict itself under
+# signal "semantic-repeat". Six such records exist in a real ledger. Counting them
+# as coarse firings would credit a detector that no longer exists; discarding them
+# would throw away model calls that were really paid for and really answered.
+new
+for _ in 1 2 3; do
+  jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:2,signal:"semantic-repeat",
+           tool:"Bash",calls:20,distinct_fps:20,verdict:"progress",model:"haiku"}' >> "$L"
+done
+call Bash a t1
+r=$(j)
+check "no coarse firings are credited" "$(printf '%s' "$r" | jq -r '.projects[0].tier2.fired')" "0"
+check "but the model verdicts are kept" "$(printf '%s' "$r" | jq -r '.projects[0].tier3.asked')" "3"
+check "  as declines"                   "$(printf '%s' "$r" | jq -r '.projects[0].tier3.progress')" "3"
+out=$(bash "$READER" "$L")
+has "the report says why there are no turns" "$out" "before the turn-scoped gate existed"
+
+printf '\n== the report calls out a gate that fires every turn ==\n'
+# The shape that killed the previous gate: firing once per turn is the signature
+# of a filter that does not discriminate, not of a session that loops.
+new; turn; call Grep a t1; v2 grep false
+out=$(bash "$READER" "$L")
+has "it names the shape rather than reporting a finding" "$out" "does not discriminate"
+new; turn; turn; turn; call Grep a t1; v2 grep false
+out=$(bash "$READER" "$L")
+case "$out" in *"does not discriminate"*) bad "1 firing over 3 turns is not that shape" ;;
+                                       *) ok "1 firing over 3 turns is not flagged" ;; esac
+has "  and it says the judging stage is off" "$out" "switched off"
 
 printf '\n== the abandonment rate carries its denominator ==\n'
 new; call Bash a t1; v1 Bash a; call Bash a t2; call Bash c t3; v1 Bash c
@@ -91,7 +132,7 @@ r=$(j)
 check "abandoned count" "$(printf '%s' "$r" | jq -r '.projects[0].abandonment.abandoned')" "1"
 check "out of"          "$(printf '%s' "$r" | jq -r '.projects[0].abandonment.of')"        "2"
 check "n/a rows are excluded from the denominator" \
-      "$(new; call Grep a t1; v2 Grep progress; j | jq -r '.projects[0].abandonment')" "null"
+      "$(new; call Grep a t1; v2 grep false; j | jq -r '.projects[0].abandonment')" "null"
 
 printf '\n== an unknown kind never joins a count ==\n'
 new; call Bash a t1; call Bash a t2

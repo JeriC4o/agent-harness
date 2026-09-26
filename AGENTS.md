@@ -50,6 +50,7 @@ instruction files:
    `scripts/test-trace-tokens.sh`, `scripts/test-session-events.sh`,
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
    `scripts/test-check-readme-update.sh`, `scripts/test-loop-metrics.sh`,
+   `scripts/test-bin-of.sh`,
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
    `hooks/lib/test-loop-verdict.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
