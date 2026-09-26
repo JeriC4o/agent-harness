@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
 #
-# Tests for loop-verdict.sh -- tier 2 (GH-62). Run from anywhere:
+# Tests for loop-verdict.sh -- the COARSE stage of the cascade (GH-62, GH-67).
 #   bash hooks/lib/test-loop-verdict.sh
 #
-# The model is STUBBED by putting a fake `claude` first on PATH. A suite that
-# called the real one would be slow, non-deterministic, and would pass or fail
-# for reasons that have nothing to do with this code.
+# The ledger here is produced by RUNNING loop-index.sh, not hand-written. A
+# hand-written fixture is how the previous suite stayed green while the reader
+# counted a record shape the writer had stopped emitting: the fixture agreed with
+# the test's idea of the format, and nothing compared that idea to production.
+#
+# The model is stubbed by putting a fake `claude` first on PATH. It is OFF by
+# default, so most of this file asserts that it is never called.
 
 set -uo pipefail
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 HOOK="${HERE}/loop-verdict.sh"
+IDX="${HERE}/loop-index.sh"
 HOOKS_JSON="${HERE}/../hooks.json"
 PASS=0; FAIL=0
 ok()  { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
@@ -18,229 +23,187 @@ bad() { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }
 check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want [$3], got [$2])"; fi; }
 has()  { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 (missing [$3] in [$2])" ;; esac; }
 
-WORK=$(mktemp -d)
-trap 'rm -rf "$WORK"' EXIT
+WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
 export HARNESS_LOOP_DIR="${WORK}/loops"
-mkdir -p "$HARNESS_LOOP_DIR" "$WORK/bin"
+mkdir -p "$WORK/bin"
 SID="sess-t2"
 LED="${HARNESS_LOOP_DIR}/${SID}.jsonl"
 TP="${WORK}/${SID}.jsonl"
 
-# Stub `claude`: answers with whatever STUB_ANSWER holds, and records that it ran.
 cat > "$WORK/bin/claude" <<'STUB'
 #!/usr/bin/env bash
-cat > /dev/null
-printf '%s\n' "${STUB_ANSWER:-CIRCLING
-it keeps re-running the same search with a different pattern}"
+cat > "${STUB_SEEN:-/dev/null}"
 printf 'called\n' >> "${STUB_CALLS:-/dev/null}"
+printf '%s\n' "${STUB_ANSWER:-CIRCLING it keeps re-running the same search}"
 STUB
 chmod +x "$WORK/bin/claude"
 export PATH="$WORK/bin:$PATH"
 export STUB_CALLS="${WORK}/claude-calls"
 
-reset() { : > "$LED"; : > "$TP"; : > "$STUB_CALLS"; }
+reset() { rm -rf "$HARNESS_LOOP_DIR"; mkdir -p "$HARNESS_LOOP_DIR"; : > "$TP"; : > "$STUB_CALLS"; }
 
-# Append one call to the ledger AND its tool_use to the transcript.
-add_call() { # $1 tool, $2 fp, $3 arg-text, $4 id
-  jq -nc --arg t "$1" --arg f "$2" --arg id "$4" --arg tp "$TP" \
-     '{ts:"2026-09-26T00:00:00Z", kind:"call", agent_id:"main", tool:$t, fp:$f,
-       tool_use_id:$id, transcript:$tp}' >> "$LED"
-  jq -nc --arg id "$4" --arg a "$3" \
-     '{message:{content:[{type:"tool_use", id:$id, input:{pattern:$a}}]}}' >> "$TP"
+# A real call, through the real tier-1 hook, so `bin` is derived in production.
+CALLN=0
+call() { # $1 command
+  # ONE id for both sides. The ledger stores a pointer and the transcript holds
+  # the detail; if the two ids differ the resolution silently finds nothing, and
+  # every model-stage assertion then fails for a fixture reason rather than a
+  # code one.
+  CALLN=$((CALLN+1)); id="tu$CALLN"
+  jq -nc --arg s "$SID" --arg c "$1" --arg tp "$TP" --arg id "$id" \
+     '{session_id:$s, transcript_path:$tp, hook_event_name:"PreToolUse",
+       tool_name:"Bash", tool_input:{command:$c}, tool_use_id:$id, cwd:"/p"}' \
+  | bash "$IDX" >/dev/null 2>&1
+  jq -nc --arg a "$1" --arg id "$id" \
+     '{message:{content:[{type:"tool_use", id:$id, input:{command:$a}}]}}' >> "$TP"
 }
-# A window of one tool with DISTINCT fingerprints -- the tier-2 shape.
-varied_window() { # $1 how many
-  reset
-  i=0; while [ "$i" -lt "$1" ]; do
-    i=$((i+1)); add_call Grep "fp$i" "needle-variant-$i" "toolu_$i"
-  done
-}
-fire() { jq -nc --arg s "$SID" '{session_id:$s, hook_event_name:"Stop"}' | bash "$HOOK" 2>/dev/null; }
-fire_err() { jq -nc --arg s "$SID" '{session_id:$s, hook_event_name:"Stop"}' | bash "$HOOK" 2>&1 >/dev/null; }
-verdicts() { jq -rs '[.[] | select(.kind=="verdict" and .tier==2)] | length' < "$LED"; }
-stub_calls() { wc -l < "$STUB_CALLS" | tr -d ' '; }
+stop()     { jq -nc --arg s "$SID" '{session_id:$s,hook_event_name:"Stop"}' | bash "$HOOK" 2>/dev/null; }
+stop_err() { jq -nc --arg s "$SID" '{session_id:$s,hook_event_name:"Stop"}' | bash "$HOOK" 2>&1 >/dev/null; }
+v2()   { jq -rs '[.[]|select(.kind=="verdict" and .tier==2)]|length' < "$LED"; }
+v3()   { jq -rs '[.[]|select(.kind=="verdict" and .tier==3)]|length' < "$LED"; }
+turns(){ jq -rs '[.[]|select(.kind=="turn")]|length' < "$LED"; }
+calls(){ wc -l < "$STUB_CALLS" | tr -d ' '; }
+n_of() { for i in $(seq 1 "$1"); do call "$2 arg$i"; done; }
 
-printf '\n== below the structural gate, the model is never asked ==\n'
-varied_window 4
-fire >/dev/null
-check "4 calls is under min_calls -- no verdict" "$(verdicts)" "0"
-check "  and the model was not called at all"    "$(stub_calls)" "0"
+printf '\n== every Stop marks the turn, whether or not anything fired ==\n'
+reset; n_of 3 "grep -rn"
+stop >/dev/null
+check "a quiet Stop still writes a marker" "$(turns)" "1"
+check "  and no verdict"                   "$(v2)" "0"
+stop >/dev/null
+check "two Stops, two markers"             "$(turns)" "2"
 
-printf '\n== identical fingerprints are tier 1 territory, not tier 2 ==\n'
-reset
-for i in 1 2 3 4 5 6; do add_call Grep "same" "needle" "toolu_$i"; done
-fire >/dev/null
-check "6 calls but 1 distinct fp -- not this detector" "$(verdicts)" "0"
-check "  model not called"                             "$(stub_calls)" "0"
+printf '\n== under the threshold, silent ==\n'
+reset; n_of 7 "grep -rn"
+out=$(stop); check "7 repeats of one bin is not 8" "$out" ""
+check "  nothing recorded"                  "$(v2)" "0"
 
-printf '\n== a varied window of one tool DOES reach the model ==\n'
-varied_window 6
-out=$(fire)
-check "the model was asked exactly once" "$(stub_calls)" "1"
-check "and a tier-2 verdict was written" "$(verdicts)" "1"
+printf '\n== at the threshold, the coarse gate fires ==\n'
+reset; n_of 8 "grep -rn"
+stop >/dev/null
+check "8 repeats fires" "$(v2)" "1"
 v=$(jq -c 'select(.kind=="verdict" and .tier==2)' < "$LED")
-check "  signal"        "$(printf '%s' "$v" | jq -r '.signal')"        "semantic-repeat"
-check "  tool"          "$(printf '%s' "$v" | jq -r '.tool')"          "Grep"
-check "  calls"         "$(printf '%s' "$v" | jq -r '.calls')"         "6"
-check "  distinct fps"  "$(printf '%s' "$v" | jq -r '.distinct_fps')"  "6"
-check "  the verdict"   "$(printf '%s' "$v" | jq -r '.verdict')"       "circling"
-check "  the model used" "$(printf '%s' "$v" | jq -r '.model')"        "haiku"
-check "  and the settings it fired under" \
-      "$(printf '%s' "$v" | jq -r '"\(.window)/\(.min_calls)/\(.min_distinct)"')" "40/5/3"
-check "it does not block -- Stop hooks that block force a continue" \
-      "$(varied_window 6; fire >/dev/null 2>&1; echo $?)" "0"
+check "  signal"        "$(printf '%s' "$v" | jq -r '.signal')"          "coarse-repeat"
+check "  the bin"       "$(printf '%s' "$v" | jq -r '.bin')"             "grep"
+check "  repeats"       "$(printf '%s' "$v" | jq -r '.repeats')"         "8"
+check "  the scope"     "$(printf '%s' "$v" | jq -r '.scope')"           "turn"
+check "  the threshold it fired under" "$(printf '%s' "$v" | jq -r '.min_bin_repeats')" "8"
+check "  and that the model did NOT judge" "$(printf '%s' "$v" | jq -r '.judged')" "false"
+check "the model was never called"         "$(calls)" "0"
 
-printf '\n== the arguments reach the model, resolved from the transcript ==\n'
-varied_window 6
-cat > "$WORK/bin/claude" <<'SPY'
-#!/usr/bin/env bash
-cat > "${STUB_SEEN:?}"
-printf 'PROGRESS\nfine\n'
-SPY
-chmod +x "$WORK/bin/claude"
-STUB_SEEN="${WORK}/seen" fire >/dev/null
-seen=$(cat "${WORK}/seen")
-has "the prompt carries a resolved argument" "$seen" "needle-variant-3"
-has "  and names the tool"                   "$seen" "Grep"
-has "  and asks for a one-word answer"       "$seen" "CIRCLING"
-# restore the answering stub
-cat > "$WORK/bin/claude" <<'STUB'
-#!/usr/bin/env bash
-cat > /dev/null
-printf '%s\n' "${STUB_ANSWER:-CIRCLING
-it keeps re-running the same search with a different pattern}"
-printf 'called\n' >> "${STUB_CALLS:-/dev/null}"
-STUB
-chmod +x "$WORK/bin/claude"
+printf '\n== THE DISCRIMINATION THE OLD GATE LACKED ==\n'
+# The previous gate counted distinct fingerprints and required one tool to
+# dominate. Measured on a real session it fired on healthy work every time,
+# because both circling AND ordinary varied work are "all fingerprints distinct"
+# in a shell-driven project where one tool is 98% of calls. These three cases
+# have the SAME call count and the same distinctness; only the shape differs.
+reset; for c in "ls a" "cat b" "wc c" "sed -i x d" "jq . e" "git status" "rg f" "python3 g"; do call "$c"; done
+out=$(stop); check "8 calls of 8 DIFFERENT shapes is not a finding" "$out" ""
+check "  and nothing recorded"                                     "$(v2)" "0"
+reset; n_of 8 "grep -rn"
+stop >/dev/null
+check "8 calls of ONE shape is" "$(v2)" "1"
 
-printf '\n== the model can say no, and no is recorded rather than dropped ==\n'
-varied_window 6
-STUB_ANSWER="PROGRESS
-each call searched a different module" fire >/dev/null
-check "a decline still writes a verdict line" "$(verdicts)" "1"
-d=$(jq -c 'select(.kind=="verdict" and .tier==2)' < "$LED")
-check "  recorded as progress"   "$(printf '%s' "$d" | jq -r '.verdict')" "progress"
-check "  with the reason"        "$(printf '%s' "$d" | jq -r '.reason')" "each call searched a different module"
-e=$(STUB_ANSWER="PROGRESS
-nothing to see" fire_err)
-check "  and reported to nobody -- a decline is data, not news" "$e" ""
+printf '\n== the turn is the frame: repeats do not cross it ==\n'
+reset; n_of 5 "grep -rn"; stop >/dev/null; n_of 5 "grep -rn"
+out=$(stop)
+check "5 + 5 across two turns does not reach 8" "$out" ""
+check "  no verdict"                            "$(v2)" "0"
+check "  but both turns are marked"             "$(turns)" "2"
 
-printf '\n== a DECLINED window is not re-asked either ==\n'
-# The already-judged guard keys on a tier-2 verdict line existing. While a decline
-# wrote none, the same window was re-judged on EVERY Stop until it slid out --
-# measured at one model call per Stop, against one for the whole window when the
-# answer was circling. Progress is the common case, so it was paid constantly.
-varied_window 6
-: > "$STUB_CALLS"
-STUB_ANSWER="PROGRESS
-distinct steps" fire >/dev/null
-STUB_ANSWER="PROGRESS
-distinct steps" fire >/dev/null
-STUB_ANSWER="PROGRESS
-distinct steps" fire >/dev/null
-STUB_ANSWER="PROGRESS
-distinct steps" fire >/dev/null
-check "four Stops, one model call" "$(stub_calls)" "1"
-check "  and one verdict"          "$(verdicts)" "1"
-
-printf '\n== POSITIVE CONTROL: drop the decline record, the model is re-asked ==\n'
-MUT0="${WORK}/mut-decline.sh"
-perl -0pe 's/  \*PROGRESS\*\) call_it=progress ;;/  *PROGRESS*) exit 0 ;;/' "$HOOK" > "$MUT0"
-check "the mutation applied" "$(grep -c 'call_it=progress' "$MUT0")" "0"
-varied_window 6
-: > "$STUB_CALLS"
-# EXPORTED, not prefixed to the jq on the left of the pipe: a var assignment
-# there applies to jq and never reaches the hook, which would leave the stub on
-# its default CIRCLING answer -- the control would then be blocked by the
-# already-judged guard instead of by the thing under test, and report 1.
-export STUB_ANSWER="PROGRESS
-distinct steps"
-for _ in 1 2 3 4; do
-  jq -nc --arg s "$SID" '{session_id:$s}' | bash "$MUT0" >/dev/null 2>&1
-done
-unset STUB_ANSWER
-check "without it, four Stops -> four model calls" "$(stub_calls)" "4"
-check "  and nothing recorded to calibrate against" "$(verdicts)" "0"
-
-printf '\n== an unparseable answer is neither, and records nothing ==\n'
-varied_window 6
-STUB_ANSWER="I am not sure, possibly" fire >/dev/null
-check "no verdict for an answer that is not a verdict" "$(verdicts)" "0"
-
-printf '\n== the same window is judged once, not on every Stop ==\n'
-varied_window 6
-fire >/dev/null
-fire >/dev/null
-fire >/dev/null
-check "three Stops, one verdict" "$(verdicts)" "1"
-check "  and one model call"     "$(stub_calls)" "1"
-
-printf '\n== POSITIVE CONTROL: drop the already-judged check, it re-asks every Stop ==\n'
-MUT="${WORK}/mut-dedup.sh"
-perl -0pe 's/\[ "\$\{already:-0\}" -eq 0 \] \|\| exit 0//' "$HOOK" > "$MUT"
-check "the mutation applied (the guard is gone)" \
-      "$(grep -c 'already:-0' "$MUT")" "0"
-varied_window 6
-for _ in 1 2 3; do jq -nc --arg s "$SID" '{session_id:$s}' | bash "$MUT" >/dev/null 2>&1; done
-check "without it, three Stops -> three verdicts" "$(verdicts)" "3"
-
-printf '\n== POSITIVE CONTROL: drop the concentration check, breadth trips the gate ==\n'
-MUT2="${WORK}/mut-conc.sh"
-perl -0pe 's/if \(bestn \* 100 < total \* 60\) exit//' "$HOOK" > "$MUT2"
-# A window where the dominant tool is a minority: ordinary varied work.
-reset
-for i in 1 2 3 4 5; do add_call Grep "g$i" "pattern-$i" "toolu_g$i"; done
-for i in 1 2 3 4 5 6 7 8; do add_call Read "r$i" "file-$i" "toolu_r$i"; done
-for i in 1 2 3 4 5; do add_call Bash "b$i" "cmd-$i" "toolu_b$i"; done
-fire >/dev/null
-check "with it, a diverse window is not a finding" "$(verdicts)" "0"
-jq -nc --arg s "$SID" '{session_id:$s}' | bash "$MUT2" >/dev/null 2>&1
-check "without it, the same window fires" "$(verdicts)" "1"
+printf '\n== POSITIVE CONTROL: drop the turn reset, the frames merge ==\n'
+MUT="${WORK}/mut-turn.sh"
+perl -0pe 's/if \(k == "turn"\) \{ delete c; n = 0; next \}/if (k == "turn") { next }/' "$HOOK" > "$MUT"
+check "the mutation applied" "$(grep -c 'delete c; n = 0' "$MUT")" "0"
+reset; n_of 5 "grep -rn"
+jq -nc --arg s "$SID" '{session_id:$s}' | bash "$MUT" >/dev/null 2>&1
+n_of 5 "grep -rn"
+jq -nc --arg s "$SID" '{session_id:$s}' | bash "$MUT" >/dev/null 2>&1
+check "without it, 5 + 5 becomes 10 and fires" "$(v2)" "1"
 
 printf '\n== POSITIVE CONTROL: drop the kind filter, verdicts inflate the gate ==\n'
-MUT3="${WORK}/mut-kind.sh"
-perl -0pe 's/    if \(k != "call"\) next\n    t = ""; if \(match\(\$0, \/"tool"/    t = ""; if (match(\$0, \/"tool"/' "$HOOK" > "$MUT3"
-check "the mutation applied (the guard is gone)" \
-      "$(grep -c 'if (k != "call") next' "$MUT3")" "0"
-# Four calls -- one under the gate -- plus two TIER-1 verdict lines, which carry
-# tool and fp exactly like a call. Tier 1 deliberately, not tier 2: a tier-2 line
-# would trip the already-judged guard and stop the control firing for the wrong
-# reason, hiding what this control is supposed to show.
-reset
-for i in 1 2 3 4; do add_call Grep "v$i" "p-$i" "toolu_v$i"; done
-for i in 1 2; do
-  jq -nc --argjson n "$i" \
-     '{ts:"2026-09-26T00:00:00Z", kind:"verdict", tier:1, signal:"loop",
-       tool:"Grep", fp:("x"+($n|tostring))}' >> "$LED"
-done
-fire >/dev/null
-check "with the filter, 4 calls stay under the gate" "$(verdicts)" "0"
-jq -nc --arg s "$SID" '{session_id:$s}' | bash "$MUT3" >/dev/null 2>&1
-check "without it, the verdict lines push it over" "$(verdicts)" "1"
+MUT2="${WORK}/mut-kind.sh"
+perl -0pe 's/    if \(k != "call"\) next\n    b = ""/    b = ""/' "$HOOK" > "$MUT2"
+check "the mutation applied" "$(grep -c 'if (k != "call") next' "$MUT2")" "1"
+# 7 calls -- under the gate -- plus verdict lines carrying the same bin. EACH
+# arm gets its own ledger: a Stop writes a turn marker, which resets the count,
+# so running the real hook first would leave the mutated arm nothing to count and
+# the control would report "not caught" for a reason unrelated to the guard.
+seed() { reset; n_of 7 "grep -rn"
+         for _ in 1 2; do
+           jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:2,bin:"grep"}' >> "$LED"
+         done; }
+seed; out=$(stop); check "with the filter, 7 calls stay under" "$out" ""
+seed; jq -nc --arg s "$SID" '{session_id:$s}' | bash "$MUT2" >/dev/null 2>&1
+check "without it, the verdict lines push it over" "$(v2)" "3"
+
+printf '\n== the model, when switched on ==\n'
+reset; n_of 8 "grep -rn"
+export HARNESS_T3_MODEL=haiku
+export STUB_SEEN="${WORK}/seen"
+stop >/dev/null
+check "the coarse verdict still lands"  "$(v2)" "1"
+check "  and records that it was judged" \
+      "$(jq -rs '[.[]|select(.tier==2)][0].judged' < "$LED")" "true"
+check "the model was called once"       "$(calls)" "1"
+check "a tier-3 verdict is written"     "$(v3)" "1"
+t3=$(jq -c 'select(.tier==3)' < "$LED")
+check "  the verdict"  "$(printf '%s' "$t3" | jq -r '.verdict')" "circling"
+check "  the model"    "$(printf '%s' "$t3" | jq -r '.model')"   "haiku"
+has   "  the reason, taken from the FIRST line" "$(printf '%s' "$t3" | jq -r '.reason')" "re-running the same search"
+seen=$(cat "$WORK/seen")
+has "the prompt carries a resolved argument" "$seen" "arg3"
+has "  and the bin"                          "$seen" "grep"
+
+reset; n_of 8 "grep -rn"
+STUB_ANSWER="PROGRESS each call searched a different module" stop >/dev/null
+check "PROGRESS is recorded, not dropped" "$(v3)" "1"
+check "  as progress"                     "$(jq -rs '[.[]|select(.tier==3)][0].verdict' < "$LED")" "progress"
+reset; n_of 8 "grep -rn"
+STUB_ANSWER="I am not sure" stop >/dev/null
+check "an answer that is neither records no tier-3 verdict" "$(v3)" "0"
+check "  but the coarse verdict stands"                     "$(v2)" "1"
+unset HARNESS_T3_MODEL STUB_SEEN
+
+printf '\n== the threshold is tunable ==\n'
+reset; n_of 3 "grep -rn"
+HARNESS_T2_MIN_BIN=3 stop >/dev/null
+check "3 repeats fires at a threshold of 3" "$(v2)" "1"
+check "  and the verdict records that 3 was in force" \
+      "$(jq -rs '[.[]|select(.tier==2)][0].min_bin_repeats' < "$LED")" "3"
 
 printf '\n== nothing it does can break the turn ==\n'
-varied_window 6
-check "no claude on PATH -> 0, silently" \
-      "$(PATH=/usr/bin:/bin fire >/dev/null 2>&1; echo $?)" "0"
-check "  and no verdict is invented" "$(verdicts)" "0"
-check "empty stdin -> 0"     "$(printf '' | bash "$HOOK" >/dev/null 2>&1; echo $?)" "0"
-check "malformed JSON -> 0"  "$(printf '{nope' | bash "$HOOK" >/dev/null 2>&1; echo $?)" "0"
-check "no session_id -> 0"   "$(printf '{}' | bash "$HOOK" >/dev/null 2>&1; echo $?)" "0"
-check "absent ledger -> 0"   "$(jq -nc '{session_id:"nosuch"}' | bash "$HOOK" >/dev/null 2>&1; echo $?)" "0"
+reset; n_of 8 "grep -rn"
+check "a firing still exits 0"  "$(stop >/dev/null 2>&1; echo $?)" "0"
+check "empty stdin -> 0"        "$(printf '' | bash "$HOOK" >/dev/null 2>&1; echo $?)" "0"
+check "malformed JSON -> 0"     "$(printf '{nope' | bash "$HOOK" >/dev/null 2>&1; echo $?)" "0"
+check "no session_id -> 0"      "$(printf '{}' | bash "$HOOK" >/dev/null 2>&1; echo $?)" "0"
+check "absent ledger -> 0"      "$(jq -nc '{session_id:"nosuch"}' | bash "$HOOK" >/dev/null 2>&1; echo $?)" "0"
 reset
-check "empty ledger -> 0"    "$(fire >/dev/null 2>&1; echo $?)" "0"
-varied_window 6
-: > "$TP"
-check "an unresolvable transcript -> 0, no verdict" \
-      "$(fire >/dev/null 2>&1; echo $?)" "0"
-check "  and the model was spared" "$(stub_calls)" "0"
+check "empty ledger -> 0"       "$(stop >/dev/null 2>&1; echo $?)" "0"
+reset; n_of 8 "grep -rn"
+check "model on but claude absent -> 0" \
+      "$(HARNESS_T3_MODEL=haiku PATH=/usr/bin:/bin stop >/dev/null 2>&1; echo $?)" "0"
+check "  the coarse verdict is still recorded" "$(v2)" "1"
+check "  and no tier-3 verdict is invented"    "$(v3)" "0"
 
 printf '\n== the report reaches the agent ==\n'
-varied_window 6
-e=$(fire_err)
-has "stderr names the tier"   "$e" "tier 2"
-has "  and the tool"          "$e" "Grep"
-has "  and carries the reason" "$e" "re-running the same search"
+reset; n_of 8 "grep -rn"
+e=$(stop_err)
+has "stderr names the bin"      "$e" "grep"
+has "  and the repeat count"    "$e" "8 times"
+has "  and says the arguments differed" "$e" "different arguments"
+
+printf '\n== INTEGRATION: the reader parses what this actually writes ==\n'
+# The guard against the drift that let the old suite pass: a hand-written fixture
+# agrees with the test's idea of the format, never with production.
+reset; n_of 8 "grep -rn"; stop >/dev/null
+R="${HERE}/../../scripts/loop-metrics.sh"
+rep=$(bash "$R" "$LED" --json 2>/dev/null)
+check "the reader reads it"            "$( [ -n "$rep" ] && echo yes || echo no )" "yes"
+check "  and counts the calls"         "$(printf '%s' "$rep" | jq -r '.totals.calls')" "8"
+check "  and the coarse firing"        "$(printf '%s' "$rep" | jq -r '.projects[0].tier2.fired')" "1"
+check "  and the turn"                 "$(printf '%s' "$rep" | jq -r '.projects[0].turns')" "1"
 
 printf '\n== wired into hooks.json on both stop events, unguarded ==\n'
 for ev in Stop SubagentStop; do

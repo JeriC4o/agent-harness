@@ -114,13 +114,32 @@ per_session() {
         verdicts: ($verdicts | length),
         by_tier:   ($verdicts | map(.e) | group_by(.tier)   | map({ (.[0].tier   | tostring): length }) | add // {}),
         by_signal: ($verdicts | map(.e) | group_by(.signal) | map({ (.[0].signal | tostring): length }) | add // {}),
-        # Tier 2 only. The gate fired for every one of these; the model agreed on
-        # the circling ones. A high progress share means the structural gate is
-        # loose; a zero share means the model only ever agrees and its verdict
-        # adds nothing. Both extremes argue for removing a tier, not tuning one.
-        tier2: { asked: ([ $verdicts[] | .e | select(.tier == 2) ] | length),
-                 circling: ([ $verdicts[] | .e | select(.tier == 2 and .verdict == "circling") ] | length),
-                 progress: ([ $verdicts[] | .e | select(.tier == 2 and .verdict == "progress") ] | length) },
+        turns: ([ $all[] | select(.kind == "turn") ] | length),
+        # Tier 2 is the COARSE structural gate: how often it fires is the number
+        # that decides whether the judging stage is worth paying for. Tier 3 is
+        # the verdict of the model on what tier 2 flagged, off by default -- so
+        # `judged` separates "the gate fired and nobody asked" from "the gate
+        # fired and the model was consulted" -- different observations.
+        # A tier-2 line is a coarse firing only when its signal SAYS SO. Before
+        # the gate was replaced, tier 2 carried the model verdict itself under
+        # signal "semantic-repeat"; counting those as coarse firings would inflate
+        # this number with records from a detector that no longer exists. They are
+        # not discarded either -- they are real model verdicts that were really
+        # paid for, so they are counted below where they belong.
+        tier2: { fired:  ([ $verdicts[] | .e | select(.tier == 2 and .signal == "coarse-repeat") ] | length),
+                 judged: ([ $verdicts[] | .e | select(.tier == 2 and .signal == "coarse-repeat" and .judged == true) ] | length),
+                 top_bin: ( [ $verdicts[] | .e | select(.tier == 2 and .signal == "coarse-repeat") | .bin // empty ]
+                            | if length == 0 then null
+                              else (group_by(.) | max_by(length) | .[0]) end ) },
+        # A high progress share means the coarse gate is still loose; a zero share
+        # means the model only ever agrees and adds nothing. Both extremes argue
+        # for dropping a stage rather than tuning one.
+        # Tier 3, PLUS the legacy tier-2 model verdicts. Those cost real model
+        # calls and carry a real answer, so they belong in this rate rather than
+        # being thrown away for having been written under an older schema.
+        tier3: { asked:    ([ $verdicts[] | .e | select(.tier == 3 or (.tier == 2 and .signal == "semantic-repeat")) ] | length),
+                 circling: ([ $verdicts[] | .e | select(.tier == 3 or (.tier == 2 and .signal == "semantic-repeat")) | select(.verdict == "circling") ] | length),
+                 progress: ([ $verdicts[] | .e | select(.tier == 3 or (.tier == 2 and .signal == "semantic-repeat")) | select(.verdict == "progress") ] | length) },
         outcomes: ($rows | map(.outcome) | group_by(.) | map({ (.[0]): length }) | add // {}),
         rows: $rows }
   ' "$1"
@@ -143,10 +162,16 @@ report=$(jq -s '
                                exact: .[0].project_exact,
                                sessions: length,
                                calls:    (map(.calls)    | add // 0),
+                               turns:    (map(.turns)    | add // 0),
                                verdicts: (map(.verdicts) | add // 0),
-                               tier2: { asked:    (map(.tier2.asked)    | add // 0),
-                                        circling: (map(.tier2.circling) | add // 0),
-                                        progress: (map(.tier2.progress) | add // 0) },
+                               tier2: { fired:  (map(.tier2.fired)  | add // 0),
+                                        judged: (map(.tier2.judged) | add // 0),
+                                        top_bin: ( [ .[] | .tier2.top_bin | select(. != null) ]
+                                                   | if length == 0 then null
+                                                     else (group_by(.) | max_by(length) | .[0]) end ) },
+                               tier3: { asked:    (map(.tier3.asked)    | add // 0),
+                                        circling: (map(.tier3.circling) | add // 0),
+                                        progress: (map(.tier3.progress) | add // 0) },
                                outcomes: ( map(.outcomes) | map(to_entries) | add // []
                                            | group_by(.key)
                                            | map({ (.[0].key): (map(.value) | add) }) | add // {} ) })
@@ -190,10 +215,18 @@ printf '%s' "$report" | jq -r '
             ( if .abandonment == null then "  abandonment: not computable here -- no verdict carried a derivable outcome"
               else "  abandonment: \(.abandonment.abandoned) of \(.abandonment.of) -- the nearest stand-in for calls not made"
               end ),
-            "  tier 2: asked \(.tier2.asked), circling \(.tier2.circling), progress \(.tier2.progress)",
-            ( if .tier2.asked == 0 then "    the structural gate never fired, so the model was never consulted"
-              elif .tier2.progress == 0 then "    the model agreed every time -- check whether its verdict adds anything"
-              elif .tier2.circling == 0 then "    the model declined every time -- the structural gate is too loose"
+            ( if .turns == 0 then
+                "  coarse gate: no turn markers in this ledger -- it was written before the turn-scoped gate existed, so the counts below are all there is"
+              else
+                "  coarse gate: fired \(.tier2.fired) time(s) over \(.turns) turn(s)\(if .tier2.top_bin then ", most often on \(.tier2.top_bin)" else "" end)"
+              end ),
+            ( if .turns > 0 and .tier2.fired >= .turns then "    it fires on every turn -- that is the shape of a gate that does not discriminate, not of a session that loops"
+              else "" end ),
+            "  model: asked \(.tier3.asked), circling \(.tier3.circling), progress \(.tier3.progress)",
+            ( if .tier3.asked == 0 and .tier2.judged == 0 then "    the judging stage is switched off; the coarse counts above are the calibration"
+              elif .tier3.asked == 0 then "    it was enabled but never reached a verdict"
+              elif .tier3.progress == 0 then "    it agreed every time -- check whether its verdict adds anything"
+              elif .tier3.circling == 0 then "    it declined every time -- the coarse gate is still too loose"
               else "    both answers occur, which is what makes the rate meaningful"
               end ) )
         end ),
