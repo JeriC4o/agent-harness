@@ -347,7 +347,7 @@ if [ -n "$FOR" ]; then
         + (if .main_transcript_read then "" else " the main transcript of this session was not found." end)
         + (if (.unreadable_transcripts | length) > 0
            then " unparseable, so read only up to the bad line: " + (.unreadable_transcripts | join(", ")) + "." else "" end)
-        + (if .unattributed_at_tail then "" else " unattributed calls sit in the MIDDLE of the ledger, so they are not work in flight -- a transcript this reader never opened is the cause." end)
+        + (if .unattributed_at_tail then "" else " unattributed calls sit in the MIDDLE of the ledger, where a call still executing cannot be. A transcript this reader never opened is the likely cause; on a session still running, a background agent whose transcript file lags would look the same." end)
         + " Treat the \(.unattributed) unattributed call(s) as unknown: not the main agent, not calls in flight." ),
     # "unattributed" is a bucket, not an agent, and counting it as one turns a
     # single-agent live session -- which always has a call in flight -- into a

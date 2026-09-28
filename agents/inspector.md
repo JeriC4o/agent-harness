@@ -168,7 +168,8 @@ do not copy a credential into it. Say a value was read, not what the value was. 
 
 ## Step 5: Report
 
-- signatures that did not run, and why (from Step 1 — first, always), and whether the ledger was available
+- signatures that did not run, and why (from Step 1 — first, always); whether the ledger was available; and
+  whether its attribution was complete, with a sentence on `unattributed` when the count is large
 - confirmed defects: signature, evidence, the instruction at fault, proposed entry
 - dismissed candidates: signature and the reason it was not a defect
 - **what the live cascade missed, and what it caught** (Step 2b) — a confirmed loop with no verdict beside

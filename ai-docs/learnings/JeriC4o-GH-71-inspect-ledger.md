@@ -113,3 +113,29 @@ a joiner needs at least TWO elements — with one, every separator behaves ident
 cannot distinguish a correct one from an absent one.
 **Kind:** correction
 **Escalated?** no
+
+### 2026-09-28 — process — the guard leg that fires on all real input had no control
+**What happened:** `complete` is a three-way conjunction, and two of its legs got a positive control each
+while the third — the `$ua == 0` short-circuit, which is the leg that answers on every real session,
+since live data has zero unattributed calls — got none. `self-review` proved it by mutation: deleting the
+guard left the suite at 130 passed, 0 failed. The shipped code was correct; the exposure was that a later
+edit there would report "ATTRIBUTION IS INCOMPLETE" on 100% of healthy sessions with the suite still
+green. Every fixture in the file carried at least one unattributed call, so the clean case was the one
+case never constructed.
+**Rule:** "One positive control per guard" counts the LEGS of a conjunction, not the expression. And when
+the fixtures all exercise the interesting case, the boring case is the one with no coverage — check
+which branch real input takes and make sure a fixture takes it too.
+**Kind:** correction
+**Escalated?** no
+
+### 2026-09-28 — tooling — the mutant that failed for a different reason than it claimed
+**What happened:** A positive control tried to restore a pre-fix line by rewriting it literally, but the
+replacement had to carry an apostrophe through a single-quoted perl program, and the escaping that
+survived emitted a two-character `\n` rather than the empty string. The assertion went red either way, so
+the control looked fine; its comment described a mutant that was never produced. Found by comparing the
+mutant against the real pre-fix line in git rather than against the comment.
+**Rule:** A mutation control is a claim about WHAT was changed, and the assertion going red does not
+verify it — reproduce the bug by its EFFECT when the literal spelling cannot be written cleanly, and say
+in the comment which of the two you did. When a pre-fix version exists in git, diff the mutant against it.
+**Kind:** correction
+**Escalated?** no

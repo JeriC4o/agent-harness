@@ -442,7 +442,7 @@ check "  yet the census is declared wrong" "$(printf '%s' "$r" | jq -r '.attribu
 check "  because the gap is not at the tail" \
       "$(printf '%s' "$r" | jq -r '.attribution.unattributed_at_tail')" "false"
 out=$(HARNESS_LOOP_DIR="$GD/loops" bash "$READER" --for "$GTX")
-has "  and the report says so, naming the cause" "$out" "not work in flight"
+has "  and the report says so, naming the likely cause" "$out" "transcript this reader never opened"
 case "$out" in
   *"consistent with work in flight"*) bad "the benign gloss fired on a mid-ledger gap" ;;
   *)                                  ok  "and the benign gloss is withheld" ;;
@@ -457,6 +457,41 @@ check "without the position test, six misattributed calls read as complete" \
 case "$(HARNESS_LOOP_DIR="$GD/loops" bash "$M8" --for "$GTX")" in
   *"consistent with work in flight"*) ok "and the benign gloss returns to explain them away" ;;
   *)                                  bad "the control did not reproduce the false reassurance" ;;
+esac
+
+printf '\n== --for: a fully attributed session is complete, and says nothing alarming ==\n'
+# THE BRANCH THAT DECIDES EVERY REAL SESSION. On live data `unattributed` is 0,
+# so `$ua == 0 or ...` is the leg that answers -- and every other fixture in this
+# file carries at least one unattributed call, which left it with no assertion at
+# all. It is not protecting against an error: jq's `[] | min` is null and
+# `null >= 0` is false, so without the short-circuit `complete` would be FALSE on
+# every healthy session and the report would open with ATTRIBUTION IS INCOMPLETE.
+CD="$W/clean"; mkdir -p "$CD/loops" "$CD/projects/-proj"
+CTX="$CD/projects/-proj/sess7.jsonl"; CL="$CD/loops/sess7.jsonl"
+: > "$CTX"; : > "$CL"
+for i in c1 c2 c3; do
+  tu "$CTX" "$i"
+  jq -nc --arg id "$i" '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:"Bash",
+    fp:"f",bin:"Bash:grep",tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:"/p"}' >> "$CL"
+done
+r=$(HARNESS_LOOP_DIR="$CD/loops" bash "$READER" --for "$CTX" --json)
+check "no call is unattributed"    "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "0"
+check "  the tail test holds"      "$(printf '%s' "$r" | jq -r '.attribution.unattributed_at_tail')" "true"
+check "  and the census is complete" "$(printf '%s' "$r" | jq -r '.attribution.complete')" "true"
+out=$(HARNESS_LOOP_DIR="$CD/loops" bash "$READER" --for "$CTX")
+case "$out" in
+  *"ATTRIBUTION IS INCOMPLETE"*) bad "a fully attributed session was reported as incomplete" ;;
+  *)                             ok  "and the report raises nothing" ;;
+esac
+
+M10="$W/mut-no-zero-guard.sh"
+perl -0pe 's/\( \$ua == 0 or \(\$ua_idx \| min\)/( (\$ua_idx | min)/' "$READER" > "$M10"
+check "the mutation applied" "$(grep -c '\$ua == 0 or' "$M10")" "0"
+check "without the zero guard, a clean session reads as incomplete" \
+      "$(HARNESS_LOOP_DIR="$CD/loops" bash "$M10" --for "$CTX" --json | jq -r '.attribution.complete')" "false"
+case "$(HARNESS_LOOP_DIR="$CD/loops" bash "$M10" --for "$CTX")" in
+  *"ATTRIBUTION IS INCOMPLETE"*) ok "and every healthy session opens with a false alarm" ;;
+  *)                             bad "the control did not reproduce the false alarm" ;;
 esac
 
 printf '\n== --for: two unreadable transcripts are two paths, not one ==\n'
@@ -479,8 +514,12 @@ check "  and every entry is a path that exists" \
       "$(printf '%s' "$r" | jq -r '[.attribution.unreadable_transcripts[] | select(test("^/"))] | length')"
 
 M9="$W/mut-empty-separator.sh"
-perl -0pe 's/note_bad\(\) \{ BAD_TX="\$\{BAD_TX\}\$\{BAD_TX:\+\$NL\}\$1"; \}/note_bad() { BAD_TX="\${BAD_TX}\${BAD_TX:+\$(printf \x27\\\\n\x27)}\$1"; }/' \
-  "$READER" > "$M9"
+# Reproduce the bug by its EFFECT, which is what it was: the separator expanded
+# to nothing. Rewriting the line to the literal pre-fix spelling would have to
+# smuggle an apostrophe through a single-quoted perl program, and the escaping
+# that survives that emits a two-character backslash-n instead -- a mutant that
+# fails the assertion for a different reason than the one it claims.
+perl -0pe 's/\$\{BAD_TX:\+\$NL\}/\$\{BAD_TX:+\}/' "$READER" > "$M9"
 check "the mutation applied" "$(grep -c 'BAD_TX:+\$NL' "$M9")" "0"
 check "with the separator stripped, three paths collapse into one" \
       "$(HARNESS_LOOP_DIR="$TD/loops" bash "$M9" --for "$TTX" --json | jq -r '.attribution.unreadable_transcripts | length')" "1"
