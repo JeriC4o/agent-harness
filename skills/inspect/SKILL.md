@@ -67,9 +67,19 @@ exceed it, sometimes by a large fraction. That is not a discrepancy to reconcile
 count, which here counts stop events and there counts prompts. **Two numbers under one word, measuring
 different things: never subtract them.**
 
-**An absent ledger is reported with the `unavailable` list, not passed over.** The mode says so itself, at
-rc 0. A session nobody watched and a session in which nothing fired look identical from here, and only one
-of them is a clean result.
+**An absent ledger is reported with the `unavailable` list, not passed over.** The mode says so itself,
+`available: false` at rc 0. A session nobody watched and a session in which nothing fired look identical
+from here, and only one of them is a clean result.
+
+**rc 2 is a different answer and is not a missing ledger.** It means the path you handed over does not
+resolve, so no attribution is possible — read the message, fix the path, and run it again. Do not fall
+back to the signatures alone on an rc 2 without saying so: that is a path you got wrong, not a fact about
+the session.
+
+**Pass the whole record to the agent, including `attribution`.** Its `complete` field says whether the
+per-agent census can be trusted, and the agent is told to read that before it reads `unattributed`. A
+summary that keeps the counts and drops the flags hands over the one shape that reads as confident and
+is not.
 
 ## Step 2: Judge — spawn the inspector
 

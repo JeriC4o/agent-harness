@@ -85,3 +85,31 @@ occurrence in this repo, and there is already a `sh-syntax-check` `PostToolUse` 
 reading it as the location is what turns one mistake into two rounds.
 **Kind:** correction
 **Escalated?** no
+
+### 2026-09-28 — process — a completeness flag that names the wrong quantifier
+**What happened:** Fixing the absent-transcript defect I added `attribution.complete` and commented it
+*"True only when every transcript that should have been read was read in full."* The script has no list
+of what should exist — the ledger field that would be that list is the broken one — so the flag could
+only report on files it FOUND. `self-review` produced the gap: main transcript present and parseable,
+subagent directory empty, nine of ten calls misattributed, `complete: true`, and the benign gloss
+asserting work in flight. The fix for the first round of the same shape had reproduced it one level down.
+**Rule:** When a flag says "every X", check what enumerates X. If nothing does, the flag is reporting on
+what it happened to encounter and must be named and documented that way. Then look for a property that IS
+checkable and assert that instead — here, position: a call with no transcript record because it is still
+executing is necessarily among the LAST in the ledger, so one in the middle is a transcript nobody
+opened. A measurement beats a reworded claim, and the residual it still cannot cover gets written down
+rather than implied.
+**Kind:** correction
+**Escalated?** no
+
+### 2026-09-28 — tooling — a separator that command substitution deleted
+**What happened:** `note_bad() { BAD_TX="${BAD_TX}${BAD_TX:+$(printf '\n')}$1"; }` — command substitution
+strips trailing newlines, so the separator was the empty string. Two unreadable transcript paths
+concatenated into a single path that exists nowhere, and the report printed it verbatim as the file to go
+and look at. The fixture exercised one bad transcript, so it was byte-identical either way and could not
+see it.
+**Rule:** `$(printf '\n')` is empty; use `$'\n'` or a variable holding a literal newline. And a test for
+a joiner needs at least TWO elements — with one, every separator behaves identically, so the fixture
+cannot distinguish a correct one from an absent one.
+**Kind:** correction
+**Escalated?** no

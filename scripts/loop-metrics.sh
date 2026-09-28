@@ -258,7 +258,13 @@ if [ -n "$FOR" ]; then
   }
   : > "$attr"
   BAD_TX=""
-  note_bad() { BAD_TX="${BAD_TX}${BAD_TX:+$(printf '\n')}$1"; }
+  # A LITERAL newline. `$(printf '\n')` is the empty string -- command
+  # substitution strips trailing newlines -- so the separator silently vanished
+  # and two unreadable paths concatenated into one path that exists nowhere,
+  # printed verbatim as the thing to go and look at. A one-element fixture
+  # cannot see it.
+  NL=$'\n'
+  note_bad() { BAD_TX="${BAD_TX}${BAD_TX:+$NL}$1"; }
   if [ -f "$MAIN" ]; then
     ids_of "$MAIN" main || note_bad "$MAIN"
   fi
@@ -275,6 +281,18 @@ if [ -n "$FOR" ]; then
             "$( [ -f "$MAIN" ] && printf 'true' || printf 'false' )" '
     ( reduce $map[] as $x ({}; .[$x.id] = $x.agent) ) as $by_id
     | ( [ .[] | select(.kind == "call") ] ) as $calls
+    # WHERE the unattributed calls SIT, which is what separates the benign cause
+    # from the damaging one. A call that has no transcript record because it is
+    # still executing is necessarily among the LAST calls in the ledger. One
+    # sitting in the middle cannot be in flight -- the calls after it finished --
+    # so it is a transcript this reader never opened, and a subagent transcript
+    # that is simply absent is invisible to both the "was the main file read"
+    # and the "did anything fail to parse" tests. Checking the position is what
+    # turns an unprovable claim into a measurement.
+    | ( [ range(0; ($calls | length))
+          | select( $by_id[$calls[.].tool_use_id] == null ) ] ) as $ua_idx
+    | ( $ua_idx | length ) as $ua
+    | ( $ua == 0 or ($ua_idx | min) >= (($calls | length) - $ua) ) as $ua_tail
     | $side[0]
       + { available: true, ledger: $led, transcript: $tr,
           # An id the transcripts do not account for is reported, never absorbed:
@@ -284,16 +302,22 @@ if [ -n "$FOR" ]; then
           attribution:
             { by_agent: ( $calls | map($by_id[.tool_use_id] // "unattributed")
                           | group_by(.) | map({ (.[0]): length }) | add // {} ),
-              unattributed: ( [ $calls[] | select($by_id[.tool_use_id] == null) ] | length ),
-              # The two ways attribution can be WRONG rather than merely partial,
-              # both carried on the record so no reader has to infer them from a
+              unattributed: $ua,
+              # The ways attribution can be WRONG rather than merely partial, all
+              # carried on the record so no reader has to infer them from a
               # suspicious-looking count.
               main_transcript_read: $main_seen,
               unreadable_transcripts: $unreadable,
-              # True only when every transcript that should have been read was
-              # read in full. A reader deciding what `unattributed` means needs
-              # this before it needs the number.
-              complete: ($main_seen and ($unreadable | length) == 0),
+              unattributed_at_tail: $ua_tail,
+              # NOT "every transcript that should have been read was read" -- this
+              # reader has no list of what should exist, because the ledger field
+              # that would be that list is the broken one. It is the conjunction of
+              # what CAN be checked: the main transcript was opened, nothing failed
+              # to parse, and no unattributed call sits where an in-flight call
+              # cannot. The residual it does not cover is named in the comment
+              # above: a missing subagent transcript whose calls happen to be the
+              # last ones in the ledger is indistinguishable from work in flight.
+              complete: ($main_seen and ($unreadable | length) == 0 and $ua_tail),
               # What the hook STORED, beside what the transcripts say. The two
               # disagreeing is the defect above, visible rather than described.
               stored_agent_ids: ( $calls | map(.agent_id) | unique ) } }
@@ -311,17 +335,19 @@ if [ -n "$FOR" ]; then
       (if .results.unknown > 0 then ", \(.results.unknown) with no outcome recorded" else "" end),
     ( .attribution
       | "  by agent: " + ( [ .by_agent | to_entries[] | "\(.key)=\(.value)" ] | join(", ") )
-        # The benign gloss is CONDITIONED on the census being complete. Offered
-        # unconditionally it explains away the one symptom of a transcript that
-        # was never read, which is the case where every figure beside it is
+        # The benign gloss is CONDITIONED on the census being complete, and it
+        # names in-flight work as ONE cause rather than the cause. Offered
+        # unconditionally it explains away the only symptom a never-opened
+        # transcript produces -- the case where every figure beside this one is
         # right and this one is entirely wrong.
         + (if .unattributed > 0 and .complete
-           then "   [\(.unattributed) call(s) not yet in a transcript -- a live session has one in flight]" else "" end) ),
+           then "   [\(.unattributed) call(s) with no transcript record, all at the end of the ledger -- consistent with work in flight]" else "" end) ),
     ( .attribution | select(.complete | not)
       | "  ATTRIBUTION IS INCOMPLETE -- the per-agent census above is wrong, not merely partial:"
         + (if .main_transcript_read then "" else " the main transcript of this session was not found." end)
         + (if (.unreadable_transcripts | length) > 0
            then " unparseable, so read only up to the bad line: " + (.unreadable_transcripts | join(", ")) + "." else "" end)
+        + (if .unattributed_at_tail then "" else " unattributed calls sit in the MIDDLE of the ledger, so they are not work in flight -- a transcript this reader never opened is the cause." end)
         + " Treat the \(.unattributed) unattributed call(s) as unknown: not the main agent, not calls in flight." ),
     # "unattributed" is a bucket, not an agent, and counting it as one turns a
     # single-agent live session -- which always has a call in flight -- into a

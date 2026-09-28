@@ -408,7 +408,7 @@ case "$out" in
   *"transcripts show"*) bad "the fan-out note fired on a session with one agent" ;;
   *)                    ok  "one agent plus a call in flight is not two agents" ;;
 esac
-has "  and the in-flight call is still reported" "$out" "one in flight"
+has "  and the in-flight call is still reported" "$out" "consistent with work in flight"
 
 M7="$W/mut-bucket-as-agent.sh"
 perl -0pe 's/\(\.by_agent \| keys \| map\(select\(\. != "unattributed"\)\) \| length\) as \$n/(.by_agent | keys | length) as \$n/' \
@@ -419,11 +419,88 @@ case "$(HARNESS_LOOP_DIR="$SD/loops" bash "$M7" --for "$STX")" in
   *)                            bad "the control did not reproduce the false fan-out note" ;;
 esac
 
-printf '\n== --for: usage errors are loud ==\n'
-check "--for with no path -> 2"   "$(bash "$READER" --for >/dev/null 2>&1; echo $?)" "2"
-check "--for with --all -> 2"     "$(bash "$READER" --for "$MAINTX" --all >/dev/null 2>&1; echo $?)" "2"
-check "--for with a ledger too -> 2" \
-      "$(bash "$READER" --for "$MAINTX" "$FL" >/dev/null 2>&1; echo $?)" "2"
+printf '\n== --for: an unattributed call in the MIDDLE is not work in flight ==\n'
+# The case `complete` could not see before: a subagent transcript that is simply
+# ABSENT is invisible to both "was the main file read" and "did anything fail to
+# parse". Position is the thing that can be checked -- a call with no transcript
+# record because it is still executing is necessarily among the LAST in the
+# ledger, so one in the middle is a transcript nobody opened.
+GD="$W/gap"; mkdir -p "$GD/loops" "$GD/projects/-proj/sess5/subagents"
+GTX="$GD/projects/-proj/sess5.jsonl"; GL="$GD/loops/sess5.jsonl"
+: > "$GTX"; : > "$GL"
+gcall() { jq -nc --arg id "$1" '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:"Bash",
+    fp:"f",bin:"Bash:grep",tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:"/p"}' >> "$GL"; }
+# The main transcript accounts for the first and last call; the six in between
+# were a subagent whose transcript is not there.
+tu "$GTX" g1
+for i in g1 s1 s2 s3 s4 s5 s6 g2; do gcall "$i"; done
+tu "$GTX" g2
+r=$(HARNESS_LOOP_DIR="$GD/loops" bash "$READER" --for "$GTX" --json)
+check "the main transcript WAS read"       "$(printf '%s' "$r" | jq -r '.attribution.main_transcript_read')" "true"
+check "nothing failed to parse"            "$(printf '%s' "$r" | jq -r '.attribution.unreadable_transcripts | length')" "0"
+check "  yet the census is declared wrong" "$(printf '%s' "$r" | jq -r '.attribution.complete')" "false"
+check "  because the gap is not at the tail" \
+      "$(printf '%s' "$r" | jq -r '.attribution.unattributed_at_tail')" "false"
+out=$(HARNESS_LOOP_DIR="$GD/loops" bash "$READER" --for "$GTX")
+has "  and the report says so, naming the cause" "$out" "not work in flight"
+case "$out" in
+  *"consistent with work in flight"*) bad "the benign gloss fired on a mid-ledger gap" ;;
+  *)                                  ok  "and the benign gloss is withheld" ;;
+esac
+
+M8="$W/mut-no-tail-test.sh"
+perl -0pe 's/and \$ua_tail\),/),/' "$READER" > "$M8"
+check "the mutation applied" "$(grep -c 'and \$ua_tail),' "$M8")" "0"
+r=$(HARNESS_LOOP_DIR="$GD/loops" bash "$M8" --for "$GTX" --json)
+check "without the position test, six misattributed calls read as complete" \
+      "$(printf '%s' "$r" | jq -r '.attribution.complete')" "true"
+case "$(HARNESS_LOOP_DIR="$GD/loops" bash "$M8" --for "$GTX")" in
+  *"consistent with work in flight"*) ok "and the benign gloss returns to explain them away" ;;
+  *)                                  bad "the control did not reproduce the false reassurance" ;;
+esac
+
+printf '\n== --for: two unreadable transcripts are two paths, not one ==\n'
+# Command substitution strips trailing newlines, so a separator spelled
+# $(printf '\n') is the empty string and the paths concatenate into one that
+# exists nowhere -- printed verbatim as the file to go and look at. A fixture
+# with ONE bad transcript is byte-identical either way.
+TD="$W/two"; mkdir -p "$TD/loops" "$TD/projects/-proj/sess6/subagents"
+TTX="$TD/projects/-proj/sess6.jsonl"; TL="$TD/loops/sess6.jsonl"
+: > "$TTX"; : > "$TL"
+printf '{ not json\n' >> "$TTX"
+for a in AAA BBB; do printf '{ not json\n' > "$TD/projects/-proj/sess6/subagents/agent-$a.jsonl"; done
+jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:"Bash",fp:"f",bin:"Bash:grep",
+         tool_use_id:"x1",transcript:"/tmp/x.jsonl",cwd:"/p"}' >> "$TL"
+r=$(HARNESS_LOOP_DIR="$TD/loops" bash "$READER" --for "$TTX" --json)
+check "three unreadable transcripts are three entries" \
+      "$(printf '%s' "$r" | jq -r '.attribution.unreadable_transcripts | length')" "3"
+check "  and every entry is a path that exists" \
+      "$(printf '%s' "$r" | jq -r '[.attribution.unreadable_transcripts[]] | length')" \
+      "$(printf '%s' "$r" | jq -r '[.attribution.unreadable_transcripts[] | select(test("^/"))] | length')"
+
+M9="$W/mut-empty-separator.sh"
+perl -0pe 's/note_bad\(\) \{ BAD_TX="\$\{BAD_TX\}\$\{BAD_TX:\+\$NL\}\$1"; \}/note_bad() { BAD_TX="\${BAD_TX}\${BAD_TX:+\$(printf \x27\\\\n\x27)}\$1"; }/' \
+  "$READER" > "$M9"
+check "the mutation applied" "$(grep -c 'BAD_TX:+\$NL' "$M9")" "0"
+check "with the separator stripped, three paths collapse into one" \
+      "$(HARNESS_LOOP_DIR="$TD/loops" bash "$M9" --for "$TTX" --json | jq -r '.attribution.unreadable_transcripts | length')" "1"
+
+printf '\n== --for: usage errors are loud, and say WHICH ==\n'
+# `bash <script>` also exits 2 on a SYNTAX error, so an exit-status assertion on
+# its own passes identically against a script that does not parse. This one
+# assertion makes every rc-2 check in the file mean what it says; the message
+# checks below pin each one to its own cause rather than to a shared 2.
+check "the reader parses at all" "$(bash -n "$READER" 2>&1; echo $?)" "0"
+rc2() { # $1 label, $2 expected message fragment, rest: args
+  local label="$1" want="$2"; shift 2
+  local err rc
+  err=$(bash "$READER" "$@" 2>&1 >/dev/null); rc=$?
+  if [ "$rc" != "2" ]; then bad "$label (want rc 2, got $rc)"; return; fi
+  case "$err" in *"$want"*) ok "$label" ;; *) bad "$label (rc 2 but message was [$err])" ;; esac
+}
+rc2 "--for with no path -> 2, naming the missing argument" "needs a transcript path" --for
+rc2 "--for with --all -> 2, naming the conflict"           "different questions" --for "$MAINTX" --all
+rc2 "--for with a ledger too -> 2, naming the confusion"   "not the ledger"      --for "$MAINTX" "$FL"
 
 printf '\n== the entry point is executable ==\n'
 check "loop-metrics.sh carries the execute bit" "$( [ -x "$READER" ] && echo yes || echo no )" "yes"

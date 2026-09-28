@@ -117,12 +117,16 @@ the tool a fan-out question is about.
 transcripts. `attribution.stored_agent_ids` is what the hook wrote, and where it reads `main` for everything
 the two disagreeing is the known defect, not a signal about this session. Use the recovered figures.
 
-**Check `attribution.complete` before you read `unattributed`.** When it is true, an unattributed call is
-one with no transcript record yet — on a live session, the call in flight, and not an anomaly. When it is
-false the census is **wrong rather than partial**: a transcript was missing or stopped parsing part-way, so
-calls that belong to a named agent have fallen into that bucket. `main_transcript_read` and
-`unreadable_transcripts` say which. Never read a large `unattributed` as fan-out, and never read it as the
-main agent's work.
+**Check `attribution.complete` before you read `unattributed`.** When it is false the census is **wrong
+rather than partial**: a transcript was missing, stopped parsing part-way, or unattributed calls sit where
+work in flight cannot be. `main_transcript_read`, `unreadable_transcripts` and `unattributed_at_tail` say
+which. Never read a large `unattributed` as fan-out, and never read it as the main agent's work.
+
+**`complete: true` is not a guarantee that attribution succeeded** — it is the conjunction of the three
+things the reader can actually check. The residual it cannot see is a subagent transcript that is simply
+absent while the calls it would have explained happen to be the last in the ledger, which is
+indistinguishable from work in flight. So an `unattributed` count that is large, or large relative to the
+session, is worth a sentence in your report even when `complete` is true.
 
 ## Step 3: Locate the harness defect, not the symptom
 
