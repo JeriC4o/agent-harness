@@ -4,7 +4,7 @@ description: "Analyse a finished session for harness defects: loops, gates re-ru
 model: opus
 disable-model-invocation: true
 argument-hint: "[session.jsonl path, or omitted for the most recent session of this project]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(scripts/session-events.sh:*), Bash(scripts/trace-tokens.sh:*), Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(jq:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(scripts/session-events.sh:*), Bash(scripts/trace-tokens.sh:*), Bash(scripts/loop-metrics.sh:*), Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(jq:*)
 ---
 
 Reads what a session actually did and reports where the **harness** sent the agent in circles — as opposed
@@ -48,17 +48,53 @@ become the habit.
 **Read `unavailable` yourself, now.** A signature that could not run is the first thing the user needs, and
 it must not wait for the agent's report to surface.
 
+## Step 1b: The ledger — what the live cascade already decided
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/loop-metrics.sh --for <session.jsonl> --json
+```
+
+Step 1 derives candidates from a transcript after the fact. The `PreToolUse` / `Stop` cascade was watching
+while the session ran, and wrote what it saw. Without this the inspector re-derives from scratch and cannot
+tell a **detector hit** from a **detector miss** — which is the only feedback the cascade has, and the
+difference between "this looks like a loop" and "this was flagged live, the user let it through, and it ran
+anyway".
+
+**It is a WIDER view of the same session, not a second opinion on the same data.** `--signatures` reads one
+transcript file; the ledger records every tool call in the session including the ones made inside spawned
+agents, whose transcripts live in a separate directory that pass never opens. Expect the call count here to
+exceed it, sometimes by a large fraction. That is not a discrepancy to reconcile — and neither is the turn
+count, which here counts stop events and there counts prompts. **Two numbers under one word, measuring
+different things: never subtract them.**
+
+**An absent ledger is reported with the `unavailable` list, not passed over.** The mode says so itself,
+`available: false` at rc 0. A session nobody watched and a session in which nothing fired look identical
+from here, and only one of them is a clean result.
+
+**rc 2 is a different answer and is not a missing ledger.** It means the path you handed over does not
+resolve, so no attribution is possible — read the message, fix the path, and run it again. Do not fall
+back to the signatures alone on an rc 2 without saying so: that is a path you got wrong, not a fact about
+the session.
+
+**Pass the whole record to the agent, including `attribution`.** Its `complete` field says whether the
+per-agent census can be trusted, and the agent is told to read that before it reads `unattributed`. A
+summary that keeps the counts and drops the flags hands over the one shape that reads as confident and
+is not.
+
 ## Step 2: Judge — spawn the inspector
 
 ```
 Agent(subagent_type="inspector", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/inspector.md and follow it exactly.
   Here are the signatures and the unavailable list: <paste the --signatures JSON>
+  Here is the loop ledger for this session: <paste the --for JSON, or the unavailable record it returned>
   The transcript is at <path>. Start from the signatures, then read the run where they point —
   by seq range, turn, or timestamp span. Do not read it front to back; it does not fit.
   Quote the run where the quote is the evidence; do not copy a credential into an entry.
-  Report: (a) signatures that could not run and why, (b) confirmed defects with the instruction at fault,
-  (c) dismissed candidates with the reason, (d) proposed Learning Log entries.
+  Report: (a) signatures that could not run and why — and whether the ledger was available,
+  (b) confirmed defects with the instruction at fault, (c) dismissed candidates with the reason,
+  (d) candidates the live cascade MISSED, which is how the detector gets tuned,
+  (e) proposed Learning Log entries.
 ")
 ```
 
@@ -75,9 +111,11 @@ needs for judging.
 
 Show the user, in this order:
 
-1. signatures that did not run, and why — **first, always**;
+1. signatures that did not run, and why — **first, always**, and whether the ledger was there;
 2. confirmed defects, each with its evidence and the instruction at fault;
-3. dismissed candidates and why they were dismissed.
+3. dismissed candidates and why they were dismissed;
+4. what the live cascade missed — a defect confirmed here that nothing flagged at the time is a finding
+   about the DETECTOR, and it is the only way the thresholds ever move.
 
 A dismissal is a result. A run that confirms nothing but dismisses six candidates with reasons is a good
 run, and saying so is what stops the next one from being ignored.

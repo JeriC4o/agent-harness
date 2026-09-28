@@ -117,8 +117,14 @@ written, perfectly propagated, and still send the agent round in circles; that d
 and visible here.
 
 `scripts/session-events.sh` reduces the transcript to an event stream — tool name, one-way argument
-fingerprint, turn, skill, error flag — and the `inspector` agent judges a few hundred lines instead of
-thousands. It never sees the transcript itself.
+fingerprint, turn, skill, error flag — so the `inspector` agent starts from a few hundred lines instead of
+thousands. It then reads the run itself where those lines point: whether a repetition was a loop or a retry
+depends on what happened in between, and that is in the transcript rather than in the counts.
+
+`scripts/loop-metrics.sh --for <session.jsonl>` adds the other half — what the live loop cascade saw and
+decided *while the session ran*. Without it the inspector re-derives everything from scratch and cannot tell
+a detector hit from a detector miss, which is the only feedback the thresholds ever get. It is also a wider
+view: the ledger records calls made inside spawned agents, whose transcripts the reduction pass never opens.
 
 **Loop-shaped is not loop.** Every repetition signature carries a *time* qualifier (the repeats fall inside
 one window); `repeated-tool-call` also carries a *state* qualifier (no `Edit`/`Write` in between — re-running

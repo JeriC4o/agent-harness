@@ -25,6 +25,7 @@ that defect is invisible to both, and visible here.
 |---|---|
 | `signatures` | mechanically detected candidates, each with counts, a time span, and a qualifier result |
 | `unavailable` | signatures that could NOT run, with the reason |
+| the ledger | what the LIVE cascade saw and decided while the session ran — or a record saying it was absent |
 | the transcript | the session `.jsonl`, by path — the full record of what the session did |
 
 Start from `signatures`: it is the cheap pass, and it tells you where in a transcript of thousands of
@@ -62,7 +63,7 @@ event actually a loop?
 | `error-retry-loop` | the same call fails repeatedly with no change to the input | each retry followed a visible correction — the second attempt had a different fingerprint |
 | `repeated-agent-spawn` | a review or design loop burned its round cap without converging | the spawns were independent parallel work |
 | | **`gap_seconds` separates these two, and it is on the row for that purpose.** A `max` of seconds means they were launched together — a fan-out, whatever the count. Gaps of minutes are re-entries: each spawn waited for the last to come back, which is what a round cap looks like from outside. Read `min` too: one wide gap in an otherwise tight run is a fan-out that got repeated, not a loop. | |
-| | **"Fan-out" dismisses the SPAWN, never what the spawned agents then did.** Launching several agents in parallel is legitimate; several of them making the *identical* call is duplicated work that this dismissal would otherwise wave through — and it is invisible to any per-agent view, because each sibling made that call exactly once. The `loop-index` PreToolUse hook reports that case under the same word with the opposite sign, keyed on `hash(tool + arguments)` across agents. If a fan-out row here looks clean, it means the spawns were justified, not that the work inside them was distinct. | |
+| | **"Fan-out" dismisses the SPAWN, never what the spawned agents then did.** Launching several agents in parallel is legitimate; several of them making the *identical* call is duplicated work that this dismissal would otherwise wave through — and it is invisible to any per-agent view, because each sibling made that call exactly once. **The live hook cannot see it either** — its `agent_id` is derived from a transcript path the payload reports as the parent's, and on every ledger measured so far the field reads `main` for every call, so the arm keyed on it does not fire. The ledger you are given recovers the real attribution by `tool_use_id` at read time; that is where to look. If a fan-out row here looks clean, it means the spawns were justified, not that the work inside them was distinct. | |
 | `turn-depth-spike` | one turn took many model calls circling the same sub-goal | the turn was legitimately long — a big migration, a broad sweep |
 | | **Settle this one by reading the turn.** Separating the two requires the ORDER of what the turn did, which the summary row does not carry and the transcript does. Never settle it from the depth figure, and never from `cache_read`, which trends with context size rather than with struggle — a late turn reads more cache than an early one for no reason but its position. | |
 | `deferral-candidate` | a ticket was filed from inside a turn that had already gone round and round, and the work it names is the work that was not converging | the ticket is genuine scope discovered while working, filed deliberately rather than as an exit |
@@ -79,6 +80,53 @@ another signature got it. You apply the reading the script cannot.
 
 Dismissing a candidate with a stated reason is as much a result as
 confirming one, and a dismissal is what keeps the next run trustworthy.
+
+## Step 2b: Read the ledger against the signatures
+
+The signatures are what a transcript yields afterwards. The ledger is what the live cascade *saw at the
+time* and what it did about it. Holding the two together answers a question neither answers alone.
+
+**If the ledger came back unavailable, say so in Step 1 with the other `unavailable` entries and judge from
+the signatures alone.** A session nobody watched and a session in which nothing fired are indistinguishable
+from here, and reporting the second when you have the first is the false all-clear.
+
+### Four readings, and they are not the same finding
+
+| The ledger says… | and you found… | the finding is… |
+|---|---|---|
+| a verdict fired, outcome `abandoned` | nothing | the detector worked. Report it — this is the evidence that the cascade earns its cost, and it exists nowhere else |
+| a verdict fired, outcome `went_ahead` | a confirmed loop | **the strongest finding available.** The agent was warned, proceeded, and the loop happened. The defect is not that nothing caught it; it is that the warning did not carry enough to decide on. Name what the warning would have had to say |
+| a verdict fired, outcome `reformulated` | nothing | the warning changed the behaviour. Not a defect; a calibration point |
+| no verdict | a confirmed loop | a **detector miss**, and the only feedback the thresholds ever get. Say which stage should have caught it and what it would have had to key on. Do not propose a number — `/improve` owns that — but do say which AXIS was wrong, because a wrong axis is invisible to tuning |
+
+An outcome is **derived from the calls that follow the verdict**, never stored: a hook cannot observe its own
+effect. `n/a` means the verdict keyed on a shape rather than one fingerprint, so no outcome is derivable —
+that is a gap in the record, not an absence of consequence, and it must not be read as "nothing happened".
+
+### Joining a ledger row to the run
+
+**Join by `tool_use_id`. Never by fingerprint.** The ledger's `fp` is computed from the hook payload and the
+transcript's from the recorded call, and for tools whose input the client rewrites between the two — spawning
+an agent, asking the user a question — they disagree. Measured on a real session: every id matched, and the
+only fingerprints that did not were exactly those tools. A fingerprint join is therefore wrong on precisely
+the tool a fan-out question is about.
+
+### Attribution
+
+`attribution.by_agent` is **recovered by the reader**, by finding each `tool_use_id` in the session's
+transcripts. `attribution.stored_agent_ids` is what the hook wrote, and where it reads `main` for everything
+the two disagreeing is the known defect, not a signal about this session. Use the recovered figures.
+
+**Check `attribution.complete` before you read `unattributed`.** When it is false the census is **wrong
+rather than partial**: a transcript was missing, stopped parsing part-way, or unattributed calls sit where
+work in flight cannot be. `main_transcript_read`, `unreadable_transcripts` and `unattributed_at_tail` say
+which. Never read a large `unattributed` as fan-out, and never read it as the main agent's work.
+
+**`complete: true` is not a guarantee that attribution succeeded** — it is the conjunction of the three
+things the reader can actually check. The residual it cannot see is a subagent transcript that is simply
+absent while the calls it would have explained happen to be the last in the ledger, which is
+indistinguishable from work in flight. So an `unattributed` count that is large, or large relative to the
+session, is worth a sentence in your report even when `complete` is true.
 
 ## Step 3: Locate the harness defect, not the symptom
 
@@ -120,9 +168,13 @@ do not copy a credential into it. Say a value was read, not what the value was. 
 
 ## Step 5: Report
 
-- signatures that did not run, and why (from Step 1 — first, always)
+- signatures that did not run, and why (from Step 1 — first, always); whether the ledger was available; and
+  whether its attribution was complete, with a sentence on `unattributed` when the count is large
 - confirmed defects: signature, evidence, the instruction at fault, proposed entry
 - dismissed candidates: signature and the reason it was not a defect
+- **what the live cascade missed, and what it caught** (Step 2b) — a confirmed loop with no verdict beside
+  it is a finding about the detector, and a verdict whose outcome was `abandoned` is the only place its
+  value is ever visible
 - counts: signatures examined, confirmed, dismissed
 
 ## FORBIDDEN
