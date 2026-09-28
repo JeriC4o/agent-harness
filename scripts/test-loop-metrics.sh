@@ -271,7 +271,12 @@ check "a SUBAGENT transcript resolves to its PARENT session" \
       "$(printf '%s' "$r" | jq -r '.session')" "sess1"
 check "  reaching the same ledger, not none" "$(printf '%s' "$r" | jq -r '.calls')" "4"
 
+# A REAL transcript whose session never got a ledger. The two absences are
+# different questions and get different answers: a transcript that is not there
+# is the caller handing over a path that does not resolve, and it stops the run;
+# a ledger that is not there is a fact about the session, and it is reported.
 MISS="$FD/projects/-proj/nope.jsonl"
+tu "$MISS" z1
 r=$(HARNESS_LOOP_DIR="$FD/loops" bash "$READER" --for "$MISS" --json)
 check "an absent ledger is a REPORTED unavailable" \
       "$(printf '%s' "$r" | jq -r '.available')" "false"
@@ -303,7 +308,7 @@ check "without the subagent-path arm, a subagent transcript finds no ledger at a
       "$(HARNESS_LOOP_DIR="$FD/loops" bash "$M1" --for "$SUBTX" --json | jq -r '.available')" "false"
 
 M2="$W/mut-no-subagent-scan.sh"
-perl -0pe 's/ids_of "\$s" "\$\{a#agent-\}" >> "\$attr"/:/' "$READER" > "$M2"
+perl -0pe 's/ids_of "\$s" "\$\{a#agent-\}" \|\| note_bad "\$s"/:/' "$READER" > "$M2"
 check "the mutation applied" "$(grep -c 'ids_of "\$s"' "$M2")" "0"
 r=$(HARNESS_LOOP_DIR="$FD/loops" bash "$M2" --for "$MAINTX" --json)
 check "without the subagent scan, the subagent's calls vanish from the census" \
@@ -324,6 +329,94 @@ out=$(HARNESS_LOOP_DIR="$FD/loops" bash "$M4" --for "$MISS" 2>&1)
 case "$out" in
   *"NOT a clean result"*) bad "without the guard, an absent ledger still named itself" ;;
   *)                      ok  "without the guard, an absent ledger says nothing that names itself" ;;
+esac
+
+printf '\n== --for: an ABSENT transcript is loud, not a confident wrong census ==\n'
+# Attribution is a lookup in that file. With the file gone every id resolves to
+# nothing, so the census reads 100% unattributed while the call and verdict
+# counts beside it stay correct -- the one figure that is wrong is the one with
+# no other figure to contradict it.
+# Same BASENAME as the real transcript, so the session still resolves to a
+# ledger that exists -- otherwise the control would be stopped by the absent
+# ledger instead and would prove nothing about the absent transcript.
+GONE="$FD/gone/sess1.jsonl"
+check "a transcript that does not exist -> 2" \
+      "$(HARNESS_LOOP_DIR="$FD/loops" bash "$READER" --for "$GONE" >/dev/null 2>&1; echo $?)" "2"
+has "  and the message says the ledger is still readable on its own" \
+    "$(HARNESS_LOOP_DIR="$FD/loops" bash "$READER" --for "$GONE" 2>&1)" "read the ledger directly"
+
+M5="$W/mut-no-transcript-check.sh"
+perl -0pe 's/if \[ ! -f "\$TRANSCRIPT" \]; then/if false; then/' "$READER" > "$M5"
+check "the mutation applied" "$(grep -c 'if false; then' "$M5")" "1"
+r=$(HARNESS_LOOP_DIR="$FD/loops" bash "$M5" --for "$GONE" --json 2>/dev/null)
+check "without the check it answers at rc 0" \
+      "$(HARNESS_LOOP_DIR="$FD/loops" bash "$M5" --for "$GONE" >/dev/null 2>&1; echo $?)" "0"
+check "  with every call unattributed -- the whole census wrong" \
+      "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "4"
+check "  while the call count beside it stays right" \
+      "$(printf '%s' "$r" | jq -r '.calls')" "4"
+
+printf '\n== --for: a transcript jq cannot parse is reported, not absorbed ==\n'
+# jq stops at the first bad line, so everything after it silently disappears
+# from the census and reappears as "unattributed" -- which the reader is
+# otherwise told to read as a call in flight.
+BD="$W/bad"; mkdir -p "$BD/loops" "$BD/projects/-proj"
+BTX="$BD/projects/-proj/sess3.jsonl"; BL="$BD/loops/sess3.jsonl"
+: > "$BTX"; : > "$BL"
+jq -nc '{message:{content:[{type:"tool_use",id:"t1",name:"Bash",input:{}}]}}' >> "$BTX"
+printf '{ this is not json\n' >> "$BTX"
+jq -nc '{message:{content:[{type:"tool_use",id:"t2",name:"Bash",input:{}}]}}' >> "$BTX"
+for i in t1 t2; do
+  jq -nc --arg id "$i" '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:"Bash",
+    fp:"f",bin:"Bash:grep",tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:"/p"}' >> "$BL"
+done
+r=$(HARNESS_LOOP_DIR="$BD/loops" bash "$READER" --for "$BTX" --json)
+check "the unparseable transcript is named" \
+      "$(printf '%s' "$r" | jq -r '.attribution.unreadable_transcripts | length')" "1"
+check "  so the census declares itself incomplete" \
+      "$(printf '%s' "$r" | jq -r '.attribution.complete')" "false"
+has "  and the human report says the census is wrong, not partial" \
+    "$(HARNESS_LOOP_DIR="$BD/loops" bash "$READER" --for "$BTX")" "ATTRIBUTION IS INCOMPLETE"
+case "$(HARNESS_LOOP_DIR="$BD/loops" bash "$READER" --for "$BTX")" in
+  *"one in flight"*) bad "the benign in-flight gloss was offered on an incomplete census" ;;
+  *)                 ok  "and the benign in-flight gloss is withheld" ;;
+esac
+
+M6="$W/mut-swallow-parse-error.sh"
+perl -0pe 's/ids_of "\$MAIN" main \|\| note_bad "\$MAIN"/ids_of "\$MAIN" main || true/' "$READER" > "$M6"
+check "the mutation applied" "$(grep -c 'note_bad "\$MAIN"' "$M6")" "0"
+r=$(HARNESS_LOOP_DIR="$BD/loops" bash "$M6" --for "$BTX" --json)
+check "swallowing jq's status reports a complete census over truncated input" \
+      "$(printf '%s' "$r" | jq -r '.attribution.complete')" "true"
+check "  while a call really did fall out of it" \
+      "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "1"
+
+printf '\n== --for: unattributed is a bucket, not an agent ==\n'
+# A single-agent LIVE session always has a call in flight. Counting that bucket
+# as an agent turns it into a false report of two agents and fires the fan-out
+# note on a session that never spawned anything.
+SD="$W/solo"; mkdir -p "$SD/loops" "$SD/projects/-proj"
+STX="$SD/projects/-proj/sess4.jsonl"; SL="$SD/loops/sess4.jsonl"
+: > "$STX"; : > "$SL"
+jq -nc '{message:{content:[{type:"tool_use",id:"t1",name:"Bash",input:{}}]}}' >> "$STX"
+for i in t1 t9; do
+  jq -nc --arg id "$i" '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:"Bash",
+    fp:"f",bin:"Bash:grep",tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:"/p"}' >> "$SL"
+done
+out=$(HARNESS_LOOP_DIR="$SD/loops" bash "$READER" --for "$STX")
+case "$out" in
+  *"transcripts show"*) bad "the fan-out note fired on a session with one agent" ;;
+  *)                    ok  "one agent plus a call in flight is not two agents" ;;
+esac
+has "  and the in-flight call is still reported" "$out" "one in flight"
+
+M7="$W/mut-bucket-as-agent.sh"
+perl -0pe 's/\(\.by_agent \| keys \| map\(select\(\. != "unattributed"\)\) \| length\) as \$n/(.by_agent | keys | length) as \$n/' \
+  "$READER" > "$M7"
+check "the mutation applied" "$(grep -c 'select(. != "unattributed")' "$M7")" "0"
+case "$(HARNESS_LOOP_DIR="$SD/loops" bash "$M7" --for "$STX")" in
+  *"transcripts show 2 agent"*) ok "counting the bucket as an agent invents a second one" ;;
+  *)                            bad "the control did not reproduce the false fan-out note" ;;
 esac
 
 printf '\n== --for: usage errors are loud ==\n'

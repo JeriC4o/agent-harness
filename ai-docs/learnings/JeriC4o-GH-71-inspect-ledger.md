@@ -54,3 +54,34 @@ before either is compared. A count is not comparable to another count merely bec
 things with the same name.
 **Kind:** correction
 **Escalated?** no
+
+### 2026-09-28 — tooling — the input a derivation depends on was never checked for existence
+**What happened:** `loop-metrics.sh --for` takes a transcript path and attributes every ledger call by
+finding its `tool_use_id` in that file. Nothing checked the file was there. `self-review` ran it against
+a wrong directory: call counts, turn counts, verdict counts and outcomes all correct, and the per-agent
+census 100% wrong — every call in `unattributed`, under a bracketed gloss saying a live session has one
+call in flight. So the corruption arrived with a benign explanation attached, and the one reader placed
+to notice it had been told in `agents/inspector.md` to dismiss exactly that symptom. The flag that would
+have exposed it, `main_transcript_read`, was computed and reached the JSON but was printed nowhere and
+named in no instruction file. Realistic triggers are dull: a mistyped path, or a pruned transcript
+beside a ledger directory that has no retention policy.
+**Rule:** When one figure is a LOOKUP into an external file and its neighbours are not, the file's
+absence produces a report that is entirely right except for that figure — the shape least likely to be
+questioned. Check the input exists and stop; and never offer a benign explanation for a symptom
+unconditionally, because the same symptom is what total failure looks like. A computed degradation flag
+that no output prints and no reader is told about does not count as having handled the case.
+**Kind:** correction
+**Escalated?** no
+
+### 2026-09-28 — tooling — the apostrophe inside a single-quoted jq program, again
+**What happened:** Writing the new report lines I put `the session's main transcript` inside a
+single-quoted jq program. The quote closed the string, the shell re-parsed the remainder, and `bash -n`
+reported a syntax error on a line seven lines below the real one. Then the first fix removed a different
+apostrophe and the file still would not parse, so the same failure cost two rounds. This is the third
+occurrence in this repo, and there is already a `sh-syntax-check` `PostToolUse` hook for it.
+**Rule:** After any edit that adds English prose inside a single-quoted region — jq, awk, perl — run
+`bash -n` on the file before anything else, and when it reports an error, grep the whole added region for
+`'` rather than fixing the first apostrophe seen. The reported line is downstream of the real one, so
+reading it as the location is what turns one mistake into two rounds.
+**Kind:** correction
+**Escalated?** no

@@ -68,6 +68,18 @@ if [ -n "$FOR" ]; then
   [ "$ALL" -eq 0 ] || die "--for and --all ask different questions; give one"
   [ -z "$LEDGER" ] || die "--for takes the transcript, not the ledger"
   TRANSCRIPT="$FOR"
+  # THE TRANSCRIPT MUST EXIST, and this is not input hygiene. Attribution is a
+  # LOOKUP in that file: when it is absent every id resolves to nothing, so the
+  # census reports 100% unattributed -- a confidently printed, wholly wrong
+  # answer, beside call and verdict counts that are all correct. The two
+  # realistic triggers are ordinary rather than exotic: a mistyped or
+  # copy-pasted path, and a session whose transcript was pruned while the
+  # ledger directory, which has no retention policy at all, kept its file. The
+  # ledger is still readable on its own in that second case, and the message
+  # says so rather than leaving the caller with nothing.
+  if [ ! -f "$TRANSCRIPT" ]; then
+    die "no transcript at ${TRANSCRIPT}. --for attributes each call by finding its tool_use_id in the session transcripts, so an absent one does not degrade the census -- it makes every call unattributed while the counts beside it stay correct and confident. If the transcript is genuinely gone and only the ledger survives, read the ledger directly: loop-metrics.sh ${DIR}/<session-id>.jsonl"
+  fi
   case "$TRANSCRIPT" in
     */subagents/agent-*.jsonl)
       SESSION=$(basename "$(dirname "$(dirname "$TRANSCRIPT")")") ;;
@@ -232,21 +244,34 @@ if [ -n "$FOR" ]; then
     *)                         SESSDIR="$(dirname "$TRANSCRIPT")/${SESSION}" ;;
   esac
   MAIN="$(dirname "$SESSDIR")/${SESSION}.jsonl"
+  # ids_of APPENDS and REPORTS. jq stops at the first line it cannot parse, so a
+  # single malformed record truncates attribution from that point on -- and with
+  # its stderr discarded and its status unread, the truncation is indis-
+  # tinguishable from a transcript that simply held fewer calls. Every id after
+  # the bad line then lands in `unattributed`, which the reader is otherwise told
+  # to read as a call in flight. The partial output is kept, because half a
+  # census is worth more than none; what must not be lost is that it is partial.
   ids_of() {
     jq -rc --arg a "$2" 'select(.message.content? | type == "array")
       | .message.content[] | select(.type == "tool_use")
-      | {id: .id, agent: $a}' "$1" 2>/dev/null
+      | {id: .id, agent: $a}' "$1" >> "$attr" 2>/dev/null
   }
   : > "$attr"
-  [ -f "$MAIN" ] && ids_of "$MAIN" main >> "$attr"
+  BAD_TX=""
+  note_bad() { BAD_TX="${BAD_TX}${BAD_TX:+$(printf '\n')}$1"; }
+  if [ -f "$MAIN" ]; then
+    ids_of "$MAIN" main || note_bad "$MAIN"
+  fi
   for s in "$SESSDIR"/subagents/agent-*.jsonl; do
     [ -f "$s" ] || continue
     a=$(basename "$s" .jsonl)
-    ids_of "$s" "${a#agent-}" >> "$attr"
+    ids_of "$s" "${a#agent-}" || note_bad "$s"
   done
+  bad_json=$(printf '%s' "$BAD_TX" | jq -Rrs 'split("\n") | map(select(. != "")) | tojson')
 
   view=$(jq -s --slurpfile side "$tmp" --slurpfile map "$attr" \
-            --arg tr "$TRANSCRIPT" --arg led "$LEDGER" --argjson main_seen \
+            --arg tr "$TRANSCRIPT" --arg led "$LEDGER" \
+            --argjson unreadable "$bad_json" --argjson main_seen \
             "$( [ -f "$MAIN" ] && printf 'true' || printf 'false' )" '
     ( reduce $map[] as $x ({}; .[$x.id] = $x.agent) ) as $by_id
     | ( [ .[] | select(.kind == "call") ] ) as $calls
@@ -260,7 +285,15 @@ if [ -n "$FOR" ]; then
             { by_agent: ( $calls | map($by_id[.tool_use_id] // "unattributed")
                           | group_by(.) | map({ (.[0]): length }) | add // {} ),
               unattributed: ( [ $calls[] | select($by_id[.tool_use_id] == null) ] | length ),
+              # The two ways attribution can be WRONG rather than merely partial,
+              # both carried on the record so no reader has to infer them from a
+              # suspicious-looking count.
               main_transcript_read: $main_seen,
+              unreadable_transcripts: $unreadable,
+              # True only when every transcript that should have been read was
+              # read in full. A reader deciding what `unattributed` means needs
+              # this before it needs the number.
+              complete: ($main_seen and ($unreadable | length) == 0),
               # What the hook STORED, beside what the transcripts say. The two
               # disagreeing is the defect above, visible rather than described.
               stored_agent_ids: ( $calls | map(.agent_id) | unique ) } }
@@ -278,9 +311,25 @@ if [ -n "$FOR" ]; then
       (if .results.unknown > 0 then ", \(.results.unknown) with no outcome recorded" else "" end),
     ( .attribution
       | "  by agent: " + ( [ .by_agent | to_entries[] | "\(.key)=\(.value)" ] | join(", ") )
-        + (if .unattributed > 0 then "   [\(.unattributed) call(s) not found in any transcript -- a live session has one in flight]" else "" end) ),
-    ( .attribution | select((.by_agent | keys | length) > 1 and (.stored_agent_ids == ["main"]))
-      | "  NOTE: the ledger stored agent_id=main for every call while the transcripts show \((.by_agent | keys | length)) agent(s). Live fan-out detection is blind; this recovered attribution is analysis-only." ),
+        # The benign gloss is CONDITIONED on the census being complete. Offered
+        # unconditionally it explains away the one symptom of a transcript that
+        # was never read, which is the case where every figure beside it is
+        # right and this one is entirely wrong.
+        + (if .unattributed > 0 and .complete
+           then "   [\(.unattributed) call(s) not yet in a transcript -- a live session has one in flight]" else "" end) ),
+    ( .attribution | select(.complete | not)
+      | "  ATTRIBUTION IS INCOMPLETE -- the per-agent census above is wrong, not merely partial:"
+        + (if .main_transcript_read then "" else " the main transcript of this session was not found." end)
+        + (if (.unreadable_transcripts | length) > 0
+           then " unparseable, so read only up to the bad line: " + (.unreadable_transcripts | join(", ")) + "." else "" end)
+        + " Treat the \(.unattributed) unattributed call(s) as unknown: not the main agent, not calls in flight." ),
+    # "unattributed" is a bucket, not an agent, and counting it as one turns a
+    # single-agent live session -- which always has a call in flight -- into a
+    # false report of two agents.
+    ( .attribution
+      | (.by_agent | keys | map(select(. != "unattributed")) | length) as $n
+      | select($n > 1 and (.stored_agent_ids == ["main"]))
+      | "  NOTE: the ledger stored agent_id=main for every call while the transcripts show \($n) agent(s). Live fan-out detection is blind; this recovered attribution is analysis-only." ),
     "",
     ( if .verdicts == 0 then
         "nothing fired -- a result, not an empty report. The cascade watched \(.calls) call(s) and flagged none."

@@ -63,7 +63,7 @@ event actually a loop?
 | `error-retry-loop` | the same call fails repeatedly with no change to the input | each retry followed a visible correction — the second attempt had a different fingerprint |
 | `repeated-agent-spawn` | a review or design loop burned its round cap without converging | the spawns were independent parallel work |
 | | **`gap_seconds` separates these two, and it is on the row for that purpose.** A `max` of seconds means they were launched together — a fan-out, whatever the count. Gaps of minutes are re-entries: each spawn waited for the last to come back, which is what a round cap looks like from outside. Read `min` too: one wide gap in an otherwise tight run is a fan-out that got repeated, not a loop. | |
-| | **"Fan-out" dismisses the SPAWN, never what the spawned agents then did.** Launching several agents in parallel is legitimate; several of them making the *identical* call is duplicated work that this dismissal would otherwise wave through — and it is invisible to any per-agent view, because each sibling made that call exactly once. **The live hook cannot see it either** — its `agent_id` is derived from a transcript path the payload reports as the parent's, so the field reads `main` for every call ever recorded and the arm keyed on it has never fired. The ledger you are given recovers the real attribution by `tool_use_id` at read time; that is where to look. If a fan-out row here looks clean, it means the spawns were justified, not that the work inside them was distinct. | |
+| | **"Fan-out" dismisses the SPAWN, never what the spawned agents then did.** Launching several agents in parallel is legitimate; several of them making the *identical* call is duplicated work that this dismissal would otherwise wave through — and it is invisible to any per-agent view, because each sibling made that call exactly once. **The live hook cannot see it either** — its `agent_id` is derived from a transcript path the payload reports as the parent's, and on every ledger measured so far the field reads `main` for every call, so the arm keyed on it does not fire. The ledger you are given recovers the real attribution by `tool_use_id` at read time; that is where to look. If a fan-out row here looks clean, it means the spawns were justified, not that the work inside them was distinct. | |
 | `turn-depth-spike` | one turn took many model calls circling the same sub-goal | the turn was legitimately long — a big migration, a broad sweep |
 | | **Settle this one by reading the turn.** Separating the two requires the ORDER of what the turn did, which the summary row does not carry and the transcript does. Never settle it from the depth figure, and never from `cache_read`, which trends with context size rather than with struggle — a late turn reads more cache than an early one for no reason but its position. | |
 | `deferral-candidate` | a ticket was filed from inside a turn that had already gone round and round, and the work it names is the work that was not converging | the ticket is genuine scope discovered while working, filed deliberately rather than as an exit |
@@ -114,9 +114,15 @@ the tool a fan-out question is about.
 ### Attribution
 
 `attribution.by_agent` is **recovered by the reader**, by finding each `tool_use_id` in the session's
-transcripts. `attribution.stored_agent_ids` is what the hook wrote, and it reads `main` for everything; the
-two disagreeing is the known defect, not a signal about this session. Use the recovered figures. A call in
-`unattributed` was in no transcript — on a live session that is the call in flight, not an anomaly.
+transcripts. `attribution.stored_agent_ids` is what the hook wrote, and where it reads `main` for everything
+the two disagreeing is the known defect, not a signal about this session. Use the recovered figures.
+
+**Check `attribution.complete` before you read `unattributed`.** When it is true, an unattributed call is
+one with no transcript record yet — on a live session, the call in flight, and not an anomaly. When it is
+false the census is **wrong rather than partial**: a transcript was missing or stopped parsing part-way, so
+calls that belong to a named agent have fallen into that bucket. `main_transcript_read` and
+`unreadable_transcripts` say which. Never read a large `unattributed` as fan-out, and never read it as the
+main agent's work.
 
 ## Step 3: Locate the harness defect, not the symptom
 
