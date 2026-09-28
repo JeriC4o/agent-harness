@@ -82,7 +82,7 @@ for comp in spec-writer design design-review self-review review-findings self-im
   case "$det" in *"$comp"*) ok "agent: $comp" ;; *) bad "agent: $comp missing from the inventory" ;; esac
 done
 # Hooks are the component that silently vanished in the bug this gate exists for.
-for ev in SessionStart PreToolUse PostToolUse Stop SubagentStop; do
+for ev in SessionStart PreToolUse PostToolUse PostToolUseFailure Stop SubagentStop; do
   case "$det" in *"$ev"*) ok "hook event: $ev" ;; *) bad "hook event: $ev not registered" ;; esac
 done
 

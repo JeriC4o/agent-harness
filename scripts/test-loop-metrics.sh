@@ -114,6 +114,22 @@ check "  as declines"                   "$(printf '%s' "$r" | jq -r '.projects[0
 out=$(bash "$READER" "$L")
 has "the report says why there are no turns" "$out" "before the turn-scoped gate existed"
 
+printf '\n== outcomes are counted, and a missing one is NOT a pass ==\n'
+# The recorder is newer than the index, so an older ledger has no result rows at
+# all. Counting those calls as successes would invent a clean run out of absence.
+res() { jq -nc --arg id "$1" --argjson k "$2" \
+        '{ts:"2026-09-26T00:00:00Z",kind:"result",tool_use_id:$id,ok:$k}' >> "$L"; }
+new; call Bash a t1; res t1 true; call Bash b t2; res t2 false; call Bash c t3
+r=$(j)
+check "ok"       "$(printf '%s' "$r" | jq -r '.projects[0].results.ok')"      "1"
+check "failed"   "$(printf '%s' "$r" | jq -r '.projects[0].results.failed')"  "1"
+check "unknown"  "$(printf '%s' "$r" | jq -r '.projects[0].results.unknown')" "1"
+check "a result row is not counted as a call" \
+      "$(printf '%s' "$r" | jq -r '.projects[0].calls')" "3"
+out=$(bash "$READER" "$L")
+has "the report names the failures" "$out" "1 failed"
+has "  and says an outcome is missing" "$out" "no outcome recorded"
+
 printf '\n== the report calls out a gate that fires every turn ==\n'
 # The shape that killed the previous gate: firing once per turn is the signature
 # of a filter that does not discriminate, not of a session that loops.

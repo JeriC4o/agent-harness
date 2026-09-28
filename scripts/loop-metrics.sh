@@ -115,6 +115,14 @@ per_session() {
         by_tier:   ($verdicts | map(.e) | group_by(.tier)   | map({ (.[0].tier   | tostring): length }) | add // {}),
         by_signal: ($verdicts | map(.e) | group_by(.signal) | map({ (.[0].signal | tostring): length }) | add // {}),
         turns: ([ $all[] | select(.kind == "turn") ] | length),
+        # Outcomes, so a failing session is distinguishable from a busy one. A
+        # call with no result row is `unknown`, not a success: the recorder is
+        # newer than the index, so an older ledger has none, and counting those
+        # as passes would invent a clean run out of missing data.
+        results: { ok:      ([ $all[] | select(.kind == "result" and .ok == true)  ] | length),
+                   failed:  ([ $all[] | select(.kind == "result" and .ok == false) ] | length),
+                   unknown: ( ([ $all[] | select(.kind == "call") ] | length)
+                              - ([ $all[] | select(.kind == "result") ] | length) ) },
         # Tier 2 is the COARSE structural gate: how often it fires is the number
         # that decides whether the judging stage is worth paying for. Tier 3 is
         # the verdict of the model on what tier 2 flagged, off by default -- so
@@ -164,6 +172,9 @@ report=$(jq -s '
                                calls:    (map(.calls)    | add // 0),
                                turns:    (map(.turns)    | add // 0),
                                verdicts: (map(.verdicts) | add // 0),
+                               results: { ok:      (map(.results.ok)      | add // 0),
+                                          failed:  (map(.results.failed)  | add // 0),
+                                          unknown: (map(.results.unknown) | add // 0) },
                                tier2: { fired:  (map(.tier2.fired)  | add // 0),
                                         judged: (map(.tier2.judged) | add // 0),
                                         top_bin: ( [ .[] | .tier2.top_bin | select(. != null) ]
@@ -207,6 +218,12 @@ printf '%s' "$report" | jq -r '
   ( $r.projects[]
     | "\(.project)\(if .exact then "" else "   [recovered from the transcript path; may be wrong where a directory name contains a hyphen]" end)",
       "  \(.sessions) session(s), \(.calls) call(s), \(.verdicts) verdict(s)",
+      # Outside the verdict branch on purpose: a session that failed a lot is
+      # informative whether or not a detector fired, and printing it only
+      # alongside findings would hide the sessions worth looking at most.
+      ( if .results.failed > 0 or .results.ok > 0 then
+          "  calls: \(.results.ok) ok, \(.results.failed) failed\(if .results.unknown > 0 then ", \(.results.unknown) with no outcome recorded" else "" end)"
+        else "" end ),
       ( if .verdicts == 0 then
           "  nothing fired -- a result, not an empty report: \(.calls) calls passed without a repeat"
         else

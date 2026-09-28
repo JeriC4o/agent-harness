@@ -48,6 +48,10 @@ HERE_JQ=$(cd -- "$(dirname -- "$0")/../../scripts" 2>/dev/null && pwd) || HERE_J
 LEDGER_DIR="${HARNESS_LOOP_DIR:-${HOME}/.claude/harness/loops}"
 TAIL_N="${HARNESS_LOOP_TAIL:-20}"
 THRESHOLD="${HARNESS_LOOP_THRESHOLD:-3}"
+# Two failures of one call is already a retry loop; three is the bar for calls
+# that succeeded. Mirrors retry_min in scripts/session-events.sh, deliberately:
+# the two detectors must not disagree about what counts as a retry.
+RETRY_MIN="${HARNESS_LOOP_RETRY_MIN:-2}"
 
 # A hook that breaks is worse than a hook that is absent. Every failure path
 # below exits 0 and stays silent, so a malformed payload, an absent jq or an
@@ -100,9 +104,18 @@ ledger="${LEDGER_DIR}/${sid}.jsonl"
 verdict=""
 if [ -s "$ledger" ]; then
   verdict=$(tail -n "$TAIL_N" "$ledger" 2>/dev/null | awk \
-      -v want_fp="$fp" -v want_tool="$tool" -v thr="$THRESHOLD" -v cur="$agent" '
-    BEGIN { n = 0; first = 0; changed = 0 }
+      -v want_fp="$fp" -v want_tool="$tool" -v thr="$THRESHOLD" \
+      -v retry="$RETRY_MIN" -v cur="$agent" '
+    BEGIN { n = 0; first = 0; changed = 0; m = 0 }
     {
+      # A result row carries the OUTCOME of an earlier call, joined by
+      # tool_use_id. It is collected on the way past and resolved at END, because
+      # it is written after the call it describes.
+      if (match($0, /"kind":"result"/)) {
+        id = ""; if (match($0, /"tool_use_id":"[^"]*"/)) id = substr($0, RSTART + 16, RLENGTH - 17)
+        if (id != "") res[id] = ($0 ~ /"ok":true/) ? "ok" : "err"
+        next
+      }
       # TWO RECORD CLASSES SHARE THIS FILE, so every reader must filter on kind.
       # A verdict line carries "tool" and "fp" too: counted as a call it would
       # inflate the very count that produced it, and each firing would make the
@@ -122,13 +135,35 @@ if [ -s "$ledger" ]; then
       # matched ones: a write between the repeats means the world changed, so
       # the same call is not the same question.
       if (t == "Edit" || t == "Write" || t == "NotebookEdit") { changed = NR }
-      if (t == want_tool && f == want_fp) { n++; if (first == 0) first = NR; seen[a] = 1 }
+      if (t == want_tool && f == want_fp) {
+        n++; if (first == 0) first = NR; seen[a] = 1
+        id = ""; if (match($0, /"tool_use_id":"[^"]*"/)) id = substr($0, RSTART + 16, RLENGTH - 17)
+        ids[++m] = id
+      }
     }
     END {
       if (n == 0) exit
-      if (changed > first) exit
+      fails = 0
+      for (i = 1; i <= m; i++) if (ids[i] != "" && res[ids[i]] == "err") fails++
       seen[cur] = 1
       na = 0; for (k in seen) na++
+
+      # THE EDIT FILTER IS CONDITIONAL, and this is the whole point of GH-69.
+      # For calls that SUCCEEDED, a write between the repeats means the world
+      # changed, so the same call is no longer the same question -- dismiss.
+      # For calls that FAILED, the edit means an ATTEMPT was made and the call
+      # failed again: that is the fix-break cycle, and dismissing it is how the
+      # commonest logical loop stayed invisible. scripts/session-events.sh has
+      # always had this right -- repeated-tool-call carries the intervening-edits
+      # filter and error-retry-loop deliberately does not -- and the thresholds
+      # below mirror its retry_min:2 against minrep:3 for the same reason it
+      # gives: two failures of one call is already a retry loop, three is the bar
+      # for calls that worked.
+      if (fails + 0 >= retry) {
+        printf "%s %d %d\n", "error-retry", fails, na
+        exit
+      }
+      if (changed > first) exit
       if (n + 1 >= thr) { printf "%s %d %d\n", (na > 1 ? "fanout" : "loop"), n + 1, na }
     }')
 fi
@@ -139,7 +174,10 @@ printf '%s\n' "$entry" >> "$ledger" 2>/dev/null
 set -- $verdict
 kind="$1"; count="$2"; agents="$3"
 
-if [ "$kind" = "fanout" ]; then
+if [ "$kind" = "error-retry" ]; then
+  why=$(printf 'this exact call has already FAILED %s times in the last %s steps. Edits in between do not clear it -- an edit between two failures of the same call is an attempt that did not work, which is the evidence for the loop rather than an exemption from it. Before approving a further attempt, say what about THIS change makes the failure different; if the answer is only that something was changed, the loop is the finding.' \
+        "$count" "$TAIL_N")
+elif [ "$kind" = "fanout" ]; then
   why=$(printf 'the SAME call has now been made by %s different agents (%s times in the last %s steps). That is fan-out duplication, not progress: each sibling pays full price for work a sibling already did. Before approving, check whether one result can be reused.' \
         "$agents" "$count" "$TAIL_N")
 else
@@ -156,7 +194,8 @@ fi
 # otherwise cannot tell a wrong call from a since-changed setting.
 jq -nc --arg s "$kind" --arg t "$tool" --arg f "$fp" \
        --argjson c "$count" --argjson a "$agents" \
-       --argjson w "$TAIL_N" --argjson th "$THRESHOLD" \
+       --argjson w "$TAIL_N" \
+       --argjson th "$( [ "$kind" = "error-retry" ] && printf '%s' "$RETRY_MIN" || printf '%s' "$THRESHOLD" )" \
    '{ts: (now|todate), kind: "verdict", tier: 1, signal: $s, tool: $t, fp: $f,
      count: $c, agents: $a, decision: "ask", window: $w, threshold: $th}' \
    >> "$ledger" 2>/dev/null
