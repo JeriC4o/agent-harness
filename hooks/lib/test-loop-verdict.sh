@@ -25,6 +25,15 @@ has()  { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 (missing [$3] in [$2])" ;; e
 
 WORK=$(mktemp -d); trap 'rm -rf "$WORK"' EXIT
 export HARNESS_LOOP_DIR="${WORK}/loops"
+# PINNED, NOT INHERITED. Every assertion below that requires the judging stage to
+# stay quiet was relying on this variable being absent from the environment --
+# which it is on a machine where the cascade was never switched on, and is NOT on
+# a machine where it was. The suite then went red for a setting rather than for
+# the code, and it did so in the section about the coarse gate, which says
+# nothing about the model. A gate whose verdict moves with the developer's
+# settings is not a gate. The shipped DEFAULT is still checked, once, explicitly,
+# with the variable genuinely removed -- see the section at the end.
+export HARNESS_T3_MODEL=off
 mkdir -p "$WORK/bin"
 SID="sess-t2"
 LED="${HARNESS_LOOP_DIR}/${SID}.jsonl"
@@ -163,7 +172,9 @@ reset; n_of 8 "grep -rn"
 STUB_ANSWER="I am not sure" stop >/dev/null
 check "an answer that is neither records no tier-3 verdict" "$(v3)" "0"
 check "  but the coarse verdict stands"                     "$(v2)" "1"
-unset HARNESS_T3_MODEL STUB_SEEN
+# Back to off EXPLICITLY. `unset` would hand the rest of the suite back to the
+# ambient environment, which is the hazard the preamble exists to close.
+export HARNESS_T3_MODEL=off; unset STUB_SEEN
 
 printf '\n== the threshold is tunable ==\n'
 reset; n_of 3 "grep -rn"
@@ -204,6 +215,28 @@ check "the reader reads it"            "$( [ -n "$rep" ] && echo yes || echo no 
 check "  and counts the calls"         "$(printf '%s' "$rep" | jq -r '.totals.calls')" "8"
 check "  and the coarse firing"        "$(printf '%s' "$rep" | jq -r '.projects[0].tier2.fired')" "1"
 check "  and the turn"                 "$(printf '%s' "$rep" | jq -r '.projects[0].turns')" "1"
+
+printf '\n== the SHIPPED default is off, checked with the variable truly absent ==\n'
+# The preamble pins the variable so no assertion depends on the machine. That
+# pinning would also hide a change to the hook's own default, so the default is
+# asserted here in the one place it can be: with the variable removed outright.
+reset; n_of 8 "grep -rn"
+env -u HARNESS_T3_MODEL bash "$HOOK" >/dev/null 2>&1 \
+  <<<"$(jq -nc --arg s "$SID" '{session_id:$s,hook_event_name:"Stop"}')"
+check "with no setting at all, the coarse gate still fires" "$(v2)" "1"
+check "  and records that it did NOT judge" \
+      "$(jq -rs '[.[]|select(.tier==2)][0].judged' < "$LED")" "false"
+check "  and the model was never called"    "$(calls)" "0"
+
+printf '\n== POSITIVE CONTROL: the pin is load-bearing, not decoration ==\n'
+# Without the pin the two assertions above read the AMBIENT setting. Set it here
+# deliberately and they invert -- which is exactly what a developer with the
+# cascade switched on used to get, in a section that says nothing about a model.
+reset; n_of 8 "grep -rn"
+HARNESS_T3_MODEL=haiku stop >/dev/null
+check "with the model on, the same input records judged true" \
+      "$(jq -rs '[.[]|select(.tier==2)][0].judged' < "$LED")" "true"
+check "  and the model IS called" "$(calls)" "1"
 
 printf '\n== wired into hooks.json on both stop events, unguarded ==\n'
 for ev in Stop SubagentStop; do

@@ -36,13 +36,15 @@ set -uo pipefail
 
 die() { printf 'loop-metrics: %s\n' "$1" >&2; exit 2; }
 
-LEDGER=""; ALL=0; AS_JSON=0
+LEDGER=""; ALL=0; AS_JSON=0; FOR=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --all)  ALL=1 ;;
     --json) AS_JSON=1 ;;
+    --for)  shift; [ $# -gt 0 ] || die "--for needs a transcript path"; FOR="$1" ;;
     -h|--help)
-      printf 'usage: loop-metrics.sh [<ledger.jsonl> | --all] [--json]\n'; exit 0 ;;
+      printf 'usage: loop-metrics.sh [<ledger.jsonl> | --all | --for <transcript.jsonl>] [--json]\n'
+      exit 0 ;;
     -*) die "unknown flag: $1" ;;
     *)  [ -z "$LEDGER" ] || die "more than one ledger given"; LEDGER="$1" ;;
   esac
@@ -52,7 +54,44 @@ done
 command -v jq >/dev/null 2>&1 || die "jq is required"
 
 DIR="${HARNESS_LOOP_DIR:-${HOME}/.claude/harness/loops}"
-if [ "$ALL" -eq 1 ]; then
+
+# --- --for: resolve the ledger that belongs to a TRANSCRIPT -----------------
+# /inspect holds a transcript path and nothing else, so the reader has to make
+# the crossing itself. The ledger is keyed by session_id, and a session's main
+# transcript is named <session_id>.jsonl -- but a SUBAGENT transcript is
+# <session_id>/subagents/agent-<id>.jsonl, whose basename is the agent, not the
+# session. Resolving that one by basename yields a filename no ledger ever has,
+# so the answer would be a permanent, silent "no ledger" on exactly the inputs a
+# fan-out question is asked about.
+TRANSCRIPT=""; SESSION=""
+if [ -n "$FOR" ]; then
+  [ "$ALL" -eq 0 ] || die "--for and --all ask different questions; give one"
+  [ -z "$LEDGER" ] || die "--for takes the transcript, not the ledger"
+  TRANSCRIPT="$FOR"
+  case "$TRANSCRIPT" in
+    */subagents/agent-*.jsonl)
+      SESSION=$(basename "$(dirname "$(dirname "$TRANSCRIPT")")") ;;
+    *)
+      SESSION=$(basename "$TRANSCRIPT" .jsonl) ;;
+  esac
+  [ -n "$SESSION" ] || die "could not read a session id out of $TRANSCRIPT"
+  LEDGER="${DIR}/${SESSION}.jsonl"
+  # ABSENCE IS A RESULT, AND IT IS NOT A CLEAN ONE. A missing ledger read as
+  # "nothing fired" is the false all-clear this repo has had to repair in its own
+  # checks twice, so it is reported in the same shape as a signature that could
+  # not run -- and at exit 0, because /inspect must go on to its other passes.
+  if [ ! -s "$LEDGER" ]; then
+    reason="no loop ledger for session ${SESSION} at ${LEDGER}. The live cascade did not run for this session, or ran under a different HARNESS_LOOP_DIR. This is NOT a clean result: a session nothing watched is indistinguishable here from a session in which nothing fired."
+    if [ "$AS_JSON" -eq 1 ]; then
+      jq -nc --arg s "$SESSION" --arg l "$LEDGER" --arg t "$TRANSCRIPT" --arg r "$reason" \
+         '{available: false, session: $s, ledger: $l, transcript: $t, reason: $r}'
+    else
+      printf 'loop ledger: UNAVAILABLE\n  %s\n' "$reason"
+    fi
+    exit 0
+  fi
+  FILES=("$LEDGER")
+elif [ "$ALL" -eq 1 ]; then
   [ -z "$LEDGER" ] || die "--all takes no ledger argument"
   [ -d "$DIR" ] || die "no ledger directory at $DIR"
   set -- "$DIR"/*.jsonl
@@ -88,6 +127,19 @@ per_session() {
           | ( [ $idx[] | select(.i > $vi.i and .e.kind == "call" and .e.tool == $v.tool) | .e ] ) as $after
           | { tier: $v.tier, signal: $v.signal, tool: $v.tool,
               verdict: ($v.verdict // "-"),
+              # Everything below this line exists so a verdict can be LOCATED in
+              # the run rather than merely counted. A reader that knows a coarse
+              # repeat fired, but not when or on what shape, cannot go and read
+              # the turn -- which is the whole of what deep analysis does.
+              ts: ($v.ts // null),
+              fp: ($v.fp // null),
+              bin: ($v.bin // null),
+              count: ($v.count // null),
+              agents: ($v.agents // null),
+              repeats: ($v.repeats // null),
+              turn_calls: ($v.turn_calls // null),
+              judged: ($v.judged // null),
+              reason: ($v.reason // null),
               outcome:
                 ( if ($v.fp // null) == null then "n/a"        # tier 2 keys on the tool, not one fp
                   elif ($after | any(.fp == $v.fp)) then "went_ahead"
@@ -95,7 +147,8 @@ per_session() {
                   else "abandoned" end ),
               settings: { window: $v.window, threshold: ($v.threshold // null),
                           min_calls: ($v.min_calls // null),
-                          min_distinct: ($v.min_distinct // null) } } ] ) as $rows
+                          min_distinct: ($v.min_distinct // null),
+                          min_bin_repeats: ($v.min_bin_repeats // null) } } ] ) as $rows
     # A session belongs to ONE project, so the project is read off the session
     # rather than stored on every line twice. cwd is exact; the transcript path
     # is the fallback for lines written before cwd was recorded, and it is only a
@@ -154,12 +207,100 @@ per_session() {
 }
 
 tmp=$(mktemp) || die "cannot create a temp file"
-trap 'rm -f "$tmp"' EXIT
+attr=$(mktemp) || die "cannot create a temp file"
+trap 'rm -f "$tmp" "$attr"' EXIT
 for f in "${FILES[@]}"; do
   [ -s "$f" ] || continue
   per_session "$f" >> "$tmp" || die "could not read $f"
 done
 [ -s "$tmp" ] || die "every ledger was empty"
+
+# --- --for: the single-session view /inspect reads --------------------------
+if [ -n "$FOR" ]; then
+  # WHO MADE THE CALL IS RECOVERED HERE, NOT READ OFF THE LEDGER. The ledger's
+  # own agent_id is derived in the PreToolUse hook from transcript_path, and that
+  # payload carries the PARENT transcript even for a subagent's call -- so across
+  # every ledger on a real machine the field is "main" without exception, and the
+  # fan-out arm keyed on it can never fire. Measured, not assumed; tracked in the
+  # issue this mode's sibling names. Attribution by tool_use_id does not have
+  # that problem: an id absent from the main transcript and present in
+  # subagents/agent-X.jsonl was made by agent X. It costs a scan of the session's
+  # transcripts, which is affordable exactly here -- this is /inspect, not the
+  # hot path -- and nowhere else in the cascade.
+  case "$TRANSCRIPT" in
+    */subagents/agent-*.jsonl) SESSDIR=$(dirname "$(dirname "$TRANSCRIPT")") ;;
+    *)                         SESSDIR="$(dirname "$TRANSCRIPT")/${SESSION}" ;;
+  esac
+  MAIN="$(dirname "$SESSDIR")/${SESSION}.jsonl"
+  ids_of() {
+    jq -rc --arg a "$2" 'select(.message.content? | type == "array")
+      | .message.content[] | select(.type == "tool_use")
+      | {id: .id, agent: $a}' "$1" 2>/dev/null
+  }
+  : > "$attr"
+  [ -f "$MAIN" ] && ids_of "$MAIN" main >> "$attr"
+  for s in "$SESSDIR"/subagents/agent-*.jsonl; do
+    [ -f "$s" ] || continue
+    a=$(basename "$s" .jsonl)
+    ids_of "$s" "${a#agent-}" >> "$attr"
+  done
+
+  view=$(jq -s --slurpfile side "$tmp" --slurpfile map "$attr" \
+            --arg tr "$TRANSCRIPT" --arg led "$LEDGER" --argjson main_seen \
+            "$( [ -f "$MAIN" ] && printf 'true' || printf 'false' )" '
+    ( reduce $map[] as $x ({}; .[$x.id] = $x.agent) ) as $by_id
+    | ( [ .[] | select(.kind == "call") ] ) as $calls
+    | $side[0]
+      + { available: true, ledger: $led, transcript: $tr,
+          # An id the transcripts do not account for is reported, never absorbed:
+          # on a LIVE session the most recent call has no transcript record yet,
+          # and a reader that quietly folded those into "main" would invent an
+          # attribution out of a race.
+          attribution:
+            { by_agent: ( $calls | map($by_id[.tool_use_id] // "unattributed")
+                          | group_by(.) | map({ (.[0]): length }) | add // {} ),
+              unattributed: ( [ $calls[] | select($by_id[.tool_use_id] == null) ] | length ),
+              main_transcript_read: $main_seen,
+              # What the hook STORED, beside what the transcripts say. The two
+              # disagreeing is the defect above, visible rather than described.
+              stored_agent_ids: ( $calls | map(.agent_id) | unique ) } }
+  ' "$LEDGER") || die "could not build the session view"
+
+  if [ "$AS_JSON" -eq 1 ]; then
+    printf '%s\n' "$view"
+    exit 0
+  fi
+
+  printf '%s' "$view" | jq -r '
+    "loop ledger for session \(.session)",
+    "  \(.calls) call(s), \(.turns) turn marker(s), \(.verdicts) verdict(s)",
+    "  calls: \(.results.ok) ok, \(.results.failed) failed" +
+      (if .results.unknown > 0 then ", \(.results.unknown) with no outcome recorded" else "" end),
+    ( .attribution
+      | "  by agent: " + ( [ .by_agent | to_entries[] | "\(.key)=\(.value)" ] | join(", ") )
+        + (if .unattributed > 0 then "   [\(.unattributed) call(s) not found in any transcript -- a live session has one in flight]" else "" end) ),
+    ( .attribution | select((.by_agent | keys | length) > 1 and (.stored_agent_ids == ["main"]))
+      | "  NOTE: the ledger stored agent_id=main for every call while the transcripts show \((.by_agent | keys | length)) agent(s). Live fan-out detection is blind; this recovered attribution is analysis-only." ),
+    "",
+    ( if .verdicts == 0 then
+        "nothing fired -- a result, not an empty report. The cascade watched \(.calls) call(s) and flagged none."
+      else ( "verdicts, in the order they were written:",
+             ( .rows[] | "  tier \(.tier)  \(.signal)  \(.ts // "-")  " +
+               (if .tool then "tool=\(.tool) " else "" end) +
+               (if .bin then "bin=\(.bin) " else "" end) +
+               (if .repeats then "repeats=\(.repeats)/\(.turn_calls) " else "" end) +
+               (if .count then "count=\(.count) " else "" end) +
+               "outcome=\(.outcome)" +
+               (if .verdict != "-" then "  model=\(.verdict)"
+                    + (if (.reason // "") == "" then "" else ": \(.reason)" end)
+                else "" end) ) )
+      end ),
+    "",
+    "An outcome is derived from the calls that FOLLOW a verdict, never stored: went_ahead means the call was made anyway, abandoned means it was dropped, reformulated means the same tool ran with different arguments. n/a means the verdict keyed on a shape rather than one fingerprint.",
+    "Join a row to the run by tool_use_id, never by fingerprint: Agent and AskUserQuestion have their input rewritten between the hook firing and the transcript record."
+  '
+  exit 0
+fi
 
 # PROJECTS ARE NEVER POOLED. A rate over a mixed corpus answers no question: the
 # thresholds that fit one codebase say nothing about another, and a single busy

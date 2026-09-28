@@ -233,6 +233,105 @@ check "--all with no dir -> 2"  "$(HARNESS_LOOP_DIR=/nope bash "$READER" --all >
 new
 check "an empty ledger -> 2, not a silent zero" "$(bash "$READER" "$L" >/dev/null 2>&1; echo $?)" "2"
 
+printf '\n== --for: the single-session view /inspect reads ==\n'
+FD="$W/for"; mkdir -p "$FD/loops" "$FD/projects/-proj/sess1/subagents"
+MAINTX="$FD/projects/-proj/sess1.jsonl"
+SUBTX="$FD/projects/-proj/sess1/subagents/agent-AAA.jsonl"
+FL="$FD/loops/sess1.jsonl"
+# A transcript line as the client writes it: the tool_use id is the join key.
+tu()    { jq -nc --arg i "$2" \
+          '{message:{content:[{type:"tool_use",id:$i,name:"Bash",input:{command:"x"}}]}}' >> "$1"; }
+# A ledger call as the HOOK writes it -- agent_id "main" on every row, which is
+# what the live hook actually stores for a subagent's call too. The fixture has
+# to carry that wrong value, or the recovery under test has nothing to correct.
+fcall() { jq -nc --arg id "$1" \
+          '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:"Bash",fp:"f",
+            bin:"Bash:grep",tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:"/Users/me/work/alpha"}' >> "$FL"; }
+: > "$MAINTX"; : > "$SUBTX"; : > "$FL"
+tu "$MAINTX" t1; tu "$MAINTX" t2
+tu "$SUBTX" t3
+fcall t1; fcall t2; fcall t3; fcall t4
+f() { HARNESS_LOOP_DIR="$FD/loops" bash "$READER" --for "$1" --json; }
+
+r=$(f "$MAINTX")
+check "it resolves the ledger from a transcript path" \
+      "$(printf '%s' "$r" | jq -r '.available')" "true"
+check "  naming the session" "$(printf '%s' "$r" | jq -r '.session')" "sess1"
+check "attribution: the main agent's calls" \
+      "$(printf '%s' "$r" | jq -r '.attribution.by_agent.main')" "2"
+check "attribution: the subagent's, which the stored agent_id cannot give" \
+      "$(printf '%s' "$r" | jq -r '.attribution.by_agent.AAA')" "1"
+check "a call in no transcript stays unattributed, never folded into main" \
+      "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "1"
+check "  and the stored field is shown beside it, wrong and visible" \
+      "$(printf '%s' "$r" | jq -r '.attribution.stored_agent_ids | join(",")')" "main"
+
+r=$(f "$SUBTX")
+check "a SUBAGENT transcript resolves to its PARENT session" \
+      "$(printf '%s' "$r" | jq -r '.session')" "sess1"
+check "  reaching the same ledger, not none" "$(printf '%s' "$r" | jq -r '.calls')" "4"
+
+MISS="$FD/projects/-proj/nope.jsonl"
+r=$(HARNESS_LOOP_DIR="$FD/loops" bash "$READER" --for "$MISS" --json)
+check "an absent ledger is a REPORTED unavailable" \
+      "$(printf '%s' "$r" | jq -r '.available')" "false"
+has "  whose reason refuses to be read as clean" \
+    "$(printf '%s' "$r" | jq -r '.reason')" "NOT a clean result"
+check "  at rc 0, so /inspect goes on to its other passes" \
+      "$(HARNESS_LOOP_DIR="$FD/loops" bash "$READER" --for "$MISS" >/dev/null 2>&1; echo $?)" "0"
+
+# A verdict has to be LOCATABLE, not merely counted: without these fields the
+# reader knows something fired and cannot go and read the turn it fired on.
+jq -nc '{ts:"2026-09-26T00:00:01Z",kind:"verdict",tier:2,signal:"coarse-repeat",
+         bin:"Bash:grep",repeats:8,turn_calls:9,scope:"turn",min_bin_repeats:8,judged:false}' >> "$FL"
+r=$(f "$MAINTX")
+check "a verdict row carries the ts that locates it in the run" \
+      "$(printf '%s' "$r" | jq -r '.rows[0].ts')" "2026-09-26T00:00:01Z"
+check "  the shape it fired on"      "$(printf '%s' "$r" | jq -r '.rows[0].bin')" "Bash:grep"
+check "  the count it fired at"      "$(printf '%s' "$r" | jq -r '.rows[0].repeats')" "8"
+check "  the threshold it fired under" \
+      "$(printf '%s' "$r" | jq -r '.rows[0].settings.min_bin_repeats')" "8"
+
+printf '\n== --for: a positive control per guard ==\n'
+# Each control deletes ONE guard and requires the damage to reappear. Without
+# them every assertion above passes byte-identically with the guard removed.
+M1="$W/mut-subagent-path.sh"
+perl -0pe 's/SESSION=\$\(basename "\$\(dirname "\$\(dirname "\$TRANSCRIPT"\)"\)"\)/SESSION=\$(basename "\$TRANSCRIPT" .jsonl)/' \
+  "$READER" > "$M1"
+check "the mutation applied" "$(grep -c 'dirname "\$(dirname' "$M1")" "1"
+check "without the subagent-path arm, a subagent transcript finds no ledger at all" \
+      "$(HARNESS_LOOP_DIR="$FD/loops" bash "$M1" --for "$SUBTX" --json | jq -r '.available')" "false"
+
+M2="$W/mut-no-subagent-scan.sh"
+perl -0pe 's/ids_of "\$s" "\$\{a#agent-\}" >> "\$attr"/:/' "$READER" > "$M2"
+check "the mutation applied" "$(grep -c 'ids_of "\$s"' "$M2")" "0"
+r=$(HARNESS_LOOP_DIR="$FD/loops" bash "$M2" --for "$MAINTX" --json)
+check "without the subagent scan, the subagent's calls vanish from the census" \
+      "$(printf '%s' "$r" | jq -r '.attribution.by_agent.AAA // "absent"')" "absent"
+check "  and are counted as unattributed rather than as main's" \
+      "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "2"
+
+M3="$W/mut-stored-agent.sh"
+perl -0pe 's/\$by_id\[\.tool_use_id\] \/\/ "unattributed"/.agent_id/' "$READER" > "$M3"
+check "the mutation applied" "$(grep -c 'by_id\[.tool_use_id\] \/\/ "unattributed"' "$M3")" "0"
+check "reading the STORED agent_id instead puts every call on main -- the live defect" \
+      "$(HARNESS_LOOP_DIR="$FD/loops" bash "$M3" --for "$MAINTX" --json | jq -r '.attribution.by_agent.main')" "4"
+
+M4="$W/mut-no-unavailable.sh"
+perl -0pe 's/if \[ ! -s "\$LEDGER" \]; then/if false; then/' "$READER" > "$M4"
+check "the mutation applied" "$(grep -c 'if false; then' "$M4")" "1"
+out=$(HARNESS_LOOP_DIR="$FD/loops" bash "$M4" --for "$MISS" 2>&1)
+case "$out" in
+  *"NOT a clean result"*) bad "without the guard, an absent ledger still named itself" ;;
+  *)                      ok  "without the guard, an absent ledger says nothing that names itself" ;;
+esac
+
+printf '\n== --for: usage errors are loud ==\n'
+check "--for with no path -> 2"   "$(bash "$READER" --for >/dev/null 2>&1; echo $?)" "2"
+check "--for with --all -> 2"     "$(bash "$READER" --for "$MAINTX" --all >/dev/null 2>&1; echo $?)" "2"
+check "--for with a ledger too -> 2" \
+      "$(bash "$READER" --for "$MAINTX" "$FL" >/dev/null 2>&1; echo $?)" "2"
+
 printf '\n== the entry point is executable ==\n'
 check "loop-metrics.sh carries the execute bit" "$( [ -x "$READER" ] && echo yes || echo no )" "yes"
 
