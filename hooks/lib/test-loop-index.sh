@@ -131,6 +131,92 @@ check "without it, the same ledger reads as 6"    "$(tally 0)" "6"
 check "  and the excess is exactly the verdicts" \
       "$(jq -rs '[.[] | select(.kind=="verdict")] | length' < "$LED")" "2"
 
+printf '\n== the outcome recorder writes a joinable row, and only for the two events ==\n'
+RES="${HERE}/loop-result.sh"
+RN=0
+rid() { RN=$((RN+1)); RID="r$RN"; }   # assigned by the CALLER: $(...) is a subshell
+rcall() { # $1 tool, $2 command -- uses $RID
+  jq -nc --arg s "$SID" --arg t "$1" --arg c "$2" --arg id "$RID" --arg tp "$MAIN_TP" \
+     '{session_id:$s, transcript_path:$tp, tool_name:$t, tool_input:{command:$c},
+       tool_use_id:$id, cwd:"/p"}' | bash "$HOOK" 2>/dev/null
+}
+outcome() { # $1 id, $2 event
+  jq -nc --arg s "$SID" --arg id "$1" --arg e "$2" \
+     '{session_id:$s, tool_use_id:$id, hook_event_name:$e}' | bash "$RES" >/dev/null 2>&1
+}
+reset; rid; rcall Bash "npm test" >/dev/null; outcome "$RID" PostToolUseFailure
+r=$(jq -c 'select(.kind=="result")' < "$LED")
+check "a failure writes a result row"  "$(printf '%s' "$r" | jq -r '.kind')" "result"
+check "  keyed by tool_use_id"         "$(printf '%s' "$r" | jq -r '.tool_use_id')" "$RID"
+check "  and ok is false"              "$(printf '%s' "$r" | jq -r '.ok')" "false"
+outcome "$RID" PostToolUse
+check "a success writes ok true" \
+      "$(jq -rs '[.[]|select(.kind=="result")][-1].ok' < "$LED")" "true"
+before=$(wc -l < "$LED" | tr -d ' ')
+outcome "$RID" SomeOtherEvent
+check "an event it was not wired to writes nothing" "$(wc -l < "$LED" | tr -d ' ')" "$before"
+outcome "" PostToolUse
+check "a result with no id writes nothing"          "$(wc -l < "$LED" | tr -d ' ')" "$before"
+check "empty stdin -> 0"   "$(printf '' | bash "$RES" >/dev/null 2>&1; echo $?)" "0"
+check "malformed -> 0"     "$(printf '{nope' | bash "$RES" >/dev/null 2>&1; echo $?)" "0"
+
+printf '\n== THE FIX-BREAK CYCLE: edits between FAILURES do not clear it ==\n'
+# test -> edit -> test -> edit -> test. Before GH-69 the intervening-edit filter
+# dismissed this at every round, so the commonest logical loop was invisible
+# however long it ran. An edit between two failures of the same call is an
+# ATTEMPT that did not work: evidence for the loop, not an exemption from it.
+reset
+rid; rcall Bash "npm test" >/dev/null; outcome "$RID" PostToolUseFailure
+rid; rcall Edit "src/a.ts" >/dev/null; outcome "$RID" PostToolUse
+rid; o=$(rcall Bash "npm test");       outcome "$RID" PostToolUseFailure
+check "one prior failure is not yet a retry loop" "$o" ""
+rid; rcall Edit "src/a.ts" >/dev/null; outcome "$RID" PostToolUse
+rid; o=$(rcall Bash "npm test")
+has "two prior failures fire, edits notwithstanding" "$o" '"permissionDecision":"ask"'
+has "  named as a retry, not as a loop"             "$o" "already FAILED 2 times"
+has "  and it says why the edits do not excuse it"  "$o" "attempt that did not work"
+check "the verdict records the signal" \
+      "$(jq -rs '[.[]|select(.kind=="verdict")][-1].signal' < "$LED")" "error-retry"
+check "  and the retry threshold, not the loop one" \
+      "$(jq -rs '[.[]|select(.kind=="verdict")][-1].threshold' < "$LED")" "2"
+
+printf '\n== CONTROL: the same shape, but the calls SUCCEED ==\n'
+# Identical interleaving; only the outcome differs. Re-running a gate after an
+# edit is work, and this is the case the edit filter exists for.
+reset
+for _ in 1 2 3; do
+  rid; o=$(rcall Bash "npm test"); outcome "$RID" PostToolUse
+  rid; rcall Edit "src/a.ts" >/dev/null; outcome "$RID" PostToolUse
+done
+check "three successful runs around edits stay silent" "$o" ""
+check "  and nothing is recorded" \
+      "$(jq -rs '[.[]|select(.kind=="verdict")]|length' < "$LED")" "0"
+
+printf '\n== POSITIVE CONTROL: make the edit filter unconditional again ==\n'
+# The defect this fixes, reinstated: move the edit check above the failure check
+# and the fix-break cycle goes silent again while the control above is unaffected.
+MUTF="${WORK}/mut-editfilter.sh"
+perl -0pe 's/      if \(fails \+ 0 >= retry\) \{\n        printf "%s %d %d\\n", "error-retry", fails, na\n        exit\n      \}\n      if \(changed > first\) exit/      if (changed > first) exit\n      if (fails + 0 >= retry) {\n        printf "%s %d %d\\n", "error-retry", fails, na\n        exit\n      }/' "$HOOK" > "$MUTF"
+check "the mutation applied" \
+      "$(grep -c 'if (changed > first) exit' "$MUTF")" "1"
+reset
+rid; jq -nc --arg s "$SID" --arg id "$RID" --arg tp "$MAIN_TP" \
+      '{session_id:$s,transcript_path:$tp,tool_name:"Bash",tool_input:{command:"npm test"},tool_use_id:$id,cwd:"/p"}' \
+    | bash "$MUTF" >/dev/null 2>&1; outcome "$RID" PostToolUseFailure
+rid; jq -nc --arg s "$SID" --arg id "$RID" --arg tp "$MAIN_TP" \
+      '{session_id:$s,transcript_path:$tp,tool_name:"Edit",tool_input:{command:"src/a.ts"},tool_use_id:$id,cwd:"/p"}' \
+    | bash "$MUTF" >/dev/null 2>&1; outcome "$RID" PostToolUse
+rid; jq -nc --arg s "$SID" --arg id "$RID" --arg tp "$MAIN_TP" \
+      '{session_id:$s,transcript_path:$tp,tool_name:"Bash",tool_input:{command:"npm test"},tool_use_id:$id,cwd:"/p"}' \
+    | bash "$MUTF" >/dev/null 2>&1; outcome "$RID" PostToolUseFailure
+rid; jq -nc --arg s "$SID" --arg id "$RID" --arg tp "$MAIN_TP" \
+      '{session_id:$s,transcript_path:$tp,tool_name:"Edit",tool_input:{command:"src/a.ts"},tool_use_id:$id,cwd:"/p"}' \
+    | bash "$MUTF" >/dev/null 2>&1; outcome "$RID" PostToolUse
+rid; o=$(jq -nc --arg s "$SID" --arg id "$RID" --arg tp "$MAIN_TP" \
+      '{session_id:$s,transcript_path:$tp,tool_name:"Bash",tool_input:{command:"npm test"},tool_use_id:$id,cwd:"/p"}' \
+    | bash "$MUTF" 2>/dev/null)
+check "with the edit filter first, the fix-break cycle is dismissed again" "$o" ""
+
 printf '\n== a DIFFERENT call never counts toward it ==\n'
 reset
 fire Bash "git status" "$MAIN_TP" >/dev/null
