@@ -110,6 +110,11 @@ consumer. They are hand-run today; wrapping the structural five in a single comm
   projects carry candidates.
 - `GH-11` — `/harness:improve` Step 5b has never produced a candidate on a real Learning Log; every part
   is unit-tested, the path is not.
+- `GH-72` — the tier-1 fan-out arm became reachable when the hook started reading `agent_id` off the
+  payload. Its bar, `na > 1`, is inherited from a time when the arm could not fire at all, so it has
+  never been measured against a real firing. The verdict line records `agents` and the threshold it
+  fired under, so the calibration arrives on its own; revisit only if the first real firings show the
+  bar is wrong.
 - _(closed 2026-09-14 — hook guards shipped in #3; `--scope user` is now the recommended install.)_
 - _(closed 2026-09-14 — both recorded as approved exemptions in `docs/skill-size-exemptions.md`: they are
   ordered orchestrators, and splitting the sequence costs more than the length does.)_

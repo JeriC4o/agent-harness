@@ -77,7 +77,11 @@ back to the signatures alone on an rc 2 without saying so: that is a path you go
 the session.
 
 **Pass the whole record to the agent, including `attribution`.** Its `complete` field says whether the
-per-agent census can be trusted, and the agent is told to read that before it reads `unattributed`. A
+per-agent census can be trusted, and the agent is told to read that before it reads `unattributed`.
+`agreement` carries the reader's comparison of the ids the hook stored against the ones it recovered, and
+`every_stored_agent_read` with `stored_agents_unread` names the agents whose transcripts it never opened —
+between them they say whether a census is wrong rather than short, and the agent has a reading for each. The
+verdict rows carry evidence of their own: a `tier: 3` row records `flagged_calls` and `unresolved_calls`. A
 summary that keeps the counts and drops the flags hands over the one shape that reads as confident and
 is not.
 

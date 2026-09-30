@@ -152,6 +152,13 @@ per_session() {
               turn_calls: ($v.turn_calls // null),
               judged: ($v.judged // null),
               reason: ($v.reason // null),
+              # This projection is an ALLOWLIST, so a field the hook writes and
+              # this list omits is dropped in silence. These two are the evidence
+              # the tier-3 verdict rests on rather than the verdict itself, and
+              # the reading instructions in agents/inspector.md and
+              # skills/inspect/SKILL.md send the reader here for them.
+              flagged_calls: ($v.flagged_calls // null),
+              unresolved_calls: ($v.unresolved_calls // null),
               outcome:
                 ( if ($v.fp // null) == null then "n/a"        # tier 2 keys on the tool, not one fp
                   elif ($after | any(.fp == $v.fp)) then "went_ahead"
@@ -229,16 +236,16 @@ done
 
 # --- --for: the single-session view /inspect reads --------------------------
 if [ -n "$FOR" ]; then
-  # WHO MADE THE CALL IS RECOVERED HERE, NOT READ OFF THE LEDGER. The ledger's
-  # own agent_id is derived in the PreToolUse hook from transcript_path, and that
-  # payload carries the PARENT transcript even for a subagent's call -- so across
-  # every ledger on a real machine the field is "main" without exception, and the
-  # fan-out arm keyed on it can never fire. Measured, not assumed; tracked in the
-  # issue this mode's sibling names. Attribution by tool_use_id does not have
-  # that problem: an id absent from the main transcript and present in
-  # subagents/agent-X.jsonl was made by agent X. It costs a scan of the session's
-  # transcripts, which is affordable exactly here -- this is /inspect, not the
-  # hot path -- and nowhere else in the cascade.
+  # WHO MADE THE CALL IS RECOVERED HERE AS WELL AS READ OFF THE LEDGER, and the
+  # two are then compared. The hook takes agent_id straight from the PreToolUse
+  # payload, so a row written by a current build names the agent that made the
+  # call; a row written by an older one says "main" whatever happened. Recovery
+  # by tool_use_id is independent of both -- an id absent from the main
+  # transcript and present in subagents/agent-X.jsonl was made by agent X -- so
+  # keeping it gives an old ledger an attribution at all and gives a current one
+  # a second witness, which is what `agreement` below reports. It costs a scan of
+  # the session's transcripts, affordable exactly here -- this is /inspect, not
+  # the hot path -- and nowhere else in the cascade.
   case "$TRANSCRIPT" in
     */subagents/agent-*.jsonl) SESSDIR=$(dirname "$(dirname "$TRANSCRIPT")") ;;
     *)                         SESSDIR="$(dirname "$TRANSCRIPT")/${SESSION}" ;;
@@ -265,19 +272,26 @@ if [ -n "$FOR" ]; then
   # cannot see it.
   NL=$'\n'
   note_bad() { BAD_TX="${BAD_TX}${BAD_TX:+$NL}$1"; }
+  # WHICH AGENTS WERE READ cannot be inferred from the ids that came back. A
+  # transcript that exists and parses but holds no tool call yields no record, so
+  # it is indistinguishable downstream from one nobody opened. Only the shell
+  # knows the difference, so it keeps the list.
+  READ_OK=""
+  note_ok() { READ_OK="${READ_OK}${READ_OK:+$NL}$1"; }
   if [ -f "$MAIN" ]; then
     ids_of "$MAIN" main || note_bad "$MAIN"
   fi
   for s in "$SESSDIR"/subagents/agent-*.jsonl; do
     [ -f "$s" ] || continue
     a=$(basename "$s" .jsonl)
-    ids_of "$s" "${a#agent-}" || note_bad "$s"
+    if ids_of "$s" "${a#agent-}"; then note_ok "${a#agent-}"; else note_bad "$s"; fi
   done
   bad_json=$(printf '%s' "$BAD_TX" | jq -Rrs 'split("\n") | map(select(. != "")) | tojson')
+  ok_json=$(printf '%s' "$READ_OK" | jq -Rrs 'split("\n") | map(select(. != "")) | tojson')
 
   view=$(jq -s --slurpfile side "$tmp" --slurpfile map "$attr" \
             --arg tr "$TRANSCRIPT" --arg led "$LEDGER" \
-            --argjson unreadable "$bad_json" --argjson main_seen \
+            --argjson unreadable "$bad_json" --argjson read_ok "$ok_json" --argjson main_seen \
             "$( [ -f "$MAIN" ] && printf 'true' || printf 'false' )" '
     ( reduce $map[] as $x ({}; .[$x.id] = $x.agent) ) as $by_id
     | ( [ .[] | select(.kind == "call") ] ) as $calls
@@ -293,6 +307,18 @@ if [ -n "$FOR" ]; then
           | select( $by_id[$calls[.].tool_use_id] == null ) ] ) as $ua_idx
     | ( $ua_idx | length ) as $ua
     | ( $ua == 0 or ($ua_idx | min) >= (($calls | length) - $ua) ) as $ua_tail
+    # The two records, joined. The hook wrote who it believed was calling; the
+    # transcripts say who was. A call with no recovered agent is in neither
+    # count -- there is nothing to compare it against, and folding it into
+    # either one would turn an absence into a confirmation or a fault.
+    | ( [ $calls[] | select($by_id[.tool_use_id] != null)
+          | { tool_use_id: .tool_use_id, stored: .agent_id,
+              recovered: $by_id[.tool_use_id] } ] ) as $pairs
+    | ( [ $pairs[] | select(.stored != .recovered) ] ) as $refs
+    | ( $calls | map(.agent_id) | unique
+        | map(select(. != null and . != "main"))
+        | map(select($read_ok | index(.) == null)) ) as $unread
+    | ( ($unread | length) == 0 ) as $every_read
     | $side[0]
       + { available: true, ledger: $led, transcript: $tr,
           # An id the transcripts do not account for is reported, never absorbed:
@@ -309,18 +335,26 @@ if [ -n "$FOR" ]; then
               main_transcript_read: $main_seen,
               unreadable_transcripts: $unreadable,
               unattributed_at_tail: $ua_tail,
-              # NOT "every transcript that should have been read was read" -- this
-              # reader has no list of what should exist, because the ledger field
-              # that would be that list is the broken one. It is the conjunction of
-              # what CAN be checked: the main transcript was opened, nothing failed
-              # to parse, and no unattributed call sits where an in-flight call
-              # cannot. The residual it does not cover is named in the comment
-              # above: a missing subagent transcript whose calls happen to be the
-              # last ones in the ledger is indistinguishable from work in flight.
-              complete: ($main_seen and ($unreadable | length) == 0 and $ua_tail),
-              # What the hook STORED, beside what the transcripts say. The two
-              # disagreeing is the defect above, visible rather than described.
-              stored_agent_ids: ( $calls | map(.agent_id) | unique ) } }
+              every_stored_agent_read: $every_read,
+              # Surfaced rather than discarded, so the leg above can be checked
+              # from the record and the report can name the agents instead of
+              # asserting an absence.
+              stored_agents_unread: $unread,
+              # Four legs, each one something this reader EXECUTED: the main
+              # transcript was opened, nothing failed to parse, every agent the
+              # ledger names had its transcript opened, and no unattributed call
+              # sits where an in-flight call cannot. That is what keeps `complete`
+              # a measurement. It still cannot separate a subagent transcript that
+              # lags from one that will never arrive -- the fourth leg turns that
+              # from invisible into merely undated.
+              complete: ($main_seen and ($unreadable | length) == 0 and $every_read and $ua_tail),
+              stored_agent_ids: ( $calls | map(.agent_id) | unique ),
+              # The list is evidence, so it is bounded; the count is the
+              # measurement, so it is not.
+              agreement: { checked: ($pairs | length),
+                           confirmed: (($pairs | length) - ($refs | length)),
+                           refuted: ($refs | length),
+                           refutations: $refs[0:5] } } }
   ' "$LEDGER") || die "could not build the session view"
 
   if [ "$AS_JSON" -eq 1 ]; then
@@ -342,12 +376,16 @@ if [ -n "$FOR" ]; then
         # right and this one is entirely wrong.
         + (if .unattributed > 0 and .complete
            then "   [\(.unattributed) call(s) with no transcript record, all at the end of the ledger -- consistent with work in flight]" else "" end) ),
+    ( .attribution | select(.agreement.refuted > 0)
+    | "  stored vs recovered: \(.agreement.checked) checked, \(.agreement.confirmed) confirmed, \(.agreement.refuted) refuted -- "
+      + ([ .agreement.refutations[] | "\(.tool_use_id) stored=\(.stored) recovered=\(.recovered)" ] | join("; ")) ),
     ( .attribution | select(.complete | not)
       | "  ATTRIBUTION IS INCOMPLETE -- the per-agent census above is wrong, not merely partial:"
         + (if .main_transcript_read then "" else " the main transcript of this session was not found." end)
         + (if (.unreadable_transcripts | length) > 0
            then " unparseable, so read only up to the bad line: " + (.unreadable_transcripts | join(", ")) + "." else "" end)
         + (if .unattributed_at_tail then "" else " unattributed calls sit in the MIDDLE of the ledger, where a call still executing cannot be. A transcript this reader never opened is the likely cause; on a session still running, a background agent whose transcript file lags would look the same." end)
+        + (if .every_stored_agent_read then "" else " the ledger names agent(s) whose transcript was never opened or would not parse: " + (.stored_agents_unread | join(", ")) + "." end)
         + " Treat the \(.unattributed) unattributed call(s) as unknown: not the main agent, not calls in flight." ),
     # "unattributed" is a bucket, not an agent, and counting it as one turns a
     # single-agent live session -- which always has a call in flight -- into a
@@ -355,7 +393,7 @@ if [ -n "$FOR" ]; then
     ( .attribution
       | (.by_agent | keys | map(select(. != "unattributed")) | length) as $n
       | select($n > 1 and (.stored_agent_ids == ["main"]))
-      | "  NOTE: the ledger stored agent_id=main for every call while the transcripts show \($n) agent(s). Live fan-out detection is blind; this recovered attribution is analysis-only." ),
+      | "  NOTE: this ledger was written by a build that stored agent_id=main for every call, while the transcripts show \($n) agent(s). Fan-out detection was blind when these rows were written; the attribution above was recovered at read time, for this session only." ),
     "",
     ( if .verdicts == 0 then
         "nothing fired -- a result, not an empty report. The cascade watched \(.calls) call(s) and flagged none."
