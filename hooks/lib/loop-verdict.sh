@@ -104,21 +104,44 @@ printf '[loop-index] coarse repeat: %s ran %s times in this turn of %s calls, un
 [ "$MODEL" != "off" ] || mark_turn
 
 # --- tier 3: the model judges what the coarse stage flagged -----------------
-detail=$(awk '
+# THE LOOP READS FROM A FILE, NEVER FROM A PIPE. Piping into `while` runs the
+# body in a subshell, so the two counters below would be discarded when it exits
+# and the row would report 0 forever while every assertion about it passed.
+# Measured on a reduced copy of the earlier shape: n=0 beside three lines of
+# detail.
+WORK=$(mktemp -d) || mark_turn
+trap 'rm -rf "$WORK"' EXIT INT TERM
+
+awk '
   { k = ""; if (match($0, /"kind":"[^"]*"/)) k = substr($0, RSTART + 8, RLENGTH - 9)
     if (k == "turn") { delete keep; m = 0; next }
     if (k != "call") next
     keep[++m] = $0 }
   END { for (i = 1; i <= m; i++) print keep[i] }' "$ledger" \
   | jq -r --arg b "$bin" 'select(.bin == $b) | "\(.tool_use_id)\t\(.transcript)"' 2>/dev/null \
-  | while IFS=$(printf '\t') read -r tuid tpath; do
-      [ -f "$tpath" ] || continue
-      jq -r --arg id "$tuid" --argjson n "$MAX_ARG" '
-        select(.message.content? != null) | .message.content
-        | if type == "array" then .[] else empty end
-        | select(.type? == "tool_use" and .id? == $id)
-        | (.input | tostring)[0:$n]' "$tpath" 2>/dev/null
-    done)
+  > "$WORK/rows"
+
+flagged=0
+unresolved=0
+: > "$WORK/detail"
+while IFS=$(printf '\t') read -r tuid tpath; do
+  # Once per flagged ROW, before any guard -- one call can contribute several
+  # lines of detail, so counting lines inflates on exactly the subagent fan-out
+  # this stage is about.
+  flagged=$((flagged+1))
+  [ -f "$tpath" ] || { unresolved=$((unresolved+1)); continue; }
+  args=$(jq -r --arg id "$tuid" --argjson n "$MAX_ARG" '
+    select(.message.content? != null) | .message.content
+    | if type == "array" then .[] else empty end
+    | select(.type? == "tool_use" and .id? == $id)
+    | (.input | tostring)[0:$n]' "$tpath" 2>/dev/null)
+  # A transcript that is on disk but carries no call with this id -- today's
+  # common shape -- hides the evidence just as completely as an absent file, so
+  # resolution is "contributed argument text", not "the file exists".
+  [ -n "$args" ] || { unresolved=$((unresolved+1)); continue; }
+  printf '%s\n' "$args" >> "$WORK/detail"
+done < "$WORK/rows"
+detail=$(cat "$WORK/detail")
 [ -n "$detail" ] || mark_turn
 command -v claude >/dev/null 2>&1 || mark_turn
 
@@ -143,8 +166,10 @@ esac
 
 jq -nc --arg b "$bin" --arg v "$v" --arg m "$MODEL" --arg r "$line1" \
        --argjson rep "$repeats" --argjson n "$turn_calls" \
+       --argjson fc "$flagged" --argjson uc "$unresolved" \
    '{ts: (now|todate), kind: "verdict", tier: 3, signal: "semantic-repeat",
-     bin: $b, repeats: $rep, turn_calls: $n, verdict: $v, model: $m, reason: $r}' \
+     bin: $b, repeats: $rep, turn_calls: $n, verdict: $v, model: $m, reason: $r,
+     flagged_calls: $fc, unresolved_calls: $uc}' \
    >> "$ledger" 2>/dev/null
 
 [ "$v" = circling ] && \

@@ -28,11 +28,26 @@ SID="sess-1"
 MAIN_TP="/tmp/proj/${SID}.jsonl"
 SUB_TP="/tmp/proj/${SID}/subagents/agent-abc123.jsonl"
 
-# Fire the hook once. $1 tool, $2 command/arg payload, $3 transcript path.
+# Fire the hook once. $1 tool, $2 command/arg payload, $3 transcript path,
+# $4 agent_id, $5 agent_type. An empty argument means the field is ABSENT from
+# the payload rather than empty in it -- the client omits all three, and a
+# present-but-empty field takes a different branch in the hook.
 fire() {
-  jq -nc --arg s "$SID" --arg t "$1" --arg c "$2" --arg tp "$3" \
+  jq -nc --arg s "$SID" --arg t "$1" --arg c "$2" --arg tp "${3:-}" \
+         --arg aid "${4:-}" --arg aty "${5:-}" \
+     '{session_id:$s, hook_event_name:"PreToolUse",
+       tool_name:$t, tool_input:{command:$c}, tool_use_id:"toolu_x"}
+      + (if $tp  == "" then {} else {transcript_path:$tp} end)
+      + (if $aid == "" then {} else {agent_id:$aid}       end)
+      + (if $aty == "" then {} else {agent_type:$aty}     end)' \
+  | bash "$HOOK" 2>/dev/null
+}
+# $3 is the agent_id as raw JSON: --arg can only produce a string, and the
+# shapes worth testing are the ones that are not one.
+fire_aid_json() {
+  jq -nc --arg s "$SID" --arg t "$1" --arg c "$2" --arg tp "$MAIN_TP" --argjson aid "$3" \
      '{session_id:$s, transcript_path:$tp, hook_event_name:"PreToolUse",
-       tool_name:$t, tool_input:{command:$c}, tool_use_id:"toolu_x"}' \
+       tool_name:$t, tool_input:{command:$c}, tool_use_id:"toolu_x", agent_id:$aid}' \
   | bash "$HOOK" 2>/dev/null
 }
 fire_err() {
@@ -245,22 +260,83 @@ fire Read "src/a.ts" "$MAIN_TP" >/dev/null
 o=$(fire Bash "npm test" "$MAIN_TP")
 has "a non-mutating call in between does NOT clear the loop" "$o" '"permissionDecision":"ask"'
 
-printf '\n== fan-out: one hash, several agents, is a different finding ==\n'
+printf '\n== the agent comes from the PAYLOAD, not from the transcript path ==\n'
 reset
-fire Bash "rg needle" "$MAIN_TP" >/dev/null
+fire Bash "rg needle" "$MAIN_TP" "a1b2c3" "general-purpose" >/dev/null
+row=$(cat "$LED")
+has "the payload's agent_id is what the row carries" "$row" '"agent_id":"a1b2c3"'
+has "  agent_type rides beside it" "$row" '"agent_type":"general-purpose"'
+has "  and the pointer names the subagent's own file" "$row" \
+    "\"transcript\":\"/tmp/proj/${SID}/subagents/agent-a1b2c3.jsonl\""
+reset
+fire Bash "rg needle" "$MAIN_TP" "a1b2c3" >/dev/null
+check "an absent agent_type takes the file's absent-field convention" \
+      "$(jq -r '.agent_type' < "$LED")" "-"
+reset
+fire Bash "rg needle" "" "a1b2c3" >/dev/null
+check "with no transcript_path there is no pointer to derive" \
+      "$(jq -r '.transcript' < "$LED")" "-"
+
+printf '\n== AC6: the pointer is stored without being stat-ed ==\n'
+# At PreToolUse the subagent's transcript may not be on disk yet -- the first
+# call in a subagent precedes the file. Storing the pointer anyway is the
+# decision; a [ -f ] guard here would store a knowingly-wrong path instead.
+reset
+fire Bash "rg needle" "$MAIN_TP" "notyet1" >/dev/null
+derived=$(jq -r '.transcript' < "$LED")
+check "the derived pointer is stored" "$derived" "/tmp/proj/${SID}/subagents/agent-notyet1.jsonl"
+check "  with nothing at the other end of it" \
+      "$( [ ! -e "$derived" ] && echo absent || echo present )" "absent"
+
+printf '\n== AC5: a subagent-SHAPED transcript_path is not an agent_id ==\n'
+# The pre-fix hook read the agent out of this path. In production that path is
+# always the PARENT's, so the read never once succeeded -- and a payload of this
+# shape, carrying no agent_id, must be recorded as the main thread.
+reset
 fire Bash "rg needle" "$SUB_TP" >/dev/null
-o=$(fire Bash "rg needle" "/tmp/proj/${SID}/subagents/agent-zzz999.jsonl")
+check "no agent_id in the payload -> main" "$(jq -r '.agent_id' < "$LED")" "main"
+check "  and the path is stored verbatim, not re-derived" \
+      "$(jq -r '.transcript' < "$LED")" "$SUB_TP"
+
+printf '\n== a malformed agent_id degrades to main, and still writes a row ==\n'
+# Without the type guard a non-string agent_id aborts the single hot-path jq and
+# the hook exits 0 having written NOTHING -- measured against the pre-guard build.
+# Both builds exit 0, so the difference is invisible to an exit-status assertion
+# and these read the ledger instead.
+reset
+fire_aid_json Bash "rg needle" '12345' >/dev/null
+row=$(cat "$LED" 2>/dev/null)
+check "a number is not an agent" "$(printf '%s' "$row" | jq -r '.agent_id' 2>/dev/null)" "main"
+check "  the pointer is left alone" "$(printf '%s' "$row" | jq -r '.transcript' 2>/dev/null)" "$MAIN_TP"
+check "  and a row was written at all" "$( [ -n "$row" ] && echo yes || echo no )" "yes"
+reset
+fire_aid_json Bash "rg needle" '["x"]' >/dev/null
+row=$(cat "$LED" 2>/dev/null)
+check "an array is not either" "$(printf '%s' "$row" | jq -r '.agent_id' 2>/dev/null)" "main"
+check "  and that row was written too" "$( [ -n "$row" ] && echo yes || echo no )" "yes"
+
+printf '\n== fan-out: one hash, several agents, is a different finding ==\n'
+# Production shape: every payload carries the PARENT's transcript_path, because
+# that is what the client sends for a call made inside a subagent. The rows
+# differ in agent_id and in nothing else.
+reset
+fire Bash "rg needle" "$MAIN_TP" "a1" "general-purpose" >/dev/null
+fire Bash "rg needle" "$MAIN_TP" "a2" "general-purpose" >/dev/null
+o=$(fire Bash "rg needle" "$MAIN_TP" "a3" "general-purpose")
 has "three agents, same call -> a decision" "$o" '"permissionDecision":"ask"'
 has "  reported as fan-out, not as a loop" "$o" "fan-out duplication"
 has "  naming how many agents" "$o" "3 different agents"
+check "  and every pointer resolves under the ONE parent transcript" \
+      "$(jq -rs "[.[] | select(.kind==\"call\") | .transcript
+                  | select(startswith(\"/tmp/proj/${SID}/subagents/agent-\"))] | length" < "$LED")" "3"
 
 printf '\n== agent_id is a FIELD, never part of the key ==\n'
 # If agent_id were in the key, the two lines above would not have matched and
 # the fan-out case could not exist at all. Assert the ledger distinguishes them.
 reset
-fire Bash "rg needle" "$MAIN_TP" >/dev/null
-fire Bash "rg needle" "$SUB_TP" >/dev/null
-check "two agents recorded" "$(jq -r '.agent_id' < "$LED" | sort -u | tr '\n' ',' )" "abc123,main,"
+fire Bash "rg needle" "$MAIN_TP" "a1" >/dev/null
+fire Bash "rg needle" "$MAIN_TP" "a2" >/dev/null
+check "two agents recorded" "$(jq -r '.agent_id' < "$LED" | sort -u | tr '\n' ',' )" "a1,a2,"
 check "under ONE fingerprint" "$(jq -r '.fp' < "$LED" | sort -u | wc -l | tr -d ' ')" "1"
 
 printf '\n== the window bounds what is counted ==\n'

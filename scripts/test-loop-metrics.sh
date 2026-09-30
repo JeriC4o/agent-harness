@@ -241,12 +241,14 @@ FL="$FD/loops/sess1.jsonl"
 # A transcript line as the client writes it: the tool_use id is the join key.
 tu()    { jq -nc --arg i "$2" \
           '{message:{content:[{type:"tool_use",id:$i,name:"Bash",input:{command:"x"}}]}}' >> "$1"; }
-# A ledger call as the HOOK writes it -- agent_id "main" on every row, which is
-# what the live hook actually stores for a subagent's call too. The fixture has
-# to carry that wrong value, or the recovery under test has nothing to correct.
-fcall() { jq -nc --arg id "$1" \
-          '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:"main",tool:"Bash",fp:"f",
-            bin:"Bash:grep",tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:"/Users/me/work/alpha"}' >> "$FL"; }
+# A ledger call as the HOOK writes it. agent_id defaults to "main" -- the value
+# the live hook stored for every row, a subagent's included, so the recovery
+# under test has something to correct. A caller that passes one is writing what a
+# post-fix hook would have stored, which is what lets the two records disagree.
+acall() { jq -nc --arg id "$1" --arg a "$2" \
+          '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:$a,tool:"Bash",fp:"f",
+            bin:"Bash:grep",tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:"/Users/me/work/alpha"}' >> "$3"; }
+fcall() { acall "$1" "${2:-main}" "$FL"; }
 : > "$MAINTX"; : > "$SUBTX"; : > "$FL"
 tu "$MAINTX" t1; tu "$MAINTX" t2
 tu "$SUBTX" t3
@@ -297,6 +299,20 @@ check "  the count it fired at"      "$(printf '%s' "$r" | jq -r '.rows[0].repea
 check "  the threshold it fired under" \
       "$(printf '%s' "$r" | jq -r '.rows[0].settings.min_bin_repeats')" "8"
 
+# The counters are written to the LEDGER by the hook and asserted there by
+# hooks/lib/test-loop-verdict.sh. That says nothing about whether they survive
+# the reader: the $rows projection is an allowlist, and the inspector never opens
+# the ledger -- it reads this JSON. Selected by tier rather than by index so the
+# assertion does not depend on row order.
+jq -nc '{ts:"2026-09-26T00:00:02Z",kind:"verdict",tier:3,signal:"semantic-repeat",
+         bin:"Bash:grep",repeats:8,turn_calls:9,verdict:"progress",model:"m",
+         reason:"PROGRESS ok",flagged_calls:8,unresolved_calls:5}' >> "$FL"
+r=$(f "$MAINTX")
+check "a tier-3 row reaches the reader with the evidence it rested on" \
+      "$(printf '%s' "$r" | jq -r '.rows[] | select(.tier == 3) | .flagged_calls')" "8"
+check "  and with how much of that evidence was missing" \
+      "$(printf '%s' "$r" | jq -r '.rows[] | select(.tier == 3) | .unresolved_calls')" "5"
+
 printf '\n== --for: a positive control per guard ==\n'
 # Each control deletes ONE guard and requires the damage to reappear. Without
 # them every assertion above passes byte-identically with the guard removed.
@@ -308,7 +324,7 @@ check "without the subagent-path arm, a subagent transcript finds no ledger at a
       "$(HARNESS_LOOP_DIR="$FD/loops" bash "$M1" --for "$SUBTX" --json | jq -r '.available')" "false"
 
 M2="$W/mut-no-subagent-scan.sh"
-perl -0pe 's/ids_of "\$s" "\$\{a#agent-\}" \|\| note_bad "\$s"/:/' "$READER" > "$M2"
+perl -0pe 's/if ids_of "\$s" "\$\{a#agent-\}"; then note_ok "\$\{a#agent-\}"; else note_bad "\$s"; fi/:/' "$READER" > "$M2"
 check "the mutation applied" "$(grep -c 'ids_of "\$s"' "$M2")" "0"
 r=$(HARNESS_LOOP_DIR="$FD/loops" bash "$M2" --for "$MAINTX" --json)
 check "without the subagent scan, the subagent's calls vanish from the census" \
@@ -477,6 +493,10 @@ done
 r=$(HARNESS_LOOP_DIR="$CD/loops" bash "$READER" --for "$CTX" --json)
 check "no call is unattributed"    "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "0"
 check "  the tail test holds"      "$(printf '%s' "$r" | jq -r '.attribution.unattributed_at_tail')" "true"
+# A ledger written before the hook could tell the agents apart names only main,
+# so the new leg has nothing to require and must not move this verdict.
+check "  the read test holds vacuously, the ledger naming only main" \
+      "$(printf '%s' "$r" | jq -r '.attribution.every_stored_agent_read')" "true"
 check "  and the census is complete" "$(printf '%s' "$r" | jq -r '.attribution.complete')" "true"
 out=$(HARNESS_LOOP_DIR="$CD/loops" bash "$READER" --for "$CTX")
 case "$out" in
@@ -523,6 +543,123 @@ perl -0pe 's/\$\{BAD_TX:\+\$NL\}/\$\{BAD_TX:+\}/' "$READER" > "$M9"
 check "the mutation applied" "$(grep -c 'BAD_TX:+\$NL' "$M9")" "0"
 check "with the separator stripped, three paths collapse into one" \
       "$(HARNESS_LOOP_DIR="$TD/loops" bash "$M9" --for "$TTX" --json | jq -r '.attribution.unreadable_transcripts | length')" "1"
+
+printf '\n== --for: the stored agent_id is CHECKED against the transcripts, not just shown ==\n'
+# Two records answer the same question from opposite ends -- the hook wrote who
+# it thought was calling, the transcripts say who was. A reader that only prints
+# the stored value can be wrong in exactly one direction and never say so.
+AG="$W/agree"; mkdir -p "$AG/loops" "$AG/projects/-proj/sess8/subagents"
+AGTX="$AG/projects/-proj/sess8.jsonl"; AGL="$AG/loops/sess8.jsonl"
+AGSUB="$AG/projects/-proj/sess8/subagents"
+: > "$AGTX"; : > "$AGL"
+tu "$AGTX" a1; tu "$AGTX" a2
+tu "$AGSUB/agent-AAA.jsonl" a3; tu "$AGSUB/agent-AAA.jsonl" a4
+tu "$AGSUB/agent-BBB.jsonl" a5
+acall a1 main "$AGL"; acall a2 AAA "$AGL"; acall a3 AAA "$AGL"
+acall a4 main "$AGL"; acall a5 BBB "$AGL"; acall a9 main "$AGL"
+r=$(HARNESS_LOOP_DIR="$AG/loops" bash "$READER" --for "$AGTX" --json)
+check "every call with a recovered agent is checked" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.checked')" "5"
+check "  the ones the hook got right are confirmed" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.confirmed')" "3"
+check "  the ones it got wrong are refuted" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.refuted')" "2"
+check "  and a refutation names the call it is about" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.refutations[0].tool_use_id')" "a2"
+check "  carrying what was stored" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.refutations[0].stored')" "AAA"
+check "  and what was recovered" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.refutations[0].recovered')" "main"
+check "a call no transcript accounts for stays unattributed" \
+      "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "1"
+# The comparison has nothing to say about a call it could not recover, so
+# counting it either way would turn an absence into a confirmation or a fault.
+check "  and is counted in none of the three" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.checked + .attribution.unattributed == .calls')" "true"
+check "every stored agent had its transcript read" \
+      "$(printf '%s' "$r" | jq -r '.attribution.every_stored_agent_read')" "true"
+check "  so none is listed as unread" \
+      "$(printf '%s' "$r" | jq -r '.attribution.stored_agents_unread | length')" "0"
+out=$(HARNESS_LOOP_DIR="$AG/loops" bash "$READER" --for "$AGTX")
+has "the human report names a disagreeing call" "$out" "a2"
+has "  with both values, so it can be gone and checked" "$out" "stored=AAA recovered=main"
+case "$out" in
+  *"NOTE: this ledger was written"*) bad "the blind-ledger note fired on a ledger carrying real agent ids" ;;
+  *)                                 ok  "and the blind-ledger note is withheld" ;;
+esac
+pre=$(HARNESS_LOOP_DIR="$FD/loops" bash "$READER" --for "$MAINTX")
+has "the note still fires where every stored row says main" "$pre" "written by a build that stored agent_id=main"
+has "  and dates the blindness to that build, not this reader" "$pre" "when these rows were written"
+has "  saying the attribution beside it was recovered here" "$pre" "recovered at read time"
+
+printf '\n== --for: the refutation list is capped; the count is not ==\n'
+# A session that fans out wide can disagree on every call. The list is evidence,
+# so it is bounded; the count is the measurement, so it is not.
+CP="$W/cap"; mkdir -p "$CP/loops" "$CP/projects/-proj/sess9/subagents"
+CPTX="$CP/projects/-proj/sess9.jsonl"; CPL="$CP/loops/sess9.jsonl"
+: > "$CPTX"; : > "$CPL"; : > "$CP/projects/-proj/sess9/subagents/agent-ZZZ.jsonl"
+for i in 1 2 3 4 5 6 7; do tu "$CPTX" "r$i"; acall "r$i" ZZZ "$CPL"; done
+r=$(HARNESS_LOOP_DIR="$CP/loops" bash "$READER" --for "$CPTX" --json)
+check "seven disagreements are seven refutations" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.refuted')" "7"
+check "  of which the list carries five" \
+      "$(printf '%s' "$r" | jq -r '.attribution.agreement.refutations | length')" "5"
+# Opened, parsed, and it held no tool call -- which is why the list of transcripts
+# read cannot be inferred from the ids recovered out of them.
+check "a transcript that parses and yields no id still counts as read" \
+      "$(printf '%s' "$r" | jq -r '.attribution.every_stored_agent_read')" "true"
+
+printf '\n== --for: a stored agent whose transcript was never opened is named ==\n'
+# The live shape: a subagent whose transcript file lags. Every other completeness
+# test passes here, so a leg that cannot explain its own false branch would open
+# the report with an alarm and point the reader at a count of zero.
+UR="$W/unread"; mkdir -p "$UR/loops" "$UR/projects/-proj/sess10"
+URTX="$UR/projects/-proj/sess10.jsonl"; URL="$UR/loops/sess10.jsonl"
+: > "$URTX"; : > "$URL"
+tu "$URTX" m1; tu "$URTX" m2
+acall m1 main "$URL"; acall m2 CCC "$URL"
+r=$(HARNESS_LOOP_DIR="$UR/loops" bash "$READER" --for "$URTX" --json)
+check "the main transcript WAS read"   "$(printf '%s' "$r" | jq -r '.attribution.main_transcript_read')" "true"
+check "  nothing failed to parse"      "$(printf '%s' "$r" | jq -r '.attribution.unreadable_transcripts | length')" "0"
+check "  no call is unattributed"      "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "0"
+check "  yet a stored agent was never read" \
+      "$(printf '%s' "$r" | jq -r '.attribution.every_stored_agent_read')" "false"
+check "  and the record names which"   "$(printf '%s' "$r" | jq -r '.attribution.stored_agents_unread | join(",")')" "CCC"
+check "  so the census is not complete" "$(printf '%s' "$r" | jq -r '.attribution.complete')" "false"
+out=$(HARNESS_LOOP_DIR="$UR/loops" bash "$READER" --for "$URTX")
+has "the report says the census is wrong" "$out" "ATTRIBUTION IS INCOMPLETE"
+has "  gives this leg's own reason"       "$out" "whose transcript was never opened"
+has "  and names the agent"               "$out" "CCC"
+
+printf '\n== --for a positive control per new guard ==\n'
+M11="$W/mut-no-agreement.sh"
+perl -0pe 's/select\(\.stored != \.recovered\)/select(false)/' "$READER" > "$M11"
+check "the mutation applied" "$(grep -c 'select(.stored != .recovered)' "$M11")" "0"
+check "without the comparison, two wrong stored ids read as agreement" \
+      "$(HARNESS_LOOP_DIR="$AG/loops" bash "$M11" --for "$AGTX" --json | jq -r '.attribution.agreement.refuted')" "0"
+case "$(HARNESS_LOOP_DIR="$AG/loops" bash "$M11" --for "$AGTX")" in
+  *"stored=AAA recovered=main"*) bad "the control did not remove the disagreement line" ;;
+  *)                             ok  "and the human report stops naming the call it got wrong" ;;
+esac
+
+M12="$W/mut-no-read-leg.sh"
+perl -0pe 's/\$every_read and \$ua_tail/\$ua_tail/' "$READER" > "$M12"
+check "the mutation applied" "$(grep -c 'every_read and \$ua_tail' "$M12")" "0"
+check "without the leg, a ledger naming an unread agent reads as complete" \
+      "$(HARNESS_LOOP_DIR="$UR/loops" bash "$M12" --for "$URTX" --json | jq -r '.attribution.complete')" "true"
+
+M13="$W/mut-no-unread-clause.sh"
+perl -0pe 's/\+ \(if \.every_stored_agent_read then "" else [^\n]*end\)\n//' "$READER" > "$M13"
+check "the mutation applied" "$(grep -c 'whose transcript was never opened' "$M13")" "0"
+# The reason arm comes FIRST. Asking only whether the header and the closing
+# sentence are both present matches the unmutated reader too, which prints the
+# reason between them -- a control that passes whether or not it mutated.
+case "$(HARNESS_LOOP_DIR="$UR/loops" bash "$M13" --for "$URTX")" in
+  *"whose transcript was never opened"*) bad "the control did not remove the fourth clause" ;;
+  *"ATTRIBUTION IS INCOMPLETE"*"Treat the 0 unattributed call(s)"*)
+      ok "without the fourth clause the alarm returns with no reason and a count of zero" ;;
+  *)  bad "the control did not reproduce the reasonless INCOMPLETE line" ;;
+esac
 
 printf '\n== --for: usage errors are loud, and say WHICH ==\n'
 # `bash <script>` also exits 2 on a SYNTAX error, so an exit-status assertion on

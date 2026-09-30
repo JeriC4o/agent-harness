@@ -63,7 +63,7 @@ event actually a loop?
 | `error-retry-loop` | the same call fails repeatedly with no change to the input | each retry followed a visible correction — the second attempt had a different fingerprint |
 | `repeated-agent-spawn` | a review or design loop burned its round cap without converging | the spawns were independent parallel work |
 | | **`gap_seconds` separates these two, and it is on the row for that purpose.** A `max` of seconds means they were launched together — a fan-out, whatever the count. Gaps of minutes are re-entries: each spawn waited for the last to come back, which is what a round cap looks like from outside. Read `min` too: one wide gap in an otherwise tight run is a fan-out that got repeated, not a loop. | |
-| | **"Fan-out" dismisses the SPAWN, never what the spawned agents then did.** Launching several agents in parallel is legitimate; several of them making the *identical* call is duplicated work that this dismissal would otherwise wave through — and it is invisible to any per-agent view, because each sibling made that call exactly once. **The live hook cannot see it either** — its `agent_id` is derived from a transcript path the payload reports as the parent's, and on every ledger measured so far the field reads `main` for every call, so the arm keyed on it does not fire. The ledger you are given recovers the real attribution by `tool_use_id` at read time; that is where to look. If a fan-out row here looks clean, it means the spawns were justified, not that the work inside them was distinct. | |
+| | **"Fan-out" dismisses the SPAWN, never what the spawned agents then did.** Launching several agents in parallel is legitimate; several of them making the *identical* call is duplicated work that this dismissal would otherwise wave through — and it is invisible to any per-agent view, because each sibling made that call exactly once. **The live hook sees it on a ledger this build wrote** — `agent_id` comes from the PreToolUse payload, which names the subagent on a call made inside one, so the arm keyed on it fires. Ledgers written earlier carry one id for everything; the reader recovers the real attribution by `tool_use_id` at read time either way, and `attribution.agreement` tells you which of the two you are holding. If a fan-out row here looks clean, it means the spawns were justified, not that the work inside them was distinct. | |
 | `turn-depth-spike` | one turn took many model calls circling the same sub-goal | the turn was legitimately long — a big migration, a broad sweep |
 | | **Settle this one by reading the turn.** Separating the two requires the ORDER of what the turn did, which the summary row does not carry and the transcript does. Never settle it from the depth figure, and never from `cache_read`, which trends with context size rather than with struggle — a late turn reads more cache than an early one for no reason but its position. | |
 | `deferral-candidate` | a ticket was filed from inside a turn that had already gone round and round, and the work it names is the work that was not converging | the ticket is genuine scope discovered while working, filed deliberately rather than as an exit |
@@ -114,19 +114,41 @@ the tool a fan-out question is about.
 ### Attribution
 
 `attribution.by_agent` is **recovered by the reader**, by finding each `tool_use_id` in the session's
-transcripts. `attribution.stored_agent_ids` is what the hook wrote, and where it reads `main` for everything
-the two disagreeing is the known defect, not a signal about this session. Use the recovered figures.
+transcripts. `attribution.stored_agent_ids` is what the hook wrote. Two independent records of one fact, so
+prefer the recovered figures and use the stored ones as the thing being checked.
+
+**`attribution.agreement` is that check, already done for you.** `checked` counts the calls that had both a
+stored id and a recovered one, `confirmed` those where the two matched, `refuted` those where they differed;
+a call with no recovered agent is in none of the three, because there is nothing to compare it against.
+`agreement.refutations` carries up to five of the disagreements with `tool_use_id`, `stored` and `recovered`
+on each, so read `refuted` for the size and the list for evidence you can check against the run. A ledger
+whose stored ids are all one value and whose `refuted` is high is the record of an older build, and says
+nothing about this session's agents; disagreement on a ledger whose stored ids vary is a live defect and
+belongs in your report with the ids named.
+
+**`attribution.every_stored_agent_read` and `attribution.stored_agents_unread` are one fact in two shapes.**
+The list names each agent the ledger mentions whose transcript this reader never opened or could not parse;
+the flag is true exactly when that list is empty. **A non-empty list means the `by_agent` figures are WRONG,
+not merely short** — those calls were counted under whatever the reader could see instead. Name the agents
+from the list rather than reporting a shortfall.
 
 **Check `attribution.complete` before you read `unattributed`.** When it is false the census is **wrong
-rather than partial**: a transcript was missing, stopped parsing part-way, or unattributed calls sit where
-work in flight cannot be. `main_transcript_read`, `unreadable_transcripts` and `unattributed_at_tail` say
-which. Never read a large `unattributed` as fan-out, and never read it as the main agent's work.
+rather than partial**: a transcript was missing, stopped parsing part-way, an agent the ledger names went
+unread, or unattributed calls sit where work in flight cannot be. `main_transcript_read`,
+`unreadable_transcripts`, `stored_agents_unread` and `unattributed_at_tail` say which. Never read a large
+`unattributed` as fan-out, and never read it as the main agent's work.
 
-**`complete: true` is not a guarantee that attribution succeeded** — it is the conjunction of the three
-things the reader can actually check. The residual it cannot see is a subagent transcript that is simply
-absent while the calls it would have explained happen to be the last in the ledger, which is
-indistinguishable from work in flight. So an `unattributed` count that is large, or large relative to the
-session, is worth a sentence in your report even when `complete` is true.
+**`complete: true` is not a guarantee that attribution succeeded** — each of its four legs is something the
+reader executed, and what stays outside them is a subagent transcript that is simply absent while the calls
+it would have explained happen to be the last in the ledger, which is indistinguishable from work in flight.
+So an `unattributed` count that is large, or large relative to the session, is worth a sentence in your
+report even when `complete` is true.
+
+**A `tier: 3` verdict carries `flagged_calls` and `unresolved_calls`** — how many calls that stage was asked
+to judge, and how many of those it could recover no transcript text for. They are the evidence the verdict
+rests on, not the verdict itself: a call whose stored transcript is missing counts as unresolved, and so does
+one whose transcript is on disk without that `tool_use_id` in it. `unresolved_calls` at or near
+`flagged_calls` means the model judged from little, so say so when you cite the verdict.
 
 ## Step 3: Locate the harness defect, not the symptom
 

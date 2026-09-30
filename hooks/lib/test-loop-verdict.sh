@@ -53,17 +53,23 @@ reset() { rm -rf "$HARNESS_LOOP_DIR"; mkdir -p "$HARNESS_LOOP_DIR"; : > "$TP"; :
 
 # A real call, through the real tier-1 hook, so `bin` is derived in production.
 CALLN=0
-call() { # $1 command
+call() { # $1 command, $2 agent_id (empty = main thread), $3 "noline" = write no transcript line
   # ONE id for both sides. The ledger stores a pointer and the transcript holds
   # the detail; if the two ids differ the resolution silently finds nothing, and
   # every model-stage assertion then fails for a fixture reason rather than a
   # code one.
+  #
+  # The two optional arguments build the two ways resolution can fail. $2 makes
+  # tier 1 store a pointer at the subagent's own transcript, which nothing has
+  # written yet -- an absent file. $3 leaves the id out of a transcript that IS
+  # on disk, which is the shape a [ -f ] guard cannot tell from a hit.
   CALLN=$((CALLN+1)); id="tu$CALLN"
-  jq -nc --arg s "$SID" --arg c "$1" --arg tp "$TP" --arg id "$id" \
+  jq -nc --arg s "$SID" --arg c "$1" --arg tp "$TP" --arg id "$id" --arg aid "${2:-}" \
      '{session_id:$s, transcript_path:$tp, hook_event_name:"PreToolUse",
-       tool_name:"Bash", tool_input:{command:$c}, tool_use_id:$id, cwd:"/p"}' \
+       tool_name:"Bash", tool_input:{command:$c}, tool_use_id:$id, cwd:"/p"}
+      + (if $aid == "" then {} else {agent_id:$aid} end)' \
   | bash "$IDX" >/dev/null 2>&1
-  jq -nc --arg a "$1" --arg id "$id" \
+  [ "${3:-}" = noline ] || jq -nc --arg a "$1" --arg id "$id" \
      '{message:{content:[{type:"tool_use", id:$id, input:{command:$a}}]}}' >> "$TP"
 }
 stop()     { jq -nc --arg s "$SID" '{session_id:$s,hook_event_name:"Stop"}' | bash "$HOOK" 2>/dev/null; }
@@ -175,6 +181,73 @@ check "  but the coarse verdict stands"                     "$(v2)" "1"
 # Back to off EXPLICITLY. `unset` would hand the rest of the suite back to the
 # ambient environment, which is the hazard the preamble exists to close.
 export HARNESS_T3_MODEL=off; unset STUB_SEEN
+
+printf '\n== tier 3 records the VOLUME of evidence it answered on ==\n'
+# The section above turned the model off again, so this one turns it back on --
+# without that the stage never runs, no tier-3 row is written, and every
+# assertion here would fail for a fixture reason. The value is any name that is
+# not "off"; the stub answers whatever it is handed.
+#
+# "Resolved" is "this call contributed argument text", never "its file exists".
+# The stored pointer can name a file that is on disk and holds no such call --
+# the common shape for a subagent call -- and only the stronger question can
+# tell that from a hit.
+export HARNESS_T3_MODEL=stub-model
+t3_of() { jq -rs --arg f "$1" '[.[]|select(.kind=="verdict" and .tier==3)][0][$f]' < "$LED"; }
+
+reset
+for i in 1 2 3 4 5; do call "grep -rn arg$i"; done
+for i in 6 7 8;     do call "grep -rn arg$i" "" noline; done
+stop >/dev/null
+check "a verdict is still written on partial evidence" "$(v3)" "1"
+check "  flagged_calls counts every flagged row"       "$(t3_of flagged_calls)" "8"
+check "  unresolved_calls counts the three that gave nothing" "$(t3_of unresolved_calls)" "3"
+
+reset; n_of 8 "grep -rn"
+stop >/dev/null
+check "with every flagged call resolved the counter is 0" "$(t3_of unresolved_calls)" "0"
+check "  and flagged_calls is unmoved by that"            "$(t3_of flagged_calls)" "8"
+
+printf '\n== a transcript that EXISTS but holds no such call is unresolved ==\n'
+# [ -f "$tpath" ] || continue passes here -- the file is the parent's and is on
+# disk -- so a resolution notion built on it counts this call as evidence the
+# model never saw.
+reset
+for i in 1 2 3 4 5 6 7; do call "grep -rn arg$i"; done
+call "grep -rn arg8" "" noline
+stop >/dev/null
+check "the pointer's file is on disk"       "$( [ -f "$TP" ] && echo yes || echo no )" "yes"
+check "  yet that call counts as unresolved" "$(t3_of unresolved_calls)" "1"
+
+printf '\n== a derived pointer that names nothing is unresolved too ==\n'
+reset
+for i in 1 2 3 4 5 6 7; do call "grep -rn arg$i"; done
+call "grep -rn arg8" "sub9"
+sub_ptr=$(jq -rs '[.[]|select(.kind=="call")][-1].transcript' < "$LED")
+stop >/dev/null
+check "the subagent's transcript is not there" \
+      "$( [ ! -e "$sub_ptr" ] && echo absent || echo present )" "absent"
+check "  so its call resolved nothing"         "$(t3_of unresolved_calls)" "1"
+
+printf '\n== the counter records; it decides nothing ==\n'
+reset; n_of 8 "grep -rn"
+STUB_ANSWER="PROGRESS each call searched a different module" stop >/dev/null
+full_v=$(t3_of verdict); full_u=$(t3_of unresolved_calls)
+reset
+for i in 1 2 3 4 5; do call "grep -rn arg$i"; done
+for i in 6 7 8;     do call "grep -rn arg$i" "" noline; done
+STUB_ANSWER="PROGRESS each call searched a different module" stop >/dev/null
+check "the same answer yields the same verdict on partial evidence" "$(t3_of verdict)" "$full_v"
+# Two absences compare equal, so the invariance above needs the value pinned.
+check "  and that verdict is a real one" "$full_v" "progress"
+# Without this the invariance above is satisfied by two turns that carried the
+# SAME evidence, which is a comparison of a thing with itself.
+check "  and the two turns really did differ in evidence" \
+      "$( [ "$full_u" != "$(t3_of unresolved_calls)" ] && echo differ || echo same )" "differ"
+
+# Back to off explicitly, for the reason the comment above the model section
+# gives: unset would hand the rest of the suite to the ambient environment.
+export HARNESS_T3_MODEL=off
 
 printf '\n== the threshold is tunable ==\n'
 reset; n_of 3 "grep -rn"

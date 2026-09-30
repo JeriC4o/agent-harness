@@ -14,7 +14,12 @@
 # `transcript` is stored PER ENTRY and is not derivable from session_id: a
 # subagent writes its own file (<session-id>/subagents/agent-*.jsonl), so one
 # session maps to several transcripts, and without this field a cross-agent
-# finding cannot be expanded into detail later.
+# finding cannot be expanded into detail later. The payload's transcript_path is
+# the PARENT's even for a call made inside a subagent, so the stored pointer is
+# that path with the payload's own agent_id folded back in; with no agent_id
+# there is nothing to fold and it is stored unchanged. The pointer is NOT
+# checked against the disk -- at PreToolUse the subagent's file may not exist
+# yet, and the first call in a subagent is exactly when it does not.
 #
 # `cwd` is stored because the ledger is GLOBAL -- one directory for every project
 # -- and pooling projects is meaningless: thresholds that fit one codebase say
@@ -31,6 +36,16 @@
 #   one hash, N distinct agent_ids   -> fan-out duplication (siblings each
 #                                       doing the same work once, burning N x
 #                                       the tokens while no local detector fires)
+#
+# agent_id is READ FROM THE PAYLOAD, and it is the only field that can tell a
+# subagent call from a main-thread one. The agent TYPE stored beside it cannot:
+# the client sends that on the main thread of an --agent session too, so a
+# detector branching on it would read that thread as a subagent. It is a
+# diagnostic here and nothing reads it -- which is why the token appears
+# exactly once in this file, in the ledger entry. transcript_path cannot serve
+# either: it is the parent's on both. A malformed agent_id degrades to "main"
+# rather than aborting, because the single jq below carries the whole entry and
+# its failure would drop the row from the index altogether.
 #
 # NO TRUNCATION. A line carries no content, so a 500-call session is 500 short
 # lines; the hot path reads the tail. That makes the window a parameter of
@@ -73,15 +88,17 @@ out=$(printf '%s' "$in" | jq -r -L "${HERE_JQ}" 'include "bin-of";
             | reduce .[] as $c (5381; ((. * 33) + $c) % 4294967296)
             | tostring;
     (.transcript_path // "-") as $tp
-    | (if ($tp | test("/subagents/agent-.*\\.jsonl$"))
-       then ($tp | sub("^.*/agent-"; "") | sub("\\.jsonl$"; ""))
-       else "main" end) as $agent
+    | (if (.agent_id | type) == "string" then .agent_id else "" end) as $aid
+    | (if $aid == "" then "main" else $aid end) as $agent
+    | (if $aid == "" or $tp == "-" then $tp
+       else (($tp | sub("\\.jsonl$"; "")) + "/subagents/agent-" + $aid + ".jsonl") end) as $tref
     | ((.tool_input // {}) | fp) as $f
     | (.tool_name // "-") as $tool
     | ([(.session_id // "-"), $tool, $f, $agent] | @tsv),
-      ({ts: (now | todate), kind: "call", agent_id: $agent, tool: $tool, fp: $f,
+      ({ts: (now | todate), kind: "call", agent_id: $agent,
+        agent_type: (.agent_type // "-"), tool: $tool, fp: $f,
         bin: ((.tool_input // {}) | bin_for($tool)),
-        tool_use_id: (.tool_use_id // "-"), transcript: $tp,
+        tool_use_id: (.tool_use_id // "-"), transcript: $tref,
         cwd: (.cwd // "-")} | tojson)
   ' 2>/dev/null) || exit 0
 [ -n "$out" ] || exit 0
