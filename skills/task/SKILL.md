@@ -1,7 +1,7 @@
 ---
 name: task
 description: "Full task workflow from a user description OR a ticket key: interview → spec → design → design-review → impl → verify → self-review. Steps are strictly ordered and cannot be skipped."
-disable-model-invocation: true
+when_to_use: "Activate when the user asks for implementation work that needs a spec and a design before any code: a new feature, a ticket key to implement, a change spanning several files or modules. The call is PUT TO THE USER for confirmation rather than taken, and a subagent asking for it is refused outright — the `skill-gate` hook decides both, and neither decision is absolute: it fails open where `jq` is unavailable, and the confirmation is a permission `ask`, which a project that allow-lists the `Skill` tool would let through unprompted. Treat both as the rule rather than as a wall. SKIP for a reported defect or regression (that is /bugfix), for questions and codebase exploration, and for a one-line change the user has already specified."
 argument-hint: "[TICKET-KEY | task description]"
 allowed-tools: Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git branch:*), Bash(git stash:*), Bash(git status:*), Bash(git log:*), Bash(git mv:*), Bash(gh pr view:*), Bash(ls:*), Bash(grep:*)
 ---

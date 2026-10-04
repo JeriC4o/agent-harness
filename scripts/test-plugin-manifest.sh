@@ -83,7 +83,7 @@ EOF
 
 printf '\n== every plugin-root occurrence in a hook command is double-quoted ==\n'
 # WHY THIS IS A PROPERTY OF EACH OCCURRENCE rather than an inference about
-# quoting regions: exactly one of the 18 commands has ODD apostrophe parity
+# quoting regions: exactly one of the 19 commands has ODD apostrophe parity
 # (`tr -d "'"` inside double quotes), so a parity walk misclassifies the whole
 # remainder of that command -- including the prose site it carries, which is the
 # class of site this check exists for.
