@@ -21,7 +21,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4 |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
-**Structural checks that stand in for a test suite** — run all five before any commit that touches
+**Structural checks that stand in for a test suite** — run all six before any commit that touches
 instruction files:
 
 1. `jq -e . hooks/hooks.json .claude-plugin/plugin.json .claude-plugin/marketplace.json` — manifests parse.
@@ -54,14 +54,24 @@ instruction files:
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
    `hooks/lib/test-loop-verdict.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
-   `skills/report-defect/scripts/test-file-report.sh`.
+   `skills/report-defect/scripts/test-file-report.sh`,
+   `scripts/test-check-propagation-arms.sh`, `scripts/test-hook-behaviour.sh`.
 5. `bash scripts/check-readme-update.sh` — refuses a `README.md` whose update surface names a verb that
    cannot upgrade: a fenced `plugin install` outside the Install section, a fenced `marketplace update`
    with no `plugin update` beside it, or an Update section carrying no upgrade verb at all. Needs no
    `claude` CLI, so it runs wherever the checks above it run.
+5a. `bash scripts/check-propagation-arms.sh` — DERIVES the propagation reminder's path classes from the
+   Propagation Rule table in `docs/agents-method.md` and asserts the `case` arms in `hooks/hooks.json`
+   agree: every derived class has an arm that fires on an absolute representative, every control stays
+   silent, and no path the pre-fix arms matched is silent under the current set. Catches "a sync group
+   was added to the table and the reminder never learned about it" — drift between a list and the table
+   beside it, which no link check or syntax check can see. **Numbered `5a`, not `6`:** this list runs
+   1–8 in one continuous sequence, so a sixth structural check collides with the delivery gate already
+   numbered 6; item 3's `(folded into 2)` is the precedent for a non-sequential entry here, and
+   renumbering would break `AGENTS.md`'s own "invisible to gate 6" reference below.
 
 **Delivery gates** — the checks above validate this repository's CONTENTS; these three validate that the
-contents reach a consumer. The five structural checks cannot see delivery by construction: the first two
+contents reach a consumer. The six structural checks cannot see delivery by construction: the first two
 gates exist because a bug got past every check there was at the time, the third because nothing above it
 walks an upgrade against a *pre-existing* install:
 

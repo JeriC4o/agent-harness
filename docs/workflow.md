@@ -6,6 +6,27 @@ VCS for this harness is **git**; the review surface is a **GitHub PR** driven th
 branch is called `main` throughout; if the project uses another name (`master`, `develop`), substitute it
 everywhere — the rules bind on *the default branch*, not on the literal string.
 
+## Installed method half
+
+Reasoning behind the two `§ Permissions` entries that govern where method rules are read from.
+
+A hook's advisory names a method file by its resolved absolute path inside the installed plugin
+directory. That address is actionable only if the agent may open it, so the directory is read-allowed and
+the scaffolded `.claude/settings.json` carries a matching `Read(...)` allow entry.
+
+**That entry is a GLOB over the install cache, never a version-pinned path.** The cache gives each
+installed version its own directory and keeps the earlier ones, so a pinned entry grants access to
+whichever copy was current when it was written and denies the one the next upgrade installs. The denial
+surfaces as an unreadable method file — an advisory that still prints an address and still cannot be
+followed — rather than as anything a reader would connect back to a permission entry.
+
+**The source repository and the installed copy are different things, and only the installed copy is
+authoritative for a consuming project.** The harness registry records where the source tree lives, so its
+path is knowable from inside any project; reading method rules from there means reading uncommitted,
+half-edited or branch-local instructions that the project never installed, and reading them *as though*
+they were the rules in force. An installed copy is the build artefact of a released version, which is
+precisely what makes it the right thing to read. Changing method rules is a release, not an edit.
+
 ## Merge strategy
 
 PRs are merged by a human through the GitHub UI (or by the repo's merge queue); **Claude never merges**.

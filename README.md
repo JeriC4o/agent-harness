@@ -280,9 +280,10 @@ than through an install, so edits take effect without reinstalling. To exercise 
 claude --plugin-dir /Users/jc/projects/agent-harness
 ```
 
-There is no build. The gate is five structural checks — JSON manifests parse, every relative link and
-anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script, and this README
-documents an update procedure that actually updates — plus three delivery gates:
+There is no build. The gate is six structural checks — JSON manifests parse, every relative link and
+anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script, this README
+documents an update procedure that actually updates, and the propagation reminder's path arms still agree
+with the Propagation Rule table they are derived from — plus three delivery gates:
 `scripts/test-install-smoke.sh` installs the working tree into a throwaway config and requires the plugin
 to actually load, `scripts/check-release.sh` refuses a branch that changed shipped content without a
 version bump, and `scripts/test-upgrade-smoke.sh` runs this README's own update commands against a
