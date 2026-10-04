@@ -150,7 +150,17 @@ printf '\n== AC20: the resolved path reaches every message as an ARGUMENT ==\n'
 refs=$(grep -oF -- 'plugin-ref.sh' "$CMDFILE" | wc -l | tr -d ' ')
 captured=$(grep -oF -- '=$("$r"/hooks/lib/plugin-ref.sh' "$CMDFILE" | wc -l | tr -d ' ')
 check "every plugin-ref.sh reference is a captured call, never inlined" "$captured" "$refs"
-guards=$(grep -oE '\[ -n "\$[ab]" \] \|\|' "$CMDFILE" | wc -l | tr -d ' ')
+# The variable alphabet is DERIVED from the captures, never enumerated. A
+# hard-coded [ab] made this leg blind to a third resolved address the moment one
+# was added: the guard and reference counts stopped reconciling with the call
+# sites, which is a loud failure rather than a silent pass -- but only because
+# three numbers are cross-checked here. Derive it, and the next address is free.
+VARS=$(grep -oE '[A-Za-z_][A-Za-z0-9_]*=\$\("\$r"/hooks/lib/plugin-ref\.sh' "$CMDFILE" \
+         | sed 's/=.*//' | sort -u | tr -d '\n')
+if [ -z "$VARS" ]; then bad "no plugin-ref.sh capture variables found -- the legs below would count nothing"; else
+  ok "capture-variable alphabet derived from the manifest: [$VARS]"
+fi
+guards=$(grep -oE "\\[ -n \"\\\$[${VARS}]\" \\] \\|\\|" "$CMDFILE" | wc -l | tr -d ' ')
 check "each captured call carries an emptiness guard" "$guards" "$refs"
 fallbacks=$(grep -oF -- 'correct operation of the plugin requires read access to the plugin directory' "$CMDFILE" | wc -l | tr -d ' ')
 check "and a cause-agnostic fallback string" "$fallbacks" "$refs"
@@ -158,7 +168,7 @@ check "and a cause-agnostic fallback string" "$fallbacks" "$refs"
 # the emptiness guards; the TRIAGED count is the printf arguments alone, and
 # only that one is the message-reference count. A single number here cannot say
 # whether the subtraction happened.
-raw_refs=$(grep -o '"\$[ab]"' "$CMDFILE" | wc -l | tr -d ' ')
+raw_refs=$(grep -oE "\"\\\$[${VARS}]\"" "$CMDFILE" | wc -l | tr -d ' ')
 msg_refs=$((raw_refs - guards))
 check "message references exceed call sites by exactly one" "$msg_refs" "$((refs + 1))"
 ok "  ($refs call sites; $raw_refs raw \$a/\$b occurrences minus $guards guards = $msg_refs message references -- the propagation reminder passes one resolved path as two printf arguments)"

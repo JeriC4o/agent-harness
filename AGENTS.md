@@ -61,7 +61,7 @@ instruction files:
    with no `plugin update` beside it, or an Update section carrying no upgrade verb at all. Needs no
    `claude` CLI, so it runs wherever the checks above it run.
 5a. `bash scripts/check-propagation-arms.sh` — DERIVES the propagation reminder's path classes from the
-   Propagation Rule table in `docs/agents-method.md` and asserts the `case` arms in `hooks/hooks.json`
+   Propagation Rule table in `docs/propagation.md` and asserts the `case` arms in `hooks/hooks.json`
    agree: every derived class has an arm that fires on an absolute representative, every control stays
    silent, and no path the pre-fix arms matched is silent under the current set. Catches "a sync group
    was added to the table and the reminder never learned about it" — drift between a list and the table

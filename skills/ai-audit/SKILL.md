@@ -138,7 +138,7 @@ For each violation: record file path, line number, the rule it conflicts with, t
 | D | Frontmatter conformance (skills) — `name` / `description` / `allowed-tools` shape per official docs |
 | E | Frontmatter conformance (agents) — YAML block present; `name` == basename; `description` is one line |
 | F | Hooks (`${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`) — event names, matchers, exit codes, env-var quoting |
-| G | `agents-method.md` § Propagation Rule coherence — sync groups intact; exemptions replicated everywhere |
+| G | `propagation.md` coherence — sync groups intact; exemptions replicated everywhere |
 | H | Documentation conformance pointers — `doc-convention.md` references resolve; section order matches |
 | I | File-size & structure — no `SKILL.md` / Subagent file > ~500 lines without sectioning; 40,000-char cap not crossed |
 | J | Allow-list / permission consistency — `allowed-tools` covered by `permissions.allow`; no dead entries |

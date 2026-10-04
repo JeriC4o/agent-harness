@@ -63,9 +63,20 @@ done
 
 if [ "$PRINT_PREFIX" = "1" ]; then printf '%s\n' "$PREFIX_PATTERN"; exit 0; fi
 
+# The sync-group table lives in docs/propagation.md, extracted out of
+# agents-method.md so the file every agent loads at session start does not carry
+# a reference table that grows by a row per group. THIS GATE IS THE REASON that
+# extraction is not free: it derives its expected arm set from that table, so the
+# table's location is a dependency of the gate and not a documentation detail.
+TABLE="${ROOT}/docs/propagation.md"
+# agents-method.md is STILL an input, for a different list: the size AXIOM's
+# "Applies to:" enumeration, which is what the catch-all row resolves against.
+# Two inputs, two files, two existence checks -- a single rename collapsed this
+# gate's derived set to ZERO once, and it reported findings rather than a pass.
 METHOD="${ROOT}/docs/agents-method.md"
 HOOKS="${ROOT}/hooks/hooks.json"
-[ -f "$METHOD" ] || { printf 'check-propagation-arms: no docs/agents-method.md under %s\n' "$ROOT" >&2; exit 2; }
+[ -f "$METHOD" ] || { printf 'check-propagation-arms: no docs/agents-method.md under %s -- the catch-all row resolves against its "Applies to:" list\n' "$ROOT" >&2; exit 2; }
+[ -f "$TABLE" ] || { printf 'check-propagation-arms: no docs/propagation.md under %s -- the sync-group table is the input this gate derives from, so its absence is a could-not-run, never a pass\n' "$ROOT" >&2; exit 2; }
 [ -f "$HOOKS" ]  || { printf 'check-propagation-arms: no hooks/hooks.json under %s\n' "$ROOT" >&2; exit 2; }
 
 # The one reasoned exclusion. § Learning Log Boundary rule 2 FORBIDS the
@@ -139,9 +150,11 @@ fired_before() {
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT INT TERM
 
 # ---- steps 1-2 ---------------------------------------------------------------
-awk '/^## Propagation Rule/{f=1;next} /^## /{f=0} f' "$METHOD" > "$TMP/section.md"
+grep -qF '**AXIOM — Edits to one instruction file MUST propagate' "$TABLE" \
+  || { printf 'check-propagation-arms: %s carries no propagation AXIOM -- wrong file or the page was restructured\n' "$TABLE" >&2; exit 2; }
+cp "$TABLE" "$TMP/section.md"
 grep -E '^> \|' "$TMP/section.md" | grep -vE '^> \|[ -]*\|[ -]*\|?[ ]*$' | grep -vF 'If you edit' > "$TMP/rows.txt" || true
-[ -s "$TMP/rows.txt" ] || { printf 'check-propagation-arms: section Propagation Rule has no table rows\n' >&2; exit 2; }
+[ -s "$TMP/rows.txt" ] || { printf 'check-propagation-arms: docs/propagation.md has no table rows\n' >&2; exit 2; }
 tr '|' '\n' < "$TMP/rows.txt" > "$TMP/cells.txt"
 
 # ---- steps 3-5 ---------------------------------------------------------------

@@ -24,7 +24,7 @@ TMPD=$(mktemp -d); trap 'rm -rf "$TMPD"' EXIT INT TERM
 
 # `md5sum` where it exists, `md5 -q` on this platform.
 md5_of(){ if command -v md5sum >/dev/null 2>&1; then md5sum "$1" | cut -d' ' -f1; else md5 -q "$1"; fi; }
-for f in docs/agents-method.md hooks/hooks.json; do
+for f in docs/agents-method.md docs/propagation.md hooks/hooks.json; do
   printf '%s  %s\n' "$(md5_of "${ROOT}/${f}")" "$f" >> "${TMPD}/before.md5"
 done
 
@@ -35,6 +35,11 @@ counts_of(){ sed -n 's/^.*: \([0-9]*\) derived members all fire, \([0-9]*\) cont
 mk_fixture(){ # <dir>
   mkdir -p "$1/docs/templates" "$1/agents" "$1/hooks" "$1/scripts"
   cp "${ROOT}/docs/agents-method.md" "$1/docs/agents-method.md"
+  # The sync-group table lives in its own page; agents-method.md stays in the
+  # fixture because the catch-all row resolves against its "Applies to:" list.
+  # TWO inputs: a fixture carrying only one of them makes the gate derive ZERO
+  # members, which is exactly what happened the first time this table moved.
+  cp "${ROOT}/docs/propagation.md" "$1/docs/propagation.md"
   cp "${ROOT}/hooks/hooks.json" "$1/hooks/hooks.json"
   # The files the table's three bare filenames resolve against, plus the root
   # AGENTS.md the harvest treats as a class rather than a reference.
@@ -50,7 +55,7 @@ changed(){ # <label> <original> <mutated>
 
 plant_row(){ # <fixture> <row text>
   awk -v row="$2" '/^> \| `AGENTS\.md` \(rule add/{print row} {print}' \
-    "$1/docs/agents-method.md" > "$1/t" && mv "$1/t" "$1/docs/agents-method.md"
+    "$1/docs/propagation.md" > "$1/t" && mv "$1/t" "$1/docs/propagation.md"
 }
 
 drop_arm(){ # <fixture> <arm text>
@@ -110,7 +115,7 @@ rc=$?
 printf '\n== AC9: a planted member row the arms do not cover ==\n'
 F="${TMPD}/ac9"; mk_fixture "$F"
 plant_row "$F" '> | `${CLAUDE_PLUGIN_ROOT}/templates/project/AGENTS.md` | a member class no arm matches |'
-if changed "AC9 fixture" "${ROOT}/docs/agents-method.md" "$F/docs/agents-method.md"; then
+if changed "AC9 fixture" "${ROOT}/docs/propagation.md" "$F/docs/propagation.md"; then
   bash "$GATE" --root "$F" > "${TMPD}/ac9.out" 2>&1
   [ $? -ne 0 ] && ok "the gate FAILS on an uncovered member class" || bad "the gate passed with an uncovered member class"
   grep -qF "no arm fires on derived class 'templates/project/AGENTS.md'" "${TMPD}/ac9.out" \
@@ -119,8 +124,8 @@ fi
 
 printf '\n== AC10: the catch-all row is the only source of CLAUDE.md and ai-docs/context.md ==\n'
 F="${TMPD}/ac10"; mk_fixture "$F"
-grep -vF 'Any other instruction file' "$F/docs/agents-method.md" > "$F/t" && mv "$F/t" "$F/docs/agents-method.md"
-if changed "AC10 fixture" "${ROOT}/docs/agents-method.md" "$F/docs/agents-method.md"; then
+grep -vF 'Any other instruction file' "$F/docs/propagation.md" > "$F/t" && mv "$F/t" "$F/docs/propagation.md"
+if changed "AC10 fixture" "${ROOT}/docs/propagation.md" "$F/docs/propagation.md"; then
   bash "$GATE" --root "$F" > "${TMPD}/ac10.out" 2>&1
   [ $? -ne 0 ] && ok "the gate FAILS with the catch-all row deleted" || bad "the gate passed with the catch-all row deleted"
   for req in CLAUDE.md ai-docs/context.md; do
@@ -132,8 +137,8 @@ fi
 printf '\n== the exclusion cannot rot into a silencer ==\n'
 F="${TMPD}/dead"; mk_fixture "$F"
 sed 's|ai-docs/learnings/<username>-<branch>\.md|ai-docs/learnings/README.md|g' \
-  "$F/docs/agents-method.md" > "$F/t" && mv "$F/t" "$F/docs/agents-method.md"
-if changed "dead-exclusion fixture" "${ROOT}/docs/agents-method.md" "$F/docs/agents-method.md"; then
+  "$F/docs/propagation.md" > "$F/t" && mv "$F/t" "$F/docs/propagation.md"
+if changed "dead-exclusion fixture" "${ROOT}/docs/propagation.md" "$F/docs/propagation.md"; then
   bash "$GATE" --root "$F" > "${TMPD}/dead.out" 2>&1
   [ $? -ne 0 ] && ok "the gate FAILS when the exclusion matches nothing" || bad "a dead exclusion passed"
   grep -qF "matches nothing in the derived set" "${TMPD}/dead.out" \
@@ -151,7 +156,7 @@ fi
 printf '\n== the carve-in cannot double-count ==\n'
 F="${TMPD}/carve"; mk_fixture "$F"
 plant_row "$F" '> | `${CLAUDE_PLUGIN_ROOT}/.claude/skills/<name>/SKILL.md` | a token that now yields the carve-in |'
-if changed "dead-carve-in fixture" "${ROOT}/docs/agents-method.md" "$F/docs/agents-method.md"; then
+if changed "dead-carve-in fixture" "${ROOT}/docs/propagation.md" "$F/docs/propagation.md"; then
   bash "$GATE" --root "$F" > "${TMPD}/carve.out" 2>&1
   [ $? -ne 0 ] && ok "the gate FAILS once the table itself yields the carve-in" || bad "a derivable carve-in passed"
   grep -qF 'is now derivable from the table' "${TMPD}/carve.out" \
@@ -207,7 +212,7 @@ printf '\n== a bare filename is resolved, and an unresolvable one is a finding =
 F="${TMPD}/bare"; mk_fixture "$F"
 plant_row "$F" '> | `no-such-file-gh75.md` | a bare name matching nothing |'
 plant_row "$F" '> | `check-readme-update.sh` | a bare name that resolves |'
-if changed "bare-name fixture" "${ROOT}/docs/agents-method.md" "$F/docs/agents-method.md"; then
+if changed "bare-name fixture" "${ROOT}/docs/propagation.md" "$F/docs/propagation.md"; then
   bash "$GATE" --root "$F" > "${TMPD}/bare.out" 2>&1
   [ $? -ne 0 ] && ok "the gate FAILS on an unresolvable bare filename" || bad "an unresolvable bare filename was dropped silently"
   grep -qF "bare filename 'no-such-file-gh75.md'" "${TMPD}/bare.out" \
@@ -247,7 +252,7 @@ printf '\n== the live files this suite reads were never written ==\n'
 # Against a snapshot taken before the first fixture, not against git: the
 # working tree legitimately carries uncommitted changes to both files, so
 # `git diff --quiet` would report this suite's innocence as guilt.
-for f in docs/agents-method.md hooks/hooks.json; do
+for f in docs/agents-method.md docs/propagation.md hooks/hooks.json; do
   [ "$(md5_of "${ROOT}/${f}")" = "$(grep "  ${f}$" "${TMPD}/before.md5" | cut -d' ' -f1)" ] \
     && ok "${f} is byte-for-byte what it was when the suite started" \
     || bad "the suite mutated ${f}"
