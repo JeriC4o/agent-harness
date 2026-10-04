@@ -16,7 +16,7 @@ Static reference content extracted from `SKILL.md`. Loaded on demand when `/ai-a
 
 ## Checklist C — Dead references
 
-- Skills/agents named in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule sync-group rows must exist. **The table is in the method file, not in `AGENTS.md`** — looking for it in the profile finds nothing and the check silently passes.
+- Skills/agents named in `${CLAUDE_PLUGIN_ROOT}/docs/propagation.md` sync-group rows must exist. **The table is in that extracted reference page — not in `AGENTS.md`, and no longer in `agents-method.md`, which keeps only the AXIOM** — looking for it in the profile finds nothing and the check silently passes.
 - Agent names referenced in skills must match a file under `${CLAUDE_PLUGIN_ROOT}/agents/`.
 - `ai-docs/plans/done/` references in Subagent checklists must still resolve.
 
@@ -44,9 +44,9 @@ Per the official Claude Code docs:
 - Timeouts are reasonable (≤30s default, longer only when the work demands it).
 - Commands quote `$CLAUDE_PROJECT_DIR` and other env vars correctly — no shell injection footguns.
 
-## Checklist G — `agents-method.md` § Propagation Rule coherence
+## Checklist G — `propagation.md` coherence
 
-- Every sync group listed in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule still has all listed members present and cross-referenced — and, **for a group of three or more members** (the size at which `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` Procedure 5 requires the anchor-plus-back-reference shape), that **every non-anchor member appears as a KEY on that back-reference row**. A two-member group names its partner directly and has no back-reference row by design — do not flag it. Checking only that a back-reference row exists tests shape, not coverage, and passes on a group whose row omits half its members — which is exactly how a member goes unreachable while the table looks complete.
+- Every sync group listed in `${CLAUDE_PLUGIN_ROOT}/docs/propagation.md` still has all listed members present and cross-referenced — and, **for a group of three or more members** (the size at which `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` Procedure 5 requires the anchor-plus-back-reference shape), that **every non-anchor member appears as a KEY on that back-reference row**. A two-member group names its partner directly and has no back-reference row by design — do not flag it. Checking only that a back-reference row exists tests shape, not coverage, and passes on a group whose row omits half its members — which is exactly how a member goes unreachable while the table looks complete.
 - Behaviors described in AGENTS.md and replicated in Subagent checklists agree (e.g., file-size hard/soft limits in `review-findings.md` match AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`).
 - Exemptions in AGENTS.md (e.g., trait-impl doc-convention exemption, Java carve-out) appear in every enforcement file.
 
@@ -194,7 +194,7 @@ The carrot-side analog of Checklist C. Every promoted-from-validation carrot mus
 
 ## Checklist O — Embedded-name clash scan
 
-Enforces the `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Propagation Rule clash-rename AXIOM. Project-defined Tool / Subagent / Skill / Hook names MUST NOT clash with embedded names enumerated in `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md` §§1a/1b/2a/3a/3b. Any match → `major` finding (project side renames; the embedded name is never renamed).
+Enforces the `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Naming clash-rename AXIOM. Project-defined Tool / Subagent / Skill / Hook names MUST NOT clash with embedded names enumerated in `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md` §§1a/1b/2a/3a/3b. Any match → `major` finding (project side renames; the embedded name is never renamed).
 
 **Recipe.** Enumerate two sorted lists and intersect them; empty intersection passes.
 

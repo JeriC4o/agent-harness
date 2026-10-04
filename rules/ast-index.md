@@ -27,7 +27,7 @@ On-demand rules for any code-search action. Subagents inherit the verbatim block
 
 ## Propagation sweep
 
-The canonical form for an instruction-file propagation sweep (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Propagation Rule). One command, three requirements:
+The canonical form for an instruction-file propagation sweep (${CLAUDE_PLUGIN_ROOT}/docs/propagation.md). One command, three requirements:
 
 ```bash
 rg -n --hidden -g '!.git' "<changed-keyword>" AGENTS.md CLAUDE.md skills/ agents/ rules/ docs/ ai-docs/
