@@ -56,7 +56,7 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 
 - Production source file with ≥50 lines of non-trivial logic lacking a corresponding test file → `major`.
 - Tests covering only happy path, no error / edge cases → `minor`.
-- Cosmetic tests (revert the production fix and RE-RUN; the test still passes, or the mutation produces zero failures) → `major`. The mutation is executed, not reasoned about.
+- Cosmetic tests (revert the production fix and RE-RUN; the test still passes, or the mutation produces zero failures) → `major`. The mutation is executed, not reasoned about — and a NOT-CAUGHT verdict is withheld until the mutation is shown to have applied and nothing but the guard under test could have blocked it (`${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` § Checklist → 3. Test coverage). A broken control reads as a missing test every time.
 - Integration tests for any new controller / endpoint → `minor` if missing.
 
 ### 4. Performance

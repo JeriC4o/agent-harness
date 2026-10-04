@@ -143,8 +143,29 @@ section carries the "is that green real?" detail.
 > flag per run and complete the control matrix BEFORE a cause goes into a durable artefact.
 >
 > **Piping the output deletes the evidence.** Skip/selection lines often do not exist in piped or
-> machine-readable modes, so a criterion above has nothing to match and cannot fire. Do not pipe a gate
-> (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling).
+> machine-readable modes, so a criterion above has nothing to match and cannot fire. Do not pipe a gate's OUTPUT into a filter or a
+> pager; a pipeline that FEEDS a gate, with the gate last and nothing filtering what it prints, is fine
+> and is sometimes the only correct form (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling).
+
+## Recording a measurement
+
+Linked from [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling`](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#tooling).
+
+**A measurement and the sentence that records it are two artefacts, and taking the first does not verify
+the second.** Re-run the measurement against the pattern in its FINAL written form after every edit to
+that pattern — editing a pattern invalidates every number taken before the edit, including one taken
+minutes earlier — and prefer making the recorded and executed pattern the same string by extracting it
+from the document and running that. Record the ENUMERATION of matches (`grep -rnoE`, the list of failing
+assertion names), and never a count IN PLACE OF it — a count may ride alongside, with its scope and
+unit, but it may not be the whole claim: a count answers "can this fire", an enumeration answers "which
+surfaces does it police", and an enumeration cannot be right about the aggregate and wrong about a
+member. State the SCOPE and the UNIT beside every figure — two counts of things with the same name are
+not comparable, and a correction offered without its scope reads as a contradiction when it is a
+different question. A status marker (`DONE`, `complete`, "all gates green") is a measurement: answer it
+from the tree at the moment it is written and paste the result beside it, never from the instruction that
+requested the work. And before writing any figure down, ask whether TAKING it perturbs what it
+measures — a count over a surface the act of measuring writes to is not reproducible even in principle,
+so record the invariant that holds at any N instead.
 
 ## Relaying a subagent's conclusion
 
