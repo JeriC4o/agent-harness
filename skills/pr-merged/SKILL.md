@@ -1,8 +1,8 @@
 ---
 name: pr-merged
 description: "After a PR merge: switch to the default branch, pull, delete the merged branch's local progress files, and delete the local PR branch."
-disable-model-invocation: true
-allowed-tools: Bash(git checkout:*), Bash(git pull:*), Bash(git branch:*), Bash(git status:*), Bash(rm -f ai-docs/plans/*), Bash(scripts/cleanup-progress.sh:*)
+when_to_use: "Activate once a PR is CONFIRMED merged — the user says 'merged', or `gh pr view` reports state MERGED — while still standing on that PR's branch. Not on 'approved', not on 'pushed', and never on an inference from `git log`: a squash-merge and a never-merged branch look alike there. Confirm the merge before the first command; on any doubt, ask instead."
+allowed-tools: Bash(git checkout:*), Bash(git pull:*), Bash(git branch:*), Bash(git status:*), Bash(gh pr view:*), Bash(rm -f ai-docs/plans/*), Bash(scripts/cleanup-progress.sh:*)
 ---
 
 > Near-stateless: no `.progress.md` discipline applies; re-entry consists of re-invoking the skill.
@@ -15,6 +15,8 @@ git status --porcelain
 ```
 
 If the current branch is the default branch (`main`), stop and tell the user this skill must be run while standing on the merged PR branch.
+
+> **This skill may be invoked by the model, so the merge is a PREMISE that must be measured, not assumed.** A user who types `/pr-merged` has seen the merge; an agent may only believe it, and step 3 deletes files before step 4's `git branch -d` can refuse anything. So before step 1, confirm the merge from the review surface — `gh pr view --json state,mergedAt` for the current branch's PR — and require `state == "MERGED"`. No PR, a non-merged state, or no tracker reachable from this session → **stop and ask the user**; do not fall back to inferring the merge from `git log`, which cannot distinguish a squash-merge from a branch that was never merged at all. A human invoking this skill is itself the confirmation and needs no query.
 
 If `git status --porcelain` shows any modified, staged, or untracked entries, stop and ask the user how to proceed (commit, stash, discard, ignore). Do not run any further commands until the user answers.
 
