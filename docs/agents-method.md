@@ -22,6 +22,8 @@ Honor-system rules (still binding):
 - **ALLOW:** Read/Edit project files (except those above).
 - **ASK:** `git commit` / `git push` — Agent asks before running.
 - **ASK:** Any tool not allow-listed in `settings.json`; on denial, suggest an alternative.
+- **ALLOW:** read access to the installed plugin directory (`${CLAUDE_PLUGIN_ROOT}`) — the method files advisories address live there. → [§ Installed method half](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#installed-method-half)
+- **DENY:** reading the harness SOURCE repo from a consuming project — work from the installed copy, even when `~/.claude/harness/registry.json` names the source path.
 
 ## Session start
 

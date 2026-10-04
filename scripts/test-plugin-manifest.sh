@@ -81,5 +81,87 @@ done <<EOF
 $(jq -r '.hooks[][] | .hooks[] | .command' "$HOOKS")
 EOF
 
+printf '\n== every plugin-root occurrence in a hook command is double-quoted ==\n'
+# WHY THIS IS A PROPERTY OF EACH OCCURRENCE rather than an inference about
+# quoting regions: exactly one of the 18 commands has ODD apostrophe parity
+# (`tr -d "'"` inside double quotes), so a parity walk misclassifies the whole
+# remainder of that command -- including the prose site it carries, which is the
+# class of site this check exists for.
+#
+# IT KEYS ON THE BRACED TOKEN, CLOSING BRACE INCLUDED. The uniform resolver call
+# introduces `${CLAUDE_PLUGIN_ROOT:-}`, a legitimate default-expansion form that
+# a bare-name grep flags as non-conforming -- keyed on the bare name this check
+# is RED on correct code. The decomposition is asserted below so the two forms
+# stay distinguished by measurement rather than by this comment.
+BRACED='${CLAUDE_PLUGIN_ROOT}'
+DEFAULTED='${CLAUDE_PLUGIN_ROOT:-}'
+CMDFILE="${TMPD}/commands.txt"
+jq -r '.hooks[][] | .hooks[] | .command' "$HOOKS" > "$CMDFILE"
+
+# Sets UNW, WIN and NONCONF. Invoked BARE and the globals read afterwards: a
+# command substitution is a subshell and would discard all three.
+count_occurrences(){ # <file, one command per line>
+  UNW=$(grep -oF -- "$BRACED" "$1" | wc -l | tr -d ' ')
+  WIN=$(grep -o '.\{1\}\${CLAUDE_PLUGIN_ROOT}.\{1\}' "$1" | wc -l | tr -d ' ')
+  NONCONF=$(grep -o '.\{1\}\${CLAUDE_PLUGIN_ROOT}.\{1\}' "$1" | grep -cvF -- "\"${BRACED}\"" || true)
+}
+
+bare=$(grep -oF -- 'CLAUDE_PLUGIN_ROOT' "$CMDFILE" | wc -l | tr -d ' ')
+defaulted=$(grep -oF -- "$DEFAULTED" "$CMDFILE" | wc -l | tr -d ' ')
+count_occurrences "$CMDFILE"
+check "bare-name occurrences decompose into braced plus default-expansion" "$bare" "$((UNW + defaulted))"
+ok "  (bare $bare = braced $UNW + default-expansion $defaulted)"
+
+# AC12's CONSERVATION ASSERTION. A one-character window cannot see an occurrence
+# at the very start or the very end of a command, so an occurrence that slipped
+# to either boundary would be classified by nobody and the property would hold
+# over a smaller set than it claims. Counts are compared BEFORE classifying.
+check "windowed count equals unwindowed count (no occurrence escapes classification)" "$WIN" "$UNW"
+check "every classified occurrence is double-quoted" "$NONCONF" "0"
+if [ "$NONCONF" != "0" ]; then grep -o '.\{1\}\${CLAUDE_PLUGIN_ROOT}.\{1\}' "$CMDFILE" | grep -vF -- "\"${BRACED}\""; fi
+
+printf '\n== and both halves of that property are shown able to FAIL ==\n'
+# Control 1: an occurrence that is present and NOT double-quoted. It is the
+# defect this leg exists for -- an unquoted expansion word-splits on a root
+# containing a space, which is the normal shape of an install path on a Mac.
+cp "$CMDFILE" "${TMPD}/planted.txt"
+printf 'echo %s/docs/agents-method.md\n' "$BRACED" >> "${TMPD}/planted.txt"
+count_occurrences "${TMPD}/planted.txt"
+check "a planted unquoted occurrence raises the unwindowed count by one" "$UNW" "$((bare - defaulted + 1))"
+check "  and is reported as non-conforming" "$NONCONF" "1"
+check "  while conservation still holds, so the two legs are independent" "$WIN" "$UNW"
+
+# Control 2: a BOUNDARY occurrence, first character of its command. The
+# classifier is structurally blind to it, which is the whole reason conservation
+# is asserted rather than assumed.
+cp "$CMDFILE" "${TMPD}/boundary.txt"
+printf '%s/hooks/lib/x.sh arg\n' "$BRACED" >> "${TMPD}/boundary.txt"
+count_occurrences "${TMPD}/boundary.txt"
+check "a boundary occurrence at position 0 is counted unwindowed" "$UNW" "$((bare - defaulted + 1))"
+check "  but the classifier cannot see it" "$WIN" "$((bare - defaulted))"
+[ "$WIN" -ne "$UNW" ] && ok "  so conservation FAILS on it, which is what makes the assertion load-bearing" \
+                      || bad "  conservation did not fail on a boundary occurrence -- the assertion proves nothing"
+
+printf '\n== AC20: the resolved path reaches every message as an ARGUMENT ==\n'
+# A path interpolated into a printf FORMAT is re-scanned for % directives, so a
+# root containing one would consume the next argument. Every reference is
+# therefore a captured call assigned to a variable, and the variable is what the
+# format receives.
+refs=$(grep -oF -- 'plugin-ref.sh' "$CMDFILE" | wc -l | tr -d ' ')
+captured=$(grep -oF -- '=$("$r"/hooks/lib/plugin-ref.sh' "$CMDFILE" | wc -l | tr -d ' ')
+check "every plugin-ref.sh reference is a captured call, never inlined" "$captured" "$refs"
+guards=$(grep -oE '\[ -n "\$[ab]" \] \|\|' "$CMDFILE" | wc -l | tr -d ' ')
+check "each captured call carries an emptiness guard" "$guards" "$refs"
+fallbacks=$(grep -oF -- 'correct operation of the plugin requires read access to the plugin directory' "$CMDFILE" | wc -l | tr -d ' ')
+check "and a cause-agnostic fallback string" "$fallbacks" "$refs"
+# TWO NUMBERS, never one. The RAW count of `"$a"` / `"$b"` occurrences includes
+# the emptiness guards; the TRIAGED count is the printf arguments alone, and
+# only that one is the message-reference count. A single number here cannot say
+# whether the subtraction happened.
+raw_refs=$(grep -o '"\$[ab]"' "$CMDFILE" | wc -l | tr -d ' ')
+msg_refs=$((raw_refs - guards))
+check "message references exceed call sites by exactly one" "$msg_refs" "$((refs + 1))"
+ok "  ($refs call sites; $raw_refs raw \$a/\$b occurrences minus $guards guards = $msg_refs message references -- the propagation reminder passes one resolved path as two printf arguments)"
+
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

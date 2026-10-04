@@ -55,8 +55,8 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `skills/<name>/SKILL.md` | The 8 workflow skills |
 | `agents/<name>.md` | The 7 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
-| `hooks/hooks.json` | The 12 hooks; `hooks/lib/` holds the shared guard |
-| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`) and the `test-*.sh` suites those and the skills' helpers are covered by |
+| `hooks/hooks.json` | The 12 hooks; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
+| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`) and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
@@ -83,10 +83,10 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 ## Build & test commands
 
-No build. The checks in `AGENTS.md § Build & Test` are the gate: five structural ones over the repo's
+No build. The checks in `AGENTS.md § Build & Test` are the gate: six structural ones over the repo's
 contents, plus three delivery gates (`test-install-smoke.sh`, `check-release.sh`,
 `test-upgrade-smoke.sh`) that answer the question the structural ones cannot — does this reach a
-consumer. They are hand-run today; wrapping the structural five in a single command is an open task.
+consumer. They are hand-run today; wrapping the structural six in a single command is an open task.
 
 ---
 
@@ -97,6 +97,12 @@ consumer. They are hand-run today; wrapping the structural five in a single comm
 - **Skill scripts run via `${CLAUDE_SKILL_DIR}/scripts/<name>`.** A repo-relative invocation resolves
   against the consuming project and silently fails there while working here.
 - **Plugin skills are invoked namespaced**: `/harness:task`, not `/task`.
+- **A model-facing hook message resolves its own addresses; the matcher anchors on the project.**
+  `${CLAUDE_PLUGIN_ROOT}` expands in the double-quoted executable path and stays LITERAL inside the
+  single-quoted payload the model reads, so every method address in a message goes through
+  `hooks/lib/plugin-ref.sh`: it emits the address only when that file is readable here and otherwise
+  names the read access the plugin needs. A `case` arm anchors on `CLAUDE_PROJECT_DIR`, never on the
+  install — an arm written against the install path can only fire on an edit the rules already deny.
 - **Bump `plugin.json` version in the same PR as any change to plugin-loaded content.** The install cache
   is keyed by version; without a bump the fix reaches nobody, and `marketplace update` reports success
   while leaving the old payload in place. Content that ships: `skills/`, `agents/`, `rules/`, `hooks/`,
@@ -115,6 +121,12 @@ consumer. They are hand-run today; wrapping the structural five in a single comm
   never been measured against a real firing. The verdict line records `agents` and the threshold it
   fired under, so the calibration arrives on its own; revisit only if the first real firings show the
   bar is wrong.
+- `GH-75` — the propagation reminder's arms are now derived from the sync-group table and anchored on
+  the project directory, so the project-side mirrors a consumer may keep (`.claude/agents/*.md`,
+  `.claude/rules/**/*.md`, `.claude/commands/*.md`) are matched by no arm. Measured as a widening
+  rather than a regression: no path the pre-fix arms matched is silent under the current set, and
+  `scripts/check-propagation-arms.sh` asserts that. Revisit when a consuming project actually keeps
+  those mirrors.
 - _(closed 2026-09-14 — hook guards shipped in #3; `--scope user` is now the recommended install.)_
 - _(closed 2026-09-14 — both recorded as approved exemptions in `docs/skill-size-exemptions.md`: they are
   ordered orchestrators, and splitting the sequence costs more than the length does.)_

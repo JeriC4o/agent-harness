@@ -2,6 +2,7 @@
   "permissions": {
     "allow": [
       "Edit(~/.claude/**)",
+      "Read(~/.claude/plugins/cache/*/harness/**)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
