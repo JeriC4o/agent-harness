@@ -120,7 +120,7 @@ Agent(subagent_type="general-purpose", prompt="
 - Fix each `⬜ Open` finding from the self-review section (same fix/object rules as Step 3).
 - Return to Step 5.
 
-**After round 3 with REJECT:** surface remaining `⬜ Open` findings to the user and ask how to proceed. Do not delete `.progress.md` until resolved.
+**After round 3 with REJECT:** surface remaining `⬜ Open` findings to the user and ask how to proceed. Do not delete `.progress.md` until resolved. **Fixes made after the cap is burned still get one review pass** — a burned cap ends the loop, not the gate.
 
 ## Gate checklist
 

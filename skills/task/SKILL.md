@@ -96,7 +96,7 @@ Agent(subagent_type="general-purpose", prompt="
 Verdict: GO / ITERATE / STOP.
 
 - **GO** → proceed to Step 8. Spec-amending notes need Step 6 → Step 7 re-run, not a fold-in — see *Spec Amendment recipe*.
-- **ITERATE** → back to Step 6 (max 3 rounds).
+- **ITERATE** → back to Step 6 (max 3 rounds). **A round whose findings are only about the DOCUMENT's accuracy — stale counts, moved anchors, a representative written in a shape the code never receives — is not a reason to spend a round**, and repeated ones are a size signal rather than a rigour signal: fix them as text and split rather than iterate (`${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` § Rules). At the cap with a genuine DESIGN blocker still open the verdict stays ITERATE and the exhausted cap is surfaced to the user — a burned cap ends the loop, not the gate, and fixes applied after it still get one verification pass.
 - **STOP** → fundamental flaw with the approach. Surface verdict + `Issues` table; do not start Step 8.
 
 ### Design Amendment (re-entrant — triggered from Step 8 or Step 11)
@@ -142,6 +142,8 @@ Update content files only — **do not move spec/design to `done/` yet** (Step 1
 
 ### Step 10: Self-review loop (max 3 rounds)
 
+> **If a session directive forbids spawning Subagents and the user has not asked for one**, surface the conflict HERE rather than pushing with the gate silently omitted or spawning in defiance of it: name the step, say what an inline pass does and does not cover, and let the user choose. A gate that did not run is reported as **skipped**, never as passed ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Workflow](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#workflow), same row; recipe in `/bugfix` Step 1).
+
 Spawn `self-review`:
 
 ```
@@ -155,7 +157,7 @@ Agent(subagent_type="general-purpose", prompt="
 
 - **On APPROVE:** proceed to Step 12. The progress file is gitignored and **stays in the working tree** (deleted only by `/pr-merged`) — do NOT `rm` it here. Write progress: `**current_step:**` = `Step 10 — self-review APPROVE (Round N)`.
 - **On REJECT:** proceed to Step 11, then loop back here. Write progress: `**current_step:**` = `Step 10 — self-review REJECT (Round N), addressing findings`.
-- **After round 3 with REJECT:** surface remaining `⬜ Open` findings to the user and ask how to proceed.
+- **After round 3 with REJECT:** surface remaining `⬜ Open` findings to the user and ask how to proceed. **Fixes made after the cap is burned still get one review pass**, exactly as post-push fixes do — a burned cap ends the loop, not the gate.
 
 ### Step 11: Review fixes
 
@@ -209,7 +211,7 @@ Each gate is enforced inline as the **First action** of its step; the consolidat
 Validated approaches `/task` should keep applying (carrot signals; soft verbs). Each is stated in full at its point of execution — this index exists so the rule is findable without reading every step.
 
 - **Default to** resuming the SAME agent from its transcript (`SendMessage`) on a transport-level drop, with exponential backoff from the 2nd consecutive failure, rather than cold-spawning a replacement that discards its gathered context. Full rule: [Step 8](#step-8-implementation); re-stated for the design phase in [Design Amendment](#design-amendment-re-entrant--triggered-from-step-8-or-step-11).
-- **Prefer** marking every factual claim in a spawn prompt with how it was obtained — "measured, output below" versus "my reading, re-derive it" — and prefer pasting the command with its raw output over stating the conclusion drawn from it. A subagent cannot tell which lines of a context section were measured and which are paraphrase; everything in it arrives with equal authority, and an artefact written from an unmarked paraphrase is indistinguishable from one written from a measurement. Keep restating the governing rules in spawn prompts — a receiving agent self-caught and disclosed a violation because of one — but **treat restatement as a reminder, never as enforcement**: measured over one session it reduced neither the orchestrator's nor the subagent's violation rate to zero. The loaded hook is the control.
+- **Prefer** marking every factual claim in a spawn prompt with how it was obtained — "measured, output below" versus "my reading, re-derive it" — and prefer pasting the command with its raw output over stating the conclusion drawn from it. A subagent cannot tell which lines of a context section were measured and which are paraphrase; everything in it arrives with equal authority, and an artefact written from an unmarked paraphrase is indistinguishable from one written from a measurement. Keep restating the governing rules in spawn prompts — a receiving agent self-caught and disclosed a violation because of one — but **treat restatement as a reminder, never as enforcement**: measured over one session it reduced neither the orchestrator's nor the subagent's violation rate to zero. The loaded hook is the control. On the receiving side: when a supplied claim turns out false, or an instruction's literal clause contradicts its own rationale or the controls it supplies, **prefer** treating the instruction as evidence rather than as a command — re-derive the facts it rests on, act on the reading the majority of its signals support, and NAME the contradiction in the hand-back. An instruction that disagrees with itself cannot be obeyed, only interpreted, and an interpretation carried out silently is indistinguishable from a mistake. Correspondingly, **default to** supplying the rationale and the controls alongside any directive: they are what makes a slip recoverable by the receiver.
 
 ## FORBIDDEN
 
