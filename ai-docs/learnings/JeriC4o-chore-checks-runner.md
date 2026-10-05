@@ -153,3 +153,30 @@ is invalidated by every action I take, and the longer a session runs the more co
 cache gets. Re-deriving beats remembering at a cost of one command.
 **Kind:** correction
 **Escalated?** no
+
+### 2026-10-06 — process — pushed to a branch and rewrote a PR body without re-reading that the PR had merged mid-flight
+**What happened:** Third instance of the same root cause in one session, and the first one with an
+outward-facing effect. While the review round on the second commit was running, the user merged PR #96 —
+containing only the first commit. I then pushed the second commit to the same branch and ran
+`gh pr edit --body-file` to sync the description, per the rule that a push to a branch with an open PR is
+followed by reading the body and editing it when it contradicts the new commits. Both commands succeeded
+and neither told me anything was wrong: the push updated the branch, and `gh pr edit` happily rewrote the
+body of a MERGED pull request. For a couple of minutes the merged PR described two checks that were not
+in it. Found only because the confirmation command I ran afterwards printed `MERGED, commits: 1`, which I
+had expected to read `OPEN, commits: 2`. Recovered by restoring #96's original body from the file it was
+created from — verified by diffing the live body against that file, identical but for one trailing blank
+line GitHub adds — and opening #97 from the same branch for the two follow-up commits plus the version
+bump the new base required. A first attempt to verify the restore used two phrases that are line-wrapped
+in the source files and therefore could never match, so it reported neither version present; that is the
+same not-from-the-output error one layer down.
+**Rule:** A pull request's STATE is a mutable fact with an owner other than me, so it is re-derived
+immediately before any action that depends on it — `gh pr view --json state` before a body edit, and
+before treating a push as landing in an open PR. The rule that says "read the body after every push"
+silently assumes the PR is still open; that assumption is exactly what a long-running review round
+invalidates, because the user is working in the same repository at the same time. Two corollaries. A
+command that succeeds is not evidence that it did the right thing — `gh pr edit` does not refuse a merged
+PR — so the confirmation has to assert the state I expected, not merely that the call returned 0. And
+when verifying a text restore, compare whole FILES with `diff`; a grep for a remembered phrase fails
+silently when the source wraps that phrase across lines.
+**Kind:** correction
+**Escalated?** no
