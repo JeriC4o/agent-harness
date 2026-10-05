@@ -22,3 +22,22 @@ the hook matches the command string and cannot tell a quotation from an invocati
 entries, PR bodies, specs and issue bodies alike.
 **Kind:** correction
 **Escalated?** no
+
+### 2026-10-05 — process — talked to the user in artifact references instead of plain language
+**What happened:** The user asked for the conversation to be held "в терминологии людей, с развернутыми
+стейтментами", because constant references to specs and designs made my messages hard to read. The
+session-start summary and the ledger read-out that preceded the complaint were built out of identifiers:
+ticket keys, script filenames, session uuids, a fingerprint number, a sync-group name, and a pointer to
+my own cross-session memory. Each sentence needed a lookup the user had no reason to have done. The
+cross-session memory already carried this instruction from GH-86, where it was given for QUESTIONS; I
+had recorded it with that narrower scope and so did not apply it to ordinary status prose, which is
+where it was violated this time.
+**Rule:** State what a thing IS and what it DOES before naming it, and treat an identifier as a
+parenthetical for verification only — if a sentence stops meaning anything once the identifier is
+deleted, it was a pointer rather than a statement. This binds on every message, not only on questions
+and option pickers. Second-order lesson, and the reason this entry exists at all despite the guidance
+already being on record: when user feedback arrives scoped to one situation, record the PRINCIPLE and
+ask where else it applies, because a faithfully-recorded narrow scope reads as a licence everywhere
+else and the recurrence lands in whatever context the first wording happened to leave out.
+**Kind:** correction
+**Escalated?** no

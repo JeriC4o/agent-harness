@@ -121,6 +121,7 @@ Validate:
 - `len(questions) <= questions_per_round_cap` — if exceeded, one-shot Subagent re-spawn with trim instruction.
 - Each `header` ≤ 12 chars; each `options` list 2..4 entries.
 - No question contains a pre-resolved-rule blacklist substring (defence in depth; the Subagent should have caught it).
+- **Every question, option label and option description is human-facing and self-contained** — no `*.spec.md` / `*.design.md` / artefact path, no "the spec" / "the design doc", no acceptance-criterion or decomposition-task id (`AC3`, `T7`), no agent-internal vocabulary (`design-review`, `GO`/`ITERATE`, "the subagent"), and enough context in the prose to answer **without opening any file** ([`${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` § Question wording](${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md#question-wording--for-a-human-not-for-the-model)). The orchestrator MAY rewrite the surfaced wording to meet this — it owns the `AskUserQuestion` text, which is NOT a spec write — and persists the text **as surfaced** into `prior_qa`. Expand, don't shorten. A question that cannot be rewritten without losing the decision → one-shot re-spawn with a rewrite instruction.
 
 Call `AskUserQuestion(questions=[...])` with the entire list.
 
@@ -128,7 +129,7 @@ Append each `(question, proposed_options, answer)` to state's `prior_qa` with `r
 
 #### 3e. Action chooser on `unresolvable`
 
-Build `AskUserQuestion` with the Subagent's `reason.detail` as the question prose. Options: Subagent's `suggested_action` first, plus the other applicable actions:
+Build `AskUserQuestion` with the Subagent's `reason.detail` as the question prose — **restated in human terms if it names an artefact, an acceptance-criterion id or agent-internal vocabulary** (same bar as 3d). The user must see why the interview stopped, not a status enum. Options: Subagent's `suggested_action` first, plus the other applicable actions:
 
 | Category | Actions to offer (recommended first) |
 |---|---|

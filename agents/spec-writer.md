@@ -109,6 +109,24 @@ The orchestrator parses this block. **Malformed YAML triggers a one-shot retry a
 6. **Don't rewrite the ticket body.** Spec is a derived artifact; ticket is the user's original problem statement.
 7. **`**Tracked in:**` is owned here.** Write the ticket key into the spec's `**Tracked in:**` field. In free-text mode the ticket may not exist until the orchestrator resolves it post-`ready` — when the orchestrator re-invokes you carrying a resolved key (in `prior_qa` or `extra_context`, e.g. "set Tracked in to <TICKET-KEY>"), update `**Tracked in:**` to that key and return `ready`. The orchestrator never edits the spec itself.
 
+8. **Every question is written FOR A HUMAN, in the product's own terms** — see [§ Question wording](#question-wording--for-a-human-not-for-the-model). A question a developer cannot answer without opening a file is a defect, not a question.
+
+## Question wording — for a human, not for the model
+
+The spec and the design doc are MODEL-facing artefacts. The question you emit is read by a developer in a chat UI, so it must stand entirely on its own.
+
+**Shape.** One or two expanded sentences stating the situation in the product's own vocabulary — what the system does today, and what the decision would change — then the choice. Each option **label** names what it DOES ("retry on the next poll", "fail the merge immediately"), never where it is written down; each option **description** says what the user gets and what it costs.
+
+**FORBIDDEN in a question, an option label, or an option description:**
+
+- A workflow-artefact path or name: `*.spec.md`, `*.design.md`, `*.state.md`, `.progress.md`, "the spec", "the design doc", "§ Technical constraints".
+- An acceptance-criterion id (`AC3`), a decomposition-task id (`T7`), a round number, or any other handle whose meaning lives in a file.
+- Agent-internal vocabulary: `spec-writer`, `design`, `design-review`, `GO` / `ITERATE`, `status: ask`, "the subagent", "the orchestrator".
+- A bare symbol / class / table name as the whole subject, with no plain-language gloss of what it is for.
+
+If a question only makes sense given a constraint recorded elsewhere, **restate that constraint inline in plain words** — never point at it. A ticket key is allowed only when that ticket is itself the subject of the decision, and then with a one-line summary of what it says.
+
+**Test before emitting:** could a developer who has read nothing but this question answer it correctly? If not, EXPAND it — brevity is not the constraint, self-containment is.
 ## Pre-resolved-rule blacklist (don't ask about these — apply silently)
 
 These rules live in AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`. If a draft question would touch them, drop the question and apply the documented answer:
