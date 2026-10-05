@@ -137,8 +137,8 @@ jq -r '.hooks | to_entries[] | .key as $ev | .value[] | (.matcher // "-") as $m
        | .hooks | to_entries[] | [$ev, $m, (.key|tostring)] | @tsv' "$HOOKS" > "${WORK}/keys.tsv"
 TOTAL=$(wc -l < "${WORK}/keys.tsv" | tr -d ' ')
 DISTINCT=$(sort -u "${WORK}/keys.tsv" | wc -l | tr -d ' ')
-check "every hook command has a triple" "$TOTAL" "19"
-check "the 19 triples are distinct" "$DISTINCT" "$TOTAL"
+check "every hook command has a triple" "$TOTAL" "20"
+check "the ${TOTAL} triples are distinct" "$DISTINCT" "$TOTAL"
 SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS" | sort -u | wc -l | tr -d ' ')
 [ "$SM_DISTINCT" -lt "$TOTAL" ] \
   && ok "statusMessage is NOT a usable key (${SM_DISTINCT} distinct values over ${TOTAL} commands)" \
@@ -175,6 +175,7 @@ PostToolUse|Write|Edit|1|broken_sh|err|[sh-syntax-check]
 PostToolUse|Bash|0|push_on_feature|err|[pr-body-sync]
 PostToolUse|*|0|result_ok|none|
 Stop|-|0|turn_verdict|err|[loop-index] coarse repeat:
+SubagentStart|-|0|agent_mark|none|
 SubagentStop|-|0|turn_verdict_sub|err|[loop-index] coarse repeat:
 PostToolUseFailure|*|0|result_fail|none|'
 
@@ -227,6 +228,14 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
       jq -nc '{tool_input:{command:"git push"}}' ;;
     result_ok)   ledger_payload s-result Bash "echo hi" PostToolUse tu-r1 ;;
     result_fail) ledger_payload s-result Bash "echo hi" PostToolUseFailure tu-r2 ;;
+    # The session is `s-result` because the `none` branch's non-vacuity witness
+    # is a DELTA on that one ledger. A canary row is still a row, so it serves
+    # the same purpose -- and the live payload carries no tool_use_id, which is
+    # why ledger_payload cannot build this one.
+    agent_mark)
+      jq -nc '{session_id:"s-result", hook_event_name:"SubagentStart",
+               agent_id:"a17de311aa309cb52", agent_type:"general-purpose",
+               prompt_id:"p-1", transcript_path:"/tmp/transcript.jsonl", cwd:"/tmp"}' ;;
     turn_verdict)     seed_turn s-turn;     printf '%s' '{"session_id":"s-turn","hook_event_name":"Stop"}' ;;
     turn_verdict_sub) seed_turn s-turn-sub; printf '%s' '{"session_id":"s-turn-sub","hook_event_name":"SubagentStop"}' ;;
     *) return 1 ;;

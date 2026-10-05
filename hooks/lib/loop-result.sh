@@ -23,9 +23,23 @@ set -u
 
 LEDGER_DIR="${HARNESS_LOOP_DIR:-${HOME}/.claude/harness/loops}"
 
+# The append and its one-per-session failure report are shared with the other
+# ledger writers; see hooks/lib/ledger-write.sh for why an unwritable ledger is
+# the one failure here that is not swallowed. The guard mirrors loop-index.sh's:
+# an absent helper costs the warning, never the row.
+HERE_LIB=$( { cd -- "$(dirname -- "$0")" && pwd; } 2>/dev/null ) || HERE_LIB=""
+if [ -n "$HERE_LIB" ] && [ -r "${HERE_LIB}/ledger-write.sh" ]; then
+  . "${HERE_LIB}/ledger-write.sh"
+else
+  harness_ledger_append() { { printf '%s\n' "$3" >> "$2"; } 2>/dev/null; }
+  harness_ledger_report_once() { :; }
+fi
+
 # A hook that breaks is worse than one that is absent; every failure path here
-# exits 0 in silence. This one runs AFTER the tool, so it cannot cost a call --
-# but it can still cost a turn if it hangs or shouts, and it does neither.
+# exits 0, unconditionally, and silence is the default rather than the
+# guarantee -- the unwritable ledger reports once per session, per
+# hooks/lib/ledger-write.sh. This one runs AFTER the tool, so it cannot cost a
+# call; it can still cost a turn by hanging, and it does not.
 in=$(cat 2>/dev/null) || exit 0
 [ -n "$in" ] || exit 0
 command -v jq >/dev/null 2>&1 || exit 0
@@ -50,8 +64,9 @@ case "$ev" in
   *) exit 0 ;;
 esac
 
-mkdir -p "$LEDGER_DIR" 2>/dev/null || exit 0
-jq -nc --arg t "$tuid" --argjson k "$ok" \
-   '{ts: (now|todate), kind: "result", tool_use_id: $t, ok: $k}' \
-   >> "${LEDGER_DIR}/${sid}.jsonl" 2>/dev/null
+ledger="${LEDGER_DIR}/${sid}.jsonl"
+mkdir -p "$LEDGER_DIR" 2>/dev/null || { harness_ledger_report_once "$sid" "$ledger"; exit 0; }
+row=$(jq -nc --arg t "$tuid" --argjson k "$ok" \
+   '{ts: (now|todate), kind: "result", tool_use_id: $t, ok: $k}' 2>/dev/null) || row=""
+[ -z "$row" ] || harness_ledger_append "$sid" "$ledger" "$row" || true
 exit 0

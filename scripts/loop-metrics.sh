@@ -121,8 +121,10 @@ fi
 # across sessions hides the one session that produced every finding.
 per_session() {
   jq -s --arg sid "$(basename "${1%.jsonl}")" '
-    # Ignore any line whose kind this build does not know: the two classes are
-    # "call" and "verdict", and a future third must not silently join a count.
+    # Ignore any line whose kind this build does not know. There are five
+    # classes -- "call", "result", "turn", "verdict" and "agent-mark" -- and a
+    # future sixth must not silently join a count, so every reader below selects
+    # on kind by name rather than filtering anything out.
     . as $all
     # POSITION, NOT TIME, and this is load-bearing rather than pedantic. A verdict
     # is appended immediately after the call that triggered it, so at one-second
@@ -164,7 +166,25 @@ per_session() {
                   elif ($after | any(.fp == $v.fp)) then "went_ahead"
                   elif ($after | length) > 0 then "reformulated"
                   else "abandoned" end ),
-              settings: { window: $v.window, threshold: ($v.threshold // null),
+              # window_unit is in the allowlist because `window` changed MEANING
+              # without changing shape: rows written before the call-counted
+              # window recorded a number of ledger LINES and rows after it
+              # record a number of CALLS. A projection that drops the unit hands
+              # the reader two incomparable numbers under one name.
+              #
+              # AN ABSENT UNIT ON A ROW THAT HAS A WINDOW IS NOT UNKNOWN -- it
+              # is "lines", INFERRED from a build marker rather than guessed.
+              # Only a pre-change build wrote a window with no unit beside it,
+              # and that build counted lines; projecting null there would throw
+              # away a fact the row carries implicitly and leave the reader
+              # unable to tell "written before the change" from "this reader
+              # does not know", which is the whole thing the field exists to
+              # separate. A row with no window at all -- tier 2 and tier 3 --
+              # genuinely has no unit, and stays null.
+              settings: { window: $v.window,
+                          window_unit: ($v.window_unit
+                                        // (if ($v.window // null) == null then null else "lines" end)),
+                          threshold: ($v.threshold // null),
                           min_calls: ($v.min_calls // null),
                           min_distinct: ($v.min_distinct // null),
                           min_bin_repeats: ($v.min_bin_repeats // null) } } ] ) as $rows
@@ -187,6 +207,20 @@ per_session() {
         by_tier:   ($verdicts | map(.e) | group_by(.tier)   | map({ (.[0].tier   | tostring): length }) | add // {}),
         by_signal: ($verdicts | map(.e) | group_by(.signal) | map({ (.[0].signal | tostring): length }) | add // {}),
         turns: ([ $all[] | select(.kind == "turn") ] | length),
+        # THE ATTRIBUTION CANARY, computed here so --all and --for cannot
+        # disagree: --for slurps this output as its own base. An absent or
+        # non-string agent_id degrades to the literal "main" in the hook, which
+        # is indistinguishable from a genuine main-agent call -- so a count of
+        # subagent STARTS is what makes the degradation visible. Starts recorded
+        # with no non-main call row is a contradiction; nothing else here is.
+        #
+        # THE THREE FIELDS ARE NEVER JOINED TO EACH OTHER PER ROW. agent_marks
+        # counts spawns, call_agents_sub counts agents seen on calls; matching an
+        # agent-mark row to a call row would be read-time attribution, which this
+        # reader does by the only honest route it has -- a transcript scan.
+        agent_marks:     ([ $all[]   | select(.kind == "agent-mark") ] | length),
+        agent_mark_ids:  ([ $all[]   | select(.kind == "agent-mark") | .agent_id? // empty ] | unique | length),
+        call_agents_sub: ([ $calls[] | .agent_id | select(. != null and . != "main") ] | unique | length),
         # Outcomes, so a failing session is distinguishable from a busy one. A
         # call with no result row is `unknown`, not a success: the recorder is
         # newer than the index, so an older ledger has none, and counting those
@@ -387,6 +421,13 @@ if [ -n "$FOR" ]; then
         + (if .unattributed_at_tail then "" else " unattributed calls sit in the MIDDLE of the ledger, where a call still executing cannot be. A transcript this reader never opened is the likely cause; on a session still running, a background agent whose transcript file lags would look the same." end)
         + (if .every_stored_agent_read then "" else " the ledger names agent(s) whose transcript was never opened or would not parse: " + (.stored_agents_unread | join(", ")) + "." end)
         + " Treat the \(.unattributed) unattributed call(s) as unknown: not the main agent, not calls in flight." ),
+    # The canary, from the LEDGER ALONE. It is printed here as well as in --all
+    # although this view recovers attribution from the transcripts, because the
+    # two answer different questions: the recovery says who actually called, the
+    # canary says the stored field was wrong. A session whose transcripts have
+    # been pruned has no recovery and still has this.
+    ( select(.agent_marks > 0 and .call_agents_sub == 0)
+      | "  ATTRIBUTION CANARY: \(.agent_marks) subagent start(s) recorded (\(.agent_mark_ids) distinct agent id(s)), yet no call row names a non-main agent. The stored agent_id degraded to \"main\"; tier-1 fan-out detection was blind while these rows were written." ),
     # "unattributed" is a bucket, not an agent, and counting it as one turns a
     # single-agent live session -- which always has a call in flight -- into a
     # false report of two agents.
@@ -410,7 +451,8 @@ if [ -n "$FOR" ]; then
       end ),
     "",
     "An outcome is derived from the calls that FOLLOW a verdict, never stored: went_ahead means the call was made anyway, abandoned means it was dropped, reformulated means the same tool ran with different arguments. n/a means the verdict keyed on a shape rather than one fingerprint.",
-    "Join a row to the run by tool_use_id, never by fingerprint: Agent and AskUserQuestion have their input rewritten between the hook firing and the transcript record."
+    "Join a row to the run by tool_use_id, never by fingerprint: Agent and AskUserQuestion have their input rewritten between the hook firing and the transcript record.",
+    "The attribution canary closes ONE direction only: recorded starts with no non-main call row prove the stored agent_id degraded, but zero recorded starts cannot separate \"no subagent ran\" from \"the canary itself is not firing\"."
   '
   exit 0
 fi
@@ -503,8 +545,18 @@ printf '%s' "$report" | jq -r '
         end ),
       "" ),
   "per session:",
-  ( $r.sessions[] | "  [\(.project)] \(.session): \(.calls) calls, \(.tools) tool(s), \(.agents) agent(s), \(.verdicts) verdict(s)" ),
+  ( $r.sessions[]
+    | "  [\(.project)] \(.session): \(.calls) calls, \(.tools) tool(s), \(.agents) agent(s), \(.verdicts) verdict(s)"
+      # THE GAP IS WIDEST HERE. This view runs no attribution recovery at all --
+      # it has no transcript access by construction -- so without the canary a
+      # session whose every subagent was recorded as `main` looks exactly like a
+      # single-agent session, which is how the degradation stayed invisible over
+      # thousands of calls.
+      + (if .agent_marks > 0 and .call_agents_sub == 0
+         then "   ATTRIBUTION CANARY: \(.agent_marks) subagent start(s) recorded, yet no call row names a non-main agent -- fan-out detection was blind for this session"
+         else "" end) ),
   "",
   "Rates are per project and are never pooled: thresholds that fit one codebase say nothing about another.",
-  "One run is not a trend. Thresholds are recorded per verdict; compare them before comparing rates."
+  "One run is not a trend. Thresholds are recorded per verdict; compare them before comparing rates.",
+  "The attribution canary closes ONE direction only: recorded starts with no non-main call row prove the stored agent_id degraded, but zero recorded starts cannot separate \"no subagent ran\" from \"the canary itself is not firing\"."
 '

@@ -144,6 +144,31 @@ it would have explained happen to be the last in the ledger, which is indistingu
 So an `unattributed` count that is large, or large relative to the session, is worth a sentence in your
 report even when `complete` is true.
 
+**`agent_marks`, `agent_mark_ids` and `call_agents_sub` are the ledger's own check on the stored field, and
+they need no transcript.** One `agent-mark` row is written per subagent spawn, so `agent_marks` is a count of
+starts; `call_agents_sub` is how many distinct non-`main` agents appear on call rows. **Starts recorded with
+`call_agents_sub` at zero is a contradiction**, and it means the stored `agent_id` degraded to the literal
+`"main"` — indistinguishable from a genuine main-agent call, which is how whole ledgers recorded every
+subagent as `main` with every count beside them correct. The reader prints that finding when it holds. Report
+it as a HARNESS defect, not as a session finding: it says tier-1 fan-out detection was blind while those
+rows were written, so any clean fan-out reading over them means nothing.
+
+**`settings.window_unit` on a tier-1 verdict says what `window` COUNTS, and the two are not comparable
+across it.** `"calls"` means the number is a count of call rows; `"lines"` means it is a count of ledger
+lines, which stopped being the same thing once a result row began being written per call — a 20-line
+window was roughly 8 calls while the verdict still said 20. **`"lines"` is a BUILD MARKER, not a
+setting anyone chose:** only a pre-change build wrote a window with no unit beside it, so the reader
+infers the unit from the row rather than guessing it. Read it before you read `window`, never compare a
+`"lines"` window with a `"calls"` one, and treat a `"lines"` row as evidence about an older build rather
+than about that session's configuration. `null` means the row carries no window at all — tier 2 and
+tier 3 — and is not a third unit.
+
+**It closes one direction only, and the asymmetry decides what you may conclude.** `agent_marks` at zero
+cannot separate "no subagent ran" from "the canary is not firing", so never read a zero as evidence that
+attribution is sound. **And never join an `agent-mark` row to a `call` row** — the marks carry `agent_id` and
+`agent_type` so a firing can say WHICH agent type went missing, not so a caller can be identified from them.
+Identification is what `attribution.by_agent` does, by transcript scan, and that is the only honest route.
+
 **A `tier: 3` verdict carries `flagged_calls` and `unresolved_calls`** — how many calls that stage was asked
 to judge, and how many of those it could recover no transcript text for. They are the evidence the verdict
 rests on, not the verdict itself: a call whose stored transcript is missing counts as unresolved, and so does

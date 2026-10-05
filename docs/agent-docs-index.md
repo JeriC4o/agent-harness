@@ -133,3 +133,10 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Lifecycle.** Committed with the project — the local file is the evidence a filing had a source, and it survives a failed `gh` call so the text can be pasted manually. The directory is created on first use rather than scaffolded, since an empty directory cannot be committed.
 **When to read.** Before filing, to see whether the same defect already went upstream.
 
+### `ai-docs/fixtures/`
+
+**Purpose.** Real inputs, captured once and frozen, that a gate replays so a detector is exercised against the thing it ships against rather than against a hand-written approximation of it. One subdirectory per corpus; each carries the input, any derived mapping, and a baseline file holding the MEASURED expectation plus the input's own checksum, so a regenerated fixture fails by name instead of surfacing as a detector regression.
+**Writer.** The task that needs the corpus, once. A fixture is not refreshed as routine maintenance.
+**Lifecycle.** Committed and long-lived. Anything captured from a real session is scrubbed before it lands — and the scrub is a gate in the replaying suite, not a step someone remembers, because the needle is usually present in more than one spelling. Changing a fixture means changing its baseline on purpose, in the same commit.
+**When to read.** When a replay gate fails: read the baseline first, since it names whether the input or the detector moved.
+
