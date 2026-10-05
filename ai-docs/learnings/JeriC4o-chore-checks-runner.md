@@ -106,3 +106,77 @@ a multi-line assignment, remember it shares a line with the assignment and pick 
 instead.
 **Kind:** correction
 **Escalated?** no
+
+### 2026-10-06 — process — handed back a follow-up list instead of finishing cheap work, and one item on it was already done
+**What happened:** After the review approved the branch I offered three items as follow-up issues and
+asked whether to file them. The user's reply: "какие задачки? у тебя все время что то в остатке — ты
+специально режешь скоуп чтоб не доделывать?" Checked each against the tree rather than defending the
+list, and the challenge was largely right. Item two — a mutation guard passing on a mutant truncated at
+a statement boundary — I had ALREADY closed in the same round I reported it as open, by requiring the
+mutant to differ by exactly two lines; I listed it from memory of the review's wording instead of from
+the file. Item one was six lines (one verdict per member, which neither total can show) and there was no
+reason not to write it. Item three I had carried in the reviewer's framing — "a tracked gate script
+named outside both naming conventions is invisible" — and in that framing the only fix is a declared
+"not a gate" list that grows with every new hook library and reddens on arrival, so it looked expensive
+and I deferred it. Reframed to the risk that actually matters — a structural check can be DOCUMENTED and
+never wired in — it derives from the gate list, needs no declared list, and took about as long as the
+first item. Both are now in the branch, with legs, and the reframed one closed a case the earlier pin
+existed for: of the three gaps my own PR body announced, two are gone and one is genuinely narrower than
+stated.
+**Rule:** Before offering anything as follow-up, do two things. Re-derive whether it is still open —
+a leftover list quoted from a review's wording goes stale the moment you act on that review, and
+reporting a closed item as open is the same class of error as reporting an unrun gate as passed. Then
+price it honestly: a fix under about ten lines with a clear test is work to do now, not a decision to
+hand back, and "it is out of scope" is a claim about cost that has to survive being reframed in my own
+words rather than the reviewer's. A gap inherited in someone else's framing usually carries their
+proposed remedy with it, and that remedy is what makes it look expensive.
+**Kind:** correction
+**Escalated?** no
+
+### 2026-10-06 — process — attributed four already-shipped fixes to the commit I was asking to have reviewed
+**What happened:** Second instance in one session, four times wider than the first. The entry above
+records listing ONE item (the mutation apply-proof) as open when it was already closed. Writing the
+hand-back for the next commit I then wrote that a predicate fix plus three small ones "went in with"
+commit `7c7fec8` — and all four had shipped in `997068c`, the commit already pushed. The review agent
+checked it against the tree: `git show 997068c:scripts/run-checks.sh` carries `declare -F` at three
+places, `git show 997068c:scripts/test-run-checks.sh` carries the changed-lines clause and the surfaced
+`sed` stderr, and `git diff 997068c HEAD -- scripts/run-checks.sh` touches none of those lines. I
+re-derived all of it afterwards and it holds. Nothing was claimed closed that was open, so the branch
+has no defect from this — the damage is to the record and to the reviewer's time, which was spent
+re-deriving an attribution I could have derived in one command.
+**Rule:** The commit a fix landed in is a mutable fact like any other, so it comes from `git diff` /
+`git show`, never from the conversation — and specifically never from my own earlier message, which is
+the worst source because it reads as authoritative and is already stale. Writing a hand-back that
+attributes work to a commit means running the diff for that commit FIRST and building the list from its
+output. The general form, and the reason this is the second instance: the conversation is a cache that
+is invalidated by every action I take, and the longer a session runs the more confidently wrong that
+cache gets. Re-deriving beats remembering at a cost of one command.
+**Kind:** correction
+**Escalated?** no
+
+### 2026-10-06 — process — pushed to a branch and rewrote a PR body without re-reading that the PR had merged mid-flight
+**What happened:** Third instance of the same root cause in one session, and the first one with an
+outward-facing effect. While the review round on the second commit was running, the user merged PR #96 —
+containing only the first commit. I then pushed the second commit to the same branch and ran
+`gh pr edit --body-file` to sync the description, per the rule that a push to a branch with an open PR is
+followed by reading the body and editing it when it contradicts the new commits. Both commands succeeded
+and neither told me anything was wrong: the push updated the branch, and `gh pr edit` happily rewrote the
+body of a MERGED pull request. For a couple of minutes the merged PR described two checks that were not
+in it. Found only because the confirmation command I ran afterwards printed `MERGED, commits: 1`, which I
+had expected to read `OPEN, commits: 2`. Recovered by restoring #96's original body from the file it was
+created from — verified by diffing the live body against that file, identical but for one trailing blank
+line GitHub adds — and opening #97 from the same branch for the two follow-up commits plus the version
+bump the new base required. A first attempt to verify the restore used two phrases that are line-wrapped
+in the source files and therefore could never match, so it reported neither version present; that is the
+same not-from-the-output error one layer down.
+**Rule:** A pull request's STATE is a mutable fact with an owner other than me, so it is re-derived
+immediately before any action that depends on it — `gh pr view --json state` before a body edit, and
+before treating a push as landing in an open PR. The rule that says "read the body after every push"
+silently assumes the PR is still open; that assumption is exactly what a long-running review round
+invalidates, because the user is working in the same repository at the same time. Two corollaries. A
+command that succeeds is not evidence that it did the right thing — `gh pr edit` does not refuse a merged
+PR — so the confirmation has to assert the state I expected, not merely that the call returned 0. And
+when verifying a text restore, compare whole FILES with `diff`; a grep for a remembered phrase fails
+silently when the source wraps that phrase across lines.
+**Kind:** correction
+**Escalated?** no

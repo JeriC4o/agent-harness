@@ -281,8 +281,10 @@ claude --plugin-dir /Users/jc/projects/agent-harness
 ```
 
 There is no build. `bash scripts/run-checks.sh` runs the whole pre-commit gate list in one call and
-reports a verdict per member; it derives the suite list from the tree and reddens when that disagrees
-with the list `AGENTS.md` names, so a suite added without being documented does not go unnoticed. The
+reports a verdict per member; it derives the suite list from the tree and cross-checks it against the
+list `AGENTS.md` names — in both directions, for the test suites and for every structural check that
+section spells as a script invocation — so a script-backed gate can be neither documented and never
+wired in, nor wired in and never documented. The
 gate is six structural checks — JSON manifests parse, every relative link and
 anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script, this README
 documents an update procedure that actually updates, and the propagation reminder's path arms still agree

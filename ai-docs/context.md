@@ -87,8 +87,13 @@ No build. The checks in `AGENTS.md § Build & Test` are the gate: six structural
 contents, plus three delivery gates (`test-install-smoke.sh`, `check-release.sh`,
 `test-upgrade-smoke.sh`) that answer the question the structural ones cannot — does this reach a
 consumer. The structural six run in one call as `bash scripts/run-checks.sh`, which reports a verdict per
-member, derives its suite list from the tree rather than carrying one, and keeps every member's status
-instead of the last one's. The three delivery gates stay separate: they run once before a PR, need the
+member, derives its suite list from the tree rather than carrying one, keeps every member's status instead
+of the last one's, and cross-checks its own member table against the gate list in `AGENTS.md` — in both
+directions, for suites and for every structural check that section spells as a script invocation — so a
+script-backed gate can be neither documented-and-unwired nor wired-and-undocumented. The four members
+backed by a shell function rather than a script (the manifest parse, the syntax gate, the untracked-file
+check and the inventory itself) are outside that comparison: deleting their items from the gate list is
+silent, and the pinned member table in the suite is what covers them. The three delivery gates stay separate: they run once before a PR, need the
 `claude` CLI, and exit 2 when they cannot run, so folding them in would give the runner's rc 2 two
 meanings.
 
