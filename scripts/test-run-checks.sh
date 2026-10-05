@@ -64,10 +64,18 @@ make_tree() {
   cat > "$d/AGENTS.md" <<'AGENTS_EOF'
 ## Build & Test
 
+**Structural checks that stand in for a test suite** — run all of them:
+
+1. `jq -e .` on every manifest.
+2. `bash scripts/check-references.sh` — links resolve.
 4. `bash -n` on every `*.sh`.
    Then every test suite green:
    `scripts/test-alpha.sh`, `hooks/lib/test-beta.sh`.
 5. `bash scripts/check-readme-update.sh` — the README gate.
+5a. `bash scripts/check-propagation-arms.sh` — the arms gate.
+
+**Delivery gates** — below this heading, so the span must not reach them:
+`bash scripts/check-release.sh`.
 AGENTS_EOF
   git -C "$d" init -q
   git -C "$d" add AGENTS.md scripts hooks .claude-plugin
@@ -341,25 +349,85 @@ else
   bad "the unknown-kind mutation did not apply, so its leg would measure nothing"
 fi
 
-printf '\n== the member table is pinned, because repointing cannot be caught at runtime ==\n'
-# Moving an unexempt `check-*.sh` into a member's target silences its stray
-# finding, and since that member's own gate then no longer runs, nothing else
-# reddens either. Measured below on a real mutation, not argued. No runtime
-# property distinguishes it from a legitimate table -- the member's NAME is the
-# only thing that says what it was supposed to check -- so the table itself is
-# pinned here. Changing it on purpose means changing this leg, which is the point.
-make_tree "$FAKE"
-printf '#!/usr/bin/env bash\nexit 0\n' > "$FAKE/scripts/check-sneaky.sh"
-git -C "$FAKE" add scripts/check-sneaky.sh
-run "$FAKE"
-check "control: an unexempt check script is a finding" "$RC" "1"
-has "  and it is named" "$OUT" "scripts/check-sneaky.sh"
-if mutate_runner "$MUT" 'untracked-shell|fn:untracked_member' 'untracked-shell|sh:scripts/check-sneaky.sh'; then
-  ok "the repointing mutation applied and the mutant parses"
+printf '\n== one verdict per member, which the totals cannot show ==\n'
+# Repointing a member at ANOTHER member's function: two verdicts under one name,
+# none under the other, and both totals unchanged. The counts are blind to it by
+# construction, so the check is on the names that reported.
+if mutate_runner "$MUT" 'untracked-shell|fn:untracked_member' 'untracked-shell|fn:manifests_member'; then
+  ok "the cross-wiring mutation applied and the mutant parses"
+  make_tree "$FAKE"
   OUT=$(bash "$MUT" --root "$FAKE" 2>&1); RC=$?
-  check "repointing silences it at runtime — hence the pin below" "$RC" "0"
+  check "a member wired to another member's function -> rc 1" "$RC" "1"
+  has "  the verdict roll-call is what catches it" "$OUT" "FAIL member-verdicts"
+  has "  and the silent member is named in the expectation" "$OUT" "untracked-shell"
 else
-  bad "the repointing mutation did not apply, so the claim above is unmeasured"
+  bad "the cross-wiring mutation did not apply, so its leg would measure nothing"
+fi
+
+printf '\n== a structural check can be documented and never wired in ==\n'
+# The reverse direction of the suite-list check: AGENTS.md naming a gate the
+# runner does not run. Nothing else in the gate set can see that — the script
+# exists, parses, and is simply never invoked.
+make_tree "$FAKE"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$FAKE/scripts/check-newgate.sh"
+git -C "$FAKE" add scripts/check-newgate.sh
+sed 's|^5a\. `bash scripts/check-propagation-arms.sh` — the arms gate.|&\n5b. `bash scripts/check-newgate.sh` — a gate nobody runs.|' \
+  "$FAKE/AGENTS.md" > "$FAKE/AGENTS.md.new"
+mv "$FAKE/AGENTS.md.new" "$FAKE/AGENTS.md"
+if grep -q 'check-newgate' "$FAKE/AGENTS.md"; then
+  ok "the fixture now documents a gate that is not a member"
+else
+  bad "the fixture edit did not land, so the leg below measures nothing"
+fi
+run "$FAKE"
+check "a documented structural check that is not a member -> rc 1" "$RC" "1"
+has "  and it is named as documented-but-not-wired" "$OUT" "not a runner member: scripts/check-newgate.sh"
+
+make_tree "$FAKE"
+grep -v 'check-readme-update.sh` — the README gate' "$FAKE/AGENTS.md" > "$FAKE/AGENTS.md.new"
+mv "$FAKE/AGENTS.md.new" "$FAKE/AGENTS.md"
+run "$FAKE"
+check "a member AGENTS.md stops naming -> rc 1" "$RC" "1"
+has "  and the member is named" "$OUT" "does not name as a structural check: scripts/check-readme-update.sh"
+
+make_tree "$FAKE"
+grep -v '^\*\*Structural checks' "$FAKE/AGENTS.md" > "$FAKE/AGENTS.md.new"
+mv "$FAKE/AGENTS.md.new" "$FAKE/AGENTS.md"
+run "$FAKE"
+check "the structural heading gone -> rc 1, not an empty-and-matching parse" "$RC" "1"
+has "  and the empty parse is named as such" "$OUT" "names no structural check script"
+
+printf '\n== the member table is pinned, because repointing cannot be caught at runtime ==\n'
+# What the runtime checks now cover, and what is left. Repointing a member at an
+# UNDOCUMENTED script reddens on the documented-checks comparison -- and NOT on
+# the stray-script finding, which that same repointing SILENCES: `stray_checks`
+# exempts any path that has become a member script, which was the whole content
+# of the round-2 finding. The two findings swap, they do not stack, so neither is
+# a backstop for the other. Repointing at another member's FUNCTION reddens on
+# the verdict roll-call instead. Both cases were silent before those two checks
+# existed.
+#
+# This is the case none of them can see: a member repointed at another script
+# that AGENTS.md DOES name as a structural check. Every list still agrees, every
+# member name still reports exactly once, and the repointed member's own gate
+# simply never runs. The member's NAME is the only thing that says what it was
+# supposed to check, so the table itself is pinned below.
+# A paired control on ONE tree: it carries an unstaged script, which only the
+# untracked member can see. Unmutated, that member reddens. Repointed at a
+# documented check, the same tree passes -- so the gate stopped running and
+# every list still agrees.
+make_tree "$FAKE"
+printf '#!/usr/bin/env bash\nexit 0\n' > "$FAKE/scripts/unstaged-helper.sh"
+run "$FAKE"
+check "control: the untracked member catches an unstaged script" "$RC" "1"
+has "  and it is the untracked member that reddens" "$OUT" "FAIL untracked-shell"
+if mutate_runner "$MUT" 'untracked-shell|fn:untracked_member' 'untracked-shell|sh:scripts/check-references.sh'; then
+  ok "the documented-target repointing applied and the mutant parses"
+  OUT=$(bash "$MUT" --root "$FAKE" 2>&1); RC=$?
+  check "the same tree now PASSES — the gate silently stopped running" "$RC" "0"
+  has "  and the member name still reports, so only the pin can see it" "$OUT" "ok   untracked-shell"
+else
+  bad "the documented-target mutation did not apply, so the claim above is unmeasured"
 fi
 
 table=$(sed -n "/^MEMBERS='/,/'\$/p" "$RUNNER" | sed "s/^MEMBERS='//; s/'\$//")

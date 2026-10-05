@@ -177,6 +177,21 @@ documented_suites() {
     | tr -d '`' | sort -u
 }
 
+# The structural checks AGENTS.md names, as it names them: the span from the
+# list's own heading to the delivery-gates heading, so the three delivery gates
+# below that heading are excluded by construction. The runner itself appears in
+# that span as the way to RUN the list, and is excluded — it is not one of its
+# own members. This closes the hole that a structural check can be DOCUMENTED
+# and never wired in: the inventory compares this against the member table in
+# both directions.
+documented_checks() {
+  sed -n '/^\*\*Structural checks/,/^\*\*Delivery gates/p' "$ROOT/AGENTS.md" \
+    | grep -o '`bash scripts/[A-Za-z0-9._-]*\.sh`' \
+    | sed 's/`bash //; s/`$//' \
+    | grep -v '^scripts/run-checks\.sh$' \
+    | sort -u
+}
+
 stray_checks() {
   local p members
   members=$(member_scripts | tr '\n' ' ')
@@ -190,8 +205,20 @@ stray_checks() {
 # Empty output means agreement, so every way of producing nothing has to be
 # ruled out before the comparison rather than after it.
 inventory_findings() {
-  local doc der
+  local doc der dchk mchk
   members_findings
+
+  dchk=$(documented_checks)
+  mchk=$(member_scripts | sort -u)
+  if [ -z "$dchk" ]; then
+    printf 'AGENTS.md names no structural check script between its list heading and the delivery-gates heading, and an empty parse must not read as agreement.\n'
+  else
+    comm -23 <(printf '%s\n' "$mchk") <(printf '%s\n' "$dchk") \
+      | sed 's|^|a runner member that AGENTS.md does not name as a structural check: |'
+    comm -13 <(printf '%s\n' "$mchk") <(printf '%s\n' "$dchk") \
+      | sed 's|^|named as a structural check in AGENTS.md but not a runner member: |'
+  fi
+
   der=$(derived_suites | sed '/^$/d')
   doc=$(documented_suites | sed '/^$/d')
   if [ -z "$doc" ]; then
@@ -210,15 +237,20 @@ inventory_findings() {
 }
 
 PASSED=0; FAILED=0; FAILED_NAMES=''
+# Which names reported a verdict, in order. Read after the member loop: the
+# totals cannot show a member that never ran if another ran twice in its place.
+REPORTED=''
 
 report_ok() {
   PASSED=$((PASSED+1))
+  REPORTED="${REPORTED}${REPORTED:+ }$1"
   printf 'ok   %s%s\n' "$1" "${2:+ — $2}"
   return 0
 }
 report_fail() {
   FAILED=$((FAILED+1))
   FAILED_NAMES="${FAILED_NAMES}${FAILED_NAMES:+, }$1"
+  REPORTED="${REPORTED}${REPORTED:+ }$1"
   printf 'FAIL %s%s\n' "$1" "${2:+ — $2}"
   if [ -n "${3:-}" ]; then printf '%s\n' "$3" | sed 's/^/     | /'; fi
   return 0
@@ -226,6 +258,7 @@ report_fail() {
 report_missing() {
   FAILED=$((FAILED+1))
   FAILED_NAMES="${FAILED_NAMES}${FAILED_NAMES:+, }$1"
+  REPORTED="${REPORTED}${REPORTED:+ }$1"
   printf 'MISSING %s — %s\n' "$1" "$2"
   return 0
 }
@@ -328,6 +361,18 @@ while IFS='|' read -r name spec; do
 done <<MEMBERS_EOF
 $MEMBERS
 MEMBERS_EOF
+
+# Exactly one verdict per member, in the table's order. The case this exists
+# for: a member repointed at ANOTHER member's function prints two verdicts under
+# one name and none under the other, while both the ok and the failed totals
+# stay exactly as they were — so neither count can show it, and the member whose
+# gate silently stopped running is the one nobody hears from.
+expected_verdicts=$(member_names | tr '\n' ' ' | sed 's/ *$//')
+if [ "$REPORTED" != "$expected_verdicts" ]; then
+  report_fail member-verdicts "one verdict per member expected, in order" \
+    "expected: $expected_verdicts
+got:      $REPORTED"
+fi
 
 # Suites run in sorted order with a progress line each, because one of them
 # takes about four minutes and silence there reads as a hang.

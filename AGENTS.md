@@ -30,9 +30,18 @@ not a pass). Prefer it: the no-masking rule forbids piping a gate, so running th
 bare tool call per member, and at the context a review round actually reaches, the re-read term alone is
 roughly $0.20 a call. A checked-in script is where that rule explicitly permits the chain. The
 enumeration below stays, for two reasons: it carries the rationale for each check's exact spelling, and
-the runner **derives** its suite list from the tree and then asserts that derived list matches item 4's —
-so the list is machine-checked rather than decorative, and a suite added to the tree without being named
-here is a red `gate-inventory` member. Running members by hand remains correct; it is the same commands.
+it is now machine-checked rather than decorative. The runner **derives** its suite list from the tree and
+asserts that derived list matches item 4's, in both directions; it asserts that every `bash scripts/*.sh`
+this section names between the **Structural checks** heading and the **Delivery gates** heading is one of
+its own members, in both directions; and it requires exactly one verdict per member, because a member
+wired to another member's work leaves both totals unchanged. Running members by hand remains correct; it
+is the same commands.
+
+> **The shape of this section is load-bearing.** Those two bold headings are the span the runner parses,
+> and a structural check is recognised by being spelled `` `bash scripts/<name>.sh` `` inside it. Moving a
+> gate across either heading, or respelling its invocation, changes what the `gate-inventory` member
+> computes — re-run it after editing here and read which members it names, not only its exit status. The
+> runner itself appears in that span as the way to RUN the list and is excluded from the comparison.
 
 1. `jq -e . hooks/hooks.json .claude-plugin/plugin.json .claude-plugin/marketplace.json` — manifests parse.
 2. `bash scripts/check-references.sh` — markdown links and `#anchor`s resolve; every
