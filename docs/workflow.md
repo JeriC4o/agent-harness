@@ -282,6 +282,8 @@ workaround keeps the net intact.
 
 Resolve only comments fixed by code; objections stay open for the reviewer.
 
+**A reply is read by a human reviewer** — self-contained, in the product's own terms: **never** cite a `*.spec.md` / `*.design.md` or an acceptance-criterion / decomposition-task id at a reviewer; restate the reasoning inline ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)).
+
 | Category | Reply | Resolve? |
 |---|---|---|
 | `fix` | "Addressed in <commit-hash>: <one-liner>" | YES |

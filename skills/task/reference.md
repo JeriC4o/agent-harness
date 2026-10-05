@@ -55,7 +55,7 @@ Activation sequence (bare-ticket → matching deferred spec):
 ## Design Amendment recipe (re-entrant — triggered from Step 8 or Step 11)
 
 1. **Stop** the current step. Do not silently continue with the deviated approach.
-2. **Surface to user** — describe what changed and why the design must be updated. Wait for approval.
+2. **Surface to user** — say what the system will now do differently and why, in the product's own terms, answerable without opening a file: **no** design-document or spec citation, **no** acceptance-criterion or decomposition-task id; restate the constraint inline ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)). Wait for approval.
 3. **Spawn the `design` subagent to apply the amendment** — do NOT edit `*.design.md` inline. Per AGENTS.md AXIOM "the orchestrator NEVER writes to `*.spec.md` / `*.design.md`":
    ```
    Agent(subagent_type="general-purpose", prompt="
@@ -88,7 +88,7 @@ If a Step 7 design-review GO verdict surfaces a `note` / `minor` / recommendatio
 
 1. **Classify each note** at Step 7 close: **design-internal** (route through `design` subagent for in-place fold-in; no loop) vs **spec-amending** (note implies a spec wording / AC / constraint change).
 2. **Stop before Step 8.** Do not begin implementation against the pre-amendment spec — FORBIDDEN.
-3. **Surface to user via `AskUserQuestion`** — describe the candidate spec amendment and wait for explicit approval.
+3. **Surface to user via `AskUserQuestion`** — state the requirement change itself in plain product terms (what is expected of the system now, versus before), not as a spec edit: **no** spec or design citation, **no** acceptance-criterion id ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)). Wait for explicit approval.
 4. **On user approval — re-invoke the `spec-writer` subagent to apply the amendment** — do NOT `Edit` `*.spec.md` inline. Per AGENTS.md AXIOM "the orchestrator NEVER writes to `*.spec.md` / `*.design.md`":
    - Update the interview state file (`<spec_path>.state.md`) by appending the user's amendment description as a Q&A entry in `prior_qa`, incrementing `round`.
    - Spawn `spec-writer` with the updated state. The spec-writer owns the `Write` to `*.spec.md`.
