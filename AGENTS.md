@@ -50,12 +50,17 @@ instruction files:
    `scripts/test-trace-tokens.sh`, `scripts/test-session-events.sh`,
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
    `scripts/test-check-readme-update.sh`, `scripts/test-loop-metrics.sh`,
-   `scripts/test-bin-of.sh`,
+   `scripts/test-bin-of.sh`, `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh`,
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
+   `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-ledger-write.sh`,
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
    `scripts/test-check-propagation-arms.sh`, `scripts/test-hook-behaviour.sh`.
+   **`scripts/test-loop-corpus.sh` takes about four minutes** — 1728 real call rows replayed at 18
+   window widths across two legs — and it deliberately ships no flag to narrow that, because an
+   opt-out is the "gate that silently narrows its own input set" hazard one paragraph up. Budget for
+   it; do not skip it.
 5. `bash scripts/check-readme-update.sh` — refuses a `README.md` whose update surface names a verb that
    cannot upgrade: a fenced `plugin install` outside the Install section, a fenced `marketplace update`
    with no `plugin update` beside it, or an Update section carrying no upgrade verb at all. Needs no

@@ -1,0 +1,16 @@
+{
+  "_what": "Firings of the FIXED detector over 44f957de.real.jsonl, replayed at every call row. Keys are HARNESS_LOOP_TAIL in CALLS; 'unbounded' means a window wider than the leg. The gate diffs against this, so it fails on an unexplained CHANGE and never on the count being greater than zero: reach is allowed to rise, and this leg is not a cap on the fixed rule.",
+  "_measured": "2026-10-05, from the committed fixture named below, not copied from the design document. Copying would make the gate compare that document against itself, so a fixture differing from the snapshot would go unnoticed in exactly the direction this file exists to catch.",
+  "_fixture": "44f957de.real.jsonl",
+  "_fixture_sha256": "b82b58db5975a04df392fb8e1767988d3f9f12fe2fbcb582521780bbfad6ed3e",
+  "_fixture_rows": {"total": 3999, "call": 1728, "result": 1715, "turn": 529, "verdict": 27},
+  "_firing_ordinals": "Every firing at every width is one of call ordinals 1458, 1470, 1471 -- the tail of fp=3562779350. All are signal 'loop' with agents=1 here, because the real leg records all five as 'main'; the repaired leg turns the same rows into 'fanout'.",
+  "firings": {
+    "20": 2,
+    "26": 3,
+    "40": 3,
+    "100": 3,
+    "343": 3,
+    "unbounded": 3
+  }
+}

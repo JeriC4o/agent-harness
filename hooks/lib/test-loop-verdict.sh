@@ -34,6 +34,29 @@ export HARNESS_LOOP_DIR="${WORK}/loops"
 # settings is not a gate. The shipped DEFAULT is still checked, once, explicitly,
 # with the variable genuinely removed -- see the section at the end.
 export HARNESS_T3_MODEL=off
+# TMPDIR is redirected into the work tree because the unwritable-ledger report
+# records "already said" as a marker there. Left pointing at the real temp dir,
+# the first run would leave a marker that silenced every later run of this
+# suite -- green, and measuring nothing.
+#
+# AND IT IS REFRESHED PER CASE, inside reset(), which is the part that was wrong
+# the first time. THE ONCE-PER-SESSION MARKER IS AN ADMISSION FILTER KEYED ON
+# THE EXACT PROPERTY EVERY ASSERTION ABOUT THE REPORT DEPENDS ON, and it
+# persists across processes by design. So a case that asserts "no report" is
+# satisfied by a marker any EARLIER case left behind: the negative control below
+# passed for that reason, with the marker from the unwritable block still in
+# place, and a probe printed `[harness-ledger-warned-sess-t2 ]` at exactly that
+# point. The feature introduced to make silent degradation detectable thereby
+# built a second way for a test to go silently vacuous -- which is the hazard
+# this repo names, arriving from the direction nobody was watching.
+#
+# A fresh TMPDIR per case is the fix, matching hooks/lib/test-ledger-write.sh's
+# `fresh_tmp()` ("so a marker from one case cannot silence the next"). It must
+# live in reset() rather than per assertion, because the one case that NEEDS the
+# marker to persist -- the second turn, proving the report does not repeat --
+# calls no reset between its two runs.
+export TMPDIR="${WORK}/tmp"
+mkdir -p "$TMPDIR"
 mkdir -p "$WORK/bin"
 SID="sess-t2"
 LED="${HARNESS_LOOP_DIR}/${SID}.jsonl"
@@ -49,7 +72,13 @@ chmod +x "$WORK/bin/claude"
 export PATH="$WORK/bin:$PATH"
 export STUB_CALLS="${WORK}/claude-calls"
 
-reset() { rm -rf "$HARNESS_LOOP_DIR"; mkdir -p "$HARNESS_LOOP_DIR"; : > "$TP"; : > "$STUB_CALLS"; }
+reset() {
+  rm -rf "$HARNESS_LOOP_DIR"; mkdir -p "$HARNESS_LOOP_DIR"; : > "$TP"; : > "$STUB_CALLS"
+  # The marker namespace is per case, for the reason above. Clearing the ledger
+  # dir is NOT enough: the marker lives in TMPDIR precisely because the ledger
+  # directory is the thing that may be unwritable.
+  TMPDIR=$(mktemp -d "${WORK}/tmp.XXXXXX"); export TMPDIR
+}
 
 # A real call, through the real tier-1 hook, so `bin` is derived in production.
 CALLN=0
@@ -310,6 +339,86 @@ HARNESS_T3_MODEL=haiku stop >/dev/null
 check "with the model on, the same input records judged true" \
       "$(jq -rs '[.[]|select(.tier==2)][0].judged' < "$LED")" "true"
 check "  and the model IS called" "$(calls)" "1"
+
+# ---------------------------------------------------------------------------
+printf '\n== an unwritable ledger FILE is reported ONCE per session, not once per write ==\n'
+# ---------------------------------------------------------------------------
+# THE TRIGGER HERE IS NOT loop-index.sh's. That file leaks when the DIRECTORY is
+# unwritable, because the ledger does not exist yet and the open fails. This one
+# leaks when the FILE is unwritable -- a mode change, a read-only mount, a
+# ledger owned by someone else.
+#
+# THE FIXTURE MUST BE NON-EMPTY AND UNWRITABLE, both. `[ -s "$ledger" ] || exit 0`
+# near the top of the hook tests existence and SIZE, never writability, so an
+# empty fixture takes the early exit and measures nothing at all -- the same trap
+# as the mid-write case that passed against a planted defect because its ledger
+# happened to be empty.
+reset; n_of 8 "grep -rn"
+before=$(wc -l < "$LED" | tr -d ' ')
+chmod 444 "$LED"
+if [ -w "$LED" ]; then
+  bad "precondition: a chmod 444 ledger is still writable here, so this case cannot run"
+else
+  ok "precondition: the ledger is unwritable"
+  check "precondition: and NON-empty, so the early size exit is not what is being measured" \
+        "$( [ -s "$LED" ] && echo yes || echo no )" "yes"
+  VRC=0
+  jq -nc --arg s "$SID" '{session_id:$s,hook_event_name:"Stop"}' \
+    | HARNESS_T3_MODEL=haiku bash "$HOOK" > "${WORK}/vout" 2> "${WORK}/verr" || VRC=$?
+  check "the hook still exits 0 -- a Stop hook returning non-zero forces the turn to continue" \
+        "$VRC" "0"
+  verr=$(cat "${WORK}/verr")
+  has "it names the consequence" "$verr" "LOOP DETECTION IS DISABLED"
+  case "$verr" in
+    *"ermission denied"*) bad "the raw shell error still leaks beside the sentence" ;;
+    *)                    ok "no raw shell error leaks beside it" ;;
+  esac
+  # THREE writes failed in this one run -- the turn marker, the tier-2 verdict
+  # and the tier-3 verdict -- and the report is a property of the SESSION, not
+  # of the write. One sentence, or the "once" is not implemented.
+  n=$(grep -c 'LOOP DETECTION IS DISABLED' "${WORK}/verr" || true)
+  check "exactly ONE sentence although three separate writes failed" "$n" "1"
+  # The finding itself still reaches the human. Losing the ability to RECORD a
+  # verdict must not lose the advisory that the verdict was reached.
+  has "the coarse-repeat advisory is still printed" "$verr" "[loop-index] coarse repeat:"
+  check "and nothing went to stdout" "$(wc -c < "${WORK}/vout" | tr -d ' ')" "0"
+  # The converse: every one of those writes really did fail, so the three sites
+  # are all exercised rather than one of them standing in for the others.
+  check "the ledger grew by nothing at all" "$(wc -l < "$LED" | tr -d ' ')" "$before"
+  check "  so no turn marker was recorded" "$(turns)" "0"
+  check "  no tier-2 verdict"              "$(v2)" "0"
+  check "  and no tier-3 verdict"          "$(v3)" "0"
+  VRC=0
+  jq -nc --arg s "$SID" '{session_id:$s,hook_event_name:"Stop"}' \
+    | HARNESS_T3_MODEL=haiku bash "$HOOK" > "${WORK}/vout" 2> "${WORK}/verr2" || VRC=$?
+  check "the SECOND turn -- a separate process -- exits 0 too" "$VRC" "0"
+  case "$(cat "${WORK}/verr2")" in
+    *"LOOP DETECTION IS DISABLED"*) bad "the second turn repeated the warning" ;;
+    *)                              ok "and does not repeat the warning" ;;
+  esac
+  has "  while still printing the finding itself" "$(cat "${WORK}/verr2")" "[loop-index] coarse repeat:"
+fi
+chmod 644 "$LED"
+
+printf '\n-- and a writable ledger is unaffected, which is what makes the above a finding --\n'
+reset; n_of 8 "grep -rn"
+# The slot is freed IMMEDIATELY BEFORE the measured call, not merely at the top
+# of the case. reset() gives this case a private namespace, but the seeding
+# `n_of 8` calls run the tier-1 hook eight times and any one of them could claim
+# the slot under a defect that reports on success -- which is precisely what
+# happens, so without this the control is blind to that defect while its
+# precondition is the only thing that notices. Clearing here makes a spurious
+# report at the measured call visible as itself.
+rm -rf "$TMPDIR"/harness-ledger-warned-* 2>/dev/null
+check "precondition: the report slot is free, so a spurious report would be visible" \
+      "$(find "$TMPDIR" -maxdepth 1 -name 'harness-ledger-warned-*' | wc -l | tr -d ' ')" "0"
+out=$(stop_err)
+case "$out" in
+  *"LOOP DETECTION IS DISABLED"*) bad "the report fired on a perfectly writable ledger" ;;
+  *)                              ok "nothing is reported when the ledger is writable" ;;
+esac
+check "  and the turn marker IS recorded" "$(turns)" "1"
+check "  beside the tier-2 verdict"       "$(v2)" "1"
 
 printf '\n== wired into hooks.json on both stop events, unguarded ==\n'
 for ev in Stop SubagentStop; do

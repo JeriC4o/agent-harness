@@ -82,9 +82,33 @@ for comp in spec-writer design design-review self-review review-findings self-im
   case "$det" in *"$comp"*) ok "agent: $comp" ;; *) bad "agent: $comp missing from the inventory" ;; esac
 done
 # Hooks are the component that silently vanished in the bug this gate exists for.
-for ev in SessionStart PreToolUse PostToolUse PostToolUseFailure Stop SubagentStop; do
+EVENTS=(SessionStart PreToolUse PostToolUse PostToolUseFailure Stop SubagentStart SubagentStop)
+for ev in "${EVENTS[@]}"; do
   case "$det" in *"$ev"*) ok "hook event: $ev" ;; *) bad "hook event: $ev not registered" ;; esac
 done
+# THE CONVERSE ASSERTION, and the loop above is worthless without it. Every
+# check in that loop is PRESENCE-ONLY: an event the manifest registers and this
+# list omits leaves the gate GREEN, so until this line existed the list was a
+# gate on the install and never on the manifest. Measured as a real gap, not a
+# hypothetical: the `SubagentStart` arm was added to hooks.json and every
+# assertion in this file stayed green. The count is derived from the manifest so
+# the NEXT new event announces itself here instead of relying on whoever edits
+# the file next having read this comment.
+MANIFEST_EVENTS=$(jq -r '.hooks | keys | length' "${ROOT}/hooks/hooks.json" 2>/dev/null)
+# A count that could not be read must SAY so. An unreadable manifest leaves this
+# empty, and an empty comparand silently turns a count assertion into a string
+# mismatch whose message names no number -- observed while falsifying this very
+# assertion from a relocated copy, where ROOT pointed outside the repo.
+case "$MANIFEST_EVENTS" in
+  ''|*[!0-9]*)
+    bad "could not read the event count from ${ROOT}/hooks/hooks.json -- the assertion below cannot run"
+    MANIFEST_EVENTS="unreadable" ;;
+esac
+if [ "${#EVENTS[@]}" = "$MANIFEST_EVENTS" ]; then
+  ok "the event list covers every event hooks.json registers (${MANIFEST_EVENTS})"
+else
+  bad "the event list checks ${#EVENTS[@]} event(s) but hooks.json registers ${MANIFEST_EVENTS} -- a registered event missing from the list above leaves this gate green: $(jq -r '.hooks | keys | join(", ")' "${ROOT}/hooks/hooks.json")"
+fi
 
 # The loops above enumerate COMPONENTS; nothing above asserts that a FILE reached
 # the install. The gate's report mode refuses to run without these two -- it reads

@@ -85,6 +85,22 @@ verdict rows carry evidence of their own: a `tier: 3` row records `flagged_calls
 summary that keeps the counts and drops the flags hands over the one shape that reads as confident and
 is not.
 
+**Pass `agent_marks`, `agent_mark_ids` and `call_agents_sub` too — they are the ledger's own check on the
+stored attribution, and they are the only one that needs no transcript.** One `agent-mark` row is written
+per subagent spawn. Starts recorded with `call_agents_sub` at zero means the stored `agent_id` degraded to
+the literal `"main"`, which reads as a genuine main-agent call, so a clean fan-out reading over those rows
+means nothing; the agent has a reading for it and reports it as a harness defect. **The check closes one
+direction only** — zero recorded starts cannot separate "no subagent ran" from "the canary is not firing" —
+so a zero is never evidence that attribution is sound.
+
+**A tier-1 verdict row carries `settings.window_unit`, and a row without it is not the same row.** `window`
+changed meaning without changing shape: rows written before the call-counted window recorded a number of
+ledger LINES, rows after it record a number of CALLS. Comparing two `window` values across that line
+compares two different units, so read the unit before reading the number. **An older row reads `"lines"`,
+not `null`** — the reader infers it from the row, because only a pre-change build wrote a window with no
+unit beside it and that build counted lines. `null` is reserved for a row with no window at all (tier 2,
+tier 3), so it means "no unit applies" rather than "unknown".
+
 ## Step 2: Judge — spawn the inspector
 
 ```

@@ -40,7 +40,7 @@ v3()   { jq -nc --arg b "$1" --arg v "$2" \
 turn() { jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"turn"}' >> "$L"; }
 j() { bash "$READER" "$L" --json; }
 
-printf '\n== it counts the two record classes apart ==\n'
+printf '\n== it counts the record classes apart ==\n'
 new; call Bash a t1; call Bash a t2; call Bash a t3; v1 Bash a
 r=$(j)
 check "calls"    "$(printf '%s' "$r" | jq -r '.totals.calls')"    "3"
@@ -677,6 +677,226 @@ rc2() { # $1 label, $2 expected message fragment, rest: args
 rc2 "--for with no path -> 2, naming the missing argument" "needs a transcript path" --for
 rc2 "--for with --all -> 2, naming the conflict"           "different questions" --for "$MAINTX" --all
 rc2 "--for with a ledger too -> 2, naming the confusion"   "not the ledger"      --for "$MAINTX" "$FL"
+
+# ---------------------------------------------------------------------------
+printf '\n== the attribution canary: starts recorded, no non-main caller ==\n'
+# ---------------------------------------------------------------------------
+# WHY THIS EXISTS. An absent or non-string agent_id degrades to the literal
+# "main" in the hook, which is indistinguishable from a genuine main-agent call.
+# Ten of twelve field ledgers recorded every subagent that way with no symptom.
+# A count of subagent STARTS makes "N started, zero non-main call rows"
+# self-contradictory, and that is the only thing the canary claims.
+mark() { # <agent_id> <ledger>
+  jq -nc --arg a "$1" \
+    '{ts:"2026-09-26T00:00:00Z",kind:"agent-mark",agent_id:$a,agent_type:"general-purpose"}' >> "$2"
+}
+mcall() { # <tool_use_id> <agent_id> <ledger>
+  jq -nc --arg id "$1" --arg a "$2" \
+    '{ts:"2026-09-26T00:00:00Z",kind:"call",agent_id:$a,tool:"Bash",fp:"f",
+      tool_use_id:$id,transcript:"/tmp/x.jsonl",cwd:"/Users/me/work/canary"}' >> "$3"
+}
+
+CN="$W/canary"; mkdir -p "$CN/loops"
+CNL="$CN/loops/sess-degraded.jsonl"
+: > "$CNL"
+mcall c1 main "$CNL"; mark AAA "$CNL"; mcall c2 main "$CNL"; mark BBB "$CNL"; mcall c3 main "$CNL"
+# AC16's "without scanning any transcript" is asserted by the FIXTURE, not by a
+# sentence about the code: the directory holds the ledger and nothing else, so a
+# reader that needed a transcript could not have read one.
+check "precondition: the fixture tree holds the ledger and no transcript at all" \
+      "$(find "$CN" -name '*.jsonl' | wc -l | tr -d ' ')" "1"
+r=$(HARNESS_LOOP_DIR="$CN/loops" bash "$READER" --all --json)
+check "the starts are counted" \
+      "$(printf '%s' "$r" | jq -r '.sessions[0].agent_marks')" "2"
+check "  and their distinct ids" \
+      "$(printf '%s' "$r" | jq -r '.sessions[0].agent_mark_ids')" "2"
+check "  while no call row names a non-main agent" \
+      "$(printf '%s' "$r" | jq -r '.sessions[0].call_agents_sub')" "0"
+check "the agent-mark rows are NOT counted as calls" \
+      "$(printf '%s' "$r" | jq -r '.sessions[0].calls')" "3"
+out=$(HARNESS_LOOP_DIR="$CN/loops" bash "$READER" --all)
+has "the contradiction is printed in --all, the view with no transcript access at all" \
+    "$out" "ATTRIBUTION CANARY: 2 subagent start(s) recorded"
+has "  and the bound is stated rather than left to be inferred" \
+    "$out" "zero recorded starts cannot separate"
+
+printf '\n-- the negative control: starts and non-main call rows AGREE --\n'
+AGREE="$W/canary-ok"; mkdir -p "$AGREE/loops"
+AGL="$AGREE/loops/sess-fine.jsonl"
+: > "$AGL"
+mcall c1 main "$AGL"; mark AAA "$AGL"; mcall c2 AAA "$AGL"; mcall c3 main "$AGL"
+r=$(HARNESS_LOOP_DIR="$AGREE/loops" bash "$READER" --all --json)
+check "the start is counted here too" \
+      "$(printf '%s' "$r" | jq -r '.sessions[0].agent_marks')" "1"
+check "  and a non-main caller IS on the record, so there is no contradiction" \
+      "$(printf '%s' "$r" | jq -r '.sessions[0].call_agents_sub')" "1"
+out=$(HARNESS_LOOP_DIR="$AGREE/loops" bash "$READER" --all)
+case "$out" in
+  *"ATTRIBUTION CANARY"*) bad "the canary fired on a session whose records agree" ;;
+  *)                      ok "nothing is printed when the two records agree" ;;
+esac
+
+printf '\n-- zero starts says nothing either way, and the report admits it --\n'
+NONE="$W/canary-none"; mkdir -p "$NONE/loops"
+NL2="$NONE/loops/sess-quiet.jsonl"
+: > "$NL2"
+mcall c1 main "$NL2"; mcall c2 main "$NL2"
+out=$(HARNESS_LOOP_DIR="$NONE/loops" bash "$READER" --all)
+case "$out" in
+  *"ATTRIBUTION CANARY"*) bad "the canary fired with no starts recorded, which it cannot know anything about" ;;
+  *)                      ok "no starts recorded -> no claim made" ;;
+esac
+has "  and the one-directional bound is printed anyway, which is where it matters" \
+    "$out" "the canary itself is not firing"
+
+printf '\n-- POSITIVE CONTROL: admit main into the non-main count and the canary goes blind --\n'
+# This is the exact hazard the method's test conventions name: a filter keyed on
+# the property that separates a real finding from a dismissable one structurally
+# excludes the case the finding exists to confirm. Here the property IS the
+# "main" literal, so admitting it is the one-token defect that silences the
+# canary on every session it was built for.
+MC1="$W/mut-canary-admits-main.sh"
+# Anchored on `call_agents_sub`, because the same filter spelling appears twice
+# in the reader -- here and in the --for unread-agent census -- and an unanchored
+# substitution silently mutates whichever comes first. The count assertion that
+# went with the unanchored form read 1 remaining and failed while the mutation
+# had in fact landed, which is the weaker half of the same confusion.
+perl -0pe 's/(call_agents_sub: .*?)select\(\. != null and \. != "main"\)/$1select(. != null)/s' "$READER" > "$MC1"
+check "the mutation applied to the canary field and not to its namesake" \
+      "$(grep -c 'call_agents_sub: (\[ $calls\[\] | .agent_id | select(. != null) \]' "$MC1")" "1"
+check "  and the --for census kept its own copy of the filter" \
+      "$(grep -c 'select(. != null and . != "main")' "$MC1")" "1"
+r=$(HARNESS_LOOP_DIR="$CN/loops" bash "$MC1" --all --json)
+check "without the main exclusion, the degraded session reports a non-main caller" \
+      "$(printf '%s' "$r" | jq -r '.sessions[0].call_agents_sub')" "1"
+case "$(HARNESS_LOOP_DIR="$CN/loops" bash "$MC1" --all)" in
+  *"ATTRIBUTION CANARY"*) bad "the mutated reader still fired, so the exclusion is not what makes it work" ;;
+  *)                      ok "and the contradiction disappears -- the exclusion is load-bearing" ;;
+esac
+
+printf '\n-- POSITIVE CONTROL: count agent-mark rows as calls and the contradiction self-cancels --\n'
+MC2="$W/mut-canary-marks-are-calls.sh"
+perl -0pe 's/select\(\.kind == "agent-mark"\) \] \| length\)/select(.kind == "agent-mark" or .kind == "call") ] | length)/' "$READER" > "$MC2"
+check "the mutation applied" "$(grep -c 'agent-mark" or .kind == "call"' "$MC2")" "1"
+check "a mark count that also counts calls reads 5 where the truth is 2" \
+      "$(HARNESS_LOOP_DIR="$CN/loops" bash "$MC2" --all --json | jq -r '.sessions[0].agent_marks')" "5"
+
+# ---------------------------------------------------------------------------
+printf '\n== AC17: the report is unchanged except for the three new fields ==\n'
+# ---------------------------------------------------------------------------
+# The same ledger with and without the marks, with the three fields deleted from
+# both: anything else that moved is a reading the new row class disturbed.
+A17="$W/ac17-with"; B17="$W/ac17-without"
+mkdir -p "$A17/loops" "$B17/loops"
+AL="$A17/loops/sess-x.jsonl"; BL="$B17/loops/sess-x.jsonl"
+: > "$AL"; : > "$BL"
+for led in "$AL" "$BL"; do
+  mcall c1 main "$led"; mcall c2 main "$led"; mcall c3 main "$led"
+  jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"result",tool_use_id:"c1",ok:true}' >> "$led"
+  jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"turn"}' >> "$led"
+  jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:1,signal:"loop",tool:"Bash",
+           fp:"f",count:3,agents:1,decision:"ask",window:20,window_unit:"calls",threshold:3}' >> "$led"
+done
+mark AAA "$AL"; mark BBB "$AL"; mark CCC "$AL"
+strip='del(.sessions[].agent_marks, .sessions[].agent_mark_ids, .sessions[].call_agents_sub)'
+wa=$(HARNESS_LOOP_DIR="$A17/loops" bash "$READER" --all --json | jq -S "$strip")
+wo=$(HARNESS_LOOP_DIR="$B17/loops" bash "$READER" --all --json | jq -S "$strip")
+if [ "$wa" = "$wo" ]; then
+  ok "three marks change nothing else in the whole report"
+else
+  bad "a field other than the three moved when agent-mark rows were added"
+  printf '%s\n' "$wa" > "$W/ac17-a.json"; printf '%s\n' "$wo" > "$W/ac17-b.json"
+  diff "$W/ac17-a.json" "$W/ac17-b.json" | sed -n '1,12p'
+fi
+# The converse control: without it the comparison above is also what a reader
+# that cannot see the marks at all would report.
+check "control: the marks WERE present and were counted" \
+      "$(HARNESS_LOOP_DIR="$A17/loops" bash "$READER" --all --json | jq -r '.sessions[0].agent_marks')" "3"
+check "control: and absent from the other leg" \
+      "$(HARNESS_LOOP_DIR="$B17/loops" bash "$READER" --all --json | jq -r '.sessions[0].agent_marks')" "0"
+
+# ---------------------------------------------------------------------------
+printf '\n== settings.window_unit survives the allowlist projection ==\n'
+# ---------------------------------------------------------------------------
+# `window` changed meaning without changing shape, so a projection that drops
+# the unit hands the reader two incomparable numbers under one name.
+check "a post-change verdict row carries its unit through" \
+      "$(HARNESS_LOOP_DIR="$A17/loops" bash "$READER" --all --json | jq -r '.sessions[0].rows[0].settings.window_unit')" "calls"
+check "  beside the window it qualifies" \
+      "$(HARNESS_LOOP_DIR="$A17/loops" bash "$READER" --all --json | jq -r '.sessions[0].rows[0].settings.window')" "20"
+LEG="$W/legacy-unit"; mkdir -p "$LEG/loops"
+LGL="$LEG/loops/sess-old.jsonl"
+: > "$LGL"
+mcall c1 main "$LGL"
+jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:1,signal:"loop",tool:"Bash",
+         fp:"f",count:3,agents:1,decision:"ask",window:20,threshold:3}' >> "$LGL"
+# A ROW WITH A WINDOW AND NO UNIT READS "lines", and that is an inference from a
+# build marker rather than a guess: only a pre-change build wrote a window with
+# no unit beside it, and that build counted LINES. Reading it as "calls" would
+# assert the one thing false of every pre-change row; reading it as null would
+# discard a fact the row carries and leave "written before the change"
+# indistinguishable from "this reader does not know", which is exactly the
+# distinction the field was added to make. Both wrong answers are asserted
+# against below, because a test that only rules out "calls" would have accepted
+# the null this suite previously pinned.
+unit_of() { HARNESS_LOOP_DIR="$1" bash "$READER" --all --json | jq -r '.sessions[0].rows[0].settings.window_unit'; }
+check "a pre-change row reads \"lines\", inferred from the window it does carry" \
+      "$(unit_of "$LEG/loops")" "lines"
+check "  and specifically NOT null, which would discard the inference" \
+      "$( [ "$(unit_of "$LEG/loops")" = "null" ] && echo discarded || echo kept )" "kept"
+check "  and NOT \"calls\", which is the one thing false of every pre-change row" \
+      "$( [ "$(unit_of "$LEG/loops")" = "calls" ] && echo wrong || echo right )" "right"
+
+# THE INFERENCE IS KEYED ON THE WINDOW, so a row that carries no window has
+# nothing to infer from and must stay null. Without this, "default to lines"
+# would quietly stamp a unit onto tier-2 and tier-3 rows, which have no window
+# and for which "lines" is not wrong so much as meaningless.
+NOW2="$W/nowindow"; mkdir -p "$NOW2/loops"
+NWL="$NOW2/loops/sess-nw.jsonl"
+: > "$NWL"
+mcall c1 main "$NWL"
+jq -nc '{ts:"2026-09-26T00:00:00Z",kind:"verdict",tier:2,signal:"coarse-repeat",
+         bin:"Bash:grep",repeats:8,turn_calls:8,scope:"turn",min_bin_repeats:8,judged:false}' >> "$NWL"
+check "precondition: that row really carries no window" \
+      "$(HARNESS_LOOP_DIR="$NOW2/loops" bash "$READER" --all --json | jq -r '.sessions[0].rows[0].settings.window // "absent"')" "absent"
+check "a row with no window has no unit to infer, and stays null" \
+      "$(unit_of "$NOW2/loops")" "null"
+
+MC3="$W/mut-no-window-unit.sh"
+perl -0pe 's/window_unit: \(\$v\.window_unit\n *\/\/ \(if \(\$v\.window \/\/ null\) == null then null else "lines" end\)\),\n *//' "$READER" > "$MC3"
+check "the mutation applied" "$(grep -c 'window_unit: (\$v.window_unit' "$MC3")" "0"
+check "dropped from the projection, the unit is gone even though the row carries it" \
+      "$(HARNESS_LOOP_DIR="$A17/loops" bash "$MC3" --all --json | jq -r '.sessions[0].rows[0].settings.window_unit // "absent"')" "absent"
+# The second mutation: keep the field but drop the INFERENCE, which is the exact
+# form this suite shipped before the design was re-read. It must not pass.
+MC4="$W/mut-no-lines-inference.sh"
+perl -0pe 's/\(\$v\.window_unit\n *\/\/ \(if \(\$v\.window \/\/ null\) == null then null else "lines" end\)\)/(\$v.window_unit \/\/ null)/' "$READER" > "$MC4"
+check "the mutation applied" "$(grep -c 'window_unit: (\$v.window_unit // null)' "$MC4")" "1"
+check "without the inference a pre-change row reads null again -- the shipped defect" \
+      "$(HARNESS_LOOP_DIR="$LEG/loops" bash "$MC4" --all --json | jq -r '.sessions[0].rows[0].settings.window_unit')" "null"
+
+# ---------------------------------------------------------------------------
+printf '\n== --for prints the same contradiction, computed once ==\n'
+# ---------------------------------------------------------------------------
+# --for slurps per_session's output as its base, so the two views cannot
+# disagree about the number -- but the LINE is a second piece of code and gets
+# its own case. The transcripts here are complete, so the canary is not standing
+# in for a failed recovery: both records are present and they disagree.
+CF="$W/canary-for"; mkdir -p "$CF/loops" "$CF/projects/-proj/sess9/subagents"
+CFTX="$CF/projects/-proj/sess9.jsonl"
+CFL="$CF/loops/sess9.jsonl"
+: > "$CFTX"; : > "$CFL"
+tu "$CFTX" c1; tu "$CFTX" c2
+mcall c1 main "$CFL"; mcall c2 main "$CFL"; mark AAA "$CFL"
+r=$(HARNESS_LOOP_DIR="$CF/loops" bash "$READER" --for "$CFTX" --json)
+check "--for carries the three fields, read off the same per_session output" \
+      "$(printf '%s' "$r" | jq -r '[.agent_marks, .agent_mark_ids, .call_agents_sub] | join(",")')" "1,1,0"
+check "  and its attribution census is complete, so the canary is not a stand-in for a failed scan" \
+      "$(printf '%s' "$r" | jq -r '.attribution.complete')" "true"
+out=$(HARNESS_LOOP_DIR="$CF/loops" bash "$READER" --for "$CFTX")
+has "the contradiction prints in --for too" "$out" "ATTRIBUTION CANARY: 1 subagent start(s) recorded"
+has "  naming the distinct ids it saw" "$out" "(1 distinct agent id(s))"
+has "  and the bound is on this view as well" "$out" "the canary itself is not firing"
 
 printf '\n== the entry point is executable ==\n'
 check "loop-metrics.sh carries the execute bit" "$( [ -x "$READER" ] && echo yes || echo no )" "yes"

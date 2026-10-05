@@ -58,7 +58,26 @@ set -u
 # against session-events.sh's copy by scripts/test-bin-of.sh. Resolved from this
 # script's own location so it works from an installed plugin, whose root is not
 # a fixed path.
-HERE_JQ=$(cd -- "$(dirname -- "$0")/../../scripts" 2>/dev/null && pwd) || HERE_JQ=""
+# The stderr redirect wraps the GROUP, not just `cd`: spelled
+# `cd … 2>/dev/null && pwd`, a `dirname` that is missing from PATH reports
+# itself on the terminal while the assignment still falls back correctly -- a
+# leak with no consequence attached, which is the shape this file otherwise
+# does not have.
+HERE_JQ=$( { cd -- "$(dirname -- "$0")/../../scripts" && pwd; } 2>/dev/null ) || HERE_JQ=""
+HERE_LIB=$( { cd -- "$(dirname -- "$0")" && pwd; } 2>/dev/null ) || HERE_LIB=""
+
+# Every ledger append in this file goes through ledger-write.sh, which also owns
+# the one-per-session report when the ledger cannot be written. Guarded like the
+# detector program is: an absent helper must cost the WARNING and nothing else,
+# so the fallback still appends and still keeps a failed open off the terminal.
+# It deliberately does NOT re-implement the report -- a second reporter is the
+# drift this file exists to avoid, and a broken install is gate 6's job.
+if [ -n "$HERE_LIB" ] && [ -r "${HERE_LIB}/ledger-write.sh" ]; then
+  . "${HERE_LIB}/ledger-write.sh"
+else
+  harness_ledger_append() { { printf '%s\n' "$3" >> "$2"; } 2>/dev/null; }
+  harness_ledger_report_once() { :; }
+fi
 
 LEDGER_DIR="${HARNESS_LOOP_DIR:-${HOME}/.claude/harness/loops}"
 TAIL_N="${HARNESS_LOOP_TAIL:-20}"
@@ -69,8 +88,13 @@ THRESHOLD="${HARNESS_LOOP_THRESHOLD:-3}"
 RETRY_MIN="${HARNESS_LOOP_RETRY_MIN:-2}"
 
 # A hook that breaks is worse than a hook that is absent. Every failure path
-# below exits 0 and stays silent, so a malformed payload, an absent jq or an
+# below exits 0, unconditionally, so a malformed payload, an absent jq or an
 # unwritable ledger can never cost the session a tool call.
+#
+# SILENCE IS THE DEFAULT AND NOT THE GUARANTEE. The one deliberate exception is
+# the unwritable ledger, which says so once per session -- losing that file
+# disables this detector entirely, which is not a cost of one row. See
+# hooks/lib/ledger-write.sh.
 in=$(cat 2>/dev/null) || exit 0
 [ -n "$in" ] || exit 0
 command -v jq >/dev/null 2>&1 || exit 0
@@ -112,94 +136,95 @@ IFS=$(printf '\t') read -r sid tool fp agent <<<"$meta"
 if [ -z "${sid:-}" ] || [ "$sid" = "-" ]; then exit 0; fi
 if [ -z "${tool:-}" ] || [ "$tool" = "-" ]; then exit 0; fi
 
-mkdir -p "$LEDGER_DIR" 2>/dev/null || exit 0
 ledger="${LEDGER_DIR}/${sid}.jsonl"
+# A ledger directory that cannot be CREATED disables the detector exactly as
+# surely as one that cannot be written, so it reports through the same path
+# rather than exiting quietly. Covering one and not the other is the partial
+# alarm this change is replacing.
+mkdir -p "$LEDGER_DIR" 2>/dev/null || { harness_ledger_report_once "$sid" "$ledger"; exit 0; }
 
 # Read BEFORE appending, so the count is of PRIOR occurrences and the current
 # call is added to it explicitly. Appending first and then counting would make
 # the threshold quietly off by one.
+#
+# The detector lives in a file rather than inline so scripts/test-loop-corpus.sh
+# can drive the SAME program over real ledger rows; loop-window.awk's header has
+# why a replay cannot come in through this hook. An unreadable program costs the
+# verdict and nothing else -- the append below still runs, so the window a later
+# call reads is intact.
+#
+# TAIL_N is a count of CALLS; the chunk below is a count of LINES, and the
+# factor is a performance hint with nothing resting on it. The measured
+# line-per-call ratio across real ledgers runs 1.04 .. 2.37, so 3 covers the
+# range in one read -- and where it does not, awk says RETRY instead of
+# guessing and the chunk doubles until tail runs out of file. A FIXED factor
+# with no retry is the hazard this replaces: it is the same silent coupling as
+# `tail -n "$TAIL_N"`, one level up, and it broke the moment loop-result.sh
+# started writing a row per call.
 verdict=""
-if [ -s "$ledger" ]; then
-  verdict=$(tail -n "$TAIL_N" "$ledger" 2>/dev/null | awk \
-      -v want_fp="$fp" -v want_tool="$tool" -v thr="$THRESHOLD" \
-      -v retry="$RETRY_MIN" -v cur="$agent" '
-    BEGIN { n = 0; first = 0; changed = 0; m = 0 }
-    {
-      # A result row carries the OUTCOME of an earlier call, joined by
-      # tool_use_id. It is collected on the way past and resolved at END, because
-      # it is written after the call it describes.
-      if (match($0, /"kind":"result"/)) {
-        id = ""; if (match($0, /"tool_use_id":"[^"]*"/)) id = substr($0, RSTART + 16, RLENGTH - 17)
-        if (id != "") res[id] = ($0 ~ /"ok":true/) ? "ok" : "err"
-        next
-      }
-      # TWO RECORD CLASSES SHARE THIS FILE, so every reader must filter on kind.
-      # A verdict line carries "tool" and "fp" too: counted as a call it would
-      # inflate the very count that produced it, and each firing would make the
-      # next one more likely. Strict, not tolerant -- a line whose kind this
-      # build does not know is skipped rather than guessed at, so a future kind
-      # cannot silently enter the count. The cost is that a ledger written by a
-      # build with no kind field is ignored, i.e. a session in flight across an
-      # upgrade restarts its window. That is the safe direction.
-      k = ""
-      if (match($0, /"kind":"[^"]*"/))     { k = substr($0, RSTART + 8,  RLENGTH - 9)  }
-      if (k != "call") next
-      t = ""; f = ""; a = ""
-      if (match($0, /"tool":"[^"]*"/))     { t = substr($0, RSTART + 8,  RLENGTH - 9)  }
-      if (match($0, /"fp":"[^"]*"/))       { f = substr($0, RSTART + 6,  RLENGTH - 7)  }
-      if (match($0, /"agent_id":"[^"]*"/)) { a = substr($0, RSTART + 12, RLENGTH - 13) }
-      # STATE qualifier, free because EVERY step is in the ledger, not only the
-      # matched ones: a write between the repeats means the world changed, so
-      # the same call is not the same question.
-      if (t == "Edit" || t == "Write" || t == "NotebookEdit") { changed = NR }
-      if (t == want_tool && f == want_fp) {
-        n++; if (first == 0) first = NR; seen[a] = 1
-        id = ""; if (match($0, /"tool_use_id":"[^"]*"/)) id = substr($0, RSTART + 16, RLENGTH - 17)
-        ids[++m] = id
-      }
-    }
-    END {
-      if (n == 0) exit
-      fails = 0
-      for (i = 1; i <= m; i++) if (ids[i] != "" && res[ids[i]] == "err") fails++
-      seen[cur] = 1
-      na = 0; for (k in seen) na++
-
-      # THE EDIT FILTER IS CONDITIONAL, and this is the whole point of GH-69.
-      # For calls that SUCCEEDED, a write between the repeats means the world
-      # changed, so the same call is no longer the same question -- dismiss.
-      # For calls that FAILED, the edit means an ATTEMPT was made and the call
-      # failed again: that is the fix-break cycle, and dismissing it is how the
-      # commonest logical loop stayed invisible. scripts/session-events.sh has
-      # always had this right -- repeated-tool-call carries the intervening-edits
-      # filter and error-retry-loop deliberately does not -- and the thresholds
-      # below mirror its retry_min:2 against minrep:3 for the same reason it
-      # gives: two failures of one call is already a retry loop, three is the bar
-      # for calls that worked.
-      if (fails + 0 >= retry) {
-        printf "%s %d %d\n", "error-retry", fails, na
-        exit
-      }
-      if (changed > first) exit
-      if (n + 1 >= thr) { printf "%s %d %d\n", (na > 1 ? "fanout" : "loop"), n + 1, na }
-    }')
+if [ -s "$ledger" ] && [ -r "${HERE_LIB}/loop-window.awk" ]; then
+  chunk=$((TAIL_N * 3))
+  while :; do
+    verdict=$(tail -n "$chunk" "$ledger" 2>/dev/null | awk \
+        -v want_fp="$fp" -v want_tool="$tool" -v thr="$THRESHOLD" \
+        -v retry="$RETRY_MIN" -v cur="$agent" \
+        -v want_calls="$TAIL_N" -v chunk="$chunk" \
+        -f "${HERE_LIB}/loop-window.awk" 2>/dev/null)
+    [ "$verdict" = "RETRY" ] || break
+    chunk=$((chunk * 2))
+  done
 fi
 
-printf '%s\n' "$entry" >> "$ledger" 2>/dev/null
+harness_ledger_append "$sid" "$ledger" "$entry" || true
 
 [ -n "$verdict" ] || exit 0
 set -- $verdict
-kind="$1"; count="$2"; agents="$3"
+# span falls back to the requested window rather than being read bare: under
+# `set -u` a bare "$4" ABORTS on a three-field verdict line, and this file's
+# contract is that no failure path costs the session a tool call. A three-field
+# line means a detector older than this caller, whose unit was the requested
+# window anyway -- so the fallback is also the right answer.
+kind="$1"; count="$2"; agents="$3"; span="${4:-$TAIL_N}"
 
+# The number the AGENT is shown is $span, the window actually counted -- never
+# $TAIL_N, the window requested. The two differ on a young ledger, and quoting
+# 20 when 8 calls existed is the defect this change fixes, relocated into the
+# message. The verdict row below keeps $TAIL_N for the opposite reason: a later
+# reader of the ledger is asking which SETTING was in force, and that setting
+# did not change because the ledger was short. Neither is derived from the
+# other, so making them agree breaks whichever question it was answering.
+#
+# ALL THREE ARMS COUNT IN "CALLS", AND THE NOUN IS LOAD-BEARING. "steps" is the
+# word that carried the original falsehood: the message said "in the last 20
+# steps" while the number was a count of ledger LINES, and the vague noun is
+# what let the two pass for each other. The quantity is a count of calls now,
+# so "calls" is the noun that makes the sentence true -- and a reader of an old
+# verdict row has no way to tell whether "steps" meant lines, calls or model
+# turns, which is why the word does not survive anywhere in these three strings.
+#
+# EVERY ARM ALSO SAYS WHICH CALLS ITS NUMBERS COUNT, because the call being
+# reported has NOT run -- it was interrupted at dispatch -- and a bare "3 times
+# in the last 3 calls" leaves the reader to guess whether the interrupted call
+# is in there. It is, in the span, always. The CLAUSE IS NOT UNIFORM and must not be
+# made so: `loop` and `fanout` count the current call in every number they
+# print (count is n + 1, span is prior + 1, and na includes cur), while
+# `error-retry`'s count is `fails` -- recorded error outcomes, all of them
+# PRIOR, because this call cannot have failed before running. A blanket
+# "including the current one" on that arm would be false.
 if [ "$kind" = "error-retry" ]; then
-  why=$(printf 'this exact call has already FAILED %s times in the last %s steps. Edits in between do not clear it -- an edit between two failures of the same call is an attempt that did not work, which is the evidence for the loop rather than an exemption from it. Before approving a further attempt, say what about THIS change makes the failure different; if the answer is only that something was changed, the loop is the finding.' \
-        "$count" "$TAIL_N")
+  why=$(printf 'this exact call has already FAILED %s times in the last %s calls (the failures are all prior; this call has not run yet, though the call count includes it). Edits in between do not clear it -- an edit between two failures of the same call is an attempt that did not work, which is the evidence for the loop rather than an exemption from it. Before approving a further attempt, say what about THIS change makes the failure different; if the answer is only that something was changed, the loop is the finding.' \
+        "$count" "$span")
 elif [ "$kind" = "fanout" ]; then
-  why=$(printf 'the SAME call has now been made by %s different agents (%s times in the last %s steps). That is fan-out duplication, not progress: each sibling pays full price for work a sibling already did. Before approving, check whether one result can be reused.' \
-        "$agents" "$count" "$TAIL_N")
+  # The old closing advice -- "check whether one result can be reused" -- named
+  # an action its reader cannot take. This is shown to a sibling subagent in its
+  # own context, which has no handle on another agent's result and no way to
+  # reach for it. What it CAN do is narrow its own call, or report the
+  # duplication upwards to the one party that can stop re-issuing it.
+  why=$(printf 'the SAME call has now been made by %s different agents (%s times in the last %s calls, all three numbers including this call, which has not run yet). That is fan-out duplication, not progress: each sibling pays full price for work a sibling already did. Before approving, narrow this call to the part your own task needs -- and if you cannot, say in your hand-back that a sibling already ran it, so the parent can stop re-issuing it.' \
+        "$agents" "$count" "$span")
 else
-  why=$(printf 'this exact call (same tool, same arguments) has run %s times within the last %s steps, with no Edit or Write in between -- so nothing it depends on has changed and the answer will be the answer it already gave. Before approving, say what is expected to differ this time; if nothing is, the loop is the finding.' \
-        "$count" "$TAIL_N")
+  why=$(printf 'this exact call (same tool, same arguments) has run %s times within the last %s calls (both numbers counting this call, which has not run yet), with no Edit or Write in between -- so nothing it depends on has changed and the answer will be the answer it already gave. Before approving, say what is expected to differ this time; if nothing is, the loop is the finding.' \
+        "$count" "$span")
 fi
 
 # The verdict line goes in AFTER the observation it is about, which is what makes
@@ -209,13 +234,25 @@ fi
 # went ahead, its absence means it was abandoned, a different fp on the same tool
 # means it was reformulated. window/threshold are recorded because a later reader
 # otherwise cannot tell a wrong call from a since-changed setting.
-jq -nc --arg s "$kind" --arg t "$tool" --arg f "$fp" \
+#
+# window_unit exists because `window` changed MEANING without changing shape:
+# rows written before this change counted lines, rows after it count calls, and
+# nothing in the number separates them. A reader that assumes one unit silently
+# mis-reads half the corpus. The precedent for adding nothing was agent_type's
+# null-versus-"-" accident, which worked as a build marker only because nobody
+# planned it; leaning on that twice is a choice rather than an accident.
+# Built first, appended second, so the write goes through the shared helper
+# like every other one. An empty row is never appended: a jq that failed would
+# otherwise put a blank line in an append-only file, which every reader then
+# has to tolerate forever.
+vrow=$(jq -nc --arg s "$kind" --arg t "$tool" --arg f "$fp" \
        --argjson c "$count" --argjson a "$agents" \
        --argjson w "$TAIL_N" \
        --argjson th "$( [ "$kind" = "error-retry" ] && printf '%s' "$RETRY_MIN" || printf '%s' "$THRESHOLD" )" \
    '{ts: (now|todate), kind: "verdict", tier: 1, signal: $s, tool: $t, fp: $f,
-     count: $c, agents: $a, decision: "ask", window: $w, threshold: $th}' \
-   >> "$ledger" 2>/dev/null
+     count: $c, agents: $a, decision: "ask", window: $w, window_unit: "calls",
+     threshold: $th}' 2>/dev/null) || vrow=""
+[ -z "$vrow" ] || harness_ledger_append "$sid" "$ledger" "$vrow" || true
 
 # `ask`, not `deny`. The project rule is that the inspector is a diagnostic ally
 # rather than a gate, and a first-tier detector keyed on an exact hash is exactly

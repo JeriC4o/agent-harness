@@ -1,0 +1,43 @@
+# tool_use_id -> agent_id recovery for the fanout leg of the loop-detector corpus gate.
+#
+# WHY THIS FILE EXISTS. The five calls it names were made by five different
+# subagents, and the ledger records every one of them as agent_id "main": they
+# predate 4c1cd0a ("read agent_id from the payload, so fan-out detection can
+# fire", 2026-09-30), so the hook that wrote them had no way to tell a subagent
+# call from a main-thread one. The real leg is committed exactly as the field
+# wrote it, collapse included, so the attribution is carried BESIDE it rather
+# than patched into it.
+#
+# The repaired leg is GENERATED from these two inputs on every run and is never
+# committed. A committed second copy would assert that the derivation was once
+# performed; a derivation the gate performs each run is the derivation under
+# test.
+#
+# THE RECOVERY RULE -- the one scripts/loop-metrics.sh --for already uses: a
+# tool_use_id ABSENT from the session's main transcript and present in exactly
+# one subagents/agent-<id>.jsonl was made by agent <id>. It is recorded here as
+# a SHAPE and never as a literal path, because this directory is exactly where
+# the no-home-directory check greps, and a real path in the file that documents
+# the scrub would be that needle, planted by its own documentation:
+#
+#   grep -l <tool_use_id> "$CLAUDE_PROJECTS/<session-id>/subagents/agent-"*.jsonl
+#
+# Re-derived 2026-10-05 against the live tree, BOTH halves checked: exactly one
+# subagent hit each with no collisions, and all five absent from the main
+# transcript. The absence half is not decoration -- "present in one subagent
+# file" alone is also true of a main-thread call a subagent merely quoted.
+#
+# Only agent_id is rewritten. The stored `transcript` pointer is left alone: the
+# detector never reads it, and rewriting it would make the fixture assert
+# something about a field this change does not touch.
+#
+# The five are the tail of the fingerprint family fp=3562779350 (`Read` of the
+# method file every subagent is told to read), at call ordinals 1445, 1446,
+# 1458, 1470 and 1471 of the real leg.
+#
+# tool_use_id	agent_id
+toolu_01RoPBifKp3PVYdAiHG6sRfj	af4ff1f69e2639a73
+toolu_01Bhd4qpLET4eeCULUvmnzb3	a5cb273d9231c4e41
+toolu_017iTwzWXQuPHrytm6VN2zLz	accd11a8a7a2a5db4
+toolu_01NPa7a4CDXgWUnLD5KD32NT	a10bba56a033ba9f7
+toolu_0119rHsuZ18yobp4uoqtczff	ae5cd4f6da35a54dc

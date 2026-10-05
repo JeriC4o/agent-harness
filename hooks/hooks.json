@@ -151,6 +151,18 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/loop-agent-mark.sh",
+            "timeout": 10,
+            "statusMessage": "Recording that a subagent started..."
+          }
+        ]
+      }
+    ],
     "SubagentStop": [
       {
         "hooks": [

@@ -121,6 +121,47 @@ consumer. They are hand-run today; wrapping the structural six in a single comma
   never been measured against a real firing. The verdict line records `agents` and the threshold it
   fired under, so the calibration arrives on its own; revisit only if the first real firings show the
   bar is wrong.
+  **Re-measured under GH-86, and the earlier basis for leaving it alone no longer holds — while the
+  disposition does.**
+
+  **Read every number below as a FLOOR at its as-of stamp, never as a bare count.** This corpus is not
+  a fixed object and it is not an impartial one: the method file tells every subagent to read
+  `docs/agents-method.md`, so the very fingerprint family that makes this point grows each time anyone
+  works on this point. These figures were re-derived three times in a few hours while the entry was
+  being written and rose on two of them. A later reader whose live measurement exceeds what is written
+  here is watching the corpus move, not catching the document out.
+
+  As of **2026-10-05T16:00Z**: **≥13 ledgers**, **≥9149 `kind:"call"` rows**, and **0 tier-1 verdicts
+  ever written** — 107 verdicts in total, 79 tier-2 and 28 tier-3. That last figure is the one that has
+  not moved at any measurement, and it is the reason the question is still open.
+
+  **≥13 distinct non-`main` agent ids**, carried by **2** of those ledgers; a third post-`4c1cd0a`
+  ledger exists (a 1-call probe session) and carries none, so "which ledgers could show attribution" and
+  "which do" are different counts and both are worth keeping.
+
+  **The stale claim, named so it is not re-inherited.** GH-86's spec originally recorded "no fingerprint
+  family of ≥3 rows spans more than one agent in either post-`4c1cd0a` ledger". That is false and has
+  been amended. One ledger now carries **≥5 families of ≥3 rows, ≥4 of them spanning more than one
+  agent**. The largest is `fp 3562779350` at **8 rows across 8 distinct agents** — verified by
+  recomputing djb2 over `tool_input` per `hooks/lib/loop-index.sh:101-103` rather than by trusting a
+  label, and it is `Read` of `docs/agents-method.md`. A fingerprint does not move, so it is the one
+  precise value here worth carrying forward.
+
+  **The largest multi-agent families are `Read`s — but not all of them are.** `fp 271202357` is a `Bash`
+  family spanning two agents, so "every multi-agent family is a subagent obeying an instruction file" is
+  wrong and an earlier draft of this entry said it. The durable form is the one above, true at every
+  measurement so far. It still matters before tightening the bar: the dominant shape is genuine
+  duplication and also the cheapest kind there is, so a bar tuned on it would be tuned on the one
+  fan-out nobody wants flagged.
+
+  **Two facts that must not be collapsed into one.** The bar is uncalibrated **for want of a firing** —
+  zero tier-1 verdicts corpus-wide, re-confirmed at every measurement — AND there is now **material to
+  calibrate against**, where the old basis said there was none. Both are true. Neither licenses tuning
+  the bar, which stays out of GH-86's scope.
+
+  The `agent-mark` canary added by GH-86 is what now makes a REGRESSION here visible: if these ids ever
+  collapse back to `main`, recorded subagent starts with no non-`main` call row says so from the ledger
+  alone.
 - `GH-75` — the propagation reminder's arms are now derived from the sync-group table and anchored on
   the project directory, so the project-side mirrors a consumer may keep (`.claude/agents/*.md`,
   `.claude/rules/**/*.md`, `.claude/commands/*.md`) are matched by no arm. Measured as a widening
