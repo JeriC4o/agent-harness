@@ -22,10 +22,10 @@
 # the matcher's group -- passed as THREE values and never joined, because a
 # matcher contains a pipe (Edit|Write) and any delimiter-joined key is
 # ambiguous. statusMessage cannot serve: two of its values are duplicated and
-# both duplicate pairs are byte-identical commands, so four of the eighteen are
+# both duplicate pairs are byte-identical commands, so four of the nineteen are
 # indistinguishable by output, message and basename alike.
 #
-# EVERY COMMAND NEEDS ITS OWN TRIGGER. Measured: 17 of 18 emit zero bytes on a
+# EVERY COMMAND NEEDS ITS OWN TRIGGER. Measured: 18 of 19 emit zero bytes on a
 # generic payload, so an absence-only assertion is satisfied equally by a hook
 # that ran and did nothing and by one that never ran. The trigger table below
 # is therefore a deliverable, not scaffolding.
@@ -137,15 +137,15 @@ jq -r '.hooks | to_entries[] | .key as $ev | .value[] | (.matcher // "-") as $m
        | .hooks | to_entries[] | [$ev, $m, (.key|tostring)] | @tsv' "$HOOKS" > "${WORK}/keys.tsv"
 TOTAL=$(wc -l < "${WORK}/keys.tsv" | tr -d ' ')
 DISTINCT=$(sort -u "${WORK}/keys.tsv" | wc -l | tr -d ' ')
-check "every hook command has a triple" "$TOTAL" "18"
-check "the 18 triples are distinct" "$DISTINCT" "$TOTAL"
+check "every hook command has a triple" "$TOTAL" "19"
+check "the 19 triples are distinct" "$DISTINCT" "$TOTAL"
 SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS" | sort -u | wc -l | tr -d ' ')
 [ "$SM_DISTINCT" -lt "$TOTAL" ] \
   && ok "statusMessage is NOT a usable key (${SM_DISTINCT} distinct values over ${TOTAL} commands)" \
   || bad "statusMessage now looks unique, so the stated reason for the triple no longer holds -- re-derive before trusting either key"
 
 # ---------------------------------------------------------------------------
-# The committed trigger inventory and marker table, covering all 18.
+# The committed trigger inventory and marker table, covering all 19.
 #
 # The marker is the ANCHORED LEADING FORM of the emitted text -- a full first-line
 # prefix, or a jq-extracted field read from stdout -- never a bare bracket and
@@ -168,6 +168,7 @@ PreToolUse|Bash|5|properties_filter|err|BLOCKED: this content search can surface
 PreToolUse|Bash|6|piped_gate|err|BLOCKED: a gate (build / test / lint / format / shellcheck) is
 PreToolUse|Edit|Write|0|member_path|err|[propagation-rule-reminder] You are editing
 PreToolUse|Edit|Write|1|learnings_headers|err|[archive-protection-reminder]
+PreToolUse|Skill|0|skill_task_main|jq|CONFIRM: /task starts the full ordered workflow
 PreToolUse|*|0|repeated_call|jq|[loop-index] this exact call (same tool, same arguments) has run
 PostToolUse|Write|Edit|0|misplaced_append|err|[learnings-append-check]
 PostToolUse|Write|Edit|1|broken_sh|err|[sh-syntax-check]
@@ -209,6 +210,11 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
     learnings_headers)
       jq -nc --arg p "$PROJ/ai-docs/learnings.md" \
         '{tool_input:{file_path:$p, content:"### one\n### two\n"}}' ;;
+    skill_task_main)
+      # No agent_id: the MAIN-thread branch, which must ASK rather than deny.
+      # The plugin spelling is used deliberately -- the gate strips the prefix,
+      # and a fixture written as bare `task` would not exercise that.
+      jq -nc '{tool_name:"Skill", tool_input:{skill:"harness:task"}}' ;;
     repeated_call)
       seed_repeat s-loop
       ledger_payload s-loop Bash "echo hi" PreToolUse tu-3 ;;
@@ -321,7 +327,7 @@ printf '\n== AC15a: the markers are pairwise disjoint over the distinguishable c
 MARKERS=$(printf '%s\n' "$TABLE" | awk -F'|' '{print $NF}' | grep -v '^$')
 MARKERS=$(printf '%s\n%s' "$MARKERS" "$EXTRA_MARKER" | sort -u)
 MCOUNT=$(printf '%s\n' "$MARKERS" | wc -l | tr -d ' ')
-check "distinct marker strings in the table" "$MCOUNT" "16"
+check "distinct marker strings in the table" "$MCOUNT" "17"
 clash=0
 while IFS= read -r a; do
   while IFS= read -r b; do
@@ -468,7 +474,7 @@ if [ "$LEAK" = "$C" ]; then bad "the literal-token degradation changed nothing";
   ok "literal-token degradation applied"
   printf '%s' "$SH_PAYLOAD" | ( cd "$PROJ" && CLAUDE_PLUGIN_ROOT="$FAKE" bash -c "$LEAK" ) > "$OUT" 2> "$ERR"
   grep -qF 'CLAUDE_PLUGIN_ROOT' "$OUT" "$ERR" \
-    && ok "and leg (ii) finds the unexpanded token, so its silence on the 18 is a measurement" \
+    && ok "and leg (ii) finds the unexpanded token, so its silence on the 19 is a measurement" \
     || bad "leg (ii) missed a literal token that IS in the output -- the absence assertion proves nothing"
 fi
 

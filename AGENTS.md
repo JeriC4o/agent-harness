@@ -52,7 +52,7 @@ instruction files:
    `scripts/test-check-readme-update.sh`, `scripts/test-loop-metrics.sh`,
    `scripts/test-bin-of.sh`,
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
-   `hooks/lib/test-loop-verdict.sh`,
+   `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
    `scripts/test-check-propagation-arms.sh`, `scripts/test-hook-behaviour.sh`.

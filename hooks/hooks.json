@@ -78,6 +78,17 @@
         ]
       },
       {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/skill-gate.sh",
+            "timeout": 10,
+            "statusMessage": "Checking who is asking for this skill..."
+          }
+        ]
+      },
+      {
         "matcher": "*",
         "hooks": [
           {
