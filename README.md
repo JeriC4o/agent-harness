@@ -280,7 +280,10 @@ than through an install, so edits take effect without reinstalling. To exercise 
 claude --plugin-dir /Users/jc/projects/agent-harness
 ```
 
-There is no build. The gate is six structural checks — JSON manifests parse, every relative link and
+There is no build. `bash scripts/run-checks.sh` runs the whole pre-commit gate list in one call and
+reports a verdict per member; it derives the suite list from the tree and reddens when that disagrees
+with the list `AGENTS.md` names, so a suite added without being documented does not go unnoticed. The
+gate is six structural checks — JSON manifests parse, every relative link and
 anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script, this README
 documents an update procedure that actually updates, and the propagation reminder's path arms still agree
 with the Propagation Rule table they are derived from — plus three delivery gates:

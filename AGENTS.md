@@ -16,13 +16,23 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | Placeholder | Meaning | This project |
 |---|---|---|
 | `%BUILD_CMD%` | Compile the changed module | n/a — no build step |
-| `%TEST_CMD%` | Run a module's tests | n/a — validation is the checks below |
+| `%TEST_CMD%` | Run a module's tests | `bash scripts/run-checks.sh` — the whole list below in one call. It takes no module path: a `<module-path>` argument is accepted, **ignored, and reported as ignored**, because this gate list is undivided by design |
 | `%FORMAT_CMD%` | Auto-format changed files | n/a |
-| `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4 |
+| `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4. `run-checks.sh` runs both as its `shell-syntax` and `manifests` members |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
 **Structural checks that stand in for a test suite** — run all six before any commit that touches
-instruction files:
+instruction files.
+
+**`bash scripts/run-checks.sh` runs every one of them in a single call**, reporting a verdict per member
+and exiting 0 only when all passed (1 on any failure or list drift, 2 when it could not run — which is
+not a pass). Prefer it: the no-masking rule forbids piping a gate, so running the list by hand costs one
+bare tool call per member, and at the context a review round actually reaches, the re-read term alone is
+roughly $0.20 a call. A checked-in script is where that rule explicitly permits the chain. The
+enumeration below stays, for two reasons: it carries the rationale for each check's exact spelling, and
+the runner **derives** its suite list from the tree and then asserts that derived list matches item 4's —
+so the list is machine-checked rather than decorative, and a suite added to the tree without being named
+here is a red `gate-inventory` member. Running members by hand remains correct; it is the same commands.
 
 1. `jq -e . hooks/hooks.json .claude-plugin/plugin.json .claude-plugin/marketplace.json` — manifests parse.
 2. `bash scripts/check-references.sh` — markdown links and `#anchor`s resolve; every
@@ -56,7 +66,11 @@ instruction files:
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
-   `scripts/test-check-propagation-arms.sh`, `scripts/test-hook-behaviour.sh`.
+   `scripts/test-check-propagation-arms.sh`, `scripts/test-hook-behaviour.sh`,
+   `scripts/test-run-checks.sh`.
+   **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed
+   file COUNT beside the syntax verdict and reddens a separate `untracked-shell` member on any `*.sh` the
+   index cannot see — but only when it runs, so a hand-run still owes both reads.
    **`scripts/test-loop-corpus.sh` takes about four minutes** — 1728 real call rows replayed at 18
    window widths across two legs — and it deliberately ships no flag to narrow that, because an
    opt-out is the "gate that silently narrows its own input set" hazard one paragraph up. Budget for

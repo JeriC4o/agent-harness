@@ -56,7 +56,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `agents/<name>.md` | The 7 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
 | `hooks/hooks.json` | The 12 hooks; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
-| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`) and the `test-*.sh` suites those and the skills' helpers are covered by |
+| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
@@ -67,7 +67,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 |---|---|
 | Language | Markdown instruction files + POSIX shell |
 | Build | none |
-| Test | structural checks — see `AGENTS.md § Build & Test` |
+| Test | `bash scripts/run-checks.sh` — the whole structural list in one call; see `AGENTS.md § Build & Test` |
 | CI | none yet |
 
 ## Language profile
@@ -86,7 +86,11 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 No build. The checks in `AGENTS.md § Build & Test` are the gate: six structural ones over the repo's
 contents, plus three delivery gates (`test-install-smoke.sh`, `check-release.sh`,
 `test-upgrade-smoke.sh`) that answer the question the structural ones cannot — does this reach a
-consumer. They are hand-run today; wrapping the structural six in a single command is an open task.
+consumer. The structural six run in one call as `bash scripts/run-checks.sh`, which reports a verdict per
+member, derives its suite list from the tree rather than carrying one, and keeps every member's status
+instead of the last one's. The three delivery gates stay separate: they run once before a PR, need the
+`claude` CLI, and exit 2 when they cannot run, so folding them in would give the runner's rc 2 two
+meanings.
 
 ---
 
