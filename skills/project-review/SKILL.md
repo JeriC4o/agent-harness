@@ -78,6 +78,8 @@ After every 3 fixes (or when all findings in a subtask are resolved):
 
 > **Spec/Design Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue? It fires even when the fix lands entirely in code, and the finding is not closed until that sentence is re-read and either confirmed or amended. **(B)** The fix diff touches one under `ai-docs/plans/` (including `done/`). Either is an amendment, not an ordinary fix — STOP. Route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume the fix loop ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group)).
 
+> **The scouted fix plan does NOT run in this fix loop, and that is the current state rather than a pending change.** `/task` Step 11 routes every review-fix round through one: a fresh-context agent writes the round's plan, a checked-in gate decides whether it may be applied, and a second agent applies only the rows marked for a fix. This loop fixes in the current context. Whether the mechanism is extended here is **conditional on evidence**: it is attempted only if a like-for-like cost measurement on a real feature task shows the sequence paid for itself, and if no effect shows, the extension does not happen at all. Tracked in the harness repository as issue #98.
+
 **Context handoff rule:** if finding count ≥ 10 and >half remain open, spawn a Subagent per subtask rather than working inline — pass the progress file path.
 
 ### Step 4: Final verify

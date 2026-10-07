@@ -75,6 +75,7 @@ is the same commands.
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
+   `skills/task/scripts/test-check-fix-plan.sh`,
    `scripts/test-check-propagation-arms.sh`, `scripts/test-hook-behaviour.sh`,
    `scripts/test-run-checks.sh`.
    **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed

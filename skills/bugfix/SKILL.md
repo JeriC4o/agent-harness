@@ -136,6 +136,8 @@ Now open Edit.
 
 > **Spec Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue? **(B)** Does the fix diff touch one under `ai-docs/plans/`? Either is a Spec/Design Amendment, not an ordinary fix — A fires even when the fix lands entirely in code, and a finding that fired A is not closed until the cited sentence is re-read and either confirmed or amended. STOP and route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume here. Full rationale: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group).
 
+> **The scouted fix plan does NOT run here, and that is the current state rather than a pending change.** `/task` Step 11 routes every review-fix round through one: a fresh-context agent writes the round's plan, a checked-in gate decides whether it may be applied, and a second agent applies only the rows marked for a fix. This step fixes in the current context, as written above. Whether the mechanism is extended here is **conditional on evidence**: it is attempted only if a like-for-like cost measurement on a real feature task shows the sequence paid for itself, and if no effect shows, the extension does not happen at all. Tracked in the harness repository as issue #98.
+
 ---
 
 ## Step 6: Verify

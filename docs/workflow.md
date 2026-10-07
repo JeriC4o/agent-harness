@@ -352,11 +352,19 @@ path *correctly by the table*. The table is satisfied, not violated, and the art
 false. So Arm A carries a closing gate: a finding that fired it may not be closed until the cited
 sentence is re-read in its file and either confirmed true of the post-fix state or amended.
 
-| Fires in skill | At step |
-|---|---|
-| `/task` | Step 11 (review fixes) |
-| `/bugfix` | Step 5 (fix) |
-| `/project-review` | fix loop |
+| Fires in skill | At step | Routed through a scouted fix plan? |
+|---|---|---|
+| `/task` | Step 11 (review fixes) | **Yes.** The round's plan is gated before any fix is applied, and a plan whose row **proposes an edit** to a `*.spec.md` / `*.design.md` target — or carries an `amendment:` disposition, whatever its target — routes here instead of reaching the fix agent. A row proposing no edit records a finding an approved amendment already closed, and does not route on its target alone. |
+| `/bugfix` | Step 5 (fix) | No. |
+| `/project-review` | fix loop | No. |
+
+**The scouted plan runs in the main feature-development flow only, and the three sites that do without it
+— `/bugfix` Step 5, `/project-review`'s fix loop, and the post-push fix round below — do so as the
+current state rather than as a pending change.** Extending it to them is **conditional on evidence**: it
+is attempted only if a like-for-like cost measurement on a real feature task shows the sequence paid for
+itself, and if no effect shows, the extension does not happen at all. Tracked in the harness repository
+as issue #98. The amendment routing in this section fires at all four sites either way — the plan changes
+*who* detects an amendment in the main flow, not *whether* the trigger applies anywhere.
 
 Recipe: stop the step, surface to user for approval, re-invoke `spec-writer` to update the spec, re-run
 `/task` Step 6 (design) → Step 7 (design-review) on the amended (spec, design) pair (max 3 rounds), then

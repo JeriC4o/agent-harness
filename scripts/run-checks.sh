@@ -150,8 +150,13 @@ MEMBERS_EOF
 # they are exempt BY NAME: adding a third one is then a decision, not an
 # omission that nothing reports.
 EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
-# A delivery gate, and the promotion gate a skill calls on its own.
-EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh'
+# A delivery gate; the promotion gate a skill calls on its own; and the fix-plan
+# gate a skill calls per review round, which cannot instead be made a documented
+# member -- documented_checks recognises only the `bash scripts/<name>.sh`
+# spelling inside AGENTS.md's structural-checks span, and a skill-local path
+# cannot take it, so the two directions of the comparison could never agree.
+# Its own test-*.sh suite is therefore its entire mechanical coverage.
+EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh'
 
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 

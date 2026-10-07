@@ -172,13 +172,40 @@ Agent(subagent_type="general-purpose", prompt="
 > |---|---|
 > | `*.design.md` under `ai-docs/plans/` | **STOP.** Trigger Design Amendment — surface, update design, re-run Step 7 (max 3 rounds), then resume Step 11. Mark originating finding `✅ Fixed (design amended)`. |
 > | `*.spec.md` under `ai-docs/plans/` | **STOP.** Trigger Spec Amendment — surface, update spec, re-run Step 6 → Step 7, then resume Step 11. Mark `✅ Fixed (spec amended)`. |
-> | Neither arm fires — no artefact claim at stake, fix touches only source / build manifests / non-`ai-docs/plans/` `*.md` | Normal Step 11 code-fix path — apply, re-run gates. |
+> | Neither arm fires — no artefact claim at stake, fix touches only source / build manifests / non-`ai-docs/plans/` `*.md` | Normal Step 11 code-fix path — hand it to the scouted-plan sequence below, which plans, gates and applies it. The orchestrator itself never edits. |
 >
 > **CLOSING GATE — a finding that fired Arm A may not be marked `✅ Fixed` until the cited sentence has been RE-READ in its file and either (a) confirmed true of the post-fix state, or (b) amended.** Record which. Shipping the thing a sentence promised makes the sentence true only if the shipped thing does what the sentence says it does.
 >
 > **Why Arm A exists.** Keying only on the fix diff hands the routing decision to the same party that then marks the finding `✅ Fixed`. The shape: a finding reports that a design's mitigation cites a check as the thing that catches a failure, and that check has since been deleted. **Both remedies are valid** — ship the check, or correct the sentence. Choosing the code-side remedy routes to the normal path **correctly by a diff-keyed table**: the table is satisfied, not violated, while the sentence stays false. Nothing between "choose fix" and "mark `✅ Fixed`" re-reads it.
 
-For each `⬜ Open` finding in the latest `## Self-Review (Round N)` section: **fix** (mark `✅ Fixed`), **design-amend** (per table), **spec-amend** (per table), or **object** (`nit` / `minor` autonomously; `major` / `blocker` only after user approval — mark `⚠️ Objected: <reason>`).
+> **AXIOM — Scouted-plan sequence (binding).** The orchestrator NEVER applies a review fix in its own context — **every** round carrying at least one `⬜ Open` finding (including a round whose one finding is a single-line `nit`) runs all five beats, with no size-based or severity-based carve-out and no per-round discretion to skip them:
+>
+> `baseline` (orchestrator, 1 call) → **plan** (`fix-scout`, fresh context, fills the stub's table) → `plan` gate (orchestrator, 1 call) → **apply** (`fix-apply`, fresh context, `fix` rows only) → **the post-apply micro-loop** (beat 5 below).
+>
+> Both gate calls are `"${CLAUDE_SKILL_DIR}"/scripts/check-fix-plan.sh <verb> <progress-file>`. **Read the `decision=` token, not the exit status** — one status covers five decisions:
+>
+> | `decision=` | Orchestrator's next move |
+> |---|---|
+> | `PASS` | spawn `fix-apply`. |
+> | `REFUSE` | hand the verdict back to `fix-scout` for a rewrite; max 3 rounds, then surface to the user. |
+> | `ROUTE-SPEC` / `ROUTE-DESIGN` | **STOP.** The Arm A / Arm B table above owns it; no fix agent runs this round. |
+> | `ESCALATE` | surface to the user with the declared total and the threshold the verdict carries. |
+>
+> **Three acts never leave the orchestrator:** the user's consent on any escalation or on a `major` / `blocker` objection, routing into a Spec or Design Amendment, and confirming the write landed (mtime + `grep`) once `fix-apply` returns.
+>
+> **BEAT 5 — the post-apply micro-loop. Unconditional: after the apply, before the full review pass, every round.**
+>
+> 1. **The mechanical check** — `check-fix-plan.sh applied <progress-file>`. **One arm:** a finding when the diff touched a file no `fix` row named. The round's changed-line total is reported as a plain **measurement** and nothing fires on it — the post-apply size arm and its `actual-overrun` token are withdrawn. A path matching `ai-docs/plans/*.spec.md` or `ai-docs/plans/*.design.md` — the two suffixes the routing arms key on, not the whole directory — is excluded from that arm and NAMED on the verdict's `excluded-in-round` line instead, because an approved amendment's writes are not the fix round's work and the diff cannot tell them from a rogue edit: **whenever the verdict carries that line, the orchestrator reads it and accounts for every named path against the amendment it knows it ran; a named path it cannot account for is a finding.**
+> 2. **ONE bounded question**, spawned once, on **exactly three inputs** — the round's own plan section, the applied change, and beat 1's list of files no row named. Nothing else: not the findings table, not the spec, not the session history. It asks whether what was done matches what the plan said, **naming the row and the divergence**. Output: **exactly one of `MATCH` or `DIVERGE`, plus a reason**; an answer outside that two-word set is **refused, not interpreted** — the `record` verb's `<answer>` argument computes that refusal. It may not edit, may not re-run the fix, and decides no rework.
+> 3. **On `DIVERGE`** — re-spawn `fix-apply` with that divergence named and nothing new. **Cap three attempts, counted in the round's plan section**, one bullet per attempt written before the re-spawn: `- attempt 2 — finding 5, row 1: <the divergence named>; re-fix dispatched`. **It must NOT begin with `|`** — the gate reads any pipe-leading line in that section as a plan row and refuses the whole plan under `plan-row-malformed`.
+> 4. **On a burned cap** — surface to the user, in this fixed shape: which row (finding number and `Target`), what diverged (quoted from the question, not re-derived), the attempts and what changed between them, and **exactly one** of `re-fix` / `amend-the-plan` / `accept` with one sentence of why. It recommends; the user decides.
+> 5. **The full review pass runs either way** — a burned cap ends the LOOP, not the gate.
+>
+> **Then record the loop, once, as it closes:** `check-fix-plan.sh record <progress-file> <iterations> <cost_tool_calls> <answer>`. All three are required and none defaults; `<answer>` is the question's own word, `MATCH` or `DIVERGE`, and the cost is the number of orchestrator tool calls the loop consumed. That row is what this loop's own retirement is read from.
+>
+> Spawn prompts, the plan format and the reason-token vocabulary: [reference.md § Step 11 — the scouted-plan sequence (recipe)](reference.md#step-11--the-scouted-plan-sequence-recipe).
+
+Every `⬜ Open` finding in the latest `## Self-Review (Round N)` section carries **at least one** row in the round's plan, each with one disposition from the closed five — `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design` — and a finding may hold several rows when its remedy spans several files. The gate refuses a plan that omits a finding, and one that raises a row the review never raised. Statuses are marked only after the applied diff has been gated.
 
 After all findings resolved, run gates (`%BUILD_CMD%`, `%TEST_CMD%`, `%FORMAT_CMD%` to format then `%LINT_CMD%` as the gate), then:
 
