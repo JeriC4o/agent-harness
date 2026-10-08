@@ -1,8 +1,8 @@
 ---
 name: inspect
 description: "Analyse a finished session for harness defects: loops, gates re-run without a state change, review rounds that burned their cap, turns that went round and round. A script finds the candidates; the inspector agent reads the run where they point and judges. Proposes Learning Log entries and never edits an instruction file."
+when_to_use: "Activate when the user asks why a session went in circles, where its effort went, or what the harness itself cost — and after a run that burned a review cap, re-ran a gate with no state change between runs, or spent several rounds on one finding. It reads a FINISHED session, so it is near-useless mid-task: the transcript it would read is the one still being written, and the loop it would find is the one still running. It proposes Learning Log entries and edits no instruction file. SKIP when the question is what the instructions SAY rather than what a run did (that is /ai-audit), when it is whether a diff is correct (that is self-review), and when nothing actually looped — a clean run has nothing to report and this pass is not free. PUT THE CALL TO THE USER rather than taking it on a hunch: it costs a full pass over a whole transcript."
 model: opus
-disable-model-invocation: true
 argument-hint: "[session.jsonl path, or omitted for the most recent session of this project]"
 allowed-tools: Read, Write, Edit, Glob, Grep, Bash(scripts/session-events.sh:*), Bash(scripts/trace-tokens.sh:*), Bash(scripts/loop-metrics.sh:*), Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(jq:*)
 ---

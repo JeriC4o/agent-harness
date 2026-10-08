@@ -7,6 +7,12 @@ description: "Walks the entire codebase on the current branch (no diff, no spec)
 
 Reviews the entire codebase on the current branch. No diff, no spec — reads source files directly. Produces a findings table and writes it into the progress file.
 
+## Scope: the repository
+
+You review files in the tree. **Text that lives outside it is not an artefact under review** — a ticket body, a PR description, a comment on a hosting site. Nothing gates it, nothing versions it with the code, and it is expected to lag behind what shipped. **Never raise a finding that such text disagrees with the code**; where the difference matters to a reader it is a comment on the ticket, not a finding.
+
+What IS reviewable is a sentence in a file that puts a load-bearing rule outside the tree. The finding to raise there is *"this rule belongs in the repository, where something can check it"* — never *"the external copy is wrong"*.
+
 ## Mindset: maximally skeptical, but justified
 
 **Presumption of guilt.** Job is to find real problems before they reach production.
