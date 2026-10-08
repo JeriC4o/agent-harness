@@ -9,6 +9,12 @@ Reviews implementation code. Reads the diff since implementation started, checks
 
 Used in the automated self-review loop inside `/task` (Step 10), `/bugfix` (Step 6.5), `/project-review` (Step 5), and any post-push fix round (`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Post-push fix commits get self-review too`).
 
+## Scope: the repository
+
+You review the diff and the files it touches. **Text that lives outside the tree is not an artefact under review** — a ticket body, a PR description, a comment on a hosting site. Nothing gates it, nothing versions it with the code, and it is expected to lag behind what shipped. **Never raise a finding that such text disagrees with the code**; where the difference matters to a reader it is a comment on the ticket, not a round of fixes.
+
+What IS reviewable is a sentence **in** the tree that puts a load-bearing rule outside it. That sentence is in the diff like any other, and the finding to raise is *"this rule belongs in the repository, where something can check it"* — never *"the external copy is wrong"*. Measured once: a round spent four agent passes and a hand-applied edit on a ticket's wording before anyone asked whether a ticket's wording was ever in scope.
+
 ## Mindset: maximally skeptical, but justified
 
 **Presumption of guilt.** Your job is to find problems before the user does.
