@@ -43,6 +43,23 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 - **Invariant.** Paths and labels only, never project content. A consumer skips entries whose path no
   longer exists rather than failing.
 
+## Fix plan
+
+- **What it is.** A `## Fix Plan (Round N)` section appended to a task's `*.progress.md` by
+  `agents/fix-scout.md`: one row per `⬜ Open` finding, carrying its disposition, the target it will
+  change, an expected changed-line figure on the `max(added,removed)` basis, and the artefact sentence
+  the finding puts at stake quoted with its `file:line`.
+- **Identity.** The round number. One section per round, highest round is the one gated; a second
+  section for the same round is refused rather than appended.
+- **Code.** `skills/task/scripts/check-fix-plan.sh` — four verbs (`baseline`, `plan`, `applied`,
+  `record`), ten refusal reasons under `plan` and one finding under `applied`, and the single
+  `THRESHOLD_CHANGED_LINES=150` that its ONE firing site reads — the pre-apply gate, on the plan's
+  declared total. The post-apply size arm is withdrawn; `record` persists the post-apply micro-loop's
+  iteration count, its cost in orchestrator tool calls and the bounded question's answer.
+- **Invariant.** It lives in the progress file, which is gitignored and deleted by `/pr-merged`, so no
+  new artefact type and no new deletion path. The gate decides on its TEXT — never on an agent's
+  report of it — and a plan the gate refuses never reaches `agents/fix-apply.md`.
+
 ---
 
 # System Design
@@ -52,10 +69,10 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | Path | Role |
 |---|---|
 | `.claude-plugin/` | `plugin.json` (manifest) + `marketplace.json` (this repo as its own marketplace). **Declare a component key only for a NON-default location** — `hooks/hooks.json`, `skills/`, `agents/` are auto-discovered, and re-declaring one makes the plugin refuse to load it twice (`scripts/test-plugin-manifest.sh` guards this) |
-| `skills/<name>/SKILL.md` | The 8 workflow skills |
-| `agents/<name>.md` | The 7 subagents |
+| `skills/<name>/SKILL.md` | The 12 workflow skills |
+| `agents/<name>.md` | The 10 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
-| `hooks/hooks.json` | The 12 hooks; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
+| `hooks/hooks.json` | **20** hook entries in 12 matcher groups, running **18** distinct guards — two are registered on two events each, which is why "how many hooks" has three defensible answers and this row gives all three. Re-derive from the manifest with `jq` over `.hooks[][].hooks[]` (length, and the length of its unique `.command` set) rather than trusting this line; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
 | `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
@@ -177,6 +194,69 @@ meanings.
   rather than a regression: no path the pre-fix arms matched is silent under the current set, and
   `scripts/check-propagation-arms.sh` asserts that. Revisit when a consuming project actually keeps
   those mirrors.
+- `GH-98` — the scouted fix-plan sequence (scout → mechanical gate → fix agent) shipped into the main
+  feature-development flow only, on a cost baseline measured by hand from a single session. Its payoff
+  has never been measured against a real firing, so the figure that would justify it does not exist
+  yet. What is owed is a **like-for-like measurement of the review loop on the next real feature
+  task** — the same loop, run through the scouted flow, measured the same way.
+
+  **That measurement is the GATE on whether the mechanism is extended at all, not owed bookkeeping.**
+  `GH-98` is written as a conditional: the extension to the three remaining fix-applying loops does
+  not begin until a like-for-like measurement shows the effect, and if no effect shows the issue is
+  **closed** rather than left open — raising instead whether the main-flow mechanism earns its keep.
+  Extending on the analogy alone multiplies a cost that nothing has yet shown buys anything.
+
+  **The baseline the comparison must be made against** (from GH-91, session
+  `e330fc3e-e105-4690-8c78-37110ee25714`, the GH-52 task / PR #89): the review loop was **55% of task
+  cost**; within that loop the orchestrator's own share was **58%** against the four review subagents'
+  **42%**; orchestrator tool calls across the loop **66**, as **3 / 29 / 19 / 10 / 5** per round. The
+  per-round counts are the comparison — **never an average**, which hides the round carrying a single
+  trivial finding, and that round runs net-negative under the always-on rule by design.
+
+  **A second debt, found on the mechanism's first real run and NOT closed: the threshold has never been
+  recalibrated against a real firing.** The single `150` ships as a reasoned starting value, and the
+  justification for shipping one number rather than two was that each verdict records the value it fired
+  under, so the declared-vs-actual spread becomes measurable and the calibration arrives on its own.
+  **As first recorded here, it could not:** the plan and its verdict lived only in the task's
+  `*.progress.md` section, which is gitignored and deleted when the PR merges, so every round's figures
+  died with it — which made "revisit once verdicts accumulate", the disposition recorded for the
+  understated-plan residual in GH-91's spec and design, name a route that did not exist. That was the
+  one place where GH-91's shipped answer made a different open question HARDER to resolve, which is why
+  it is recorded beside the measurement gate rather than filed away.
+
+  **That half is superseded — the route now exists, and this round built it.** `check-fix-plan.sh`
+  appends one JSON row per firing to `~/.claude/harness/fix-plan/verdicts.jsonl`, a SIBLING of the loop
+  ledger's directory and outside the progress file, carrying the branch, the round and its `round_base`,
+  the decision and reason, the threshold value an escalation fired under, and — for the post-apply
+  micro-loop — its iteration count, its tool-call cost and the bounded question's answer. Real rows
+  from this branch have landed in it (as of 2026-10-07). So the figures no longer die with the round,
+  and the disposition above names a route that exists.
+
+  **What is still owed is the measurement, which the ledger does not supply.** One row is not a
+  calibration: no threshold has been revisited, `150` remains the reasoned starting value, and the
+  spread those rows exist to expose needs enough real firings to show one. Whether a persisted verdict
+  is worth keeping at all is also still open — only where it lives is now settled. Closing this for
+  tidiness would still remove the only path to ever recalibrating the threshold.
+
+  **The weights are part of the baseline, not a choice.** Input-token equivalents at
+  `fresh_input ×1 + output ×5 + cache_read ×0.1 + cache_creation ×2`, **deduped by message id**. A
+  figure computed any other way is not comparable to the numbers above and the comparison is void;
+  there is no partial credit for a differently-weighted measurement.
+
+  **Read every number above as a FLOOR at its as-of stamp, never as a bare count.** The
+  mechanism under measurement is the cache-read term, which scales as `context_size × calls × 0.1`, so
+  the same round costs more the later in a session it runs — and the harness's own instruction surface,
+  which every session and every subagent loads, grows each time anyone works on it. A later
+  measurement whose figures exceed these is watching the thing move, not catching this entry out. What
+  has to stay fixed for the comparison to mean anything is the METHOD and the per-round split, not the
+  magnitude.
+
+  **Unlike `GH-72`, this calibration does not arrive on its own.** The gate's verdict line records the
+  threshold value it fired under, so a mis-set threshold self-reports from ordinary runs; the
+  displacement figure does not. It needs a real feature task's review round measured deliberately, and
+  nothing fires a reminder when one goes past unmeasured. GH-91's own round is explicitly NOT it — the
+  diff under review there was instruction text and a check script rather than feature code, so its
+  figure ships with a not-comparable note and settles nothing.
 - _(closed 2026-09-14 — hook guards shipped in #3; `--scope user` is now the recommended install.)_
 - _(closed 2026-09-14 — both recorded as approved exemptions in `docs/skill-size-exemptions.md`: they are
   ordered orchestrators, and splitting the sequence costs more than the length does.)_

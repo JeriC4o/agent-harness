@@ -148,6 +148,8 @@ On either arm the orchestrator must re-run design-review (and design, for spec a
 
 (Use "Spec Amendment trigger" for `*.spec.md`.)
 
+In `/task` Step 11 that routing now runs against a **fix plan** rather than against your findings directly: a scout turns each `⬜ Open` row into one or more plan rows, each carrying a disposition and the artefact sentence it puts at stake, and a checked-in gate routes the round on the plan's text. **Nothing in this contract changes** — the fields below are what the plan is built from, so a re-derived `File:line`, an accurate severity and an explicit `⬜ Open` status are now also what a mechanical gate reads.
+
 ## Findings format (written to progress file)
 
 Append **exactly** this section:
