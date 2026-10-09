@@ -4,7 +4,7 @@ description: "Two-phase instruction audit over one of two surfaces. Surface `glo
 model: opus
 disable-model-invocation: true
 argument-hint: "[global|project] [phase1|phase2]"
-allowed-tools: Bash(grep:*), Bash(rg:*), Bash(find:*), Bash(realpath:*), Bash(jq:*), Bash(awk:*), Bash(wc:*), Bash(basename:*), Bash(git branch:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git diff:*), Bash(git check-ignore:*), Bash(scripts/audit-project.sh:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(ls:*), Bash(grep:*), Bash(rg:*), Bash(find:*), Bash(realpath:*), Bash(jq:*), Bash(awk:*), Bash(wc:*), Bash(basename:*), Bash(git branch:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git diff:*), Bash(git check-ignore:*), Bash(scripts/audit-project.sh:*)
 ---
 
 # AI Audit
@@ -140,7 +140,7 @@ For each violation: record file path, line number, the rule it conflicts with, t
 | F | Hooks (`${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`) — event names, matchers, exit codes, env-var quoting |
 | G | `propagation.md` coherence — sync groups intact; exemptions replicated everywhere |
 | H | Documentation conformance pointers — `doc-convention.md` references resolve; section order matches |
-| I | File-size & structure — no `SKILL.md` / Subagent file > ~500 lines without sectioning; 40,000-char cap not crossed |
+| I | File-size & structure — a Subagent file > ~500 lines without sectioning; 40,000-char cap not crossed. **`SKILL.md` line count belongs to K**, which owns the soft target and the exemption index |
 | J | Allow-list / permission consistency — `allowed-tools` covered by `permissions.allow`; no dead entries |
 | K | Skill-directory layout — oversized SKILL.md, multi-consumer supporting files, inline-script extraction candidates |
 | L | Learning-Log field coherence — every Entry-format field covered in all five mandatory locations; declared-enum fields (`Kind:`) additionally value-conformant across every log entry in the union (`ai-docs/learnings.md` + `ai-docs/learnings/*.md`) |
