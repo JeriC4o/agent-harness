@@ -856,6 +856,13 @@ gate_case BLOCK "two shell gates joined with && are refused" \
 gate_case BLOCK "and so are two suites"                   'bash scripts/test-a.sh && bash scripts/test-b.sh'
 gate_case pass  "a package-manager conjunction is NOT in scope (narrowed on purpose)" \
   'npm ci && npm test'
+# This leg keys on its OWN pattern, wider than the gate set on the shell side:
+# NEITHER side here is a gate for any other leg, and the conjunction is still
+# refused. That is the recorded incident's exact spelling, and the claim is
+# pinned here because docs/claude-tools-hierarchy.md now states it in prose.
+gate_case BLOCK "two shell scripts, neither test-named, are still refused" \
+  'bash -n a.sh && bash b.sh'
+gate_case pass  "and a single bash -n stays untouched"  'bash -n a.sh'
 
 # --- narrowed leg 3: direction matters for the banner ----------------------
 # `gate ; banner` discards the gate rc (the chain reports the banner's 0).

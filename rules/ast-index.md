@@ -51,6 +51,10 @@ git grep -n "<changed-keyword>" -- AGENTS.md CLAUDE.md skills agents rules docs 
 
 ```
 Use the Grep tool (ripgrep) for code search; shell out to `rg` only for flags the tool does not expose.
+BUT an ambient session directive that says to work through Bash OVERRIDES this preference, and it binds on
+call ONE, orientation reads included. Where one is in force, NAME which half of the work its own exception
+covers (a dedicated tool where the shell genuinely cannot do the job) rather than letting that exception
+cover the session by default.
 
   Grep(pattern, glob: "*.{kt,java}", output_mode: "content")   — default; respects .gitignore
   rg -n -g '*.{kt,java}' "<pattern>" <path>                    — when you need raw ripgrep flags
@@ -130,5 +134,5 @@ The `Grep` tool and `rg` read the working tree, so they see uncommitted edits �
 
 ## Cross-references
 
-- AGENTS.md `## Search` block.
+- [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Search](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#search) — the method section that points here. A consuming project's own profile file has no such section, so this line used to name one that does not exist; it escaped the reference gate because the old spelling put the heading in backticks rather than in the form that gate matches.
 - `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` PreToolUse(Bash) hook — `$HOME`-scan blocker.
