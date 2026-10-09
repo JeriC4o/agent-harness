@@ -190,6 +190,15 @@ says to the **user** about work a Subagent returned.
 > section are inferences** — a coverage claim, a mutation claim — so a bare integer does not resemble the
 > thing being warned about, which is why it slips past a reader who has understood the section correctly.
 >
+> **Two shapes the carve-out does not name, both recorded.** (1) **When your OWN output already contains
+> the number, the brief takes it from your output and from nowhere else** — a hand-back is not a shortcut
+> to a value you already hold. A figure phrased as a measurement inside a hand-back is indistinguishable,
+> in summarising-reading mode, from one you measured; the countermeasure is positional, not attentional —
+> scroll to the tool result that produced it and copy from there. (2) **A relayed claim is MORE dangerous
+> inside a careful brief than a sloppy one**, because a brief that separates "measured, output below" from
+> "my reading, re-derive it" makes an UNMARKED sentence read as measured. And the claim you check least is
+> *good news about work you just authorised*, which is the class to check most.
+>
 > **A correct `file:line` citation certifies the QUOTE, not the INFERENCE drawn from it.** The project's
 > anchor discipline catches fabricated references; by construction it cannot catch sound-looking reasoning
 > over real ones — only execution catches that. Before relaying a coverage claim ("test X catches mutation
@@ -256,7 +265,7 @@ literal `tool_input.command` STRING, so any prose passed through Bash (heredoc, 
 scanned as if it were code. A learning entry documenting a hook-blocked command can itself be blocked by
 that hook for quoting the command in its `**What happened:**` narrative.
 
-**Prefer the `Edit` / `Write` tools for any content that quotes a forbidden construct** — they are not
+**Content that quotes a forbidden construct MUST go in through the `Edit` / `Write` tools** — they are not
 subject to the Bash command regexes — and reserve Bash for actually running commands. A Bash-command regex
 cannot be made prose-safe, so this is a cost of the hook design, not a bug to fix; the workaround belongs in
 the agent's habits.

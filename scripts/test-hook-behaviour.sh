@@ -165,7 +165,7 @@ PreToolUse|Bash|2|find_home|err|BLOCKED: broad find/bfs/grep -r over
 PreToolUse|Bash|3|coauthor_trailer|err|BLOCKED: git commit message contains a Co-Authored-By trailer.
 PreToolUse|Bash|4|three_dot_diff|err|BLOCKED: `git diff <base>...HEAD` on a branch with NO commits yet
 PreToolUse|Bash|5|properties_filter|err|BLOCKED: this content search can surface deployed-config files
-PreToolUse|Bash|6|piped_gate|err|BLOCKED: a gate (build / test / lint / format / shellcheck) is
+PreToolUse|Bash|6|piped_gate|err|BLOCKED: a gate (build / test / lint / format / shellcheck / manifest parse) is
 PreToolUse|Edit|Write|0|member_path|err|[propagation-rule-reminder] You are editing
 PreToolUse|Edit|Write|1|learnings_headers|err|[archive-protection-reminder]
 PreToolUse|Skill|0|skill_task_main|jq|CONFIRM: /task starts the full ordered workflow
@@ -805,6 +805,116 @@ grep -qF 'installed copy' "${WORK}/perms.md" \
   && grep -qF 'registry.json' "${WORK}/perms.md" \
   && ok "§ Permissions carries the source-repository boundary, naming the registry (AC17)" \
   || bad "§ Permissions carries no installed-copy boundary bullet naming registry.json"
+
+
+# ---------------------------------------------------------------------------
+# The gate guard, leg by leg (PreToolUse|Bash index 6).
+#
+# Until this section existed the suite carried exactly ONE trigger for this
+# hook -- `bash scripts/test-thing.sh | tail -3` -- which proves the pipe leg
+# and says nothing about the other five. Two legs were then added and one
+# narrowed; without a positive control per leg those are gates that cannot
+# fail, which is the defect class this repository's own log documents most.
+#
+# Ground truth for every row below is "does the construct discard a gate
+# verdict", decided from shell semantics, not from what the guard happens to
+# do. The three degradation blocks at the end delete one change each and
+# require the pre-change behaviour to come back.
+# ---------------------------------------------------------------------------
+printf '\n== the gate guard, leg by leg ==\n'
+
+GATE_CMD=$(cmd_of PreToolUse Bash 6)
+[ -n "$GATE_CMD" ] && ok "the gate guard command extracted" \
+                   || bad "could not extract the gate guard at PreToolUse|Bash index 6"
+
+gate_verdict(){ # <command-string> <hook-command> -> BLOCK | pass
+  jq -nc --arg c "$1" '{tool_input:{command:$c}}' > "${WORK}/gate.json"
+  ( cd "$PROJ" && CLAUDE_PLUGIN_ROOT="$ROOT" bash -c "$2" ) \
+    < "${WORK}/gate.json" > "${WORK}/gate.out" 2> "${WORK}/gate.err"
+  if [ "$?" -eq 0 ]; then printf 'pass'; else printf 'BLOCK'; fi
+}
+gate_case(){ # <want> <label> <command-string>
+  check "$2" "$(gate_verdict "$3" "$GATE_CMD")" "$1"
+}
+
+# --- the four legs that predate this change (regression cover) --------------
+gate_case BLOCK "pipe into a pager is refused"            'bash scripts/test-x.sh | tail -3'
+gate_case BLOCK "a trailing || true is refused"           'bash scripts/run-checks.sh || true'
+gate_case BLOCK "output into /dev/null is refused"        'bash scripts/test-x.sh > /dev/null'
+gate_case BLOCK "a gate inside a for loop is refused"     'for f in a b; do bash scripts/test-x.sh; done'
+
+# --- new leg 1: the manifest parse is a gate -------------------------------
+gate_case BLOCK "a jq -e manifest parse into /dev/null is refused" \
+  'jq -e . hooks/hooks.json > /dev/null'
+gate_case BLOCK "jq --exit-status counts the same"        'jq --exit-status . x.json | head -1'
+gate_case pass  "bare jq, with no verdict flag, is an ordinary read" \
+  'jq . hooks/hooks.json | head -20'
+
+# --- new leg 2: two shell gates in one conjunction -------------------------
+gate_case BLOCK "two shell gates joined with && are refused" \
+  'bash -n x.sh && bash scripts/test-x.sh'
+gate_case BLOCK "and so are two suites"                   'bash scripts/test-a.sh && bash scripts/test-b.sh'
+gate_case pass  "a package-manager conjunction is NOT in scope (narrowed on purpose)" \
+  'npm ci && npm test'
+# This leg keys on its OWN pattern, wider than the gate set on the shell side:
+# NEITHER side here is a gate for any other leg, and the conjunction is still
+# refused. That is the recorded incident's exact spelling, and the claim is
+# pinned here because docs/claude-tools-hierarchy.md now states it in prose.
+gate_case BLOCK "two shell scripts, neither test-named, are still refused" \
+  'bash -n a.sh && bash b.sh'
+gate_case pass  "and a single bash -n stays untouched"  'bash -n a.sh'
+
+# --- narrowed leg 3: direction matters for the banner ----------------------
+# `gate ; banner` discards the gate rc (the chain reports the banner's 0).
+# `banner ; gate` cannot discard anything: the gate is last, so its status IS
+# the command status. The guard blocked both until this change.
+gate_case BLOCK "a gate FOLLOWED by a banner is refused"  'bash scripts/test-x.sh; echo "=== done ==="'
+gate_case BLOCK "banner between two gates is refused"     'bash scripts/test-a.sh; echo "=== b ==="; bash scripts/test-b.sh'
+gate_case pass  "a banner BEFORE a single gate is allowed (gate is last)" \
+  'echo "=== tests ==="; bash scripts/test-x.sh'
+gate_case pass  "gate && banner is allowed (&& propagates the failure)" \
+  'bash scripts/test-x.sh && echo "=== done ==="'
+
+# --- documented carve-outs stay open --------------------------------------
+gate_case pass  "a cd prefix is not a second gate"        'cd /x && bash scripts/test-x.sh'
+gate_case pass  "a [ -n ] guard is not a second gate"     '[ -n "$x" ] && bash scripts/test-x.sh'
+gate_case pass  "the load-bearing xargs syntax sweep is untouched" \
+  "git ls-files -z '*.sh' | xargs -0 -n1 bash -n"
+
+printf '\n== degradation controls: each change, deleted, brings the old behaviour back ==\n'
+
+# (1) the jq alternative, removed from $G
+JQ_ALT='|jq[[:space:]]+(-[A-Za-z]*e[A-Za-z]*|--exit-status)[[:space:]]'
+DEG_JQ=${GATE_CMD/"$JQ_ALT"/}
+if [ "$DEG_JQ" = "$GATE_CMD" ]; then bad "the jq-alternative degradation changed nothing -- the control is vacuous"; else
+  ok "jq-alternative degradation applied"
+  check "without it the manifest parse goes unflagged again" \
+    "$(gate_verdict 'jq -e . hooks/hooks.json > /dev/null' "$DEG_JQ")" "pass"
+fi
+
+# (2) the && leg, removed entirely
+AND_LEG='[ -z "$bad" ] && echo "$cmd" | grep -qE "$B[^;|]*&$B" && bad='"'"'joined to a SECOND shell gate with &&, so the first verdict is unreadable and one legitimate non-zero truncates the rest'"'"'; '
+DEG_AND=${GATE_CMD/"$AND_LEG"/}
+if [ "$DEG_AND" = "$GATE_CMD" ]; then bad "the &&-leg degradation changed nothing -- the control is vacuous"; else
+  ok "&&-leg degradation applied"
+  check "without it two joined shell gates go unflagged again" \
+    "$(gate_verdict 'bash -n x.sh && bash scripts/test-x.sh' "$DEG_AND")" "pass"
+fi
+
+# (3) the banner leg, reverted to its pre-change predicate. This reproduces the
+# false positive on demand, which is the only way the narrowing is falsifiable:
+# with the narrow form alone, "it does not block this" is indistinguishable from
+# a guard that no longer matches anything.
+NEW_BANNER='grep -qE "$G.*;[[:space:]]*(echo|printf)[[:space:]]+.?==="'
+OLD_BANNER='grep -qE "$G" && echo "$cmd" | grep -qE '"'"'(^|[;&])[[:space:]]*(echo|printf)[[:space:]]+.?==='"'"''
+DEG_BAN=${GATE_CMD/"$NEW_BANNER"/$OLD_BANNER}
+if [ "$DEG_BAN" = "$GATE_CMD" ]; then bad "the banner-leg degradation changed nothing -- the control is vacuous"; else
+  ok "banner-leg degradation applied"
+  check "the pre-change predicate DID refuse a banner before a single gate" \
+    "$(gate_verdict 'echo "=== tests ==="; bash scripts/test-x.sh' "$DEG_BAN")" "BLOCK"
+  check "and it still refuses the shape that really masks" \
+    "$(gate_verdict 'bash scripts/test-x.sh; echo "=== done ==="' "$DEG_BAN")" "BLOCK"
+fi
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
