@@ -57,7 +57,7 @@ Per the official Claude Code docs:
 
 ## Checklist I — File-size & structure (instruction files)
 
-- No `SKILL.md` or Subagent file exceeds ~500 lines without clear sectioning. Long files should split into a thin `SKILL.md` + reference file (`task`, `ai-audit`, `bugfix`, `interview` use this pattern).
+- **`SKILL.md` line count belongs to Checklist K, not here** — K.1 owns the soft target and the exemption index at `${CLAUDE_PLUGIN_ROOT}/docs/skill-size-exemptions.md`, and **the figure lives there alone**: a second copy of it on this line is how the two came to disagree, and Checklist B of this same list is "conflicting / duplicated rules". **This sentence sits in a THREE-member sync group** (`${CLAUDE_PLUGIN_ROOT}/docs/propagation.md`, the ai-audit group), which names them in this order: the Step 2.3 letter table in `SKILL.md`, these checklist detail bodies, and the `**Reference:**` footer letter range. A change that stops at one member leaves the old threshold live one file over, which is this very defect's own shape — so read the group off that table rather than off this sentence, and sweep all three. Checklist I keeps only what K does not cover: a **Subagent** file past ~500 lines with no sectioning, and the structural expectation that a long skill splits into a thin `SKILL.md` + reference file (`task`, `ai-audit`, `bugfix`, `interview` use this pattern).
 - Each skill directory contains exactly one `SKILL.md` (plus optional reference / scripts subdirectories).
 - AGENTS.md AXIOM: every file in the audited corpus stays under 40,000 chars; 35,000–39,999 is a `minor` warning band.
 
@@ -127,22 +127,34 @@ A field added to the entry format without parallel coverage in all five targets 
 | 8 | **Pattern 8 (file-size cap)** — every covered instruction file < 40,000 chars; 35,000–39,999 is `minor`. | see body |
 | 9 | **Anti-patterns table audit** — no row of the Anti-patterns table appears verbatim as a positive rule. | `major` |
 | 10 | **Cross-shape verbs** — carrot blocks must NOT use stick verbs; stick blocks must NOT use carrot verbs. | `major` |
-| 11 | **Compaction-recovery callout consistency** — role-aware presence of the locked invariant tiers across the 7 callout-carrying skills (see detail note below). | `major` |
+| 11 | **Compaction-recovery callout consistency** — role-aware presence of the locked invariant tiers across the callout-carrying skills, whose population is DERIVED (see detail note below). | `major` |
 
 ### Sub-check 11 — compaction-recovery callout consistency
 
-Keys on **role-aware invariant tiers** — NOT byte-equality. The 5 callout-carrying skills are `task`, `project-review`, `bugfix`, `interview`, `context-reset`. Two tiers:
+Keys on **role-aware invariant tiers** — NOT byte-equality.
+
+**Derive the population; do not read a number off this page.**
+
+```bash
+grep -rln 'Compaction recovery check' ${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md
+```
+
+**The `*/SKILL.md` operand is load-bearing.** The same pattern over `skills/` also matches THIS reference
+page, which *describes* the callout rather than carrying it — a population inflated by one makes every
+tier count below wrong, and that is how this sub-check came to state its own size as four different
+numbers. At the last derivation it returned five carriers: `task`, `project-review`, `bugfix`,
+`interview`, `context-reset`. Two tiers:
 
 | Tier | Scope | Invariant that MUST be present |
 |---|---|---|
-| **Tier 1** | all 7 callout-carrying skills | the opening line `> **⚡ Compaction recovery check — read FIRST on every invocation.**` |
-| **Tier 2** | the 4 **consumer** skills only (`task`, `project-review`, `bugfix`, `interview`) — `context-reset` is **EXEMPT** as the rationale carrier | the cross-link substring `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md § Compaction recovery (re-entry)` |
+| **Tier 1** | every carrier the derivation returns (five at the last measurement) | the opening line `> **⚡ Compaction recovery check — read FIRST on every invocation.**` |
+| **Tier 2** | the **consumer** carriers only — the derived set MINUS `context-reset`, which is **EXEMPT** as the rationale carrier (four at the last measurement) | the cross-link substring `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md § Compaction recovery (re-entry)` |
 
 A missing Tier-1 or Tier-2 invariant, or an invented variant of either, is `major`.
 
 **NOT keyed — documented acceptable variance.** Three phrases vary by role and are NOT keyed: `STOP before any tool call`; `top-to-bottom in one pass`; `Re-enter this skill from the top of its body`. Keying them would false-positive on `context-reset` (carrier variant).
 
-**Refinement note (vs the spec).** The spec Key-decisions row lists 5 phrases as "invariant", but live audit found only the opening line (all 7) + the cross-link (6 consumers) are truly universal — the other 3 are acceptable variance, not keyed.
+**Refinement note (vs the spec).** The spec Key-decisions row lists 5 phrases as "invariant", but live audit found only the opening line (every carrier) + the cross-link (the consumer carriers only) are truly universal — the other 3 are acceptable variance, not keyed.
 
 **False-positive guard.** The sub-check MUST produce ZERO findings against `context-reset` (a correct-by-design carrier variant).
 
@@ -221,7 +233,7 @@ Where Checklist D/E verify frontmatter *conformance* (is it well-formed?), Check
 
 **Routing.** Findings flow through the existing Step 2.5 `minor` / `nit` approval flow. A field-config that is *actively misleading* (e.g. `disable-model-invocation` asymmetry that lets a user-only skill be model-invoked) is `major`; everything else is `minor` or `nit`.
 
-**The four recommendation verbs.** Per field, per surface, emit exactly one of:
+**The recommendation verbs.** Per field, per surface, emit exactly one value from the legal set below — and the set is CLOSED, so an outcome some rule mandates while the set omits it is a defect in this list, never a judgement call at runtime. Four of the six are recommendations:
 
 | Verb | When |
 |---|---|
@@ -229,6 +241,13 @@ Where Checklist D/E verify frontmatter *conformance* (is it well-formed?), Check
 | **drop** | A field is present but equals its documented default, OR is redundant for this surface. |
 | **normalize** | Field value uses an inconsistent style vs siblings (e.g. mixed separators across `allowed-tools` entries). |
 | **resolve-asymmetry** | A sibling pair disagrees (one of a pair carries a field the other lacks with no role reason). |
+
+The remaining two are **not** recommendations, and the Run output table's Verb column carries all six:
+
+| Value | When |
+|---|---|
+| **not-applicable** | This surface inherits the documented default intentionally; nothing to change, and the verdict is recorded rather than acted on. |
+| **posture-question** | A rule's flag stands, but the remedy is a decision for the surface's owner and not for the audit — so the row states the question and names the options instead of prescribing one. `drop` is specifically NOT the value here: it would have the audit resolve what it is reporting. |
 
 ### Minimal-frontmatter philosophy (AC7)
 
@@ -254,10 +273,12 @@ The model-posture taxonomy is an **auditable two-way rule**. Flag deviations in 
 
 | Surface class | Members | Expected `model:` | Deviation flagged |
 |---|---|---|---|
-| **Non-code reasoning** (SHOULD pin `model: opus`) | skills: `ai-audit`, `improve`, `improve-global`; agents: `design`, `design-review`, `learnings-escalation-audit`, `self-improve`, `spec-writer` | `model: opus` present | omits `model:` → flag |
-| **Code-working** (SHOULD inherit — omit `model:`) | skills: `task`, `project-review`, `bugfix`, `interview`, `context-reset`, `pr-merged`, `harness-init`; agents: `self-review`, `review-findings` | no `model:` line | pins `model:` → flag |
+| **Non-code reasoning** (SHOULD pin `model: opus`) | skills: `ai-audit`, `improve`, `improve-global`, `inspect`; agents: `design`, `design-review`, `learnings-escalation-audit`, `self-improve`, `spec-writer`, `fix-scout`, `inspector` | `model: opus` present | omits `model:` → flag |
+| **Code-working / script-driven** (SHOULD inherit — omit `model:`) | skills: `task`, `project-review`, `bugfix`, `interview`, `context-reset`, `pr-merged`, `harness-init`, `report-defect`; agents: `self-review`, `review-findings`, `fix-apply` | no `model:` line | pins `model:` → flag |
 
-> **SKILL-honored vs SUBAGENT-may-be-ignored (GH #44385).** A SKILL `model: opus` pin is **reliably honored** by the harness. A SUBAGENT (`${CLAUDE_PLUGIN_ROOT}/agents/*.md`) `model:` pin **may be ignored** — the agent can inherit the spawner's session model regardless of its frontmatter. So for agents the frontmatter pin is **intent-level** only; reliable opus comes from the opus-pinned spawning skill (the agent inherits) OR an explicit `model=` at the `Agent()` spawn site. Checklist P treats an agent's `model: opus` pin as correct-intent and does NOT recommend dropping it, but records that the practical guarantee lives at the spawner.
+**The two membership lists are EXHAUSTIVE, and a surface the table does not name is the hole this clause closes.** A two-way rule that says nothing about a surface cannot flag it in either direction, which is how five surfaces sat outside it. Derive the surfaces rather than trusting the lists — `ls ${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md ${CLAUDE_PLUGIN_ROOT}/agents/*.md` compared against the two rows above, **in both directions** — and treat a surface in neither row as a `major` finding in its own right, reported BEFORE anything about its `model:` line: which posture it should carry is the owner's decision, not the audit's.
+
+> **SKILL-honored vs SUBAGENT-may-be-ignored (GH #44385).** A SKILL `model: opus` pin is **reliably honored** by the harness. A SUBAGENT (`${CLAUDE_PLUGIN_ROOT}/agents/*.md`) `model:` pin **may be ignored** — the agent can inherit the spawner's session model regardless of its frontmatter. So for agents the frontmatter pin is **intent-level** only; reliable opus comes from the opus-pinned spawning skill (the agent inherits) OR an explicit `model=` at the `Agent()` spawn site. Checklist P treats a **Non-code-reasoning** agent's `model: opus` pin as correct-intent and does NOT recommend dropping it, but records that the practical guarantee lives at the spawner. **The shield is scoped to that row and does not reach the Code-working / script-driven one**, where a pin contradicts the posture the row expects: there the row's flag stands, and it is reported under the `posture-question` value — drop the pin, or reclassify the surface — never as a `drop` recommendation the audit resolves by itself. Leaving the shield unscoped would void the agent half of that row and recreate the "rule silent on a surface" hole the exhaustiveness clause above exists to close. `fix-apply` is the live instance: it edits files and pins `model: opus`.
 
 ### Run output — per-surface recommendation table (AC3)
 
@@ -265,7 +286,7 @@ The run output is a per-surface recommendation table — **one row per skill / a
 
 | Surface | Type | Verb | Field | Recommendation | Severity |
 |---|---|---|---|---|---|
-| `<name>` | skill / agent / hook | add / drop / normalize / resolve-asymmetry / not-applicable | `<field>` | one-line rationale | minor / nit / major |
+| `<name>` | skill / agent / hook | add / drop / normalize / resolve-asymmetry / not-applicable / posture-question | `<field>` | one-line rationale | minor / nit / major |
 
 The table is emitted at audit runtime (Step 2.5 output) — it is NOT stored in the repo.
 
