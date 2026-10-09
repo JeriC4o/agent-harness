@@ -745,6 +745,7 @@ detector must not use that same gap as its admission filter. Group repeated spaw
 the separating. More generally: after adding a qualifier, check what the admission filter lets reach it.
 **Kind:** correction
 **Escalated?** no
+**Superseded by:** 824abb7 — the spawn filter was re-scoped; that commit's subject names this defect verbatim
 
 ### 2026-09-26 — tooling — a subagent hand-back opens a counted turn, so a delegating deep turn is split below the spike threshold
 **What happened:** `scripts/session-events.sh:121-126` counts any user-string entry not prefixed
@@ -810,7 +811,7 @@ on the gate; it is reading the suite in full, or redirecting to a file and grepp
 filtered view is genuinely needed, put the fixtures and the filtering inside a checked-in `.sh` — the
 carve-out exists for exactly that, and it is the difference between a legitimate script and a masked gate.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-09-26 — testing — a mutation that does not apply is indistinguishable from a guard that works
 **What happened:** I ran six mutations against the new suite to prove it can go red. Five turned it red;
@@ -871,7 +872,7 @@ members by hand. An inventory gate is honest about what it lists and silent abou
 green is scoped to the list rather than to the class — the same shape as a gate that narrows its own
 input set. Extending the list is part of adding the component, not a follow-up.
 **Kind:** validation
-**Escalated?** no
+**Escalated?** gate:run-checks
 # Learning Log — JeriC4o / GH-64-loop-metrics
 
 ### 2026-09-26 — architecture — writing the reader is what found the writer's defects
@@ -902,7 +903,7 @@ discharged by writing it down. When a comment names the thing NOT to do, read th
 looking for that exact mistake. It was caught only because the fixture gave every line the same
 timestamp, i.e. because the fixture reproduced the real shape rather than a convenient one.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** workflow, agent:review-findings
 
 ### 2026-09-26 — testing — the same control-blocked-by-another-guard shape, one day later
 **What happened:** A positive control meant to show the model being re-asked reported 1 call instead of 4.
@@ -971,7 +972,7 @@ that moment the only correct moves are to run it bare and read it, or to redirec
 instances in one session, all the same trigger, all stopped by machinery rather than by me — which is
 itself the argument for the machinery, and against trusting the prose for this class.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 # Learning Log — JeriC4o / GH-69-call-outcomes
 
 ### 2026-09-28 — architecture — a priority statement found a defect that months of building had not
@@ -1015,7 +1016,7 @@ the source before trusting a clean result — and prefer re-reading the source t
 whenever the answer matters. A mirror is a cache; treat a cached answer to a design question as stale
 until checked.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** gate:run-checks
 
 ### 2026-09-28 — tooling — shape (4) of my own masking rule, in a probe for a different blind spot
 **What happened:** Writing a probe for the fix-break fix, I set a variable inside a function invoked as
@@ -1028,7 +1029,7 @@ would prevent it: have the CALLER compute anything the caller needs to read back
 every throwaway probe, where the temptation to skip it is highest and the cost of a silent empty is the
 same as in shipped code.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 # Learning Log — JeriC4o / GH-71-inspect-ledger
 
 ### 2026-09-28 — tooling — a suite that reads the ambient environment is not a gate
@@ -1115,7 +1116,7 @@ occurrence in this repo, and there is already a `sh-syntax-check` `PostToolUse` 
 `'` rather than fixing the first apostrophe seen. The reported line is downstream of the real one, so
 reading it as the location is what turns one mistake into two rounds.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** hook, rules:ast-index
 
 ### 2026-09-28 — process — a completeness flag that names the wrong quantifier
 **What happened:** Fixing the absent-transcript defect I added `attribution.complete` and commented it
@@ -1189,7 +1190,7 @@ keeps the line naming WHICH assertion failed. This binds inside a subagent exact
 orchestrator: delegation does not dilute the method rules, and a spawn prompt that restates them is a
 reminder rather than a control.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-09-30 — testing — a recorded measurement must be re-run for the pattern actually written down
 **What happened:** The design recorded an AC17 gate measurement — "5 lines across 3 files", itemised
@@ -1270,7 +1271,7 @@ were the ones expected to pass, which is exactly the condition under which outpu
 Separately, when an entry must quote a hooked construct, author it with Edit or Write, never a shell
 heredoc — already in cross-session memory, and it fired again here.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 # Learning Log — JeriC4o / GH-75-hook-path-resolution
 
 ### 2026-10-01 — tooling — a legitimate zero exit-codes as failure and swallows the rest of an `&&` chain
@@ -1417,7 +1418,7 @@ it claims. Limit output with the tool's own flags when it has them; a suite with
 read in full. `${PIPESTATUS[0]}` is not an exemption from the rule; it repairs rc and leaves the output
 loss untouched.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-09-26 — documentation — I wrote a carve-out by misquoting the enumeration it cited
 **What happened:** Reconciling a documented audit block against the gate-masking rule, I wrote that the
@@ -1483,7 +1484,7 @@ range read is evidence about CONTENT, never about ADDRESS. When a quoted anchor 
 the user or into a subagent brief, the `grep -n` is a separate, non-optional call, and it costs one
 tool call against a wrong citation that propagates into every artefact downstream.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, rules:ast-index
 
 ### 2026-10-05 — tooling — discarded a gate's output to keep a baseline run tidy
 **What happened:** Establishing a pre-implementation baseline before the Group A handoff, I ran the
@@ -1501,7 +1502,7 @@ list and says so. When a gate's full output is genuinely too long to read, redir
 grep the file; the remedy named in the hook's own refusal text. The tidiness I was buying cost one
 re-run and was worth nothing: the second invocation produced the same verdict with the evidence intact.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-05 — tooling — masked a gate twice in one turn, having been warned about it by name
 **What happened:** Running the new grid suite for the first time I piped it into a pager to keep a long
@@ -1523,7 +1524,7 @@ tool might be absent" is answered by running the probe as its own bare call and 
 Having read the rule, and having written the log entry for the previous instance, demonstrably does not
 prevent the next one; inspecting the string before sending it is the only thing that does.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-05 — tooling — wrote the entry above through a Bash heredoc and the hook blocked the prose
 **What happened:** Appending the preceding entry, I used `cat >> <file> <<'EOF'` with the violating
@@ -1539,7 +1540,7 @@ tool it was first learned on; re-read such a note as a rule about the hazard rat
 example. Practical consequence here: the append needed a `Read` of the target first, since `Edit`
 requires it, which is one extra call and the only cost of getting it right the first time.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** rules:ast-index, workflow, templates:learnings-entry-format
 
 ### 2026-10-05 — process — claimed a free identifier and swept a stale claim, both from a window instead of the whole set
 **What happened:** Twice in one task, work was scoped to the part of a document that happened to be on
@@ -1558,7 +1559,7 @@ because "I did not see one" and "there is not one" differ by exactly the size of
 window is evidence about the window. Positive-control the sweep with a keyword known to be present, the
 way the propagation sweep already mandates, so an empty result is distinguishable from a wrong pattern.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** workflow, agents-method
 
 ### 2026-10-05 — tooling — ran the manifest-parse gate with its output redirected to a file and its status re-echoed
 **What happened:** Validating the new `SubagentStart` arm, I sent the manifest parse as
@@ -1577,7 +1578,7 @@ the reason for the redirect is "the output is too long", that is a reason to pas
 arguments and read all of it, not a reason to hide it — `jq -e . a.json b.json c.json` bare is one call
 and names which file failed.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** hook, claude-tools-hierarchy, agents-method
 
 ### 2026-10-05 — tooling — piped a suite run into grep to read only its FAIL lines, two calls after logging the same class
 **What happened:** Running the new canary suite against a planted defect, I wanted only the failing
@@ -1594,7 +1595,7 @@ where it masks nothing, and the full output stays on disk for the next question.
 file's own remedy 5, and having it as a ready-made two-call shape is what removes the incentive to
 reach for the pipe.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-05 — tooling — collapsed my own two-call remedy back into one call with `;` and masked the gate's status
 **What happened:** Re-planting a defect in `ledger-write.sh`, I sent the mutation, the suite run
@@ -1612,7 +1613,7 @@ with a gate must contain exactly one command and end at the redirect. If a secon
 goes in the next call — and the parallel-call form makes that free, so there is no cost to pay for
 being correct here.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-05 — tooling — appended `| tail -5` to the ONE gate whose exact spelling AGENTS.md calls load-bearing
 **What happened:** Checking how many files the `bash -n` sweep processed, I sent
@@ -1631,7 +1632,7 @@ same minute: that count read **47 while the new suite was untracked**, and the s
 after `git add -N` took it to 48 — the "gate that silently narrows its own input set" hazard, caught by
 reading the enumerated list rather than the exit status, exactly as check 4 says to.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-05 — tooling — piped a suite into `tail` believing `PIPESTATUS` exempted me, after logging the class twice and lecturing two agents about it
 **What happened:** Opening the verification pass I ran a suite as `bash …/test-ledger-write.sh 2>&1 |
@@ -1652,7 +1653,7 @@ breaking it again**; what prevents it is reading the command line left to right 
 or a `>` before sending it, every time, as a separate act from deciding what to run. Six entries of one
 class on one branch is past the threshold where `/improve` is the response rather than another entry.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-05 — testing — the fix for an admission filter introduced a second one, and the generic rule was followed and still insufficient
 **What happened:** To make a dead detector visible, the change added a report that fires once per session,
@@ -1677,7 +1678,7 @@ in its own right and belongs in the design as a constraint on the mechanism, not
 suite that tripped over it — the record a future suite in a different file inherits is the document, never
 the comment.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agent:self-review, agent:review-findings
 
 ### 2026-10-05 — process — told a reviewer "exactly two things moved" after an agent was cut off mid-step, and the gate list I supplied covered none of the three files it had actually touched
 **What happened:** An implementing agent hit a session limit and terminated between writing its edit and
@@ -1698,7 +1699,7 @@ the change tests what I believe changed, which is exactly the assumption the int
 Generalisation worth keeping beyond interruptions: whenever I state a scope to a subagent, that scope is a
 claim about the tree and is re-derivable — so derive it.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** workflow, agents-method
 
 ### 2026-10-05 — process — let `current_step` go stale across four step boundaries, and the Step 12 gate is what caught it
 **What happened:** At Step 12 the step-skip gate read `current_step` and found `Step 8 — Group C COMPLETE`,
@@ -1748,7 +1749,7 @@ report. Both parties did the right thing here only because the disagreement was 
 smoothed over — an orchestrator that had quietly picked a side would have buried a correct anchor or a
 false one with equal ease.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, rules:ast-index
 
 ### 2026-10-06 — tooling — wrote a progress-file gate timestamp before reading the clock, then corrected it from the measurement
 **What happened:** Closing subtask 2 of the implementation, I composed the progress file's
@@ -1767,7 +1768,7 @@ its verbosity: a fabricated hash or command name is obvious on sight, while a fa
 looks exactly like a real one, so the field hardest to audit is the one that most needs the
 measure-then-write discipline.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** templates:progress-format
 
 ### 2026-10-06 — tooling — shortened a suite's output with a pager, and the result-masking hook stopped the construct at dispatch
 **What happened:** After fixing one failing leg in a 150-assertion suite I wanted only the end of the
@@ -1785,7 +1786,7 @@ violation committed under the hook was stopped by the hook and none by the prose
 that a hand-run gate's output budget needs deciding BEFORE the call is composed, because once the
 output feels too long the masking spelling is the first one that comes to mind.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-06 — tooling — three masking-shaped gate calls in a row, and the hook stopped none of them
 **What happened:** Verifying the one-line hook-manifest edit in subtask 5, I dispatched three
@@ -1812,7 +1813,7 @@ durable form: a verification call gets the same one-gate-per-call discipline as 
 and a flag guessed at rather than read from the tool's usage line is itself the finding, never
 something to paper over with a fallback.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-06 — tooling — the ORCHESTRATOR masked a gate at Step 9, one turn after reporting a subagent's masking as a finding
 **What happened:** Running the Step 9 verification, I dispatched the gate suite with its output fed
@@ -1835,7 +1836,7 @@ showed the hook's coverage has holes, this one shows the prose fails even at max
 same session, against a reader who had just quoted it. Together they say the protection is the
 composed call, and nothing upstream of it.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-06 — tooling — the self-review subagent masked a gate on its FIRST gate call of the round, and the hook stopped it
 **What happened:** Opening the Step 10 skeptical review, my first independent gate call dispatched the
@@ -1857,7 +1858,7 @@ durable form for a review round specifically: a gate whose OUTPUT is the thing u
 bare and read whole, and if the output is genuinely too long, it goes to a file that is then searched —
 never through a construct whose exit status replaces the gate's.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-06 — tooling — four wrong conclusions on one task, all from a probe nobody proved could answer the question
 **What happened:** Recorded as ONE entry on `design-review`'s own recommendation, because four instances
@@ -1912,7 +1913,7 @@ does not prevent the construct, and the hook is what does. The trigger is the mo
 narrower view, so the countermeasure has to live there rather than in a resolution formed afterwards.
 
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-06 — tooling — the orchestrator masked a gate TWICE in consecutive calls, in the same turn it was reporting a subagent's identical violation
 **What happened:** Verifying the implementation hand-back, I piped the gate suite into a pager to read
@@ -1940,7 +1941,7 @@ even running a gate yet. **Escalation is now plainly warranted** — five entrie
 distinct parties, across one branch — and it is the user's call, not mine, because an entry's author may
 not escalate from the same turn.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-06 — tooling — applied a line number across an edit I had made myself, while closing the finding about exactly that
 **What happened:** Closing the last self-review finding, I ran `sed -i '' -e '493s/…/…/'` against the
@@ -1963,7 +1964,7 @@ address matches nothing exits 0 and reports success, so any `sed -i` by line num
 read in the same breath — which is the only reason this was caught rather than silently skipped, leaving
 a finding open that I would have reported as closed.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, rules:ast-index
 
 ### 2026-10-06 — tooling — the review subagent masked a gate again in round 2, in a new spelling, and the hook refused it again
 **What happened:** Setting up an isolated sandbox for round 2's mutation experiments, I put the whole
@@ -1985,7 +1986,7 @@ next call, never to neutralise it in the chain. Second, narrower: a reviewer com
 reaching for convenience exactly when it is about to produce the evidence it will then report, which is
 the worst moment for the gate's own status to be the thing discarded.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-06 — process — two entries on this branch undercount the recurrence they argue from, and the correction has to be an append
 **What happened:** `self-review` round 2 found that two of my own entries state a masking-class count
@@ -2007,7 +2008,7 @@ which feels worse and is better: an append leaves both the error and its correct
 edit would leave a clean file that no longer shows the recurrence actually happening. The audit that
 decides escalation reads the history, and the history is what the rule protects.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** workflow, agents-method
 
 ### 2026-10-06 — process — relayed a subagent's conclusion into another subagent's brief as a measured fact
 **What happened:** Briefing the design-review verification pass, I wrote that one acceptance criterion
@@ -2031,7 +2032,7 @@ the cheap ones are worth running: this claim was one `grep` over a file I had op
 did not run it is that it was *good news* about work I had just authorised, which is the class of claim
 I check least and should check most.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** workflow
 
 ### 2026-10-06 — tooling — the fixed-string discipline from the consolidated probe entry transferred and paid for itself twice in one pass
 **What happened:** Recorded as a `validation` at `design-review`'s request, because this branch's log
@@ -2054,7 +2055,7 @@ its four instances and their commands was picked up by a different agent, in a d
 rounds later, and used to find defects nobody was looking for. That is the argument for writing a
 consolidated entry with the evidence in it rather than four thin ones — not tidiness, reusability.
 **Kind:** validation
-**Escalated?** no
+**Escalated?** rules:ast-index
 
 ### 2026-10-06 — tooling — two independent gates joined with `&&` in one call
 **What happened:** After implementing the second remedy I ran
@@ -2073,7 +2074,7 @@ it onto the expensive one reads as sequencing rather than as masking. It is not 
 verdict to read, and `&&` discards it. When the urge is "just confirm it parses before running the
 suite", that is two calls, and the parallel-tool-call form costs nothing extra.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** hook, claude-tools-hierarchy, agents-method
 
 ### 2026-10-06 — process — the orchestrator skipped the always-on mechanism it had just written, on the round where it was available
 **What happened:** Found by `self-review` round 3, verified by me. The review loop ran three rounds.
@@ -2125,7 +2126,7 @@ result, not recalled from the surrounding prose. And the cost here was not zero:
 design document, where it is now one of three false claims in a row whose whole subject is a false
 claim.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** workflow
 
 ### 2026-10-06 — tooling — fabricated a gate timestamp while writing the session handoff, overwriting a measured one
 **What happened:** Composing the handoff a restarted session will resume from, I rewrote
@@ -2148,7 +2149,7 @@ first entry on it already said. And it happened while writing a HANDOFF, at the 
 and highest consequence: every number in that document will be trusted by a session that cannot check it
 against a transcript it will not have.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** templates:progress-format
 
 ### 2026-10-07 — tooling — a test suite shortened with a pager while verifying a design's pinned gate
 **What happened:** running the suite the design pins as its verification command, I shortened its 340-line
@@ -2164,7 +2165,7 @@ construct cannot be written with a shell heredoc either — the hook matches the
 entry recording the violation was itself blocked until written with the editing tool, exactly as the
 session memory on this already says.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — the orchestrator joined independent verification checks with `&&`, and a legitimate zero count silently truncated the run
 
@@ -2188,7 +2189,7 @@ cheapest available route.** The party enforcing a rule is not exempt from the ru
 are not the control — the separate call is.
 
 **Kind:** correction
-**Escalated?** no
+**Escalated?** hook, claude-tools-hierarchy, agents-method
 
 ### 2026-10-07 — tooling — the implementation agent piped a test suite into a pager on its very first gate call
 **What happened:** Implementing the round-9 handoff, my first action after reading the brief and the design
@@ -2207,7 +2208,7 @@ also where it looks most harmless. And having just READ the rule, in a document 
 measured failure, did not stop it: the hook did. That is one more point for the same conclusion the branch's
 other entries in this class keep reaching, from a party that had the warning in context.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — the fix agent joined two plain reads with `&&`, the one shape the brief named as live that hour
 **What happened:** Measuring my own inserted blocks so the hand-back could carry an honest changed-line figure,
@@ -2223,7 +2224,7 @@ careful work rather than while cutting a corner. The chain felt like tidiness ab
 shortcut past a gate, and that is why having read the warning forty minutes earlier did not fire. Ninth entry in
 this class on this branch, from a fifth party, with the rule quoted in the brief.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** hook, claude-tools-hierarchy, agents-method
 
 ### 2026-10-07 — tooling — a `diff` inside a `for` loop, where only the last iteration's status survives
 **What happened:** To establish that three files arm (a) flagged were not mine, I ran
@@ -2238,7 +2239,7 @@ but prefer one call per subject when there are three of them, because three bare
 and carry three readable statuses. Related to the entry above and committed in the same stretch of work: both
 times the compression served my own report, not the task.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — piped a gate into a pager on the re-run, after logging two masking entries minutes earlier
 **What happened:** Re-running the four verification calls after a late suite addition, I appended a pager stage to
@@ -2255,7 +2256,7 @@ in this class on this branch and the third from me alone in a single round — w
 in-context warning substitutes for the dispatch-time refusal, and a further argument for the escalation the
 branch's earlier entries keep requesting and declining to self-apply.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — joined two diagnostics with `;` and an echo banner in my first call of the task
 **What happened:** My very first Bash call on this fix read the real verdict ledger's row count and then listed its
@@ -2269,7 +2270,7 @@ said four parties had already broken it on this task today.
 call's output readable is the tell that it should have been two. The measurement the whole task turned on (the row
 count before the suite ran) deserved a call of its own on its own merits.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — piped a test suite into grep during a mutation experiment
 **What happened:** While mutation-testing the gate's ledger guard I dispatched the mutated copy of
@@ -2281,7 +2282,7 @@ already broken it on this task today; I made it the sixth, on a call whose only 
 file and grep the FILE in a second call. Wanting a short view of a long result is never a reason to pipe the run
 itself — the remedy that is always available is one extra call.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — search — piped four investigative greps into `head` instead of using `grep -m`
 **What happened:** Investigating the two repairs I ran four searches spelled `grep -n '<pattern>' <files> | head -40`
@@ -2293,7 +2294,7 @@ sent me here opened by naming the shape and counting six parties who had broken 
 **Rule:** `grep -m N`, never `grep … | head -N`. The pipe is never needed for a search's own output limit, and
 reaching for it on a search keeps the construct in muscle memory for the call where it does mask a status.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — read `$?` after a pipeline and printed it as the command's status
 **What happened:** To confirm the follow-up issue mentioned the micro-loop nowhere I ran
@@ -2305,7 +2306,7 @@ run. Had `gh` failed, the `0` count and a non-zero `exit` would have read exactl
 un-piped; never print a pipeline's `$?` as if it certified the producer. A zero count still owes its pattern a
 separate check — that part I did do, and it is what made the zero trustworthy, not the exit status.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — used the Read tool where the session directive said to read through Bash
 **What happened:** The session's auto-mode directive says to do the work through Bash wherever it can accomplish
@@ -2318,7 +2319,7 @@ opening reads were not.
 Where a dedicated tool is genuinely the safer choice, the exception is real — but name which half of the work it
 covers instead of letting it cover the whole session by default.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method
 
 ### 2026-10-07 — tooling — dispatched a gate-into-filter construct; the hook caught it, the rule had already bound
 **What happened:** To excerpt one section of the gate suite's output I dispatched the suite invocation with its
@@ -2331,7 +2332,7 @@ own bare call, then read the file in a second call. I used that form for every g
 Treat "the hook will catch it" as unavailable: the hook is the backstop for the construct, not the permission to
 author it, and a brief that names a shape as already-broken-today is raising the bar, not describing someone else.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — opened the method file with the Read tool under a Bash-first session directive
 **What happened:** The session directive says to do the work through Bash wherever Bash can accomplish it —
@@ -2342,7 +2343,7 @@ is a recurrence rather than a first instance.
 **Rule:** The tool directive binds on the FIRST call, orientation reads included. A recurrence of a rule already
 in this branch's log is the signal to re-read the session directive before the first call, not after the first slip.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method
 
 ### 2026-10-07 — tooling — piped a gate into a pager while reviewing a brief that forbade exactly that
 **What happened:** The verification brief named the no-masking rule three times and said seven parties had broken
@@ -2354,7 +2355,7 @@ it — a correct-looking workaround for a construct the rule forbids outright.
 already wrong — limit output with the tool's own flags, or redirect to a FILE and read the file. An explicit warning
 in the brief is not protection: the slip happened three calls after reading it.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — tooling — Read tool for the first orientation reads under a Bash-first session directive
 **What happened:** The session directive says to read with `cat` / `head` / `sed -n` and fall back to a dedicated
@@ -2365,7 +2366,7 @@ violation on this branch — two entries already above it say the same thing, on
 is the one to check before the first call rather than the one to re-record afterwards; a third recurrence is evidence
 the log is not being read at session start.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method
 
 ### 2026-10-07 — process — the fix plan cannot name a remedy that lives outside the repository, so the orchestrator applied it
 
@@ -2435,7 +2436,7 @@ worth carrying past this instance: "I already read this output" is not an exempt
 how a gate is invoked, because the rule binds on the construct and not on what the author knew.
 
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-07 — process — marking a relayed claim "the reviewer's measurement, re-derive it" is what let the receiver catch a conflation in my own brief
 
@@ -2460,7 +2461,7 @@ receiver's re-derivation contradicts the brief, the brief is the thing more like
 is the one written at distance from the file.
 
 **Kind:** validation
-**Escalated?** no
+**Escalated?** skill:task
 
 ### 2026-10-07 — tooling — replaced a comparand that CANNOT fail with one that can, and did not carry the file's own guard across to it
 
@@ -2484,7 +2485,7 @@ assertion is in place — it is finished when every comparand that assertion com
 original guards its own.
 
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agent:self-review, agent:review-findings
 # Learning Log — GH-93-plain-language
 
 ### 2026-10-06 — tooling — masked two gate results in one session, and found the guard's blind spot for the manifest gate
@@ -2510,7 +2511,7 @@ gate whose COMMAND is not on the guard's list. The `git ls-files -z '*.sh' | xar
 gate is the same case — it is a pipeline by design, so its own rc is `xargs`', and the method file
 documents that as the one form that propagates.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** hook, claude-tools-hierarchy, agents-method
 # Learning Log — chore-checks-runner
 
 ### 2026-10-06 — tooling — piped a test suite into `tail` on the first run of the session; THIRD occurrence of this pattern
@@ -2532,7 +2533,7 @@ command string contains a filter after a gate, delete the filter before dispatch
 the hook, which is a safety net and not a substitute. Already-escalated control: the `result-masking`
 hook caught this one, as it caught the previous one, so the mechanism is working and the gap is mine.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-06 — testing — wrote a planted-defect leg whose planted defect was not a defect
 **What happened:** `scripts/test-run-checks.sh` has a leg asserting that the shell-syntax member
@@ -2552,7 +2553,7 @@ does. Writing tests before the code is what surfaced this one for free — a leg
 implementation does not exist is a leg that measures nothing, and test-first makes that visible in the
 first run instead of never.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agent:self-review, agent:review-findings
 
 ### 2026-10-06 — architecture — made empty output the success signal without ruling out every path to empty
 **What happened:** In `scripts/run-checks.sh` the gate-inventory member treated empty output from
@@ -2599,7 +2600,7 @@ one set from a file to compare against another set in that same file, exclude th
 declaration from the first derivation — otherwise the comparison is partly against itself, which is the
 general form of the defect here and reads as passing.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** workflow, agent:review-findings
 
 ### 2026-10-06 — testing — a mutation guard that asked "did the file change?" called a broken sed an applied mutation
 **What happened:** Three new legs run a mutated copy of `scripts/run-checks.sh`. I wrote the mutations
@@ -2618,7 +2619,7 @@ delimiter, change the delimiter rather than escaping — and when a mutation tar
 a multi-line assignment, remember it shares a line with the assignment and pick a middle element
 instead.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agent:self-review, agent:review-findings
 
 ### 2026-10-06 — process — handed back a follow-up list instead of finishing cheap work, and one item on it was already done
 **What happened:** After the review approved the branch I offered three items as follow-up issues and
@@ -2729,7 +2730,7 @@ declare and existence-check both separately — a single variable covering "the 
 collapse. The structural lesson is the cross-check: a gate that reports one number can be narrowed to
 zero silently; one that reports three numbers which must reconcile cannot.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** gate:run-checks
 
 ### 2026-10-04 — testing — a suite that ENUMERATES its own alphabet goes blind the moment a member is added
 **What happened:** The manifest suite asserts that every resolved-path call in the hook manifest carries
@@ -2745,7 +2746,7 @@ list of names, or a fixed count standing where a derivation would do — and the
 fixing rather than extending is that extending it works exactly once, for the member you happen to be
 adding today.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** gate:run-checks
 ### 2026-10-04 — tooling — piped a test suite into a pager while running the gate list
 **What happened:** Running the 18 structural suites, the first invocation sent
 `scripts/test-plugin-manifest.sh` through `2>&1 | tail -5` and read `${pipestatus[1]}` beside it. The
@@ -2758,7 +2759,7 @@ Never route a gate through a pager or filter — not even with a `$pipestatus` r
 is not a reason: parallel bare calls are the documented way to run many gates at once, and they were what
 worked here (18 suites, four batches, no truncation needed).
 **Kind:** correction
-**Escalated?** no
+**Escalated?** agents-method, hook
 
 ### 2026-10-04 — tooling — tried to write this log entry with a shell heredoc
 **What happened:** The entry above was first appended with a Bash heredoc. Its prose quotes the blocked
@@ -2769,7 +2770,7 @@ not been generalised to "any file whose TEXT quotes a hooked construct".
 the hook matches the command string and cannot tell a quotation from an invocation. Applies to learning
 entries, PR bodies, specs and issue bodies alike.
 **Kind:** correction
-**Escalated?** no
+**Escalated?** rules:ast-index, workflow, templates:learnings-entry-format
 
 ### 2026-10-05 — process — talked to the user in artifact references instead of plain language
 **What happened:** The user asked for the conversation to be held "в терминологии людей, с развернутыми
