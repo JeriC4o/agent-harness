@@ -20,7 +20,7 @@ _Updated: YYYY-MM-DD_
 
 <!-- Compaction-recovery / re-entry fields (required for code-side orchestrators): -->
 **current_step:** <Step / Phase the orchestrator was last at>
-**last_passed_gate:** <gate command | ISO-8601 UTC timestamp | commit hash, or `(none yet)`>
+**last_passed_gate:** <gate command | ISO-8601 UTC timestamp or `(not measured)` | commit hash, or `(none yet)` for the whole field>
 
 <!-- Optional re-entry fields: -->
 **parent_skill:** </task | /project-review>    <!-- omit unless nested -->
@@ -106,11 +106,14 @@ The fail-loud step gate. Every step boundary REWRITES this field. Subagents read
 
 ### `last_passed_gate`
 
-Three-field format: `<gate command> | <ISO-8601 UTC timestamp> | <commit hash>`.
+Three-field format: `<gate command> | <ISO-8601 UTC timestamp or `(not measured)`> | <commit hash>`.
 
 Example: `%TEST_CMD% common/http-client | 2026-05-25T11:55:00Z | a3f9c1d`.
 
 Rewritten only when a gate passes. The hash lets a re-entering Subagent verify the gate ran against the current tree (or detect that work happened since).
+
+> **AXIOM — the timestamp is MEASURED, never composed, and a field that demands a stamp does not entitle you to produce one.**
+> Measure first, read the output, THEN write — never batch the clock read into the same tool call as the write that consumes it, which guarantees the field is authored before the reading exists. Where no clock was read for the run, write `(not measured)` and say whose measurement the previous stamp was; **NEVER overwrite a measured stamp with an invented one.** Two recorded instances on one branch, the second inside a session handoff — the moment of lowest scrutiny and highest consequence, because every number in that document will be trusted by a session that cannot check it against a transcript it will not have. This field is the three-field format's whole justification: a fabricated command or hash is obvious on sight, while **a fabricated timestamp is indistinguishable from a real one**, so the field hardest to audit is the one that most needs measure-then-write.
 
 ### `entry_args`
 
