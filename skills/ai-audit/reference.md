@@ -233,7 +233,7 @@ Where Checklist D/E verify frontmatter *conformance* (is it well-formed?), Check
 
 **Routing.** Findings flow through the existing Step 2.5 `minor` / `nit` approval flow. A field-config that is *actively misleading* (e.g. `disable-model-invocation` asymmetry that lets a user-only skill be model-invoked) is `major`; everything else is `minor` or `nit`.
 
-**The recommendation verbs.** Per field, per surface, emit exactly one value from the legal set below — and the set is CLOSED, so an outcome some rule mandates while the set omits it is a defect in this list, never a judgement call at runtime. Four of the six are recommendations:
+**The six legal values.** Per field, per surface, emit exactly one of them — the set is CLOSED **for per-field rows**, so an outcome some rule mandates for such a row while the set omits it is a defect in this list, never a judgement call at runtime. A finding about THIS LIST rather than about a surface's field is the documented exception and takes no value at all; the exhaustiveness clause under the model-posture rule is the one that does. Four of the six are **recommendation verbs**:
 
 | Verb | When |
 |---|---|
@@ -242,7 +242,7 @@ Where Checklist D/E verify frontmatter *conformance* (is it well-formed?), Check
 | **normalize** | Field value uses an inconsistent style vs siblings (e.g. mixed separators across `allowed-tools` entries). |
 | **resolve-asymmetry** | A sibling pair disagrees (one of a pair carries a field the other lacks with no role reason). |
 
-The remaining two are **not** recommendations, and the Run output table's Verb column carries all six:
+The remaining two are **not** recommendation verbs, which is why the heading above counts values rather than verbs; the Run output table's Value column carries all six:
 
 | Value | When |
 |---|---|
@@ -276,7 +276,7 @@ The model-posture taxonomy is an **auditable two-way rule**. Flag deviations in 
 | **Non-code reasoning** (SHOULD pin `model: opus`) | skills: `ai-audit`, `improve`, `improve-global`, `inspect`; agents: `design`, `design-review`, `learnings-escalation-audit`, `self-improve`, `spec-writer`, `fix-scout`, `inspector` | `model: opus` present | omits `model:` → flag |
 | **Code-working / script-driven** (SHOULD inherit — omit `model:`) | skills: `task`, `project-review`, `bugfix`, `interview`, `context-reset`, `pr-merged`, `harness-init`, `report-defect`; agents: `self-review`, `review-findings`, `fix-apply` | no `model:` line | pins `model:` → flag |
 
-**The two membership lists are EXHAUSTIVE, and a surface the table does not name is the hole this clause closes.** A two-way rule that says nothing about a surface cannot flag it in either direction, which is how five surfaces sat outside it. Derive the surfaces rather than trusting the lists — `ls ${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md ${CLAUDE_PLUGIN_ROOT}/agents/*.md` compared against the two rows above, **in both directions** — and treat a surface in neither row as a `major` finding in its own right, reported BEFORE anything about its `model:` line: which posture it should carry is the owner's decision, not the audit's.
+**The two membership lists are EXHAUSTIVE, and a surface the table does not name is the hole this clause closes.** A two-way rule that says nothing about a surface cannot flag it in either direction, which is how five surfaces sat outside it. Derive the surfaces rather than trusting the lists — `ls ${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md ${CLAUDE_PLUGIN_ROOT}/agents/*.md` compared against the two rows above, **in both directions** — and treat a surface in neither row as a `major` finding in its own right, reported BEFORE anything about its `model:` line: which posture it should carry is the owner's decision, not the audit's. **That finding is reported in PROSE, outside the per-surface table, and takes none of the six values** — it is a defect in THIS LIST rather than in the surface's frontmatter, the remedy edits this page, and the table's `Field` column is one an unlisted surface cannot fill. `posture-question` in particular does not fit: its first clause is "a rule's flag stands", and the whole point here is that a rule silent about a surface cannot flag it at all.
 
 > **SKILL-honored vs SUBAGENT-may-be-ignored (GH #44385).** A SKILL `model: opus` pin is **reliably honored** by the harness. A SUBAGENT (`${CLAUDE_PLUGIN_ROOT}/agents/*.md`) `model:` pin **may be ignored** — the agent can inherit the spawner's session model regardless of its frontmatter. So for agents the frontmatter pin is **intent-level** only; reliable opus comes from the opus-pinned spawning skill (the agent inherits) OR an explicit `model=` at the `Agent()` spawn site. Checklist P treats a **Non-code-reasoning** agent's `model: opus` pin as correct-intent and does NOT recommend dropping it, but records that the practical guarantee lives at the spawner. **The shield is scoped to that row and does not reach the Code-working / script-driven one**, where a pin contradicts the posture the row expects: there the row's flag stands, and it is reported under the `posture-question` value — drop the pin, or reclassify the surface — never as a `drop` recommendation the audit resolves by itself. Leaving the shield unscoped would void the agent half of that row and recreate the "rule silent on a surface" hole the exhaustiveness clause above exists to close. `fix-apply` is the live instance: it edits files and pins `model: opus`.
 
@@ -284,7 +284,7 @@ The model-posture taxonomy is an **auditable two-way rule**. Flag deviations in 
 
 The run output is a per-surface recommendation table — **one row per skill / agent / hook**:
 
-| Surface | Type | Verb | Field | Recommendation | Severity |
+| Surface | Type | Value | Field | Recommendation | Severity |
 |---|---|---|---|---|---|
 | `<name>` | skill / agent / hook | add / drop / normalize / resolve-asymmetry / not-applicable / posture-question | `<field>` | one-line rationale | minor / nit / major |
 
