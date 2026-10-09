@@ -227,7 +227,7 @@ says to the **user** about work a Subagent returned.
 | Rewind the default branch | `git reset --soft origin/main` | Never `--hard`; always preserve uncommitted work. |
 | Delete a merged branch | `git branch -d <branch>` | Refuses to delete unmerged. |
 | Commit | `git commit` | **ASK-level for Claude** — Claude asks before running. Blocked on the default branch by the `branch-protection` hook. |
-| Push | `git push -u origin <branch>` | **ASK-level for Claude** — Claude asks before running. Blocked on the default branch by the `branch-protection` hook. |
+| Push | `git push -u origin <branch>` | **ASK-level for Claude** — Claude asks before running. Blocked on the default branch by the `branch-protection` hook, **except a LONE deletion of some other branch** (`--delete` / `-d`, or a push whose refspecs are ALL `:<branch>` deletions — one colon refspec standing beside a plain one pushes as well as deletes, while several deletions together are fine), which pushes nothing there. Deleting the default branch stays blocked, and so does any deletion carrying a shell metacharacter — send it as its own bare call. |
 | Stage everything | `git add -A` / `git add .` | **FORBIDDEN** — see § Explicit-file staging. |
 | Open a PR | `gh pr create --title … --body …` | **ASK-level for Claude.** Never `--fill` blindly; never auto-merge. |
 | Read a PR | `gh pr view --json title,body,state,url` / `gh pr view --comments` | The AXIOM-2 post-push read. |

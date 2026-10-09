@@ -916,5 +916,232 @@ if [ "$DEG_BAN" = "$GATE_CMD" ]; then bad "the banner-leg degradation changed no
     "$(gate_verdict 'bash scripts/test-x.sh; echo "=== done ==="' "$DEG_BAN")" "BLOCK"
 fi
 
+
+# ---------------------------------------------------------------------------
+# branch-protection, by what the push TARGETS (PreToolUse|Bash index 0).
+#
+# The trigger table above fires this hook with a `git commit` on the default
+# branch, which proves the commit half and says nothing about the push half.
+# The hook refused EVERY push issued from the default branch, branch deletions
+# included, although a deletion sends nothing there -- observed refusing a real
+# one. Ground truth per row below is whether the command would update the
+# default branch, decided from what git does, not from what the hook does.
+# ---------------------------------------------------------------------------
+printf '\n== branch-protection, by deletion target ==\n'
+
+BP_CMD=$(cmd_of PreToolUse Bash 0)
+[ -n "$BP_CMD" ] && ok "the branch-protection command extracted" \
+                 || bad "could not extract branch-protection at PreToolUse|Bash index 0"
+
+# Earlier sections leave the fixture on a feature branch; every row here is
+# about standing on the DEFAULT branch, so assert that rather than assume it.
+git -C "$PROJ" checkout -q main
+check "the fixture stands on the default branch" "$(git -C "$PROJ" branch --show-current)" "main"
+
+bp_verdict(){ # <command-string> <hook-command> -> BLOCK | pass
+  jq -nc --arg c "$1" '{tool_input:{command:$c}}' > "${WORK}/bp.json"
+  ( cd "$PROJ" && CLAUDE_PLUGIN_ROOT="$ROOT" bash -c "$2" ) \
+    < "${WORK}/bp.json" > "${WORK}/bp.out" 2> "${WORK}/bp.err"
+  if [ "$?" -eq 0 ]; then printf 'pass'; else printf 'BLOCK'; fi
+}
+bp_case(){ # <want> <label> <command>
+  check "$2" "$(bp_verdict "$3" "$BP_CMD")" "$1"
+}
+
+# --- what the hook exists for ---------------------------------------------
+bp_case BLOCK "a bare push is refused"                       'git push'
+bp_case BLOCK "a push naming the default branch is refused"  'git push origin main'
+bp_case BLOCK "the commit half is untouched"                 'git commit -m x'
+
+# --- a deletion of some other branch pushes nothing here ------------------
+bp_case pass  "--delete of another branch is permitted"      'git push origin --delete feature-x'
+bp_case pass  "-d of another branch is permitted"            'git push origin -d feature-x'
+bp_case pass  "the colon refspec form is permitted"          'git push origin :feature-x'
+bp_case pass  "the flag may precede the remote"              'git push --delete origin feature-x'
+bp_case pass  "a name merely CONTAINING the base is permitted" 'git push origin --delete old-main-backup'
+
+# --- the fix must not open a bigger hole ----------------------------------
+bp_case BLOCK "deleting the DEFAULT branch stays refused"    'git push origin --delete main'
+bp_case BLOCK "and so does its colon form"                   'git push origin :main'
+# --- a deletion token belonging to a DIFFERENT sub-command exempts nothing -
+# Each row carries a REAL push to the default branch alongside a deletion token.
+# The first version of this leg exempted every one of them, because the deletion
+# test was evaluated over the whole command string while the push test required
+# command position — so the token did not have to belong to the push at all.
+# The row that used to sit here (`… --delete feature-x; git push origin main`)
+# blocked only because of the literal `main`, which made it a duplicate of the
+# row above and the reason this hole shipped: it never tested compoundness.
+bp_case BLOCK "a local branch delete beside a bare push"     'git branch -d feature-x && git push'
+bp_case BLOCK "a deletion followed by a real push"           'git push origin --delete feature-x; git push origin HEAD'
+bp_case BLOCK "a commit beside a deletion"                   'git commit -m x && git push origin --delete feature-x'
+bp_case BLOCK "a -d test operator beside a push"             '[ -d ai-docs ] && git push origin HEAD'
+bp_case BLOCK "a colon token in an unrelated echo"           'git push origin HEAD && echo " :x"'
+bp_case BLOCK "a tag delete beside a push"                   'git tag -d v1 && git push origin HEAD'
+bp_case BLOCK "another program's -d flag beside a push"      'curl -d @body https://x && git push'
+# A target that cannot be read off the string could BE the default branch, so
+# the exemption must not apply to it.
+bp_case BLOCK "a substituted deletion target"                'git push origin --delete "$(git branch --show-current)"'
+bp_case BLOCK "a variable deletion target"                   'git push origin --delete "$BRANCH"'
+
+# --- the two deletion spellings are NOT symmetric --------------------------
+# `--delete` applies to every refspec, so such a push cannot also deliver a
+# commit (`… --delete feature-x HEAD` fails rc=1, remote unmoved). A COLON
+# refspec applies only to itself, so one rides beside a plain one: measured
+# against a real bare remote, `git push origin HEAD :feature-x` printed
+# `- [deleted] feature-x` AND `6c27cec..11d6751  HEAD -> main`. The colon leg
+# is therefore anchored to the whole command, and these rows are what holds it
+# there.
+bp_case BLOCK "a colon deletion beside a plain refspec"      'git push origin HEAD :feature-x'
+bp_case BLOCK "the same, in the other order"                 'git push origin :feature-x HEAD'
+bp_case BLOCK "a colon deletion beside an explicit refspec"  'git push origin HEAD:refs/heads/trunk :feature-x'
+
+# --- and the anchoring must not cost the real colon deletions -------------
+bp_case pass  "a full refs/heads colon deletion"             'git push origin :refs/heads/feature-x'
+bp_case pass  "a short flag before the remote"               'git push -q origin :feature-x'
+bp_case pass  "a long flag before the remote"                'git push --porcelain origin :feature-x'
+bp_case pass  "a colon deletion with no remote named"        'git push :feature-x'
+
+# --- a trailing separator is not a compound ------------------------------
+bp_case pass  "a trailing semicolon keeps the exemption"     'git push origin --delete feature-x;'
+bp_case pass  "and so does a spaced one"                     'git push origin --delete feature-x ;'
+
+# --- EVERY refspec a deletion: flags and extra deletions are free ----------
+# These are the rows the previous version of this leg was missing, and their
+# absence is why an anchored pattern that refused all of them shipped and
+# passed 196 assertions. The multi-branch form is the shape #105 was FILED
+# over, so a guard refusing it would have blocked its own originating command.
+bp_case pass  "two deletions in one push"                    'git push origin :feature-a :feature-b'
+bp_case pass  "three deletions in one push"                  'git push origin :a :b :c'
+bp_case pass  "a flag before the remote, two deletions"      'git push --atomic origin :a :b'
+bp_case pass  "a long flag AFTER the refspec"                'git push origin :feature-x --porcelain'
+bp_case pass  "a short flag AFTER the refspec"               'git push origin :feature-x -q'
+bp_case pass  "a branch deletion beside a tag deletion"      'git push origin :feature-x :refs/tags/v1'
+bp_case pass  "a URL remote with a deletion"                 'git push git@github.com:u/r.git :feature-x'
+
+# --- one non-deletion refspec anywhere disqualifies the whole command ------
+bp_case BLOCK "a plain refspec alone"                        'git push origin feature-x'
+bp_case BLOCK "a deletion beside a plain refspec, no remote" 'git push :a feature-x'
+bp_case BLOCK "a bare push to a named remote"                'git push origin'
+
+# --- options that move refs without being a refspec deletion --------------
+# `--mirror` is the one to read twice: it deletes remote refs AND delivers
+# commits in one call, so "a deletion is harmless" is most tempting and most
+# wrong here. None of these is matched by either deletion leg.
+bp_case BLOCK "--all"                                        'git push --all'
+bp_case BLOCK "--mirror, which deletes AND pushes"           'git push --mirror'
+bp_case BLOCK "--tags"                                       'git push --tags'
+bp_case BLOCK "--follow-tags"                                'git push --follow-tags'
+bp_case BLOCK "--force-with-lease"                           'git push --force-with-lease'
+bp_case BLOCK "-u origin HEAD"                               'git push -u origin HEAD'
+
+# --- a KNOWN LIMITATION, asserted so its absence cannot read as coverage ---
+# The outer matcher wants `git` at command position and a quote is not one of
+# its separators, so a push behind an inner quote is invisible to this hook.
+# That is the documented indirection class — a guard matching the command
+# string cannot see it — and this row exists to keep it from being mistaken
+# for something the hook covers.
+bp_case pass  "KNOWN LIMITATION: a push behind an inner quote is not seen" \
+  'bash -c "git push origin main"'
+
+printf '\n== degradation control: without the target test, a deletion is refused again ==\n'
+# Removing the conjunct is the minimal degradation that restores the old
+# behaviour, so the control measures the narrowing itself rather than the
+# surrounding plumbing.
+BP_PAT='[ "$del" = 0 ] && '
+DEG_BP=${BP_CMD/"$BP_PAT"/}
+if [ "$DEG_BP" = "$BP_CMD" ]; then bad "the branch-protection degradation changed nothing -- the control is vacuous"; else
+  ok "target-test degradation applied"
+  check "without it a deletion of another branch is refused again" \
+    "$(bp_verdict 'git push origin --delete feature-x' "$DEG_BP")" "BLOCK"
+  check "and the commit half behaves identically either way" \
+    "$(bp_verdict 'git commit -m x' "$DEG_BP")" "BLOCK"
+fi
+
+
+printf '\n== the base name is interpolated into an ERE, so a metacharacter must not fail open ==\n'
+# $base goes into a NEGATED conjunct, so a pattern that mis-parses exempts the
+# deletion it exists to refuse. These three are branch names git accepts and
+# ERE metacharacters at once.
+meta_verdict(){ # <fixture dir> <command>
+  jq -nc --arg c "$2" '{tool_input:{command:$c}}' > "${WORK}/bpm.json"
+  ( cd "$1" && CLAUDE_PLUGIN_ROOT="$ROOT" bash -c "$BP_CMD" ) \
+    < "${WORK}/bpm.json" > "${WORK}/bpm.out" 2> "${WORK}/bpm.err"
+  if [ "$?" -eq 0 ]; then printf 'pass'; else printf 'BLOCK'; fi
+}
+META_DONE=0
+for b in 'rel+1' 'a(b)' 'x{1'; do
+  MP="${WORK}/meta-$(printf '%s' "$b" | tr -c 'A-Za-z0-9' _)"
+  mkdir -p "${MP}/ai-docs"
+  git -C "$MP" init -q -b "$b" 2>/dev/null
+  if [ "$(git -C "$MP" branch --show-current 2>/dev/null)" != "$b" ]; then
+    # NOT a `note` and not a silent `continue`: a loop that skips every fixture
+    # would contribute zero assertions while the suite still reported green,
+    # which is the "gate that silently narrows its own input set" hazard. The
+    # count asserted after the loop is what makes the skip visible.
+    bad "git would not create a branch named ${b} here, so its rows measured nothing"
+    continue
+  fi
+  git -C "$MP" -c user.email=t@t -c user.name=t commit -q --allow-empty -m x
+  git -C "$MP" update-ref "refs/remotes/origin/${b}" HEAD
+  git -C "$MP" symbolic-ref refs/remotes/origin/HEAD "refs/remotes/origin/${b}"
+  check "base '${b}': deleting the default branch is refused" \
+    "$(meta_verdict "$MP" "git push origin --delete ${b}")" "BLOCK"
+  check "base '${b}': a non-default deletion is permitted" \
+    "$(meta_verdict "$MP" 'git push origin --delete feature-x')" "pass"
+  # The colon leg and the escaped-base check were both edited, so the pairing
+  # needs its own rows rather than inheriting the --delete ones.
+  check "base '${b}': the colon spelling of a non-default deletion passes" \
+    "$(meta_verdict "$MP" 'git push origin :feature-x')" "pass"
+  check "base '${b}': two colon deletions pass" \
+    "$(meta_verdict "$MP" 'git push origin :feature-x :other')" "pass"
+  META_DONE=$((META_DONE+1))
+done
+check "all three metacharacter bases were actually exercised" "$META_DONE" "3"
+
+# One control per leg, never one for the group: the metacharacter conjunct has
+# its own below, and this is the escaping's. Without it the six rows above
+# could pass for a reason other than the escaping.
+ESC_FIX="$MP"
+DEG_ESC=${BP_CMD/'${esc}'/'${base}'}
+if [ "$DEG_ESC" = "$BP_CMD" ]; then bad "the escaping degradation changed nothing -- the control is vacuous"; else
+  ok "escaping degradation applied"
+  esc_verdict(){ # <command>
+    jq -nc --arg c "$1" '{tool_input:{command:$c}}' > "${WORK}/bpe.json"
+    ( cd "$ESC_FIX" && CLAUDE_PLUGIN_ROOT="$ROOT" bash -c "$DEG_ESC" ) \
+      < "${WORK}/bpe.json" > "${WORK}/bpe.out" 2> "${WORK}/bpe.err"
+    if [ "$?" -eq 0 ]; then printf 'pass'; else printf 'BLOCK'; fi
+  }
+  check "unescaped, the self-delete under a metacharacter base is exempted again" \
+    "$(esc_verdict "git push origin --delete $(basename "$ESC_FIX" | sed 's/^meta-//')")" "pass"
+fi
+
+printf '\n== degradation control: without the metacharacter test, the unanchored hole returns ==\n'
+# Built with printf so the single quotes inside the pattern need no escaping
+# dance, and so the pattern is the one the manifest actually carries.
+MC_PAT=$(printf ' && ! echo "$cmd" | grep -qE %s[;&|`$]%s' "'" "'")
+DEG_MC=${BP_CMD/"$MC_PAT"/}
+if [ "$DEG_MC" = "$BP_CMD" ]; then bad "the metacharacter degradation changed nothing -- the control is vacuous"; else
+  ok "metacharacter-test degradation applied"
+  check "without it a local delete beside a bare push is exempted again" \
+    "$(bp_verdict 'git branch -d feature-x && git push' "$DEG_MC")" "pass"
+  check "and a lone deletion is still permitted either way" \
+    "$(bp_verdict 'git push origin --delete feature-x' "$DEG_MC")" "pass"
+fi
+
+
+printf '\n== degradation control: relax the colon leg and the mixed-refspec hole returns ==\n'
+# The fourth leg, and the last one without a control. Positive and negative rows
+# pin what the anchored alternative does TODAY; this pins that the anchoring is
+# what does it, so relaxing it back to the loose form cannot pass quietly.
+COLON_ANCHORED='^[[:space:]]*git[[:space:]]+push([[:space:]]+-{1,2}[A-Za-z][^[:space:]]*)*([[:space:]]+[^-:[:space:]][^[:space:]]*)?([[:space:]]+(:[^[:space:]]+|-{1,2}[A-Za-z][^[:space:]]*))*[[:space:]]+:[^[:space:]]+([[:space:]]+(:[^[:space:]]+|-{1,2}[A-Za-z][^[:space:]]*))*[[:space:]]*$'
+DEG_COLON=${BP_CMD/"$COLON_ANCHORED"/'[[:space:]]:[^[:space:]]+'}
+if [ "$DEG_COLON" = "$BP_CMD" ]; then bad "the colon-leg degradation changed nothing -- the control is vacuous, so the anchored literal no longer matches the manifest"; else
+  ok "colon-leg degradation applied"
+  check "relaxed, a colon deletion beside a plain refspec is exempted again" \
+    "$(bp_verdict 'git push origin HEAD :feature-x' "$DEG_COLON")" "pass"
+  check "and a lone colon deletion still passes either way" \
+    "$(bp_verdict 'git push origin :feature-x' "$DEG_COLON")" "pass"
+fi
+
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
