@@ -329,7 +329,7 @@ check for a `./`-relative path). Missing → `major`.
 
 This check is **executed, never read**. A command table naming a binary nobody has looks perfectly correct
 on the page, and every later "the gate passed" claim inherits the defect. Same reasoning as
-`design-review`'s rule that an exit gate must be run twice before it is trusted.
+`design-review`'s rule that a gate the design pins must be run twice before it is trusted.
 
 ## Checklist S — Registry coherence (project surface)
 

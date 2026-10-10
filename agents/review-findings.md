@@ -22,7 +22,7 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 ## Instructions
 
 1. Read `AGENTS.md`, `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`.
-2. Read every `*.spec.md` and `*.design.md` in `ai-docs/plans/done/` — these document **intentional** decisions. Do not raise findings for anything explicitly described there.
+2. Read every `*.spec.md` and `*.design.md` in `ai-docs/plans/done/` — the spec for the boundary of what was deliberately left out, the design for the working logic of what was built. Both are read; only one of them can silence a finding, and § What you do NOT check says which.
 3. Walk the source tree of the module under review:
    ```bash
    rg --files <module-path>
@@ -35,7 +35,7 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 
 ### 0. Design conformance (when designs exist in `done/`)
 
-- **AC-verification-grep re-run (mandatory).** Re-run every `AC<N> verified by: <command>` line from any `ai-docs/plans/done/*.design.md` against the shipped artefact. Each command MUST be executed during this review; result quoted (PASS / FAIL). Any failing AC-verification → `major`.
+- **AC-intent coverage (mandatory).** A completed design states each criterion's verification **intent** and names no command, so there is nothing here to re-run. For every `AC<N> verified by:` intent line in any `ai-docs/plans/done/*.design.md`, name a shipped check that covers it; an intent nothing covers → `major`. **This predicate is deliberately weaker than the in-task reviewer's, and the reason is a lifecycle fact rather than an oversight:** that gate asserts each covering check was shown able to come back NON-EMPTY, reading the per-criterion record's falsification column — and that record lives in the task's progress file, which no commit contains and which is deleted when the PR merges. A pass running after the merge has nothing stronger left to read, so handing this gate the stronger predicate would specify a read of a deleted file.
 
 ### 1. Safety and correctness
 
@@ -112,7 +112,7 @@ Flag each of:
 
 - Formatter drift — enforced by the fix loop in the calling skill.
 - Build / test gates — enforced by the fix loop's verify step.
-- Anything explicitly documented as intentional in `ai-docs/plans/done/`.
+- Anything a completed `*.spec.md` in `ai-docs/plans/done/` explicitly documents as **intentional** — that record of deliberate absence is the only artefact conferring this. A completed design states the working logic of what was built and claims nothing was deliberate, so it never silences a finding.
 - Subjective preferences — only objective violations.
 
 ## Progress file format

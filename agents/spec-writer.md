@@ -70,12 +70,73 @@ Write the spec at `spec_path`:
 ## Acceptance Criteria
 | # | Criterion |
 |---|-----------|
-| AC1 | [specific, verifiable condition] |
+| AC1 | [an observable behaviour and the condition that triggers it] |
 
 ## Open questions
 ```
 
 Spec exists from round 1 onwards (incomplete is fine; later rounds refine). On `ready`, spec must be complete and self-contained. Carrot rules governing spec CONTENT live in [§ Patterns](#patterns).
+
+### What a spec IS, and what it may not contain
+
+**A spec is a BEHAVIOUR CONTRACT, not an implementation plan.** It says what the system does, observably,
+from outside. How that is achieved belongs to the design document, and the steps belong to the task list.
+
+**The test that settles every borderline case, and the one to apply rather than argue:**
+
+> If the implementation can change without changing externally visible behaviour, it does not belong in
+> the spec.
+
+So these are **FORBIDDEN** in a spec, however convenient:
+
+- internal class, function, test-method or variable names;
+- library, framework or tool choices;
+- step-by-step implementation detail;
+- a command, a script path or a gate invocation — **a criterion that names its own instrument asserts
+  which instrument ran, not what the system does**, and it cannot survive a change of instrument;
+- detailed execution plans, which belong to the design and the task list.
+
+**A criterion states an observable behaviour and the condition that triggers it.** Where a criterion needs
+a concrete example to be unambiguous, give the example as an observation — the state it starts from, the
+event, and what is then true — never as an invocation. The concrete commands, identifiers and paths that
+cover each criterion are recorded OUTSIDE the spec, in the round's criterion-checks section, because they
+are chosen while the tests are written and so cannot be promised by a document agreed before them.
+
+**The rule is a refusal, and this is what refuses it.** Before handing back `status: ready`, run
+`${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh specform <spec_path>` and do not hand back on anything but
+a clean 0 — on anything else say which of the two non-clean outcomes it was, findings or cannot-run, and
+which criteria it named. The check reads each criterion's BODY, not its id cell — the id-cell-only scan is
+the false green it exists to avoid — and prints how many criteria its selector matched. **Read that count
+against the spec you wrote**: a number below your criterion count means the selector missed rows, which is
+a different failure from a criterion being clean. It is not a reach check; what guards body reach is the
+check's own suite. **Its bound is stated in the script and worth knowing before you trust a clean run:** it
+classifies BACKTICKED tokens plus two bare phrases, so a criterion naming an instrument in prose alone
+passes and that reading stays yours. **A rule enforced
+only by this file is not a refusal** — the worked case below says as much about a requirement to be
+mechanical, and it applies to this section's own rule first.
+
+**Two cases that look like exceptions and are not. Both were raised against this rule in practice, so
+they are worked here rather than left to be re-argued.**
+
+- *"The requirement IS that it be mechanical."* A criterion saying "closing such a finding is enforced by
+  a checked-in gate, not by prose" reads as though deleting the instrument would drop a guarantee. Apply
+  the test: if the refusal moved from a gate into prose, externally visible behaviour **would** change —
+  the system stops refusing. So the behaviour is *"closing it is REFUSED, not merely discouraged"*, and
+  the gate is the instrument that delivers it. Write the refusal; let the design choose what refuses.
+- *"The subject of this criterion IS a command."* A criterion about a size cap or a check suite seems to
+  need its invocation, since that is what the obligation is about. It does not: the property is "no
+  instruction file exceeds the cap" or "the check list runs clean with its input set not silently
+  narrowed". The invocation that demonstrates it belongs in the round's criterion-checks section, which
+  is written while the checks are, outside the spec.
+
+**Keep it light by default.** Short behaviour-first criteria, a clear scope with its deliberate absences,
+and a few concrete checks. Reach for length only where the risk earns it: a contract other work depends
+on, a migration, a security or privacy boundary, or an ambiguity likely to cause expensive rework.
+
+**Why this matters more than it looks.** The record of what was deliberately NOT built is the one thing a
+spec carries that no other artefact can — a design describes the result, and an absence has no presence in
+a result. That record is what stops a later reviewer re-raising a settled decision. Mechanism crowding the
+document out is what makes it unreadable.
 
 ### 2. Final YAML status block
 
@@ -215,7 +276,7 @@ Don't pre-empt `design`. If a question's answer "would change the architecture" 
 
 Validated approaches the spec-writer should keep applying (carrot signals; soft verbs).
 
-- **Default to** converting an explicitly stated Definition of Done into a PERMANENT machine-checkable guard, not a one-time verification: record the DoD verbatim in the spec, then write an AC that encodes it as a test a future regression would fail (e.g. a deny-list assertion over the whole command corpus, not a spot-check of the three endpoints the ticket names). A DoD often sharpens scope beyond the ticket's literal list — surface that widening to the user rather than silently narrowing to the ticket.
+- **Default to** turning an explicitly stated Definition of Done into a PERMANENT obligation rather than a one-time verification: record the DoD verbatim, then write a criterion stating the behaviour a future regression would violate — the property that must hold over the whole corpus, not over the three cases the ticket names. **Write the obligation, never the instrument**: which assertion, script or gate enforces it is the design's choice and the implementation's to make, and a criterion that names one asserts that a particular check ran rather than that the property holds (§ What a spec IS). A DoD often sharpens scope beyond the ticket's literal list — surface that widening to the user rather than silently narrowing to the ticket.
 - **Default to** verifying the REAL deployed surface before accepting a ticket's "blocked on / waiting for deploy" premise. Start with the leg you can always run: search the repo's own sources for the symbol — a hit on the default branch proves **merged**. Keep a path filter on that search: source trees also hold deployed-config files, which are ASK-gated, and an unfiltered sweep there IS a read of them. For **deployed**, the live API schema is authoritative, but fetching it is outside your granted tools — ask the orchestrator to fetch, or return the question in your round rather than guessing. Whichever legs you get, learn how the public surface is *generated* (which annotation/tag admits an operation into it). That converts "is X public / deployed?" from an assumption into a machine-checkable question, and has already unblocked a task whose ticket declared it blocked.
 
 ## Anti-patterns
@@ -223,6 +284,7 @@ Validated approaches the spec-writer should keep applying (carrot signals; soft 
 - Bikeshedding questions to fill the budget.
 - Asking questions AGENTS.md already answers.
 - Padding the spec with aspirational language.
+- Naming a command, script, test method or tool in a criterion — see § What a spec IS for the test that settles it.
 - Returning `ask` on round == cap.
 - Treating `## Open questions` as a failure indicator.
 - Skipping the YAML status block at the end.

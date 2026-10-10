@@ -68,8 +68,11 @@ A placeholder in these examples is written without a space and with a numeric li
 | `resolved: <reason>` | The tree already satisfies this finding, no edit is owed this round, and this is **not** a dispute — typically a finding closed before the round began by an approved amendment. Routes nothing, declares 0, and like `object:` refuses an empty reason |
 | `amendment: spec` | Closing this needs a spec artefact changed, which is not a fix |
 | `amendment: design` | Closing this needs a design artefact changed, which is not a fix |
+| `redline: <type> — <what shipped instead>` | The fix leaves a sentence in the design untrue WITHOUT breaking the agreed approach. `<type>` is one of `added`, `modified`, `removed`; the payload after the dash says what shipped. The design is not reopened — the marking pass points at the item and the correction lands in the round's redline log |
 
 Anything else is refused by the gate. A round whose every finding plans no edit is a legitimate plan — every row `object:`, every row `resolved:`, or any mix — and its declared total is 0. It still runs the whole sequence.
+
+**A `redline:` row usually sits BESIDE a `fix` row, and sometimes stands alone.** The two answer different questions: the `fix` row routes the edit, the `redline:` row records what the edit made untrue. Beside a `fix` row is the common shape, and there the gate requires it — a `fix` row whose Arm A cell names a plan artefact is refused unless the same finding also carries a `redline:` row. Alone is the right shape when the shipped tree is already correct and only the frozen design's sentence is stale: there is no edit to route, so the row declares 0 and no `fix` row accompanies it. Reach for it only for the non-breaking case — a divergence that breaks the agreed approach is still a blocker and still routes through `amendment: design`.
 
 **`resolved:` and `object:` are not interchangeable.** Reach for `resolved:` only when the finding is already closed; reach for `object:` only when you are disputing it. If neither fits, say so in the hand-back rather than taking the nearest token — a well-formed value with a reason explaining why it is wrong is harder for anyone to catch than a refusal.
 

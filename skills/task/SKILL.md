@@ -101,15 +101,17 @@ Verdict: GO / ITERATE / STOP.
 
 ### Design Amendment (re-entrant — triggered from Step 8 or Step 11)
 
-If implementation reveals a necessary deviation from the design, **or** a self-review finding requires a design change: stop the step, surface to user for approval, spawn the `design` subagent to apply the amendment (NEVER edit `*.design.md` inline), re-run Step 7 (max 3 rounds). On GO → resume. **A transport-level drop is not a returned amendment** — resume the SAME agent per Step 8's backoff clause rather than cold-spawning a fresh one (a respawn discards its gathered context), and verify the write landed on disk (mtime + `grep`) before treating the round as spent. **Silently implementing a deviation without triggering Design Amendment — FORBIDDEN.** Full recipe (spawn-prompts, ITERATE/STOP handling): [reference.md § Design Amendment recipe (re-entrant — triggered from Step 8 or Step 11)](reference.md#design-amendment-recipe-re-entrant--triggered-from-step-8-or-step-11).
+**From Step 11, when a self-review finding's divergence BREAKS the agreed approach; from Step 8, only when the user asks for the rebuild** — the implementation step surfaces a divergence and nothing restarts on its own account. On either entry: stop the step, surface to user for approval, spawn the `design` subagent to apply the amendment (NEVER edit `*.design.md` inline), re-run Step 7 (max 3 rounds). On GO → resume. **A transport-level drop is not a returned amendment** — resume the SAME agent per Step 8's backoff clause rather than cold-spawning a fresh one (a respawn discards its gathered context), and verify the write landed on disk (mtime + `grep`) before treating the round as spent. **Deviating from the design without either triggering Design Amendment or — for a divergence that does not break the agreed approach — recording a redline marker and its log row — FORBIDDEN.** Full recipe (spawn-prompts, ITERATE/STOP handling): [reference.md § Design Amendment recipe (re-entrant — triggered from Step 8 or Step 11)](reference.md#design-amendment-recipe-re-entrant--triggered-from-step-8-or-step-11).
 
 ### Spec Amendment recipe
 
-If a self-review or reviewer-comment fix requires editing `ai-docs/plans/*.spec.md` (active or `done/`): stop the step, surface to user for approval, re-invoke `spec-writer` to apply the amendment (NEVER `Edit` `*.spec.md` inline), re-run Step 6 (design) → Step 7 (design-review) on the amended (spec, design) pair (max 3 rounds). Resume the triggering step from the GO verdict. Detection: mechanical at the top of every fix round — `git diff` includes a `*.spec.md` path → trigger fires regardless of how small the doc edit appears.
+If a self-review or reviewer-comment fix requires editing `ai-docs/plans/*.spec.md` (active or `done/`): stop the step, surface to user for approval, re-invoke `spec-writer` to apply the amendment (NEVER `Edit` `*.spec.md` inline). Detection: mechanical at the top of every fix round — `git diff` includes a `*.spec.md` path → trigger fires regardless of how small the doc edit appears.
+
+**After the amendment, ONE question decides the route — does it change the AGREED APPROACH?** Yes re-runs Step 6 → Step 7 and resets the log; no takes neither — no review round and no log row, because a changed requirement is not a divergence — and the closing fold authors the design from the amended spec. Answering it by reflex is the back door this change exists to close, so the recipe states both branches rather than defaulting.
 
 Full recipe (state-file update, spawn-prompts): [reference.md § Spec Amendment recipe (re-entrant — triggered from Step 7 GO-with-notes resolution)](reference.md#spec-amendment-recipe-re-entrant--triggered-from-step-7-go-with-notes-resolution).
 
-> The amendment TRIGGER is mechanical and mandatory (above) — "one line", "AC text unchanged", and "docs-only" are not mitigating inputs, and the soft verb below governs only the review's DEPTH, never whether the recipe fires. **Default to** keeping the full review loop for an amendment that changes a VERIFICATION GATE rather than prose — the gate is what every later claim of correctness rests on, so a silently-broken check is worse than no check. Request this reviewer behaviour explicitly in the spawn prompt: extract the check block verbatim from the file, run it against self-built conforming AND violating fixtures, and try to falsify each "this is structural / guaranteed" sentence rather than reading it.
+> The amendment TRIGGER is mechanical and mandatory **once the route is the amendment** (above) — "one line", "AC text unchanged", and "docs-only" are not mitigating inputs, and the soft verb below governs only the review's DEPTH, never whether the recipe fires. **What decides the ROUTE is a different question and sits upstream of this sentence: does the divergence break the agreed approach?** A non-breaking one takes the marker-plus-log-row remedy and never reaches this trigger; a breaking one reaches it, and then nothing mitigates it. **Default to** keeping the full review loop for an amendment that changes a VERIFICATION GATE rather than prose — the gate is what every later claim of correctness rests on, so a silently-broken check is worse than no check. Request this reviewer behaviour explicitly in the spawn prompt: extract the check block verbatim from the file, run it against self-built conforming AND violating fixtures, and try to falsify each "this is structural / guaranteed" sentence rather than reading it.
 
 ---
 
@@ -128,7 +130,7 @@ Full recipe (state-file update, spawn-prompts): [reference.md § Spec Amendment 
   3. **Every-group handoff (binding).** During Step 8 the orchestrator NEVER executes subtask code in its own context — every group (including the first, including M=1) fans out through `/context-reset` at the start of each group per the design's `## Handoff plan`. Rationale: [reference.md § Every-group handoff (rationale)](reference.md#every-group-handoff-rationale).
 - Unknown API → read sources → search the codebase (`${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md`) → ask user. Don't guess.
 - Bug report during impl → activate `/bugfix`, then return.
-- Implementation reveals design must change → trigger **Design Amendment**, then resume.
+- **Implementation diverges from the frozen design → surface it; nothing restarts on its own account.** Stop at the **first** divergence in the task, lead with a recommended correction mode and its grounds in one line — the grounds **quote** a signal read off the design itself — and the user's single word settles it for the whole task; asking again at each later divergence is the cost this removes. Default: the answer is fixed in code and the correction becomes one redline marker plus one row in `ai-docs/plans/<spec-base>.redline.md`, whose header carries the chosen mode. The ground-up rebuild stays available and unchanged if the user asks for it (*Design Amendment* above). Modes, the recommendation rubric, the marker's spelling and the one-pass-per-step bound: [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking](${CLAUDE_PLUGIN_ROOT}/agents/design.md#redline-marking).
 
 ### Step 9: Verify
 
@@ -170,8 +172,9 @@ Agent(subagent_type="general-purpose", prompt="
 >
 > | Arm A or B names a… | Action |
 > |---|---|
-> | `*.design.md` under `ai-docs/plans/` | **STOP.** Trigger Design Amendment — surface, update design, re-run Step 7 (max 3 rounds), then resume Step 11. Mark originating finding `✅ Fixed (design amended)`. |
-> | `*.spec.md` under `ai-docs/plans/` | **STOP.** Trigger Spec Amendment — surface, update spec, re-run Step 6 → Step 7, then resume Step 11. Mark `✅ Fixed (spec amended)`. |
+> | `*.design.md` under `ai-docs/plans/`, and the divergence **breaks the agreed approach** | **STOP.** Trigger Design Amendment — surface, update design, re-run Step 7 (max 3 rounds), then resume Step 11. Mark originating finding `✅ Fixed (design amended)`. |
+> | `*.spec.md` under `ai-docs/plans/`, and the divergence **breaks the agreed approach** | **STOP.** Trigger Spec Amendment — surface, update spec, re-run Step 6 → Step 7, then resume Step 11. Mark `✅ Fixed (spec amended)`. |
+> | Either artefact, and the divergence does **not** break the agreed approach | **No stop, and no re-run.** The plan row carries `redline: <type> — <what shipped instead>` with the sentence quoted in its Arm A cell; the round's one marking pass appends the marker and promotes the row; the code fix for that finding is applied in the same round. Mark `✅ Fixed (redlined)`. |
 > | Neither arm fires — no artefact claim at stake, fix touches only source / build manifests / non-`ai-docs/plans/` `*.md` | Normal Step 11 code-fix path — hand it to the scouted-plan sequence below, which plans, gates and applies it. The orchestrator itself never edits. |
 >
 > **CLOSING GATE — a finding that fired Arm A may not be marked `✅ Fixed` until the cited sentence has been RE-READ in its file and either (a) confirmed true of the post-fix state, or (b) amended.** Record which. Shipping the thing a sentence promised makes the sentence true only if the shipped thing does what the sentence says it does.
@@ -180,7 +183,9 @@ Agent(subagent_type="general-purpose", prompt="
 
 > **AXIOM — Scouted-plan sequence (binding).** The orchestrator NEVER applies a review fix in its own context — **every** round carrying at least one `⬜ Open` finding (including a round whose one finding is a single-line `nit`) runs all five beats, with no size-based or severity-based carve-out and no per-round discretion to skip them:
 >
-> `baseline` (orchestrator, 1 call) → **plan** (`fix-scout`, fresh context, fills the stub's table) → `plan` gate (orchestrator, 1 call) → **apply** (`fix-apply`, fresh context, `fix` rows only) → **the post-apply micro-loop** (beat 5 below).
+> `baseline` (orchestrator, 1 call) → **plan** (`fix-scout`, fresh context, fills the stub's table) → `plan` gate (orchestrator, 1 call) → **mark** (`design`, fresh context, **once** per round carrying a `redline:` row, and skipped entirely when none does) → **apply** (`fix-apply`, fresh context, `fix` rows only) → **the post-apply micro-loop** (beat 5 below).
+>
+> **The marking beat runs BEFORE the apply, and the order is load-bearing:** the `applied` verb asserts the design carries each `redline:` row's marker and the log carries its row, so a pass that ran afterwards would be asserted against a tree that does not yet hold it. One invocation marks every item the round's rows name — never one per divergence, never deferred to the closing redline fold.
 >
 > Both gate calls are `"${CLAUDE_SKILL_DIR}"/scripts/check-fix-plan.sh <verb> <progress-file>`. **Read the `decision=` token, not the exit status** — one status covers five decisions:
 >
@@ -205,7 +210,7 @@ Agent(subagent_type="general-purpose", prompt="
 >
 > Spawn prompts, the plan format and the reason-token vocabulary: [reference.md § Step 11 — the scouted-plan sequence (recipe)](reference.md#step-11--the-scouted-plan-sequence-recipe).
 
-Every `⬜ Open` finding in the latest `## Self-Review (Round N)` section carries **at least one** row in the round's plan, each with one disposition from the closed five — `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design` — and a finding may hold several rows when its remedy spans several files. The gate refuses a plan that omits a finding, and one that raises a row the review never raised. Statuses are marked only after the applied diff has been gated.
+Every `⬜ Open` finding in the latest `## Self-Review (Round N)` section carries **at least one** row in the round's plan, each with one disposition from the closed six — `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design`, `redline: <type> — <what shipped instead>` — and a finding may hold several rows when its remedy spans several files. The gate refuses a plan that omits a finding, and one that raises a row the review never raised. Statuses are marked only after the applied diff has been gated.
 
 After all findings resolved, run gates (`%BUILD_CMD%`, `%TEST_CMD%`, `%FORMAT_CMD%` to format then `%LINT_CMD%` as the gate), then:
 
@@ -219,7 +224,7 @@ After all findings resolved, run gates (`%BUILD_CMD%`, `%TEST_CMD%`, `%FORMAT_CM
 1. **Step-skip gate.** Read `**current_step:**`. MUST be `Step 10 — self-review APPROVE (Round N)` or `Step 11 — review fixes complete (Round N)`. Else **STOP**, surface the gap, loop back to the missing step. No "too simple" exemption.
 2. **Confirm `.progress.md` is NOT staged.** Gitignored (`ai-docs/plans/**/*.progress.md`); should not appear in `git status`. If accidentally tracked, unstage.
 3. Confirm the branch is not the default one. Otherwise stop and apply recovery ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Recovery`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#recovery-from-accidental-edits-on-the-default-branch)).
-4. **Move plan files:** `git mv` spec/design to `ai-docs/plans/done/`.
+4. **Move plan files:** `git mv` spec/design — and `<spec-base>.redline.md` if the task wrote one — to `ai-docs/plans/done/`.
 5. `%BUILD_CMD% <module-path>` — sanity build before staging.
 6. **Surface to user (Claude doesn't commit unasked):** the stage-list (impl files from `## Files touched`, `ai-docs/context.md` if touched, `ai-docs/learnings/` if this task wrote an entry — and `ai-docs/learnings.md` only if the archive itself changed, spec/design now in `done/`) and the suggested commit message. When the project uses ticket keys, the `<TICKET-KEY>:` title prefix is mandatory. Stats lines belong in the commit body, NOT the PR body. Full template: [reference.md § Step 12 — PR-body template (detail)](reference.md#step-12--pr-body-template-detail).
 7. **Write progress:** rewrite `**current_step:**` to `Step 12 — staged for user commit`; append a `## Decisions log` bullet.
