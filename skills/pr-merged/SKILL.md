@@ -23,12 +23,20 @@ If `git status --porcelain` shows any modified, staged, or untracked entries, st
 **Refuse while an unprocessed redline log is on the branch.** Before step 1, and before anything is deleted or moved:
 
 ```bash
-${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh pending ai-docs/plans
+git fetch origin --quiet
+${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh pending ai-docs/plans origin/<default-branch>
 ```
 
-**Refuse on anything that is not a clean 0, and say which of the two you got.** Either a log is present — the closing redline fold never ran, so stop and tell the user to run `/redline-fold` while the PR is still open — or the check could not run at all, which is **not** a pass and leaves the question unanswered rather than answered favourably. Reading a non-zero status as "nothing to refuse" is the one mistake this guard cannot afford: the log is committed on the branch, so the moment `git checkout main` runs the file is no longer in the worktree and the evidence it carried is gone.
+**Read the DEFAULT BRANCH's tree, not the worktree, and the reason is a trap this guard would otherwise
+set for itself.** A merged task branch keeps its own copy of the log in its tree forever. Ask the worktree
+while standing on that branch and the answer is "present" permanently — so the refusal would fire for
+good, naming a remedy that may already have been performed on a separate fold PR, and the cleanup this
+workflow exists to do could never run through it. A fold lands on the default branch in either window, so
+that is where the question has an answer that changes.
 
-**The sequencing limit, stated here rather than left to be discovered.** This workflow runs *after* the window the redline fold needs — that fold's commit belongs on the open PR, and by the time a merge is confirmed that PR is closed. So this refusal can only CATCH the omission and can never repair it. A caught error instead of silent damage is the whole claim being made for it.
+**Refuse on anything that is not a clean 0, and say which of the two you got.** Either a log is present — the closing redline fold never ran, so stop and tell the user that `/redline-fold` is owed and which régime it is now in: **early** while the PR is still open, **late** on a fresh branch off the default if the merge already happened — or the check could not run at all, which is **not** a pass and leaves the question unanswered rather than answered favourably. Reading a non-zero status as "nothing to refuse" is the one mistake this guard cannot afford: the log is committed on the branch, so the moment `git checkout main` runs the file is no longer in the worktree and the evidence it carried is gone.
+
+**The sequencing, stated here rather than left to be discovered.** This workflow runs *after* the window the EARLY fold wants — that fold's commit belongs on the open PR, and by the time a merge is confirmed that PR is closed. **That is why the late régime exists rather than why the omission is unrepairable:** a human who approves a PR usually merges it in the same action, so the early window is the one most often missed, and the material the fold consumes is committed precisely so it survives the merge. This refusal therefore hands the work to the late régime instead of recording a loss. What it cannot do is repair anything itself — it refuses, names the régime, and stops.
 
 Otherwise, run in order. **Capture `<previous-branch>` from the `Current branch:` value above before step 1** — once `git checkout main` runs, that value is no longer the current branch.
 
