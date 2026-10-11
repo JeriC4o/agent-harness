@@ -566,6 +566,54 @@ run paired "${W}/d.md"
 check "cannot-run: one argument is exit 2" "$RC" "2"
 rm -rf "$W"
 
+printf '\n== pending against a REF: the discriminator a stale task branch needs ==\n'
+# The worktree is the wrong thing to read once a merge has happened. A merged
+# task branch keeps its own copy of the log in its tree forever, so a worktree
+# read on that branch refuses permanently and names a remedy already performed --
+# which would make the branch cleanup unreachable. The question is whether the
+# DEFAULT branch still carries an unprocessed log, and that is a question about a
+# ref, not about the files in front of you.
+PR=$(mktemp -d)
+git -C "$PR" init -q
+git -C "$PR" config user.email t@t; git -C "$PR" config user.name t
+mkdir -p "${PR}/ai-docs/plans/done"
+printf 'x\n' > "${PR}/ai-docs/plans/keep.md"
+git -C "$PR" add -A; git -C "$PR" commit -qm base
+# A log committed, then folded away in a later commit: the ref that still has it
+# and the ref that does not.
+printf '| Key |\n' > "${PR}/ai-docs/plans/t.redline.md"
+git -C "$PR" add -A; git -C "$PR" commit -qm withlog
+WITHLOG=$(git -C "$PR" rev-parse HEAD)
+git -C "$PR" rm -q "${PR}/ai-docs/plans/t.redline.md" 2>/dev/null || git -C "$PR" rm -q ai-docs/plans/t.redline.md
+git -C "$PR" commit -qm folded
+FOLDED=$(git -C "$PR" rev-parse HEAD)
+
+run pending "${PR}/ai-docs/plans"
+check "no ref: the worktree is read, as before" "$RC" "0"
+has   "  verdict" "$OUT" "verdict=clean"
+
+run pending "${PR}/ai-docs/plans" "$WITHLOG"
+check "a ref whose tree carries a log is present" "$RC" "1"
+has   "  and names the log from that ref" "$OUT" "t.redline.md"
+
+run pending "${PR}/ai-docs/plans" "$FOLDED"
+check "a ref whose tree is folded is clean" "$RC" "0"
+has   "  verdict" "$OUT" "verdict=clean"
+
+# THE DISCRIMINATOR: worktree dirty, ref clean. This is the state a merged task
+# branch is in after the fold landed on the default branch somewhere else.
+printf '| Key |\n' > "${PR}/ai-docs/plans/t.redline.md"
+run pending "${PR}/ai-docs/plans"
+check "control: the worktree read still refuses in that state" "$RC" "1"
+run pending "${PR}/ai-docs/plans" "$FOLDED"
+check "but the REF read sees the fold and lets the cleanup through" "$RC" "0"
+has   "  and says which ref it read" "$OUT" "ref="
+
+run pending "${PR}/ai-docs/plans" no-such-ref
+check "cannot-run: an unresolvable ref is exit 2" "$RC" "2"
+has   "  and names the ref it could not resolve" "$OUT" "no-such-ref"
+rm -rf "$PR"
+
 printf '\n== specform: a criterion may not name its own instrument ==\n'
 # AC26 says an instrument-naming criterion is REFUSED, not merely discouraged, and
 # the contract's own worked case argues that a refusal living only in prose is not

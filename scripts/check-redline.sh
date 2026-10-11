@@ -68,7 +68,7 @@ set -uo pipefail
 
 die() { printf 'check-redline: %s\n' "$2" >&2; exit "$1"; }
 
-USAGE='usage: check-redline.sh pending     <plans-dir>
+USAGE='usage: check-redline.sh pending     <plans-dir> [ref]
        check-redline.sh folded      <spec> <design>
        check-redline.sh suppression <file>
        check-redline.sh acintent    <spec> <design>
@@ -348,13 +348,35 @@ section_of() { # <heading line> <file> -> the heading and its body, verbatim
 }
 
 # --- pending ----------------------------------------------------------------
+# THE OPTIONAL REF IS THE POST-MERGE FORM OF THE QUESTION, and the worktree form
+# is wrong once a merge has happened. A merged task branch keeps its own copy of
+# the log in its tree forever, so a worktree read while standing on it refuses
+# permanently and names a remedy that has already been performed somewhere else --
+# which would make the branch cleanup unreachable through the caller that refuses.
+# What a post-merge caller must ask is whether the DEFAULT branch still carries an
+# unprocessed log, because that is where a fold lands in either window. With no ref
+# the worktree is read, which is the right question before a merge.
 do_pending() {
-  local dir=$1 p found=''
+  local dir=$1 ref=${2:-} p found='' listing
   [ -n "$dir" ] || die 2 "$USAGE"
   [ -d "$dir" ] || die 2 "no such plans directory: ${dir}"
   [ -r "$dir" ] || die 2 "plans directory is not readable: ${dir}"
   git -C "$dir" rev-parse --is-inside-work-tree >/dev/null 2>&1 \
     || die 2 "${dir} is not inside a git work tree, so there is no branch to check"
+  if [ -n "$ref" ]; then
+    git -C "$dir" rev-parse --verify --quiet "${ref}^{tree}" >/dev/null \
+      || die 2 "cannot resolve ref ${ref}, so there is no tree to read"
+    listing=$(git -C "$dir" ls-tree -r --name-only "$ref")
+    found=$(printf '%s\n' "$listing" | grep -E '(^|/)[^/]*\.redline\.md$' | tr '\n' ' ')
+    found=${found% }
+    if [ -n "$found" ]; then
+      printf 'check-redline: verb=pending verdict=present ref=%s logs=%s\n' "$ref" "$found"
+      printf '  finding: an unprocessed redline log is in the tree of %s, so the redline fold has not run there\n' "$ref"
+      return 1
+    fi
+    printf 'check-redline: verb=pending verdict=clean ref=%s logs=none\n' "$ref"
+    return 0
+  fi
   # BOTH LOCATIONS: a branch that never reached the task's close carries its log
   # in the active directory, while one that did carries it beside the completed
   # plan.
@@ -533,7 +555,7 @@ EOF
 }
 
 case $VERB in
-  pending)     do_pending "$A1" ;;
+  pending)     do_pending "$A1" "$A2" ;;
   folded)      do_folded "$A1" "$A2" ;;
   suppression) do_suppression "$A1" ;;
   acintent)    do_acintent "$A1" "$A2" ;;

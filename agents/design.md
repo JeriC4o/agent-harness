@@ -198,8 +198,23 @@ what explains to a later reader why the log holds the number of rows it holds.
 ## The redline fold
 
 The closing pass, invoked by `/redline-fold` once the PR is approved, producing the as-built design as a
-separate commit on the same PR. It runs only when the log carries at least one row; with none, the frozen
-plan already describes what shipped and there is nothing to author.
+separate commit. It runs only when the log carries at least one row; with none, the frozen plan already
+describes what shipped and there is nothing to author.
+
+**Two WINDOWS, and which one applies is read rather than assumed.** EARLY: the PR is still open, and the
+commit joins it. LATE: the merge already happened and a log survived it, so the pass runs on a fresh
+branch off the default one and gets its own PR. The word is *window* and not *régime* on purpose: this
+file already uses *régime* for the pre-GO / post-GO freeze axis, and the correction MODE is a third axis
+again. One name over three axes makes every sweep ambiguous, which this mechanism's own spec refused on
+exactly that ground. **The late window is the common case, not the exception**
+— a human who approves a PR usually merges it in the same action, and nothing holds the early window
+open. It costs nothing but time, and for a reason this contract already relies on: the log is committed
+precisely so it survives the merge, where a gitignored record would not. What it does cost is the interval
+itself — until the late pass runs, the default branch carries a design whose markers point into a log and
+a spec that was never collapsed, so early stays preferred. One thing is better late and only one: the
+shipped state is final, so "re-author against what shipped" has no ambiguity left in it. **In the late
+window the gate runs BEFORE the `done/` move**, because it resolves the pre-fold text relative to the
+spec's directory at HEAD and the merge commit holds the trio in the active one.
 
 **It AUTHORS the design afresh. It does not edit the frozen one.** An in-place edit leaves every sentence
 the editor did not touch, and what it did not touch is exactly what nobody re-read — stale by omission,
