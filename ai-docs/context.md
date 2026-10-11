@@ -52,13 +52,40 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 - **Identity.** The round number. One section per round, highest round is the one gated; a second
   section for the same round is refused rather than appended.
 - **Code.** `skills/task/scripts/check-fix-plan.sh` — four verbs (`baseline`, `plan`, `applied`,
-  `record`), ten refusal reasons under `plan` and one finding under `applied`, and the single
-  `THRESHOLD_CHANGED_LINES=150` that its ONE firing site reads — the pre-apply gate, on the plan's
-  declared total. The post-apply size arm is withdrawn; `record` persists the post-apply micro-loop's
+  `record`), **eleven reason tokens under `plan`: nine refusals and two routings** (the pair is spelled
+  out because "ten refusal reasons" previously covered both kinds and read two ways), **two findings under
+  `applied`**, and the single `THRESHOLD_CHANGED_LINES=150` that its ONE firing site reads — the pre-apply
+  gate, on the plan's declared total. The disposition vocabulary is **six**; the sixth, `redline:`, is the
+  one that records a divergence instead of routing one. The post-apply size arm is withdrawn; `record` persists the post-apply micro-loop's
   iteration count, its cost in orchestrator tool calls and the bounded question's answer.
 - **Invariant.** It lives in the progress file, which is gitignored and deleted by `/pr-merged`, so no
   new artefact type and no new deletion path. The gate decides on its TEXT — never on an agent's
   report of it — and a plan the gate refuses never reaches `agents/fix-apply.md`.
+
+## Redline log
+
+- **What it is.** A committed `ai-docs/plans/<spec-base>.redline.md` holding one row per SURVIVING
+  divergence between the frozen design and what shipped: its key, its type (`added` / `modified` /
+  `removed` relative to the frozen base), the design sentence it diverged from quoted with its
+  `file:line`, and what shipped instead. Each row is paired with a pointer marker appended in place on
+  the item it corrects, which carries the key and nothing else — so a reviewer reading the design sees
+  which items are settled and skips them.
+- **Why it exists.** The design is frozen at the design-review GO verdict and is NOT rewritten during the
+  work. A divergence that does not break the agreed approach is marked and logged instead of reopening
+  the planning chain, and one closing fold after the PR is approved authors the corrected design afresh.
+- **Identity.** The spec base name. Its head carries four required fields — `**Tracked in:**`,
+  `**Spec:**`, `**Design:**`, `**Mode:**` — of which `Mode` is the one with a consumer: `R&D` or
+  `Hybrid`, chosen once per task at the first divergence found while writing the code, with grounds that
+  must cite the design.
+- **Code.** `scripts/check-redline.sh` — seven verbs (`pending`, `folded`, `suppression`, `acintent`,
+  `revision`, `paired`, `specform`) on the `0 clean / 1 findings / 2 cannot run` convention. `paired` is the pairing
+  half for every key form and the marking pass's own exit check; `check-fix-plan.sh`'s `A7` and `A8` are
+  the in-round halves. `skills/redline-fold/SKILL.md` is the closing fold; `/pr-merged` refuses on an
+  unprocessed log.
+- **Invariant.** It is the one file in the plan family that is COMMITTED, because the fold runs after a
+  human review and a gitignored file does not survive that far. It is excluded from the fix-plan gate's
+  measured diff by `IGNORE_GLOB_REDLINE` and named on the `excluded-in-round` line instead. It is removed
+  by the fold, so a surviving log is an unambiguous signal the fold never ran.
 
 ---
 

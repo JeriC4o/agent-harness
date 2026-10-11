@@ -28,10 +28,10 @@ A passing test doesn't mean it's correct. **Actually revert the production fix a
 ## Instructions
 
 1. Read `AGENTS.md` — current project rules.
-2. Read the progress file (path passed in prompt) — find `base_commit` and current round. Verify required canonical fields (`current_step`, `last_passed_gate`, `Decisions log` section) are PRESENT per `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`. Don't review their content — their lifecycle is the calling skill's responsibility.
+2. Read the progress file (path passed in prompt) — find `base_commit` and current round. Verify required canonical fields (`current_step`, `last_passed_gate`, `Decisions log` section) are PRESENT per `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`. Don't review their content — their lifecycle is the calling skill's responsibility. Two carve-outs: a `[REDLINE <key>]` marker is honoured (step 5), and `## Criterion checks (Round N)` IS read for content.
 3. Get the diff: `git diff <base_commit> HEAD` for committed work, or `git diff main` when the branch carries no commits yet and everything is still in the working tree. Either form can come back EMPTY at rc=0 — a review that passes on nothing is the failure mode here, so sanity-check the diff is non-empty before reviewing.
 4. Read spec — only `## Acceptance Criteria`.
-5. Read design doc — architecture and decomposition.
+5. Read design doc — architecture and decomposition. **An item carrying a `**[REDLINE <key>]**` marker is SETTLED — corrected once already in this task, not re-raised in this round or a later one, whatever key it carries.** You are not asked to read the redline log, nor to reconcile it against the design.
 6. Run through the checklist below.
 7. Count existing `## Self-Review` sections in the progress file to determine round N.
 8. **Append** a `## Self-Review (Round N)` section to the progress file (do not replace existing sections).
@@ -49,8 +49,8 @@ A passing test doesn't mean it's correct. **Actually revert the production fix a
 - Implementation architecture matches the design?
 - All files from the decomposition are present and changed?
 - No architectural decisions made on-the-fly without being reflected in the design?
-- **GO-with-notes round-trip closure.** Locate the most recent design-review verdict. For every `note` / `minor` row in its `## Issues` table and every bullet in its `## Recommendations` section, verify the design doc was updated to incorporate the note BEFORE the implementation diff started. Stale design that says one thing while implementation does another (even correctly) → REJECT (`major`).
-- **AC-verification-grep re-run (mandatory).** Re-run every `AC<N> verified by: <command>` line from the design against the shipped artefact (the files modified in this PR's diff). Each command MUST be executed during self-review against the post-implementation tree; result quoted in the verdict (PASS / FAIL). "Confirmed during drafting" is NOT sufficient. Any AC-verification check that fails → REJECT (`major`).
+- **GO-with-notes round-trip closure.** Locate the most recent design-review verdict. For every `note` / `minor` row in its `## Issues` table and every bullet in its `## Recommendations` section, verify the design doc was updated to incorporate the note BEFORE the implementation diff started. A note that was never incorporated → REJECT (`major`). A design that says one thing while the implementation correctly does another is NOT that: route it by whether the divergence **breaks the agreed approach** (§ Findings that require Design/Spec Amendment, below).
+- **AC-intent falsification (mandatory).** The design names no command, so there is nothing in it to re-run. Read the round's `## Criterion checks (Round N)` section instead: every criterion needs a covering check AND a `Shown non-empty by` entry naming the input that made it fire. The predicate is that column's own contract: not "a check exists", but **shown able to come back NON-EMPTY**. Blank is a refusal, not a default → REJECT (`major`); a criterion with no covering check → REJECT (`major`). Quote the entry in the verdict.
 
 ### 3. Test coverage
 
@@ -143,16 +143,20 @@ For each `⚠️ Objected` item:
 
 ## Findings that require Design/Spec Amendment, not a code fix
 
-A finding is a **Spec/Design Amendment trigger** on either of two arms:
+A finding's subject or target can be a sentence in the task's own plan documents, on either of two arms:
 
 - **(A) Subject** — would closing this finding leave a sentence in `ai-docs/plans/**/*.{spec,design}.md` untrue? **Fires even when the fix lands entirely in code.** Flag it on this arm and say which sentence; the routing decision is not yours to defer to whoever picks the remedy.
 - **(B) Target** — the proposed resolution requires editing one of those files.
 
-On either arm the orchestrator must re-run design-review (and design, for spec amendments) on the amended artefact BEFORE the code change lands. Do NOT classify such findings as ordinary `nit` / `minor` / `major` code-fix candidates. Surface them explicitly:
+**Firing an arm is not routing: does the divergence break the agreed approach?**
+
+**Breaking → the amendment route, unchanged.** On either arm the orchestrator must then re-run design-review (and design, for spec amendments) on the amended artefact BEFORE the code change lands. Do NOT classify such findings as ordinary `nit` / `minor` / `major` code-fix candidates. Surface them explicitly:
 
 > **Design Amendment trigger** — design doc <path>:<line> contradicts the implementation; recipe at `${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` Step 11.
 
 (Use "Spec Amendment trigger" for `*.spec.md`.)
+
+**Non-breaking → one marker, one log row, and the round keeps running.** Flag the arm exactly as above, then dispose of the finding `redline: <type> — <what shipped instead>` in the round's fix plan, the sentence quoted in its `Arm A` cell; the code fix lands in the same round and nothing re-runs. **`/task` only:** `/bugfix`, `/project-review` and a post-push round have no log and no marking pass, so a divergence they find routes as before. Who marks, the type vocabulary and the rationale: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group).
 
 In `/task` Step 11 that routing now runs against a **fix plan** rather than against your findings directly: a scout turns each `⬜ Open` row into one or more plan rows, each carrying a disposition and the artefact sentence it puts at stake, and a checked-in gate routes the round on the plan's text. **Nothing in this contract changes** — the fields below are what the plan is built from, so a re-derived `File:line`, an accurate severity and an explicit `⬜ Open` status are now also what a mechanical gate reads.
 

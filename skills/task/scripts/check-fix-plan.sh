@@ -72,8 +72,14 @@ THRESHOLD_CHANGED_LINES=150
 #   ai-docs/learnings.md -- the archive, which /improve folds into mid-task
 #   ai-docs/learnings/   -- the per-branch entry files the in-flow capture
 #                           exception permits appending to during a round
-#   ai-docs/plans/*.spec.md and ai-docs/plans/*.design.md -- the artefacts an
-#       approved amendment rewrites mid-round. The step mandates RESUMING the
+#   ai-docs/plans/*.spec.md and ai-docs/plans/*.design.md -- the artefacts TWO
+#       legitimate parties write mid-round. One is an approved amendment, which
+#       rewrites one of them. The other is the MARKING PASS: where a round's
+#       review finds a divergence that does not break the agreed approach, the
+#       design subagent appends a redline pointer beside each diverged item
+#       instead of routing the round, which makes the design a file edited
+#       mid-round by a party that is not an amendment at all. The step mandates
+#       RESUMING the
 #       round afterwards and `baseline` refuses a second stub, so the round keeps
 #       a round_base taken before the amendment while A2/A3 forbid any passing
 #       plan from PROPOSING AN EDIT to those two SUFFIXES -- without this entry
@@ -87,15 +93,29 @@ THRESHOLD_CHANGED_LINES=150
 #       narrowing and not an amnesty: a `fix` row naming either suffix routes and
 #       a row proposing no edit briefs nothing, so every change to one is
 #       unbriefed by construction and each is NAMED on the excluded-in-round line
-#       for the orchestrator to account for against the amendment it knows it
-#       ran. That discrimination is not derivable from a diff, which looks
-#       identical whichever party made it. Inside `case` there is no pathname
+#       for the orchestrator to account for against the amendment or the marking
+#       pass it knows it ran. That discrimination is not derivable from a diff,
+#       which looks identical whichever party made it. Inside `case` there is no pathname
 #       expansion and `*` spans `/`, so both patterns cover ai-docs/plans/done/
 #       as well -- the same note the A2/A3 arms carry.
 IGNORE_EXACT='ai-docs/learnings.md'
 IGNORE_PREFIX='ai-docs/learnings/'
 IGNORE_GLOB_SPEC='ai-docs/plans/*.spec.md'
 IGNORE_GLOB_DESIGN='ai-docs/plans/*.design.md'
+# The redline log, excluded for the SAME reason and by a DIFFERENT variable. The
+# reason: `is_ignored` short-circuits arm (a)'s membership test, `planned` admits
+# `fix` rows only, and a `redline:` row is not one -- so an unexcluded log is
+# charged to arm (a) on every marking round, which is the amendment-then-resume
+# failure this list already closed for the other two suffixes.
+# The separate variable is the point, not an accident: the two globs above are
+# the suffixes the A7 ANCHOR TEST keys on, and that correspondence is stated in
+# docs/templates/progress-format.md. This one is read by `is_ignored` alone and
+# by no arm, so the pair stays a pair.
+# The cost, taken deliberately: the log's own lines no longer reach
+# `actual_changed_lines`. Nothing fires on that figure, and the
+# `excluded-in-round` line NAMES the log -- so the write stays visible to the
+# orchestrator by name rather than as an anonymous addend.
+IGNORE_GLOB_REDLINE='ai-docs/plans/*.redline.md'
 
 SEP=$'\002'
 PIPEHOLD=$'\001'
@@ -375,8 +395,20 @@ is_ignored() { # <path>
   # pattern is a LITERAL, so the quoted form would match no real path at all.
   case $1 in
     "${IGNORE_PREFIX}"*) return 0 ;;
-    $IGNORE_GLOB_SPEC|$IGNORE_GLOB_DESIGN) return 0 ;;
+    $IGNORE_GLOB_SPEC|$IGNORE_GLOB_DESIGN|$IGNORE_GLOB_REDLINE) return 0 ;;
   esac
+  return 1
+}
+
+# Where a task's plan artefacts live, in the one spelling cleanup-progress.sh:43
+# already uses rather than a third. ACTIVE DIRECTORY FIRST: the artefacts sit in
+# ai-docs/plans/ for the whole task and reach done/ only at its close, so a stale
+# copy left behind in done/ must not answer for the one a round is marking.
+plan_artefact() { # <spec-base> <suffix> -> the first path that exists, or nothing
+  local p
+  for p in "ai-docs/plans/${1}${2}" "ai-docs/plans/done/${1}${2}"; do
+    if [ -f "${ROOT}/${p}" ]; then printf '%s' "$p"; return 0; fi
+  done
   return 1
 }
 
@@ -426,9 +458,9 @@ do_baseline() {
 
 do_plan() {
   local round sec declared verification sum
-  local ncells num disp target expected arma
+  local ncells num disp target expected arma armaanchor
   local faults='' routespec='' routedesign='' sizefault='' coverage='' unmatched=''
-  local quotefaults='' anchor fault numbers missing
+  local quotefaults='' unaccounted='' anchor fault numbers missing
 
   round=$(plan_round_numbers | sort -n | tail -1)
   if [ -z "$round" ]; then
@@ -439,6 +471,7 @@ do_plan() {
     arm A4 size n/a
     arm A5 verification-named n/a
     arm A6 finding-coverage FAIL 'no ## Fix Plan (Round N) section to parse'
+    arm A7 redline-accounting n/a
     emit plan '-' "threshold_changed_lines=${THRESHOLD_CHANGED_LINES} declared_changed_lines=- arma_quote_window=${ARMA_QUOTE_WINDOW}"
     return 1
   fi
@@ -446,6 +479,16 @@ do_plan() {
   sec="${WORK}/plan-section"
   section 'Fix Plan' "$round" > "$sec"
   table_rows "$sec" > "${WORK}/rows"
+  # THE FINDINGS THAT CARRY THEIR OWN ACCOUNTING, read once before the row loop.
+  # A7 below exempts a `fix` row whose finding number appears here, which is what
+  # lets a scout write the TRUTHFUL Arm A cell. Without this set the arm refuses
+  # the honest plan and passes the evasive one: a row naming the at-stake
+  # sentence is refused however the round accounts for it, while a row declaring
+  # `none` and shipping no redline row at all is not. A finding may hold several
+  # rows by design, so the pair -- one `fix` row routing the edit, one `redline:`
+  # row recording what the edit left untrue -- is the shape this reads.
+  awk -F"$SEP" '$3 ~ /^redline: / { print $2 }' "${WORK}/rows" | sort -u \
+    > "${WORK}/redline-findings"
   declared=$(header_field declared_changed_lines "$sec")
   verification=$(header_field verification "$sec")
 
@@ -458,6 +501,7 @@ do_plan() {
       arm A4 size n/a
       arm A5 verification-named n/a
       arm A6 finding-coverage FAIL "finding ${num:-?}: the row holds $((ncells - 2)) cells, the format holds 5"
+      arm A7 redline-accounting n/a
       emit plan "$round" "threshold_changed_lines=${THRESHOLD_CHANGED_LINES} declared_changed_lines=${declared:--} arma_quote_window=${ARMA_QUOTE_WINDOW}"
       return 1
     fi
@@ -486,6 +530,53 @@ do_plan() {
           [ -z "$fault" ] || quotefaults="${quotefaults}${quotefaults:+; }finding ${num}: Arm A ${fault}"
         fi
       fi
+    fi
+
+    # ARM A7 `redline-accounting`. A `fix` row closes its finding by changing
+    # something OTHER than the sentence its Arm A cell names, so when that
+    # sentence sits in a frozen plan artefact the round ships a divergence from
+    # the agreed base with nothing recording it. The remedy is a `redline:` row for
+    # the same finding, and this arm is what makes it unavoidable rather than
+    # advisable: a finding whose plan carries one is exempt, and one whose plan
+    # does not is refused however truthfully its cell is written.
+    #
+    # IT FIRES ON `fix` ALONE, and each of the four exclusions is load-bearing:
+    #   amendment: spec / amendment: design -- already route the round through
+    #     A2/A3, which IS the accounting for the breaking case;
+    #   redline: <type> -- is the accounting itself;
+    #   object: <reason> -- disputes the finding, so no divergence is asserted,
+    #     and an objection to a major or a blocker needs the user's confirmation
+    #     before it stands;
+    #   resolved: <reason> -- MUST stay exempt, for the same reason the path half
+    #     below is wrapped in the `fix` guard. Its documented primary case is a
+    #     finding closed before the round by an approved amendment, which names
+    #     the artefact the finding cited, so its Arm A cell legitimately carries
+    #     a plan-artefact sentence that is ALREADY TRUE. Firing on it would
+    #     re-break exactly what that guard was added to fix, and the round could
+    #     not be cleared the other way either, because `baseline` refuses a
+    #     second stub.
+    #
+    # WHAT THIS ARM CANNOT SEE, written down so its reach is not mistaken: it and
+    # A8 both key on the Arm A cell, which the scout writes. A scout that writes
+    # `none` where a sentence really is at stake escapes the accounting
+    # entirely, and no mechanical check can see that -- judging whether closing a
+    # finding would leave a sentence untrue is the judgement Arm A exists to
+    # capture. So the gate makes the ACCOUNTING unavoidable given a truthful
+    # cell; it cannot make the cell truthful. A1's quote verification is what
+    # makes a non-`none` cell trustworthy; a `none` cell is unfalsifiable here by
+    # construction.
+    #
+    # The globs are the two variables the routing arms key on, UNQUOTED so they
+    # stay patterns. No bare-glob alternative is needed beside the `:*` forms:
+    # `arma_anchor` returns only a token matching path:line, so an anchor without
+    # a line never reaches this `case`.
+    if [ "$disp" = fix ] && [ "$arma" != none ] && [ -n "$arma" ] \
+       && ! grep -qx -- "$num" "${WORK}/redline-findings"; then
+      armaanchor=$(arma_anchor "$arma")
+      case $armaanchor in
+        $IGNORE_GLOB_SPEC:*|$IGNORE_GLOB_DESIGN:*)
+          unaccounted="${unaccounted}${unaccounted:+; }finding ${num}: Arm A names a sentence at ${armaanchor} while the row fixes something else, so nothing accounts for the divergence" ;;
+      esac
     fi
 
     # THE PATH HALF IS KEYED ON A ROW THAT PROPOSES AN EDIT, and the guard wraps
@@ -527,12 +618,16 @@ do_plan() {
 
     case $disp in
       fix|'amendment: spec'|'amendment: design') ;;
-      # `?*` on both reason-carrying tokens is what refuses an empty reason:
+      # `?*` on every reason-carrying token is what refuses an empty reason:
       # the reason IS part of the value, so a bare `object:` or `resolved:`
       # asserts nothing and falls through to the out-of-vocabulary branch.
       'object: '?*) ;;
       'resolved: '?*) ;;
-      *) coverage="${coverage}${coverage:+; }finding ${num}: disposition [$(restore "$disp")] is outside the vocabulary fix / object: <reason> / resolved: <reason> / amendment: spec / amendment: design" ;;
+      # THE TYPE SET IS THE PATTERN: three literals rather than a parse of the
+      # token, so a fourth type cannot be admitted by accident, and each carries
+      # the `?*` so a type with no payload is refused like a bare `object:`.
+      'redline: added — '?*|'redline: modified — '?*|'redline: removed — '?*) ;;
+      *) coverage="${coverage}${coverage:+; }finding ${num}: disposition [$(restore "$disp")] is outside the vocabulary fix / object: <reason> / resolved: <reason> / amendment: spec / amendment: design / redline: added|modified|removed — <what shipped instead>" ;;
     esac
     [ -n "$arma" ] || coverage="${coverage}${coverage:+; }finding ${num}: the Arm A cell is empty, and none must be written deliberately"
 
@@ -618,6 +713,17 @@ do_plan() {
     arm A6 finding-coverage pass "$(grep -c . < "${WORK}/open-numbers") open findings, $(grep -c . < "${WORK}/rows") dispositions"
   fi
 
+  # LAST of the plan arms, so a round that routes or is under-covered reports
+  # that instead: both are already accounted for by their own route, and a
+  # refusal for want of accounting on top of one would name a remedy the scout
+  # has in fact taken.
+  if [ -n "$unaccounted" ]; then
+    arm A7 redline-accounting FAIL "$unaccounted"
+    decide REFUSE arma-unaccounted
+  else
+    arm A7 redline-accounting pass
+  fi
+
   [ -n "$DECISION" ] || DECISION=PASS
 
   # The pre-apply escalation's own verdict row -- the one firing that carries a
@@ -636,6 +742,7 @@ do_plan() {
 do_applied() {
   local round sec base now actual ignored binary unplanned binpaths ignpaths
   local added removed path contrib planned
+  local pbase design log num key undelivered
 
   round=$(plan_round_numbers | sort -n | tail -1)
   [ -n "$round" ] || die 2 "${PROGRESS} carries no ## Fix Plan (Round N) section, so there is no round_base to measure against"
@@ -680,6 +787,51 @@ do_applied() {
     decide FINDING unplanned-file
   else
     arm '(a)' unplanned-file pass
+  fi
+
+  # ARM A8 `redline-undelivered`. A7 refuses a round that would ship a
+  # divergence with nothing recording it; this is the half that checks the record
+  # was actually written. It can only run after the marking pass, which is why it
+  # is here and not on `plan`: at plan time the commitment is in the plan, at
+  # apply time the marker and the row are both in the tree.
+  #
+  # BOTH PATHS ARE DERIVED FROM THE PROGRESS FILE'S OWN BASENAME, not from an
+  # argument and not from a new convention: <base>.progress.md gives
+  # <base>.design.md and <base>.redline.md, each looked up through
+  # plan_artefact's two locations.
+  #
+  # The marker is matched WITH its closing bracket and the log row by an EQUALITY
+  # on its first cell, because R1.1 is a PREFIX of R1.10: a containment search
+  # reports finding 1 as accounted for because finding 10 was.
+  #
+  # Its reach is A7's, for the same reason: both key on rows the scout wrote, so
+  # given a truthful plan the accounting is unavoidable, and a divergence no row
+  # declares is invisible to either.
+  pbase=${PROGRESS##*/}; pbase=${pbase%.progress.md}
+  table_rows "$sec" | awk -F"$SEP" '$3 ~ /^redline: / { print $2 }' > "${WORK}/redline-rows"
+  design=$(plan_artefact "$pbase" .design.md)
+  log=$(plan_artefact "$pbase" .redline.md)
+  undelivered=''
+  while IFS= read -r num; do
+    [ -n "$num" ] || continue
+    key="R${round}.${num}"
+    if [ -z "$design" ]; then
+      undelivered="${undelivered}${undelivered:+; }${key}: no ${pbase}.design.md under ai-docs/plans/ or ai-docs/plans/done/, so no marker can be there"
+    elif ! grep -qF -- "[REDLINE ${key}]" "${ROOT}/${design}"; then
+      undelivered="${undelivered}${undelivered:+; }${key}: ${design} carries no [REDLINE ${key}] marker"
+    fi
+    if [ -z "$log" ]; then
+      undelivered="${undelivered}${undelivered:+; }${key}: no ${pbase}.redline.md under ai-docs/plans/ or ai-docs/plans/done/, so no row can be there"
+    elif ! table_rows "${ROOT}/${log}" | awk -F"$SEP" -v k="$key" '$2 == k { f = 1 } END { exit !f }'; then
+      undelivered="${undelivered}${undelivered:+; }${key}: ${log} carries no row keyed ${key}"
+    fi
+  done < "${WORK}/redline-rows"
+
+  if [ -n "$undelivered" ]; then
+    arm A8 redline-undelivered FAIL "$undelivered"
+    decide FINDING redline-undelivered
+  else
+    arm A8 redline-undelivered pass "$(grep -c . < "${WORK}/redline-rows") redline rows accounted for"
   fi
 
   # ARM (b) IS DELETED. It compared this round's actual changed-line total

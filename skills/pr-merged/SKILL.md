@@ -2,7 +2,7 @@
 name: pr-merged
 description: "After a PR merge: switch to the default branch, pull, delete the merged branch's local progress files, delete the local PR branch, and prune the stale remote-tracking ref it leaves behind."
 when_to_use: "Activate once a PR is CONFIRMED merged — the user says 'merged', or `gh pr view` reports state MERGED — while still standing on that PR's branch. Not on 'approved', not on 'pushed', and never on an inference from `git log`: a squash-merge and a never-merged branch look alike there. Confirm the merge before the first command; on any doubt, ask instead."
-allowed-tools: Bash(git checkout:*), Bash(git pull:*), Bash(git fetch:*), Bash(git ls-remote:*), Bash(git push:*), Bash(git branch:*), Bash(git status:*), Bash(gh pr view:*), Bash(rm -f ai-docs/plans/*), Bash(scripts/cleanup-progress.sh:*)
+allowed-tools: Bash(git checkout:*), Bash(git pull:*), Bash(git fetch:*), Bash(git ls-remote:*), Bash(git push:*), Bash(git branch:*), Bash(git status:*), Bash(gh pr view:*), Bash(rm -f ai-docs/plans/*), Bash(scripts/cleanup-progress.sh:*), Bash(scripts/check-redline.sh:*)
 ---
 
 > Near-stateless: no `.progress.md` discipline applies; re-entry consists of re-invoking the skill.
@@ -19,6 +19,16 @@ If the current branch is the default branch (`main`), stop and tell the user thi
 > **This skill may be invoked by the model, so the merge is a PREMISE that must be measured, not assumed.** A user who types `/pr-merged` has seen the merge; an agent may only believe it, and step 3 deletes files before step 4's `git branch -d` can refuse anything. So before step 1, confirm the merge from the review surface — `gh pr view --json state,mergedAt` for the current branch's PR — and require `state == "MERGED"`. No PR, a non-merged state, or no tracker reachable from this session → **stop and ask the user**; do not fall back to inferring the merge from `git log`, which cannot distinguish a squash-merge from a branch that was never merged at all. A human invoking this skill is itself the confirmation and needs no query.
 
 If `git status --porcelain` shows any modified, staged, or untracked entries, stop and ask the user how to proceed (commit, stash, discard, ignore). Do not run any further commands until the user answers.
+
+**Refuse while an unprocessed redline log is on the branch.** Before step 1, and before anything is deleted or moved:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh pending ai-docs/plans
+```
+
+**Refuse on anything that is not a clean 0, and say which of the two you got.** Either a log is present — the closing redline fold never ran, so stop and tell the user to run `/redline-fold` while the PR is still open — or the check could not run at all, which is **not** a pass and leaves the question unanswered rather than answered favourably. Reading a non-zero status as "nothing to refuse" is the one mistake this guard cannot afford: the log is committed on the branch, so the moment `git checkout main` runs the file is no longer in the worktree and the evidence it carried is gone.
+
+**The sequencing limit, stated here rather than left to be discovered.** This workflow runs *after* the window the redline fold needs — that fold's commit belongs on the open PR, and by the time a merge is confirmed that PR is closed. So this refusal can only CATCH the omission and can never repair it. A caught error instead of silent damage is the whole claim being made for it.
 
 Otherwise, run in order. **Capture `<previous-branch>` from the `Current branch:` value above before step 1** — once `git checkout main` runs, that value is no longer the current branch.
 

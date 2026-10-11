@@ -54,6 +54,8 @@ Activation sequence (bare-ticket → matching deferred spec):
 
 ## Design Amendment recipe (re-entrant — triggered from Step 8 or Step 11)
 
+**From Step 11 it fires on a divergence that BREAKS the agreed approach; from Step 8 only when the user asks for the rebuild** — nothing restarts on its own account there.
+
 1. **Stop** the current step. Do not silently continue with the deviated approach.
 2. **Surface to user** — say what the system will now do differently and why, in the product's own terms, answerable without opening a file: **no** design-document or spec citation, **no** acceptance-criterion or decomposition-task id; restate the constraint inline ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)). Wait for approval.
 3. **Spawn the `design` subagent to apply the amendment** — do NOT edit `*.design.md` inline. Per AGENTS.md AXIOM "the orchestrator NEVER writes to `*.spec.md` / `*.design.md`":
@@ -75,11 +77,11 @@ Activation sequence (bare-ticket → matching deferred spec):
      Context: design was amended during implementation / self-review — describe what changed.
    ")
    ```
-5. **On GO** → resume from the step that triggered the amendment.
+5. **On GO** → resume from the step that triggered the amendment. **A branch carrying redline rows hands the rebuild every accumulated marker and row in step 3's prompt.** After the GO the log is empty and the rebuilt document is the new frozen base.
 6. **On ITERATE** → re-spawn the `design` subagent with the iteration feedback and re-run review (counts against the 3-round limit). Never edit the design doc inline to "fix the blockers".
 7. **On STOP** → surface to user; do not proceed.
 
-> Silently implementing a deviation without triggering Design Amendment — FORBIDDEN.
+> Deviating from the design without either triggering Design Amendment or — for a divergence that does not break the agreed approach — recording a redline marker and its log row — FORBIDDEN.
 > Editing `*.design.md` inline instead of spawning the `design` subagent — FORBIDDEN. The orchestrator's role is (1) surface to user, (2) spawn `design`, (3) spawn `design-review`. The `Write` to `*.design.md` belongs to the `design` subagent regardless of how trivial the amendment looks.
 
 ## Spec Amendment recipe (re-entrant — triggered from Step 7 GO-with-notes resolution)
@@ -92,12 +94,12 @@ If a Step 7 design-review GO verdict surfaces a `note` / `minor` / recommendatio
 4. **On user approval — re-invoke the `spec-writer` subagent to apply the amendment** — do NOT `Edit` `*.spec.md` inline. Per AGENTS.md AXIOM "the orchestrator NEVER writes to `*.spec.md` / `*.design.md`":
    - Update the interview state file (`<spec_path>.state.md`) by appending the user's amendment description as a Q&A entry in `prior_qa`, incrementing `round`.
    - Spawn `spec-writer` with the updated state. The spec-writer owns the `Write` to `*.spec.md`.
-5. **Re-enter Step 6 (`design` Subagent)** with explicit context: "spec was amended at Step 7 GO-with-notes resolution".
-6. **Re-enter Step 7 (design-review)** against the new (spec, design) pair (counts against the 3-design-round-cap).
-7. **On GO** → proceed to **Step 8**.
+5. **Ask the one question that decides the rest: does the amendment change the AGREED APPROACH?**
+   - **Yes** — scope, intent or the approach itself moved. Re-enter Step 6 (`design`) stating that the spec was amended, then Step 7 against the new pair (counts against the 3-round cap); on GO proceed. The rebuilt design is the **new frozen base** and the redline log **resets**.
+   - **No** — a criterion restated, an over-promise withdrawn, a wording clarified. **No design re-derivation, no design-review round, and no log row either**: a changed requirement is not a divergence, so nothing of it is recorded in the log and the log does **not** reset. The closing fold authors the design from the amended spec.
 
-> Folding a spec-amending note into the design alone is FORBIDDEN — the design would be built against the old spec without ever being verified against the new one.
-> Editing `*.spec.md` inline instead of re-invoking `spec-writer` — FORBIDDEN. The orchestrator's role is (1) update state file, (2) re-spawn `spec-writer`, (3) re-spawn `design`, (4) re-spawn `design-review`.
+> Editing `*.spec.md` inline instead of re-invoking `spec-writer` — FORBIDDEN. The orchestrator's role is (1) update state file, (2) re-spawn `spec-writer`, (3) answer step 5's question and take only the branch it names.
+> **Answering step 5 by reflex, in either direction, is the failure** — why, and the measurement behind it: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § When a spec amendment re-derives the design](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#when-a-spec-amendment-re-derives-the-design).
 
 ## Steps 1–5 — spec creation delegation (detail)
 
@@ -189,7 +191,7 @@ Agent(subagent_type="general-purpose", prompt="
 
 **The spawn prompt names which fields the scout fills, and that sentence is load-bearing.** The gate refuses an empty `verification` and an absent `declared_changed_lines`, so a brief telling the scout the stub is untouchable contradicts the gate it feeds — and the first real run produced exactly that, with the scout filling them anyway and naming the contradiction. The stub's emptiness is a feature, because a placeholder would satisfy the verification arm; the brief has to say which half of it is the scout's.
 
-The scout fills the table — **at least one** row per open finding, `#` copied from the findings table, a closed-vocabulary `Disposition` (`fix` / `object: <reason>` / `resolved: <reason>` / `amendment: spec` / `amendment: design`), the target `file:line`, the expected changed lines on the basis the column heading names, and either `none` or the quoted artefact sentence Arm A puts at stake. A finding whose remedy spans several files takes a row per file; what is refused is a finding in no row, or a row matching no open finding:
+The scout fills the table — **at least one** row per open finding, `#` copied from the findings table, a closed-vocabulary `Disposition` (`fix` / `object: <reason>` / `resolved: <reason>` / `amendment: spec` / `amendment: design` / `redline: <type> — <what shipped instead>`), the target `file:line`, the expected changed lines on the basis the column heading names, and either `none` or the quoted artefact sentence Arm A puts at stake. A finding whose remedy spans several files takes a row per file; what is refused is a finding in no row, or a row matching no open finding:
 
 ```markdown
 | 1 | fix | <path>:<line> | 12 | none |
@@ -215,6 +217,8 @@ Canonical schema, header fields and the counting basis: [`${CLAUDE_PLUGIN_ROOT}/
 
 **On `REFUSE`:** hand the verdict back to the same `fix-scout` for a rewrite — **max 3 rounds**, then surface the verdict to the user and stop. On `ROUTE-SPEC` / `ROUTE-DESIGN` the amendment recipes above own the round and no fix agent runs. On `ESCALATE` the user sees the declared total and the threshold and decides.
 
+**Beat 3b — mark (`design`, fresh context), once per round carrying a `redline:` row and BEFORE the apply**, on `${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking: it appends every marker and promotes every row.
+
 **Beat 4 — apply (`fix-apply`, fresh context), only on `PASS`.**
 
 ```
@@ -231,7 +235,7 @@ Agent(subagent_type="general-purpose", prompt="
 1. **Confirm the write landed** — `stat` the files the plan named and `grep` for the changed text, per the Design Amendment recipe's existing mtime+grep wording. The party that applied the change is not the only party asserting it landed.
 2. **Gate the applied diff** — `check-fix-plan.sh applied <progress-file>`. It reads the `round_base` out of the gated plan section and reports `decision=FINDING reason=unplanned-file` when the diff touched a path no `fix` row named, `decision=OK` otherwise. The header carries `actual_changed_lines=<n> ignored=<k> binary=<m>`, so nothing is excluded from the count invisibly. **`actual_changed_lines` is a MEASUREMENT and nothing fires on it** — the post-apply size arm and its `actual-overrun` token are withdrawn, so the verb runs one arm and reports one figure for a human to read. The threshold appears in `plan`'s header only, which is the one place it is enforced.
 
-   **Three path classes are excluded from that arm, and the third is why the `excluded-in-round` line has to be read.** The learnings archive and the per-branch learnings files are there because the in-flow capture exception permits appending to them mid-round. `ai-docs/plans/*.spec.md` and `ai-docs/plans/*.design.md` are there because the amendment recipes write to a spec or design artefact and then send the round back here, while `baseline` refuses a second stub — so the round keeps a `round_base` taken before the amendment, and without the exclusion that arm would fire by construction on every amendment-then-resume round, permanently. **The two suffixes and not the directory:** A2/A3 key on the suffixes, so a directory-wide exclusion would be wider than its own justification and would drop the briefed lines of a tracked non-routing path under that directory from the measured total while they still counted on the declared side. The exclusion is a **narrowing, not an amnesty**: A2/A3 refuse any passing plan that **proposes an edit** to either suffix — a `fix` row naming one routes — and a row proposing no edit briefs nothing, so every change to one is unbriefed by construction either way. **The header's `ignored=` is a count only; the `excluded-in-round` line is the one place the paths are named.** Whenever the verdict carries that line, the orchestrator reads it and accounts for every named path against the amendment it knows it ran; a named path it cannot account for is a finding. That discrimination cannot be delegated to the gate — an approved amendment's edit and a fix agent editing a spec it was never briefed to touch produce an identical diff, and only the orchestrator holds the fact that separates them.
+   **Four path classes are excluded from that arm, and the exclusion is a narrowing, not an amnesty**: A2/A3 refuse any passing plan that **proposes an edit** to a spec or design suffix, so every change to one is unbriefed by construction either way. **The header's `ignored=` is a count only; the `excluded-in-round` line is the one place the paths are named.** Whenever the verdict carries that line, the orchestrator reads it and accounts for every named path against the amendment or the marking pass it knows it ran; a named path it cannot account for is a finding. That discrimination cannot be delegated to the gate — an approved amendment's edit and a fix agent editing a spec it was never briefed to touch produce an identical diff, and only the orchestrator holds the fact that separates them. Which four classes, and why each is there: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Why four path classes are excluded from the unplanned-file arm](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#why-four-path-classes-are-excluded-from-the-unplanned-file-arm).
 
 A `FINDING` is a finding to act on — it goes into the round like any other, never written off as a convenience. Exit 2 from `applied` means the round has no usable baseline, which is not a pass.
 
@@ -250,7 +254,7 @@ A `FINDING` is a finding to act on — it goes into the round like any other, ne
 - attempt 2 — finding 5, row 1: the divergence named was <quoted reason>; re-fix dispatched
 ```
 
-Three reasons for that location rather than a counter in the gate: the gate recomputes from the tree on every invocation and holds no state between them; the progress file survives a compaction and a session restart, which is exactly when a cap is lost; and an attempt count beside the plan it counts against is auditable by the same read that checks the plan. **The bullet must NOT begin with `|`** — the gate reads any line in that section whose first non-space character is a pipe as a plan row, and one with the wrong cell count refuses the whole plan under `plan-row-malformed`. A leading `-` is invisible to that parser, a literal `|` in the quoted reason is then harmless, and the count is `grep -c '^- attempt '` over the section.
+Why that location rather than a counter in the gate: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Why the attempt count lives beside the plan](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#why-the-attempt-count-lives-beside-the-plan). **The bullet must NOT begin with `|`** — the gate reads any line in that section whose first non-space character is a pipe as a plan row, and one with the wrong cell count refuses the whole plan under `plan-row-malformed`. A leading `-` is invisible to that parser, a literal `|` in the quoted reason is then harmless, and the count is `grep -c '^- attempt '` over the section.
 
 **Then record the loop, once, as it closes** — `check-fix-plan.sh record <progress-file> <iterations> <cost_tool_calls> <answer>`. It decides nothing and exits 0; it appends one verdict row carrying the loop's iteration count, its cost and the question's answer, which is what this loop's own retirement is read from. **All three arguments are required and none defaults:** a default would record a zero silently and the retirement rule would be read off a column of zeros — an absent figure is recoverable, a wrong one is not. **The cost unit is the number of orchestrator tool calls the loop consumed** (not wall-clock, not tokens), counted from the calls made for that loop and no others, which the attempt bullets make auditable. **`<answer>` is exactly one of `MATCH` or `DIVERGE`** — anything else is exit 2, and the word is written into the row rather than only checked, because a check whose input is discarded leaves no evidence it ran. A failed write never changes the round's outcome.
 
@@ -259,7 +263,8 @@ Three reasons for that location rather than a counter in the gate: the gate reco
 For each `⬜ Open` finding in the latest `## Self-Review (Round N)` section — **classify before choosing a remedy**, per the Step 11 AXIOM in `SKILL.md`. The first question is not "how do I fix this" but *"would closing this leave a sentence in the spec or design untrue?"*; if yes, it is an amendment however the fix lands.
 
 - **Fix it** → the plan row says `fix` and `fix-apply` applies it; the orchestrator marks `✅ Fixed` once the applied diff is gated. **If the finding quoted a spec/design sentence, re-read that sentence in its file** and either confirm it true of the post-fix state or amend it — shipping what a sentence promised makes the sentence true only if the shipped thing does what it says.
-- **Requires a design change** → trigger the **Design Amendment** recipe (user approval required); on return mark `✅ Fixed (design amended)`.
+- **Breaks the agreed approach** → trigger the **Design Amendment** recipe (user approval required); on return mark `✅ Fixed (design amended)`.
+- **Diverges from a design sentence without breaking the approach** → the row says `redline: <type> — <what shipped instead>`; the round's one marking pass writes the marker and the log row; mark `✅ Fixed (redlined)`.
 - **Requires a spec change** → trigger the **Spec Amendment** recipe; on return mark `✅ Fixed (spec amended)`.
 - **Already closed before the round began** (an approved amendment settled it, and the tree already satisfies it) → the plan row says `resolved: <reason>` and nothing is applied. It is not an objection and not an exemption: the round still runs the whole sequence.
 - **Object to it** (finding is wrong or intentionally out of scope):
@@ -284,7 +289,7 @@ Claude prepares the title + body per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md §
 - `rm`ing `.progress.md` from within `/task` (it's gitignored and lives until `/pr-merged`).
 - Staging `.progress.md` into a commit.
 - Pushing from the default branch.
-- Silently deviating from the design without triggering Design Amendment.
+- Deviating from the design without either triggering Design Amendment or — for a divergence that does not break the agreed approach — recording a redline marker and its log row.
 
 ## Gate checklist
 
@@ -295,10 +300,10 @@ Claude prepares the title + body per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md §
 | Step 8 | Design doc with GO? `## Handoff plan` present for every M ≥ 1? **Every GO-note written back into design doc?** |
 | Step 8 start | Feature branch checked out? `git branch --show-current` is NOT the default branch? `base_commit` + `branch` recorded in progress file? |
 | Each subtask | Build ✅? Tests run? `.progress.md` updated? Group handoff via `/context-reset`? |
-| Step 9 | Build + tests + lint clean? All ACs covered with `AC<N> verified by: <command>` lines? |
+| Step 9 | Build + tests + lint clean? Every AC carries an `AC<N> verified by:` intent line? `## Criterion checks (Round N)` filled, `Shown non-empty by` included? |
 | Step 9.5 | context.md updated? (spec/design NOT moved yet) |
 | Step 10 | Self-review APPROVE? (Progress file persists in the working tree — gitignored — until `/pr-merged`.) |
-| Step 11 | `major`/`blocker` objections confirmed by user? Design change → Design Amendment triggered? PR body re-read after any push? |
+| Step 11 | `major`/`blocker` objections confirmed by user? Breaking divergence → Amendment, non-breaking → marker + log row? PR body re-read after any push? |
 | Step 12 | Branch ≠ default? spec/design moved to done/? Build clean? PR title prefixed and body summary-only (no Summary/Test-plan sections)? |
 
 ## Commit authorisation + hooks

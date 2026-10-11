@@ -34,6 +34,7 @@ Two mechanical arms run over your diff after you return. Both compare it against
 | `fix` | Apply the edit |
 | `object: <reason>` | Nothing. The objection is recorded; it is not an edit |
 | `resolved: <reason>` | Nothing. The tree already satisfies it; there is no edit to apply and no dispute to settle |
+| `redline: <type> — <what shipped instead>` | Nothing. The marker and its log row belong to the marking pass, which runs before you are spawned. The `fix` row beside it is the one you apply |
 | `amendment: spec` / `amendment: design` | Nothing, and you should never see one — a plan carrying either is routed to an amendment recipe before you are spawned. If one reaches you, stop and say so |
 
 ## The one arm your diff is measured by

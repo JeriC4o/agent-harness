@@ -36,6 +36,224 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 5. **Do NOT rewrite the whole plan** — change only what's needed
 6. **Produce updated artifact** — full Design Document (not a diff)
 
+## Redline marking
+
+A third invocation mode, and the only one in which this subagent writes to an AGREED design rather than
+authoring one. Invoked by `/task` wherever a divergence between the design and what shipped is found after
+the freeze — during implementation, or in a review-and-fix round whose findings carry one.
+
+**The freeze is an event, and it is the design-review GO verdict.** Before it the document is still being
+authored and a correction is a rewrite (§ Rules); after it there is an agreed base and the code is being
+measured against it, so a correction is a marker plus a log row. Nothing here has to ask which régime it
+is in: the marking pass runs after implementation has begun, and neither implementation nor the
+review-and-fix cycle can be reached without a GO. **One window sits between the two and is the only
+post-GO rewrite there is:** a GO verdict carrying notes is closed by folding them in, which `/task` Step 8
+and `agents/self-review.md` both require to happen BEFORE the implementation diff starts. Nothing has been
+measured against the base yet, so there is nothing to mark; once the diff starts, that window is shut and
+every correction is a marker plus a row.
+
+**One invocation per review round that carries divergences, and one per implementation step that does** —
+never one per divergence, and never deferred to the closing fold. One pass marks every diverged item its
+caller found and promotes every row.
+
+**The marker is a pointer, and it carries nothing else:**
+
+```
+**[REDLINE R<round>.<finding #>]**
+**[REDLINE S<step>.<ordinal>]**
+```
+
+- It is **appended** to the end of the marked item, and the ITEM is the unit, not the line: for prose,
+  the end of the item — its paragraph or list item — never mid-sentence, and never at a wrapped line's
+  end that is not also the item's end, because a hard-wrapped paragraph's diverged sentence can end
+  anywhere inside it; and **the end of the cell carrying the item's prose** for a table row — not after
+  the row's closing `|`, which is outside the table, and not in a cell holding dependencies or paths,
+  where a reader does not meet the item. The original wording is untouched and stays readable. That
+  colocation is the whole payoff: a reviewer reading the design sees which items are already settled and
+  skips them, so the document stops being re-verified in detail every round.
+- It carries the log-row key and nothing more — not the correction's type, not its text. One fact in one
+  place: a marker repeating the type would duplicate the row's own field and the two could then drift.
+- It carries no `|` and no newline, so appending it inside a table cell cannot shift a column. Most
+  marked items are decomposition rows, which is the cell shape most likely to break.
+- `R<round>.<finding #>` is derived from numbers both sides already carry, so there is no new identifier
+  to keep in step, and the key is the marker's entire payload.
+- **The two forms divide on whether the divergence has a PLAN ROW, not on where it was noticed.** A
+  finding a round planned supplies both halves of `R<round>.<finding #>`; anything with no plan row takes
+  `S<step>.<ordinal>`, for want of a findings table to take a finding number from — the workflow step
+  supplies the first half, the order of discovery the second. These two forms are the whole set.
+- **A row is keyed to the step whose WORK it belongs to, not necessarily the step that noticed it**, and
+  the ordinal is per key prefix, never global: the key exists to pair a marker with a row, so a key that
+  moved whenever a later step noticed something would break pairs already written.
+- **A key is recognised by SHAPE, so a document that quotes the token is not a marked document.** A key is
+  alphanumerics, dots, dashes and underscores; the two lines above are templates, and angle brackets and
+  spaces are not key characters. Not every `[REDLINE …]` occurrence is a marker — a file explaining the
+  spelling carries no key at all, which is why the pairing check reads one of those lines as nothing
+  rather than as an unpaired key.
+
+**The row is DERIVED from the round's fix-plan row, never re-authored.** The reviewer originates it as a
+`redline: <type> — <what shipped instead>` disposition in that round's `## Fix Plan (Round N)` table; this
+pass promotes it into the committed log. Nothing is written twice:
+
+| Log row field | Comes from |
+|---|---|
+| `Key` | `R<round>.<finding #>` — the round from the plan section's heading, the number from the row's `#` cell |
+| `Key`, no plan row | `S<step>.<ordinal>` — the step from the workflow, the ordinal from the order of discovery |
+| `Type` | the disposition's type token: `added`, `modified` or `removed`, relative to the frozen base |
+| `Artefact sentence diverged from` | the plan row's `Arm A` cell, **verbatim** |
+| `What shipped instead` | the disposition's reason text, which **opens** the cell verbatim — a floor, not a cap: the pass may extend it with shipped facts a one-line reason could not hold, such as a second site corrected in the same pass |
+
+**With no plan row — a divergence found during implementation — this pass authors the row itself**, from
+the same two facts: the design sentence quoted verbatim, and what shipped. The derivation above exists so
+that one divergence is not recorded twice, and where no plan row was ever written there is no second
+record to drift from.
+
+**A pass that touches an EXISTING row re-derives every `file:line` and every MEASUREMENT in it**, not only
+the fields it came to change. A row cites lines and measures sizes that later rounds are free to edit, so a
+figure correct when it was written is a claim about a tree that no longer exists — and this is the one
+record in the family that is committed, so a stale figure ships.
+
+The log is `ai-docs/plans/<spec-base>.redline.md`. It is **committed**, because the fold that consumes it
+runs after a human review and the progress file cannot survive that far. Its row format is defined in
+[`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md),
+beside the fix-plan row it is derived from. A row records a **surviving** divergence, not a decision taken
+along the way: an experiment that left no divergence leaves no row, which ties the log's volume to the
+result rather than to the process.
+
+**A row may record an EXPANSION, not only a correction of something untrue.** A base that was simply
+silent about something is the normal case on work that still holds open questions, not a defect — so the
+row records that the base said nothing and this is what the work established. That is what `added` already
+means relative to the frozen base, so there is no fourth type token to invent.
+
+**An extension marks the nearest item whose SCOPE it falls within** — the section, or the decomposition
+row, the new work belongs to. A marker needs an item to point at, and a silence offers none; the
+containing item is that anchor, and the marker on it says it is incomplete as written while the row says
+what was added. The payoff is colocation's usual one: a reader of that section learns it grew before
+starting to re-verify it. **If no item in the design contains the work at all**, it is not an extension
+but a missing whole, and it takes the breaking route — the line that keeps "extension" from becoming a
+bucket for unplanned scope.
+
+**A changed REQUIREMENT is not a divergence and does not come here.** This log records shipped work
+departing from the frozen design; a change to what was ASKED FOR belongs in the spec, written by the
+spec's own owner, and the fold then authors the design from the amended spec. A changed artefact goes to
+the log, a changed requirement goes to the spec, and nothing is recorded in both places.
+
+**Both halves are mechanically checked, so neither is optional — and each key form has its own checker.**
+`${CLAUDE_PLUGIN_ROOT}/skills/task/scripts/check-fix-plan.sh` refuses a plan that closes a finding whose
+`Arm A` cell names a spec or design sentence with nothing accounting for it, and after the pass its `A8`
+arm asserts that the design carries the marker and the log a row under the same key: that is the in-round
+half, and `R<round>.<finding #>` is the only form it reads, because it takes the key from a plan row.
+`${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh paired` is the half that covers `S<step>.<ordinal>`, where
+no plan row exists — for every `[REDLINE <key>]` in the design a row under that key in the log, and for
+every row a marker, in both directions and for both key forms. A missing marker and a missing row are each
+a finding. What no check can see is a plan row that declares `none` where a sentence really is at stake —
+that judgement is what the `Arm A` cell exists to capture, and it is yours.
+
+**Your own exit check, and it is not optional.** Having appended every marker and promoted every row, run
+`${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh paired <design> <log>` and hand back on nothing but a
+clean 0. On anything else, say **which** of the two non-clean outcomes you got — findings, or cannot-run,
+which is not a pass — and what it named. This is the only moment both halves are freshly written and you
+are still in context to fix them; after you hand back, a missing row is someone else's puzzle.
+
+**In a review-and-fix round, a divergence that BREAKS the agreed approach is not marked.** There the test
+is mechanical, and the breaking case routes to the full rebuild, which is handed the accumulated markers
+and rows, after which the log resets to empty and the rebuilt document becomes the new frozen base. The
+rows described a base that no longer exists, so the rebuild must be told them or they are lost.
+
+**During implementation that call is the user's, and the default is the cheap one.** The step surfaces the
+divergence and names the two modes below; the breaking / non-breaking test informs the choice rather than making
+it, because no gate reads it here. Unless the user asks for the design to be rebuilt from the ground up —
+a route that stays available and unchanged — the answer is fixed in the code and the correction becomes a
+marker plus a log row, with no re-review and no re-run of the design-and-review loop.
+
+**That choice is made ONCE PER TASK, on the first divergence.** The step surfaces that one, the user picks
+a mode, and the mode governs every later divergence in the same task. A question re-asked at each
+divergence is the cost this mechanism exists to remove.
+
+| Mode | What it means |
+|---|---|
+| **R&D** | The design is accepted as carrying blank spots. A correction or an extension goes into the log as it is found, nothing restarts, and the closing fold is where the design becomes true again. The path for work whose design could not have been complete |
+| **Hybrid** | The mixed régime: a non-breaking divergence or an extension goes to the log, while a divergence the user judges to break the approach may still take the rebuild route. Its one operative discipline is a **test, not an exhortation — an extension is admitted only when it is needed to make the shipped thing correct**, never because it is adjacent to it. An extension that would widen what the task delivers is a new ticket, not a log row |
+
+**The step leads with a RECOMMENDATION, not a bare question.** The design usually already shows which
+process this is going to be, so a bare question hands the user work the document can answer.
+Recommendation first, its grounds in **one line**, and a single word settles it. The grounds are signals
+read off the design under review and **quoted** in the recommendation, so the user can disagree with the
+evidence rather than with a preference:
+
+| Signal, quoted from the design | Points to |
+|---|---|
+| A non-empty `## Open questions` — the base says of itself that it is incomplete | R&D, and the strongest single signal there is |
+| A risk phrased as unknown until implementation, or a measurement deferred to a named later task | R&D |
+| Work that creates a mechanism that does not exist yet | R&D |
+| Decisions carried as measured rather than assumed, anchors pinned to real `grep -n` output, a probe already run against the live tree | Hybrid — that base was built against facts and is unlikely to need widening |
+| Work that changes something whose shape is already known and measured | Hybrid |
+
+A recommendation that needs a paragraph to justify has already failed: this gate exists to cost the user
+one keystroke, and not to exhaust them.
+
+**The chosen mode is recorded in the LOG's header, not in the progress file.** The progress file is
+gitignored and deleted at merge, while the log is committed and is what the fold reads — and the mode is
+what explains to a later reader why the log holds the number of rows it holds.
+
+## The redline fold
+
+The closing pass, invoked by `/redline-fold` once the PR is approved, producing the as-built design as a
+separate commit on the same PR. It runs only when the log carries at least one row; with none, the frozen
+plan already describes what shipped and there is nothing to author.
+
+**It AUTHORS the design afresh. It does not edit the frozen one.** An in-place edit leaves every sentence
+the editor did not touch, and what it did not touch is exactly what nobody re-read — stale by omission,
+and invisible to any check that looks only at what changed. A freshly authored document cannot inherit a
+stale sentence through a gap. The output path is unchanged: `ai-docs/plans/done/` holds one design per
+task, so "afresh" means re-authored in place of the old content, never a second file.
+
+**"Afresh" is not "only what is needed."** The strip set is closed and short: `## Handoff plan`,
+`## Open questions`, every marker, amendment residue, and any record of superseded material. The first
+three are patterns a check can search for; the last two are not, and are the judgement step below.
+Everything else the design carries — the approach, the decomposition, the risks, the rejected
+alternatives, the test design — is **re-authored against the shipped state**, because a reader of the
+completed plan needs to know what was built and what was deliberately not chosen. Dropping a section is
+not a cheaper fold; it is a different and worse document, and the post-merge review still reads the
+verification intents from the design that survives.
+
+**Write it SECTION BY SECTION, never in one call.** § Patterns records the hazard directly: a full-file
+rewrite of a large design is the highest-risk moment for a transport drop, with two observed attempts
+dying before the write landed. The fold's input is a document of exactly that size class, so one
+full-file write is the shape most likely to lose the whole pass. The two instructions are not in tension
+— "afresh" constrains what the content is derived FROM (the shipped state, not the previous text),
+"section by section" constrains how the bytes are DELIVERED. An implementer reading only the first reaches
+for one call, which is why both are stated together.
+
+Then, in this order:
+
+1. **Verify on disk** — mtime plus a search for an expected new string. The harness does not retry on a
+   socket close, so an unverified write is an unknown one.
+2. **Assert POSITIVELY that every section describes the shipped state.** This is a judgement step and is
+   named as one. It cannot be done by searching for superseded wording: a document that records its own
+   corrections holds that wording inside a quotation, so an absence proved from a fragment is a false
+   positive rather than a weak result. The bounded scan for the phrases that introduce a revision account
+   is a **spot-check** beside the judgement, never a substitute for it.
+3. **Run the residue check AFTER that verification**, so a partial write is caught as a residue failure
+   rather than passing as a fold.
+
+**The spec is collapsed, not deleted, and its own subagent writes it.** Its surviving payload is its
+record of *deliberate absence* — `## Out of scope`, `## Deferred`, `## Key decisions`, **byte-identical**
+to their pre-fold text — because the design has no section that can carry it: a design describes what was
+built, never the boundary of what was deliberately not built. That write belongs to the spec's owner, not
+to this subagent and not to the orchestrator.
+
+**The log is removed from the tree.** Nothing downstream reads it — the post-merge reading list names the
+spec and the design and no third class — and the commit history preserves the record. A surviving log is
+therefore the unambiguous mechanical signal that the fold never ran, which is what lets the merge-time
+workflow refuse on one.
+
+**The whole output is gated**, by `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh folded <spec> <design>`:
+the three retained spec sections byte-compared against the previous commit, the design asserted free of
+all three residue patterns, and the log asserted gone. The comparand is version control deliberately — it
+predates the rewrite and therefore cannot BE the rewrite, which a copy captured by this same pass could
+not promise. Its three outcomes are this repository's: clean, findings, and cannot-run, where cannot-run
+is not a pass.
+
 ## Quality checklist
 
 - **Completeness:** all files listed? Tasks are atomic?
@@ -91,7 +309,7 @@ For each non-trivial task:
 - Entry point: service method, controller, dao
 - Scenarios: happy path, error cases, edge cases
 - Fixtures: which `TestXxx` classes
-- AC<N> verified by: `<command>` (e.g. `%TEST_CMD%` filtered to `LanguageDaoTest.should return empty when no matches`)
+- AC<N> verified by: <the verification INTENT — what must be observed, about which artefact, and with which control; never a test method, a file path or a command. E.g. "that the step refuses while the required record is absent, and does not refuse once it is present">
 
 ## Open questions
 
@@ -105,7 +323,9 @@ For each non-trivial task:
 - Don't write code — only the plan. Code is written by `/task` Step 8.
 - If scope > 7 tasks in decomposition — propose splitting into multiple tickets.
 - If unsure about the codebase — investigate via a path-filtered search + Read; don't guess.
-- **Never pin a command as an exit gate without having RUN it.** Every verification command the design prescribes must have been executed while writing the design — once as written, and once against input that must trip it. A `--help` check is not enough: a flag can exist in a *sibling* tool and be rejected by the one you are calling, so the gate could never emit the EMPTY output it demanded. Assume nothing about a CLI's flags from a sibling tool's surface, and treat a gate whose failure mode is empty output (`0 tests`, `No files matched`, an empty diff) as unproven until it has been shown able to come back non-empty. `design-review` rejects an unexecuted gate as `major`.
+- **Never pin a command as an exit gate without having RUN it.** Every command THIS DESIGN PINS — the measurements it records under § Approach, the probes it quotes, anything it puts forward as a gate — must have been executed while writing the design, once as written, and once against input that must trip it. A `--help` check is not enough: a flag can exist in a *sibling* tool and be rejected by the one you are calling, so the gate could never emit the EMPTY output it demanded. Assume nothing about a CLI's flags from a sibling tool's surface, and treat a gate whose failure mode is empty output (`0 tests`, `No files matched`, an empty diff) as unproven until it has been shown able to come back non-empty. `design-review` rejects an unexecuted gate as `major`.
+  - **Its object is the design's OWN pinned gates, and no longer a per-criterion command.** The Test Design section states intent and names no command (§ Rules → AC-verification line), so there is no per-criterion command here left to falsify. The duty itself is unchanged and binds in full where that command is now recorded: the `Shown non-empty by` column of the round's `## Criterion checks (Round N)` section ([`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)), where a blank is a refusal rather than a default. Re-pointed, never dropped: "a check exists that covers this intent" says nothing about whether that check can come back non-empty, which is the whole of what this rule is for.
+- **A pre-approval correction is a REWRITE, and the document carries no account of what an earlier draft said.** While the design is being authored or reviewed, the way to correct it is to rework the affected sections (§ Workflow → Iteration): nothing has shipped for a base to diverge from, so there is nothing to mark. The document therefore carries no revision account at any stage — no narration of what a previous round found or argued, no quoted superseded wording, no sentence whose subject is an earlier draft rather than the system. Every such passage is read in full by every later whole-repository review and none of it describes the system. A correction's reasoning belongs in the review round's own findings table, which is where a reviewer can already see it and which no later review reads.
 - **Handoff-grouping requirement.** The `/task` workflow's Step 8 binds a `/context-reset` handoff at the start of **every** design-defined group, including the first and including single-subtask designs. The design must pre-compute boundaries in a `## Handoff plan` section. Four mandatory sub-points (every M ≥ 1):
   - **(a) When grouping is required** — `every M ≥ 1`.
   - **(b) Maximum group size** — `3 consecutive subtasks`. Non-terminal groups MUST be exactly 3.
@@ -113,7 +333,10 @@ For each non-trivial task:
   - **(d) Terminal-group sizing** — `1..3`. Sizes outside this range = design defect.
 
   Severity rubric (enforced by `design-review`): missing `## Handoff plan` for any M ≥ 1 = `major`; non-terminal group ≠ 3 = `major`; terminal group outside `1..3` = `major`; cosmetic issues (wording, ordering) = `minor`.
-- **AC-verification line is mandatory.** Every AC in the spec must be linked to a concrete test / search / shell command in the design's Test Design section ("AC<N> verified by: …"). `self-review` re-runs these against the shipped artefact.
+- **AC-verification line is mandatory, and it states the verification INTENT — never an identifier.** Every AC in the spec carries an `AC<N> verified by: …` line in the design's Test Design section, saying what must be OBSERVED, about which artefact, and with which control. It may not name a test method, a file path or a command.
+  - **The distinction is which side of the test the name sits on, and the rule is unusable without it.** The identifiers of the CHECK — its method name, its file's path, the command that runs it — are all chosen while the tests are written, which is after the design is agreed; a design that promises them promises names that do not yet exist, and diverges by construction rather than occasionally, worse as the criterion count grows. The ARTEFACT UNDER TEST is named in the spec and is not chosen later, so naming it is not a violation. Allowed: "that the step refuses while the required record is absent, and does not refuse once it is present" — an observable property plus its control. Forbidden: the same thing written as a filtered invocation of a named suite.
+  - **A recorded measurement is not a pinned gate.** Commands quoted under § Approach as things that were run while designing are historical facts about what was observed, and a later rename cannot falsify them. What this forbids is pinning a command as a criterion's exit gate.
+  - The concrete command, identifier and path covering each intent — and the input shown to make each one fire — are recorded OUTSIDE the design, in the round's `## Criterion checks (Round N)` section. They therefore sit outside the frozen base and cannot falsify it.
 
 ## Patterns
 

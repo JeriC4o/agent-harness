@@ -76,8 +76,8 @@ is the same commands.
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
    `skills/task/scripts/test-check-fix-plan.sh`,
-   `scripts/test-check-propagation-arms.sh`, `scripts/test-hook-behaviour.sh`,
-   `scripts/test-run-checks.sh`.
+   `scripts/test-check-propagation-arms.sh`, `scripts/test-check-redline.sh`,
+   `scripts/test-hook-behaviour.sh`, `scripts/test-run-checks.sh`.
    **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed
    file COUNT beside the syntax verdict and reddens a separate `untracked-shell` member on any `*.sh` the
    index cannot see — but only when it runs, so a hand-run still owes both reads.

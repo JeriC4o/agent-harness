@@ -150,13 +150,19 @@ MEMBERS_EOF
 # they are exempt BY NAME: adding a third one is then a decision, not an
 # omission that nothing reports.
 EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
-# A delivery gate; the promotion gate a skill calls on its own; and the fix-plan
-# gate a skill calls per review round, which cannot instead be made a documented
-# member -- documented_checks recognises only the `bash scripts/<name>.sh`
-# spelling inside AGENTS.md's structural-checks span, and a skill-local path
-# cannot take it, so the two directions of the comparison could never agree.
-# Its own test-*.sh suite is therefore its entire mechanical coverage.
-EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh'
+# A delivery gate; the promotion gate a skill calls on its own; the fix-plan
+# gate a skill calls per review round; and the redline gate two skills call with
+# a path argument. The last two cannot instead be made documented members, and
+# for two DIFFERENT reasons -- collapsing them into one would leave the second
+# entry looking like a copied exemption rather than a reasoned one.
+# documented_checks recognises only the `bash scripts/<name>.sh` spelling inside
+# AGENTS.md's structural-checks span, and a skill-local path cannot take it.
+# scripts/check-redline.sh COULD take that spelling and still must not: a member
+# is invoked with no arguments, and every one of its verbs requires at least
+# one, so a documented member would report `cannot run` on every run. Either way
+# the two directions of the comparison could never agree, and each gate's own
+# test-*.sh suite is its entire mechanical coverage.
+EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh scripts/check-redline.sh'
 
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 

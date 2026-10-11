@@ -354,6 +354,56 @@ The trigger has **two independent arms**, and the second is the one that is easy
 
 Either arm is a Spec/Design Amendment trigger — NOT an ordinary code-fix.
 
+**Firing an arm is not the same as routing. One further question decides that: does the divergence break
+the agreed approach?** The two answers go different ways.
+
+- **Breaking → the full amendment route**, exactly as it always ran — the recipe at the bottom of this
+  section.
+- **Non-breaking → one marker on the diverged item, one row in the task's committed redline log, and the
+  code fix lands in the same round.** The design is not rewritten mid-task; it is corrected once, after
+  the PR is approved, by `/redline-fold`, which authors the as-built document afresh. Who marks, what the
+  marker carries and what a row holds:
+  [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking](${CLAUDE_PLUGIN_ROOT}/agents/design.md#redline-marking).
+
+**Why the question is about the approach rather than about the document.** The reviewer's rule used to
+reject correct code because a design sentence had gone stale, so the expensive path fired on every stale
+sentence instead of on the rare divergence that actually invalidates the plan — and the planning chain
+re-ran before the code fix was allowed to land. The row's type vocabulary is three tokens, `added` /
+`modified` / `removed` relative to the frozen base, and `added` covers the common case of a base that was
+simply SILENT about something, so no fourth token is owed.
+
+**Only `/task` has the cheap path. `/bugfix`, `/project-review` and the post-push fix round keep today's
+behaviour**, and that is a constraint rather than an omission: `agents/self-review.md` is shared by all
+four callers, while the marker, the committed log and the closing redline fold exist in `/task` alone. A
+divergence one of those three finds therefore routes exactly as it did before. Extending the cheap path to
+them is the same conditional-on-evidence question as the scouted plan below, and it is not in scope here.
+
+### The implementation step takes no route by itself
+
+A divergence found while the code is being written has no round number and no finding number, because no
+review has run. **It restarts nothing on its own account.** The step stops at the FIRST such divergence in
+the task, leads with a recommended correction mode and the grounds for it in one line, and the user's
+single word settles it — for the whole task, because a question re-asked at every divergence is the cost
+this mechanism exists to remove. The grounds **quote** a signal read off the design under implementation:
+a non-empty open-questions section and risks deferred to a later task point one way, decisions carried as
+measured — anchors pinned to real output, probes already run — the other. The recommendation is checked on
+its evidence, never on being right.
+
+The breaking / non-breaking test still informs that choice; what it no longer does is decide it. At the
+review-and-fix round the test is mechanical and routes the finding; here it is one input to a call the
+user makes. The modes, the rubric and the marker's spelling are in
+[`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking](${CLAUDE_PLUGIN_ROOT}/agents/design.md#redline-marking),
+and the chosen mode is written into the log's HEADER rather than the progress file: the progress file is
+gitignored and is deleted at merge, while the log is committed and is what the closing pass reads.
+
+**Two consequences for the amendment route.** Its trigger is unchanged in substance and narrowed in
+reach: from the review-and-fix round it fires on a divergence that breaks the agreed approach, and from
+the implementation step only when the user asks for the rebuild. And when that rebuild runs on a branch
+that already carries redline rows, **it must be handed every accumulated marker and row** — they describe
+a base that will no longer exist, so a rebuild not told them loses them; after the new approval the log is
+empty and the rebuilt document is the new frozen base.
+
+
 **Arm B alone is not enough, and the gap is structural.** A diff-keyed rule hands the routing decision to
 the same party that then marks the finding `✅ Fixed`. Where a finding admits two valid remedies — ship
 the thing the artefact promised, or correct the artefact — choosing the code side routes to the ordinary
@@ -388,3 +438,59 @@ Every production source file with ≥50 lines of non-trivial logic should have a
 the project's test source root, mapped one-to-one by package/module + name
 (`<SourceName>` → `<SourceName>Test`). The mapping, source roots, and file extensions are project-specific;
 record them in `ai-docs/context.md` so the rule is checkable.
+
+## When a spec amendment re-derives the design
+
+A spec amendment asks one question before anything else happens: does it change the AGREED APPROACH? The
+routing table is in [`${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md). This page carries why it is asked.
+
+**Both wrong answers cost something, and they are not symmetric.** Re-deriving a design because a criterion
+lost an over-promise re-runs the whole planning chain over a document nothing read in between — the cost
+the redline mechanism exists to remove, and on a large design it is the most expensive round in the
+workflow. Skipping the chain on a genuine approach change is worse in kind rather than in degree: it ships
+an implementation built against a requirement nobody re-planned for, and the divergence is invisible
+because the document that would have shown it was never rewritten.
+
+**The spec's own form rule is what makes the cheap row the common one.** Once a criterion cannot name a
+command, a script or an identifier ([`${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` § What a spec IS](${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md)),
+the spec stops needing edits for implementation detail — which is what drove amendment traffic in the
+first place. Measured on the branch that introduced the rule, against its own spec as the branch found it,
+and **stated to be reproduced rather than trusted**: the form check over that commit's spec reports
+**7 of its 23 criteria spelling an instrument**. Prose naming an instrument class without
+a command roughly doubles it, given without a figure because no command reproduces a judgement. By
+section that spec was **68%**
+acceptance criteria, scope and technical constraints, against **23%** for the three sections the closing
+fold retains and **4%** for the record of deliberate absence. An amendment to a
+criterion naming an instrument is an amendment about mechanism, and mechanism is what the design, not the
+spec, is for.
+
+**The log's fate follows from the same question, and is not a separate decision.** A rebuild replaces the
+agreed base, so the redline log resets — its rows described a base that no longer exists. An amendment
+that leaves the approach intact is not a divergence at all, so nothing resets and the accumulated rows
+survive to the closing fold.
+
+## Why the attempt count lives beside the plan
+
+Three reasons, not one: the fix-plan gate recomputes from the tree on every invocation and holds no state
+between them; the progress file survives a compaction and a session restart, which is exactly when a cap
+is lost; and an attempt count written beside the plan it counts against is auditable by the same read that
+checks the plan. The format constraint that follows from the gate's parser is stated where the count is
+written, in [`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Step 11 — the scouted-plan sequence](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md).
+
+## Why four path classes are excluded from the unplanned-file arm
+
+The learnings archive and the per-branch learnings files are excluded because the in-flow capture exception
+permits appending to them mid-round. `ai-docs/plans/*.spec.md` and `ai-docs/plans/*.design.md` are excluded
+because the amendment recipes write to a spec or design artefact and then send the round back, while
+`baseline` refuses a second stub — so the round keeps a `round_base` taken before the amendment, and
+without the exclusion the arm would fire by construction on every amendment-then-resume round,
+permanently. `ai-docs/plans/*.redline.md` is excluded for the same reason one step on: the marking pass
+writes the log mid-round, no `fix` row can name it, and the arm's ignore test short-circuits its
+membership check — so an unexcluded log is reported as unplanned on every round that marks a divergence.
+
+**The two plan suffixes and not the directory.** The routing arms key on the suffixes, so a
+directory-wide exclusion would be wider than its own justification: it would drop the briefed lines of a
+tracked non-routing path under that directory from the measured total while they still counted on the
+declared side. The redline glob is a third variable read by the ignore test alone and by no arm, which is
+what keeps that correspondence intact.
+
