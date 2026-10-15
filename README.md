@@ -257,8 +257,75 @@ ai-docs/                   this repo's own profile + plan/learning data
 | `/harness:redline-fold` | Run after a PR is approved: authors the corrected design afresh from the frozen base plus the task's redline corrections log, collapses the spec to its record of deliberate absence, and removes the log. The one step that makes the planning documents describe what shipped. |
 | `/harness:inspect` | Reads a finished session and reports where the harness wasted effort — loops, gates re-run without a state change, review rounds that burned their cap. Proposes learning entries; never edits an instruction file. |
 
-Subagents: `spec-writer`, `design`, `design-review`, `self-review`, `review-findings`, `self-improve`,
-`learnings-escalation-audit`.
+Subagents, all ten: `spec-writer`, `design`, `design-review`, `self-review`, `review-findings`,
+`self-improve`, `learnings-escalation-audit`, `inspector`, `fix-scout`, `fix-apply`. Re-derive with
+`ls agents/*.md` rather than trusting this line — the install smoke gate asserts the installed list covers
+every agent the tree ships, so a stale count here is invisible to it.
+
+### What `/harness:task` actually looks like
+
+The table above calls it a loop with ordered steps, which is true and hides the shape. It is **two nested
+loops plus re-entrant amendment paths**, and the paths are where a human decides.
+
+```mermaid
+flowchart TD
+    S0["Step 0 · branch"] --> S15["Steps 1-5 · interview → spec"]
+    S15 --> S6["Step 6 · design"]
+    S6 --> S7{"Step 7 · design-review"}
+    S7 -->|"ITERATE · cap 3"| S6
+    S7 -->|STOP| OUT1["surface the verdict · do not start work"]
+    S7 -->|"GO + notes"| WB["notes written back INTO the design<br/>before any implementation diff"]
+    WB --> S8["Step 8 · implement<br/>one agent per group, each entered<br/>through /harness:context-reset"]
+    S8 --> S9["Step 9 · verify<br/>gates + a covering check per criterion"]
+    S9 --> S95["Step 9.5 · documentation"]
+    S95 --> S10{"Step 10 · self-review"}
+    S10 -->|APPROVE| S12["Step 12 · plans to done/<br/>gates → commit → push → PR"]
+    S10 -->|"REJECT · cap 3"| S11["Step 11 · fix round"]
+    S11 --> S10
+    S12 --> FOLD["/harness:redline-fold<br/>runs after the PR is approved"]
+
+    S8 -.->|"divergence does NOT<br/>break the approach"| RL["redline marker + log row<br/>mode chosen once per task"]
+    RL -.-> S8
+    S8 -.->|"author asks for<br/>the rebuild"| AMD["design amendment"]
+    S11 -.->|"finding's subject is<br/>a design sentence"| AMD
+    AMD -.-> S6
+    S11 -.->|"finding's subject is<br/>a spec sentence"| AMS["spec amendment<br/>author approves it"]
+    AMS -.->|"approach changed"| S6
+    AMS -.->|"approach unchanged"| S11
+```
+
+Three things the one-line description leaves out.
+
+**A cap bounds the loop, not the gate.** `ITERATE` and `REJECT` each stop at three rounds. When a cap burns,
+the open findings go to the author and the loop ends — but fixes made afterwards still get one review pass.
+So three rounds means "three rounds, then a human decides, then one more pass", never "stop checking".
+
+**The dotted edges are the only places the flow turns**, and each one is a human decision: whether a
+divergence from the frozen design breaks the agreed approach, and whether a finding's subject is a sentence
+in the spec. A finding is routed by its **subject**, not by where its fix would land — choosing the remedy
+first is what defeats that routing.
+
+**Step 11 is not a step.** It is a six-beat sequence with a mechanical gate in the middle, and the
+orchestrator never applies a fix in its own context:
+
+```mermaid
+flowchart LR
+    B["baseline"] --> P["fix-scout writes<br/>the round's plan"]
+    P --> G{"plan gate"}
+    G -->|REFUSE| P
+    G -->|ESCALATE| AU["author decides<br/>on the declared size"]
+    AU --> G
+    G -->|"ROUTE-SPEC<br/>ROUTE-DESIGN"| AM["amendment<br/>no fix agent runs"]
+    G -->|PASS| M["marking pass<br/>once per round, BEFORE the apply"]
+    M --> AP["fix-apply<br/>fix rows only"]
+    AP --> ML["micro-loop · mechanical check,<br/>one bounded question, record"]
+    ML -->|DIVERGE| AP
+    ML -->|MATCH| R["back to the review pass"]
+```
+
+The marking pass runs **before** the apply because its verb asserts the design carries each divergence's
+marker and the log its row — asserted after the apply, it would be measured against a tree that does not
+hold it yet.
 
 ## Releasing
 
