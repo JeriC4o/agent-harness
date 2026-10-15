@@ -151,6 +151,12 @@ For each non-OK entry, propose ONE of:
 
 Apply category 1 autonomously (documentation truth fix).
 Apply category 2 only if rule + target are obvious; otherwise surface.
+
+**Category 2 has one excluded target set, and it is not a judgement call.** A rule whose target is
+[`${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md`](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md), or one
+of the pages that page's § The protected page set names, is **always category 3** however obvious the
+re-add looks: a base principle, and what a spec or a design is composed of, change only by the author's
+decision on that page's § The authorisation route — never by a mechanical re-add.
 Always surface category 3. A ⚠️ **Contradiction** is always category 3 — never auto-fix it (reconciling conflicting mandates is `/improve`'s remit, not a mechanical field edit).
 
 ### Step 4: Apply approved field corrections

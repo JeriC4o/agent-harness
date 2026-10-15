@@ -21,7 +21,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4. `run-checks.sh` runs both as its `shell-syntax` and `manifests` members |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
-**Structural checks that stand in for a test suite** — run all six before any commit that touches
+**Structural checks that stand in for a test suite** — run all seven before any commit that touches
 instruction files.
 
 **`bash scripts/run-checks.sh` runs every one of them in a single call**, reporting a verdict per member
@@ -73,11 +73,13 @@ is the same commands.
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
    `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-ledger-write.sh`,
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
+   `hooks/lib/test-plan-invariants-guard.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
    `skills/task/scripts/test-check-fix-plan.sh`,
-   `scripts/test-check-propagation-arms.sh`, `scripts/test-check-redline.sh`,
-   `scripts/test-hook-behaviour.sh`, `scripts/test-run-checks.sh`.
+   `scripts/test-check-plan-invariants.sh`, `scripts/test-check-propagation-arms.sh`,
+   `scripts/test-check-redline.sh`, `scripts/test-hook-behaviour.sh`,
+   `scripts/test-run-checks.sh`.
    **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed
    file COUNT beside the syntax verdict and reddens a separate `untracked-shell` member on any `*.sh` the
    index cannot see — but only when it runs, so a hand-run still owes both reads.
@@ -95,12 +97,45 @@ is the same commands.
    silent, and no path the pre-fix arms matched is silent under the current set. Catches "a sync group
    was added to the table and the reminder never learned about it" — drift between a list and the table
    beside it, which no link check or syntax check can see. **Numbered `5a`, not `6`:** this list runs
-   1–8 in one continuous sequence, so a sixth structural check collides with the delivery gate already
-   numbered 6; item 3's `(folded into 2)` is the precedent for a non-sequential entry here, and
-   renumbering would break `AGENTS.md`'s own "invisible to gate 6" reference below.
+   1–8 in one continuous sequence, so ANY structural check numbered in that sequence collides with the
+   delivery gate already numbered 6; item 3's `(folded into 2)` is the precedent for a non-sequential
+   entry here, and renumbering would break `AGENTS.md`'s own "invisible to gate 6" reference below. The
+   same reasoning numbers the next one `5b`.
+5b. `bash scripts/check-plan-invariants.sh` — four legs over the base principles of a spec and a design:
+   each pinned sentence present and unchanged, with an ABSENCE reported distinctly from a WORDING
+   difference; the tree's whole statement inventory compared against the recorded one at
+   `ai-docs/fixtures/plan-invariants.inventory`, every statement that ARRIVED, DEPARTED, CHANGED or — in
+   a file taking the code spelling — MOVED reported with its own text, its surface and, on a change, what
+   it said before, and no region of an examined surface exempt, so a change can be missing from the
+   report only by not having happened. **The fourth answer is deliberately narrower than the other
+   three**: in a script a line's position is semantics, and moving one `exec` above three cannot-run
+   guards left the line multiset identical while making all three unreachable, whereas a moved paragraph
+   is a re-wrap and not a change — so prose keeps position-independence and only the code spelling is
+   compared in order; then the required-element set derived from three loci and cross-checked against the
+   enumeration on `docs/plan-invariants.md`, in both directions, so neither a widened template nor a
+   widened enumeration moves on its own; and the live coverage of the edit-time refusal against that
+   page's protected-page table, also in both directions. **The second leg reads no sentence and rules on nothing** — whether a
+   reported change does harm is a reader's judgement, and once a reader has made it,
+   `check-plan-invariants.sh --accept` prints the report it is about to take in and then levels the
+   record. That is the only thing that advances the record, which is why the gate has a steady state
+   instead of reddening at the first legitimate edit and staying red. Exits
+   `0 clean / 1 findings / 2 cannot run` — **a cannot-run is not a pass**, and an unreadable required
+   input, a template that moved, an empty extraction, a record that is absent, unreadable, empty or names
+   a blob this repository can no longer produce, an unreadable corpus file, and an untracked payload or
+   record all take that branch rather than reading as agreement. Its verdict line carries the principle,
+   element, surface, page, statement, unaccounted and finding counts, followed by a roster marking each
+   surface examined-clean, examined-with-findings or not-examined and naming the three excluded by design
+   with their reason, so a run that silently compared fewer statements or examined fewer surfaces than
+   the corpus holds is distinguishable from a clean one: **read those counts and that roster, not only
+   the exit status.** `unaccounted` reads the other way from the five figures beside it — those should be
+   large and it should be zero, because a non-zero value names tracked files on no examined surface and
+   in no named exclusion, about which the report then says nothing at all. It needs `python3` as its
+   scanning tool and says so when it is absent — the host `grep` is not a substitute, having been
+   measured answering `0` to a pattern it refused on a complexity limit.
+   **Numbered `5b` for the reason item `5a` gives.**
 
 **Delivery gates** — the checks above validate this repository's CONTENTS; these three validate that the
-contents reach a consumer. The six structural checks cannot see delivery by construction: the first two
+contents reach a consumer. The seven structural checks cannot see delivery by construction: the first two
 gates exist because a bug got past every check there was at the time, the third because nothing above it
 walks an upgrade against a *pre-existing* install:
 
@@ -155,7 +190,8 @@ in a branch name and a spec header, where a bare `#` does not belong. It maps on
 ## Language profile
 
 See [`ai-docs/context.md`](ai-docs/context.md) § Language profile. In short: Markdown instruction files
-plus POSIX shell; no compiled sources.
+plus POSIX shell, with four non-shell payload files in three other languages — two `awk`, one `jq` and
+one `python3`; no compiled sources.
 
 ## Project-specific conventions
 

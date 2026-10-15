@@ -176,6 +176,7 @@ Interpret **the user's** phrasing literally and conservatively. When uncertain �
 | `${CLAUDE_PLUGIN_ROOT}/docs/considerations-link-reading.md` | Link-reading policy |
 | `${CLAUDE_PLUGIN_ROOT}/docs/instruction-file-validation.md` | Dual-model instruction-file clarity test methodology |
 | `${CLAUDE_PLUGIN_ROOT}/docs/plans-summary.md` | Cross-cutting maintenance plans |
+| `${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md` | Base principles of a spec and a design — the authority on their wording |
 | `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` | Canonical `.progress.md` schema |
 | `${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md` | Canonical entry template + § Target file (where a new entry goes) |
 | `ai-docs/plans/*.spec.md` | Active task spec + acceptance criteria |

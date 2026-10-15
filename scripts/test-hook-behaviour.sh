@@ -137,7 +137,7 @@ jq -r '.hooks | to_entries[] | .key as $ev | .value[] | (.matcher // "-") as $m
        | .hooks | to_entries[] | [$ev, $m, (.key|tostring)] | @tsv' "$HOOKS" > "${WORK}/keys.tsv"
 TOTAL=$(wc -l < "${WORK}/keys.tsv" | tr -d ' ')
 DISTINCT=$(sort -u "${WORK}/keys.tsv" | wc -l | tr -d ' ')
-check "every hook command has a triple" "$TOTAL" "20"
+check "every hook command has a triple" "$TOTAL" "22"
 check "the ${TOTAL} triples are distinct" "$DISTINCT" "$TOTAL"
 SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS" | sort -u | wc -l | tr -d ' ')
 [ "$SM_DISTINCT" -lt "$TOTAL" ] \
@@ -166,8 +166,10 @@ PreToolUse|Bash|3|coauthor_trailer|err|BLOCKED: git commit message contains a Co
 PreToolUse|Bash|4|three_dot_diff|err|BLOCKED: `git diff <base>...HEAD` on a branch with NO commits yet
 PreToolUse|Bash|5|properties_filter|err|BLOCKED: this content search can surface deployed-config files
 PreToolUse|Bash|6|piped_gate|err|BLOCKED: a gate (build / test / lint / format / shellcheck / manifest parse) is
+PreToolUse|Bash|7|plan_inv_shell|jq|CONFIRM: this command writes to a protected plan-invariants page
 PreToolUse|Edit|Write|0|member_path|err|[propagation-rule-reminder] You are editing
 PreToolUse|Edit|Write|1|learnings_headers|err|[archive-protection-reminder]
+PreToolUse|Edit|Write|2|plan_inv_edit|jq|CONFIRM: this edit targets a protected plan-invariants page
 PreToolUse|Skill|0|skill_task_main|jq|CONFIRM: /task starts the full ordered workflow
 PreToolUse|*|0|repeated_call|jq|[loop-index] this exact call (same tool, same arguments) has run
 PostToolUse|Write|Edit|0|misplaced_append|err|[learnings-append-check]
@@ -211,6 +213,11 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
     learnings_headers)
       jq -nc --arg p "$PROJ/ai-docs/learnings.md" \
         '{tool_input:{file_path:$p, content:"### one\n### two\n"}}' ;;
+    # The guard resolves the edited path against CLAUDE_PROJECT_DIR, so the
+    # trigger has to be a path under the fixture project rather than a bare
+    # repo-relative one -- the tool payload carries absolute paths in practice.
+    plan_inv_edit) jq -nc --arg p "$PROJ/agents/design.md" '{tool_name:"Edit", tool_input:{file_path:$p}}' ;;
+    plan_inv_shell) jq -nc '{tool_name:"Bash", tool_input:{command:"printf x >> agents/design.md"}}' ;;
     skill_task_main)
       # No agent_id: the MAIN-thread branch, which must ASK rather than deny.
       # The plugin spelling is used deliberately -- the gate strips the prefix,
@@ -336,7 +343,7 @@ printf '\n== AC15a: the markers are pairwise disjoint over the distinguishable c
 MARKERS=$(printf '%s\n' "$TABLE" | awk -F'|' '{print $NF}' | grep -v '^$')
 MARKERS=$(printf '%s\n%s' "$MARKERS" "$EXTRA_MARKER" | sort -u)
 MCOUNT=$(printf '%s\n' "$MARKERS" | wc -l | tr -d ' ')
-check "distinct marker strings in the table" "$MCOUNT" "17"
+check "distinct marker strings in the table" "$MCOUNT" "19"
 clash=0
 while IFS= read -r a; do
   while IFS= read -r b; do
