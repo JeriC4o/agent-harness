@@ -62,6 +62,13 @@ ok()  { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
 bad() { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }
 check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want [$3], got [$2])"; fi; }
 has()  { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 -- expected [$3] in output" ;; esac; }
+# LIKE has(), BUT $3 IS A GLOB rather than a literal. It exists for one shape:
+# a roster line that must NAME a size without the size being pinned. A pinned
+# count there is a false assertion waiting for the next commit -- the three
+# excluded surfaces grow whenever anyone lands a plan document, a learning entry
+# or a config file, and the plan-documents count broke on the very merge that
+# shipped this suite, because that merge moved three plan documents into done/.
+hasg() { case "$2" in $3) ok "$1" ;; *) bad "$1 -- expected [$3] to match the output" ;; esac; }
 hasnt(){ case "$2" in *"$3"*) bad "$1 -- did not expect [$3] in output" ;; *) ok "$1" ;; esac; }
 gt()   { if [ "${2:-0}" -gt "$3" ]; then ok "$1"; else bad "$1 (got [$2], want more than $3)"; fi; }
 
@@ -259,12 +266,12 @@ has "  the enforcement surface was examined, though the refusal covers none of i
     "$OUT" "surface enforcement  examined-clean"
 has "  the verification surface was examined, though the refusal covers one file of it" \
     "$OUT" "surface verification examined-clean"
-has "  and the three surfaces deliberately out are NAMED with their size, not omitted" \
-    "$OUT" "surface plan-documents not-examined (18 files, excluded by design"
-has "  the learning record among them" \
-    "$OUT" "surface learning-record not-examined (19 files, excluded by design"
-has "  and the repository's own mechanics" \
-    "$OUT" "surface repository-mechanics not-examined (8 files, excluded by design"
+hasg "  and the three surfaces deliberately out are NAMED with their size, not omitted" \
+    "$OUT" "*surface plan-documents not-examined ([0-9]* files, excluded by design*"
+hasg "  the learning record among them" \
+    "$OUT" "*surface learning-record not-examined ([0-9]* files, excluded by design*"
+hasg "  and the repository's own mechanics" \
+    "$OUT" "*surface repository-mechanics not-examined ([0-9]* files, excluded by design*"
 
 printf '\n== leg 1: a reworded principle, and a removed one, read differently ==\n'
 fresh

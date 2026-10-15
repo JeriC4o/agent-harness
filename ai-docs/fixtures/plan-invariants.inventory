@@ -67,7 +67,7 @@ verification	9d989cb8057a2a192205e5f68a5b3e867188fb3f	scripts/session-events.sh
 verification	32f8b5c3cf4c8930d5fc57b8873bf680192300f7	scripts/test-audit-project.sh
 verification	1b3b00f5f3542267b0e437e297e4483f2dbdf219	scripts/test-backlog-metrics.sh
 verification	d0d997c003f46249f4243fc9671dde387e154664	scripts/test-bin-of.sh
-verification	60fd6ca184be5520bf0715ce746255dea989534f	scripts/test-check-plan-invariants.sh
+verification	b3b8ef48fb50e8d831c1370904fe5990df6af420	scripts/test-check-plan-invariants.sh
 verification	cb2961f9067101ef27ba08d33e891b514791dbbf	scripts/test-check-propagation-arms.sh
 verification	c8ef4d1d5392aed7f7bef54ae1203a3025b9c53e	scripts/test-check-readme-update.sh
 verification	662682c08accc1bba594b573839d0c845bfa5110	scripts/test-check-redline.sh
