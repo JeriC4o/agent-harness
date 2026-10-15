@@ -55,6 +55,17 @@ Correction pass (Step 1 → Step 2a) and Carrot pass (Step 1b → Step 2b) produ
 3. Code-style violations → `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`. Doc-convention violations → `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`.
 4. Don't default everything to `AGENTS.md`.
 
+**One class this pass does not route at all — it declines.** An entry whose remedy would change the
+composition of a spec or a design, or would change, weaken or remove one of the base principles in
+[`${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md`](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md), is
+**surfaced to the author as a decision and becomes no diff against any instruction file.** Its
+disposition in the roll-call above is *declined — surfaced to the author*, never (d) actionable, and the
+report SAYS that it declined and for which entry, so the author is never asked to confirm a framing a
+machine proposed. Each of those changes has an authorisation route and it runs through the author: that
+page's § The authorisation route. This applies at any occurrence count — the ≥3 trigger moves the
+SURFACE a rule lives on, and no number of recurrences makes this pass the right party to restate what a
+spec or a design is.
+
 ### Step 2b: Determine actions (Carrot pass)
 
 Asymmetric routing — positive signal is rarer, so threshold is lower (≥1 seeds, ≥2 promotes) and verbs are softer.
@@ -110,6 +121,10 @@ For each pattern show:
 2. **Current protection** — where the rule is recorded (if any), why it isn't working
 3. **Proposal** — concrete diff (old text → new text)
 4. **Level** — Learning Log (`ai-docs/learnings/<username>-<branch>.md`, folded into `ai-docs/learnings.md`) → `AGENTS.md`/skill → hook
+
+For a pattern in the declined class above, items 3 and 4 are replaced by **Declined** — the decision the
+author is being handed, the page whose authorisation route it travels, and no diff at all. A report that
+shows a proposal for such a pattern has already made this pass the proposing party.
 
 ### Step 4: Escalate to hooks (only ≥3 occurrences and rule not working)
 

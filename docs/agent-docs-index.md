@@ -81,6 +81,13 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Lifecycle.** Append.
 **When to read.** When `context.md` cites a cross-cutting plan by short name.
 
+### `${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md`
+
+**Purpose.** The base principles of a spec and a design, and the single authority on their wording.
+**Writer.** The user, through a co-ordinated edit to that page and to the pinned copy of the same sentences inside the verification that reads it; never `self-improve`, which declines a remedy that would change, weaken or remove a principle and says that it declined.
+**Lifecycle.** Byte-stable. A wording change, a removal and a ninth principle all travel the same authorisation route, and a one-sided edit is reported rather than applied.
+**When to read.** Before proposing a change to either document’s required composition, and whenever the plan-invariants verification names a principle in a finding.
+
 ### `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`
 
 **Purpose.** Canonical `.progress.md` schema spec.

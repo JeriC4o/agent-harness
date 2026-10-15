@@ -56,7 +56,7 @@ make_tree() {
   printf '{"name":"harness","version":"0.0.1"}\n' > "$d/.claude-plugin/plugin.json"
   printf '{"name":"agent-harness"}\n' > "$d/.claude-plugin/marketplace.json"
   local s
-  for s in check-references check-readme-update check-propagation-arms check-release; do
+  for s in check-references check-readme-update check-propagation-arms check-plan-invariants check-release; do
     printf '#!/usr/bin/env bash\nexit 0\n' > "$d/scripts/$s.sh"
   done
   printf '#!/usr/bin/env bash\nexit 0\n' > "$d/scripts/test-alpha.sh"
@@ -73,6 +73,7 @@ make_tree() {
    `scripts/test-alpha.sh`, `hooks/lib/test-beta.sh`.
 5. `bash scripts/check-readme-update.sh` — the README gate.
 5a. `bash scripts/check-propagation-arms.sh` — the arms gate.
+5b. `bash scripts/check-plan-invariants.sh` — the plan-invariants gate.
 
 **Delivery gates** — below this heading, so the span must not reach them:
 `bash scripts/check-release.sh`.
@@ -92,13 +93,14 @@ has "  the references member reported"  "$OUT" "ok   references"
 has "  the shell-syntax member reported" "$OUT" "ok   shell-syntax"
 has "  the readme member reported"      "$OUT" "ok   readme-update"
 has "  the propagation member reported" "$OUT" "ok   propagation-arms"
+has "  the plan-invariants member reported" "$OUT" "ok   plan-invariants"
 has "  the inventory member reported"   "$OUT" "ok   gate-inventory"
 has "  the first derived suite ran"     "$OUT" "ok   hooks/lib/test-beta.sh"
 has "  the second derived suite ran"    "$OUT" "ok   scripts/test-alpha.sh"
 # The count is the anti-narrowing assertion AGENTS.md check 4 demands: four
 # structural stubs plus two stub suites are tracked, and a runner that processed
 # fewer has silently reduced its own input set while exiting 0.
-has "  and shell-syntax carries its file COUNT" "$OUT" "6 files"
+has "  and shell-syntax carries its file COUNT" "$OUT" "7 files"
 
 printf '\n== a failing suite: red, named, and the rest still run ==\n'
 make_tree "$FAKE"
@@ -437,8 +439,9 @@ shell-syntax|fn:syntax_member
 untracked-shell|fn:untracked_member
 gate-inventory|fn:inventory_member
 readme-update|sh:scripts/check-readme-update.sh
-propagation-arms|sh:scripts/check-propagation-arms.sh'
-check "the member table is exactly the pinned seven, in order" "$table" "$expected"
+propagation-arms|sh:scripts/check-propagation-arms.sh
+plan-invariants|sh:scripts/check-plan-invariants.sh'
+check "the member table is exactly the pinned eight, in order" "$table" "$expected"
 
 printf '\n== a module path is accepted, ignored, and SAID to be ignored ==\n'
 # AGENTS.md resolves %TEST_CMD% to this runner, and skills invoke that as
