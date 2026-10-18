@@ -475,7 +475,7 @@ Three reasons, not one: the fix-plan gate recomputes from the tree on every invo
 between them; the progress file survives a compaction and a session restart, which is exactly when a cap
 is lost; and an attempt count written beside the plan it counts against is auditable by the same read that
 checks the plan. The format constraint that follows from the gate's parser is stated where the count is
-written, in [`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Step 11 — the scouted-plan sequence](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md).
+written, in [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md).
 
 ## Why four path classes are excluded from the unplanned-file arm
 

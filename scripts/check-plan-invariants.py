@@ -251,12 +251,12 @@ PRINCIPLES_DOC = 'docs/plan-invariants.md'
 PINNED = [
     "**One writer per artefact.** The orchestrator writes neither a spec nor a design; each is written only by its owning subagent. *Because a party that both writes a document and reports on it can close a finding by editing the evidence.*",
     "**A spec is a behaviour contract, not an implementation plan.** A criterion may not spell a command, script, tool or test identifier. *Because a criterion naming its instrument asserts which instrument ran, not what the system does, and cannot survive a change of instrument.*",
-    "**A design states verification intent, never an identifier**, and the concrete check set lives outside the frozen base. *Because identifiers are chosen while the tests are written, after the document is agreed, so a document promising them diverges by construction.*",
+    "**A design says NOTHING about tests**, and the furthest it goes is naming the cases each object it builds is used in. *Because every sentence a design could write about a test is a promise about something that does not exist when the document is authored, and each narrowed version of this rule regrew — first a per-criterion command, then an intent line, then a suite total.*",
     "**The design is frozen at the design-review GO verdict.** After it, a divergence that does not break the agreed approach is a marker plus a log row, never a rewrite. *Because re-verifying an unchanged document every round is the cost this replaced.*",
     "**A changed requirement goes to the spec; a changed artefact goes to the log; nothing is recorded in both places.** *Because two records of one fact is the drift the mechanism exists to reduce.*",
     "**Neither document carries a record of superseded material, and no verdict may require one.** *Because every such passage is read in full by every later whole-repository review and none of it describes the system.*",
     "**The closing fold runs once, after approval.** It authors the design afresh and collapses the spec to its record of deliberate absence. *Because an in-place edit leaves every sentence the editor did not touch, and what it does not touch is what nobody re-read.*",
-    "**A required element of a spec or a design must be knowable at the time the document is authored.** An element whose content is only determined later is forbidden. *Because it guarantees two failures at once: invented content at authoring time, and a review loop at the end that cannot converge — the document is corrected against reality, reality moves on, and the correction reopens.*",
+    "**A required element of a spec or a design must be knowable at the time the document is authored, and so must the origin of every number either document states.** An element whose content is only determined later is forbidden. A stated number names, in the same sentence, which kind it is — a threshold the task handed down, an estimate derived in place with its derivation shown, or a measurement of something that already exists — and how it was obtained; a figure whose only honest origin would be a measurement of the artefact the document describes is forbidden with it, that measurement being one nobody can take while the document is still being written. *Because it guarantees two failures at once: invented content at authoring time, and a review loop at the end that cannot converge — the document is corrected against reality, reality moves on, and the correction reopens.*",
 ]
 
 PRINCIPLE_COUNT = 0
@@ -313,7 +313,7 @@ else:
 # three cannot-run guards makes all three unreachable with an identical line
 # multiset -- while a moved paragraph is a re-wrap or a re-order and not a
 # change. Positional prose was tried and rejected as breaking: it reports every
-# re-ordering, and the 53 markdown files here are measured re-wrap-stable at
+# re-ordering, and the 56 markdown files here are measured re-wrap-stable at
 # three widths, which is the property that would be lost. A line's INDENTATION
 # is semantic in the same way, so it is read as part of the statement rather
 # than compared separately: a block de-indented out of its conditional does
@@ -453,7 +453,7 @@ def segment_prose(body):
         # running. Never mid-paragraph: a re-wrap can put a number-and-period at
         # the start of a line, and a rule that trusted the line start would then
         # read half a sentence as a new item. This rule is what makes every one
-        # of the 53 markdown files re-wrap-stable.
+        # of the 56 markdown files re-wrap-stable.
         if LIST_HEAD.match(plain.lstrip()) and (at_block_start or in_list):
             flush()
             buf.append(t)
@@ -754,7 +754,7 @@ if RECORDED is not None and CUR_SHAS:
 # ROUTE 1 IS PATH-ANCHORED TO THE TWO WRITER CONTRACTS, and that is a
 # requirement rather than a convenience: the bare section line inside a fence is
 # not a rare spelling here, and a corpus-wide derivation of it hands the
-# comparison tens of tokens against a record of fourteen elements. The cost is
+# comparison tens of tokens against a record of thirteen elements. The cost is
 # stated -- a third writer contract would carry elements this route cannot see
 # -- and the comparison above is what reports such a contract's arrival.
 #
@@ -766,13 +766,16 @@ if RECORDED is not None and CUR_SHAS:
 # a fourth way of saying it, and a missing spelling is silent.
 #
 # ROUTE 3 READS THE ENFORCER'S PINNED DATA, because it carries element lists as
-# data where a sweep of prose cannot see them. Two of its three targets are
-# requirements and one is a PROHIBITION read on its own arm -- both of that
+# data where a sweep of prose cannot see them. It has TWO targets now: one is a
+# requirement list and one is a PROHIBITION read on its own arm -- both of that
 # list's entries happen also to be template elements today, which is coincidence
 # rather than structure, so merging it into the element set would agree by
-# accident. ACINTENT_COMMANDS is the fourth assignment in that file and is NOT
-# an element source: deriving elements from it would force the record to carry a
-# bare command word to agree in both directions.
+# accident. There were three until the per-criterion verification line stopped
+# being an element; the assignment that carried it, and the verb that asserted
+# it, were deleted from that file together. The reason the count is recorded
+# here rather than left implicit: a route that silently reads fewer targets than
+# the enforcer holds derives fewer elements and reports no arrival for the ones
+# it stopped seeing.
 #
 # THIS LEG STAYS ITS OWN LEG rather than folding into the comparison. It is a
 # derivation measured against a record in two directions, it reads no sentence,
@@ -808,7 +811,13 @@ for _t in fenced_sections(SPEC_CONTRACT):
 for _t in fenced_sections(DESIGN_CONTRACT):
     DERIVED.add(('design', _t))
 
-ELEMENT_TOKEN = re.compile(r'^(?:##\s+\S.*|AC<N>[^`]*:)$')
+# ONE BRANCH, and it used to be two. The second matched a per-criterion
+# verification line (`AC<N> ... :`), which stopped being an element; a design
+# says nothing about tests, so the review contract carries no such token and the
+# branch could only ever manufacture a spurious ARRIVAL against the record.
+# Removed rather than left harmless: a derivation arm with no possible subject
+# is indistinguishable from one whose subject has not been written yet.
+ELEMENT_TOKEN = re.compile(r'^##\s+\S.*$')
 _rev = read(REVIEW_CONTRACT)
 if _rev is None:
     blocked('%s is unreadable, so route 2 cannot be read' % REVIEW_CONTRACT)
@@ -835,14 +844,14 @@ else:
     else:
         for t in [x.strip() for x in m.group(1).split('\n') if x.strip()]:
             DERIVED.add(('spec', t))
-    # NOT an assignment: an inline literal inside a function, in two spellings --
-    # a fixed-string test and a regex sweep. An implementer looking for a third
-    # element-list assignment in this file will not find one.
-    lits = re.findall(r"\$\{id\} verified by:", _enf) + re.findall(r"AC\[0-9\]\+ verified by:", _enf)
-    if not lits:
-        blocked("%s carries neither spelling of the per-criterion verification line, so route 3's one design element cannot be read" % ENFORCER)
-    else:
-        DERIVED.add(('design', 'AC<N> verified by:'))
+    # ROUTE 3 DERIVES SPEC ELEMENTS ONLY, and that is now the whole of it. It
+    # used to read a per-criterion verification line out of this enforcer as its
+    # one DESIGN element. That line is gone from the design contract and from
+    # this enforcer: a design says nothing about tests, so there is no
+    # per-criterion verification to assert the presence of. A design element
+    # arriving by this route again would mean a mechanical check had started
+    # asserting one, which is the thing the route exists to notice -- so the
+    # absence is recorded here rather than left as a silent gap.
     m = re.search(r"(?m)^RESIDUE_HEADINGS='(.*?)'", _enf)
     if not m or not m.group(1).strip():
         blocked("%s carries no readable RESIDUE_HEADINGS assignment, so the fold's prohibition arm cannot be read" % ENFORCER)

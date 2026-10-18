@@ -268,5 +268,5 @@ _(none yet)_
 
 ## Cross-link
 
-The test-conventions block lives in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions`. Doc-convention detail lives in
+The test-conventions block lives in `${CLAUDE_PLUGIN_ROOT}/docs/test-conventions.md § Test Conventions`, which the session-start page keeps a pointer to rather than the rules themselves. Doc-convention detail lives in
 `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`. Both are propagation-linked.

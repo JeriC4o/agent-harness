@@ -68,19 +68,19 @@ Three callout variants address three structurally-different probe shapes:
 - Do NOT ask "continue?" between subtasks within a group — just proceed.
 - Each `Agent` Tool call = 1 design-defined group; the Subagent commits after each subtask inside the group (subject to AGENTS.md commit/push ASK — Claude asks before committing; commits happen via user authorisation outside the loop, OR within an explicit pre-authorised flow like `/task` Step 12).
 - Update progress.md after each subtask (current_step, last_passed_gate, Decisions log).
-- Next group's Agent is spawned by the orchestrator only after the current group's Agent returns.
+- **Groups run in the order the design's dependency graph requires, and no more serially than that.** Where a dependency links two groups, or where they edit a file in common, the next group's Agent is spawned only after the current one returns. Where the design shows two groups independent — neither group's subtasks depend on the other's, and their file sets are disjoint — the orchestrator MAY spawn them concurrently, and the design is the thing that says which those are. An orchestrator that cannot tell from the document runs them in order; silence is not a licence. **What this never licenses is concurrency over a shared file**: two agents editing one file is a lost write rather than a speed-up, and where that is wanted anyway the route is a per-agent isolated working copy, never two agents in one tree.
 - **A transport-level drop is NOT a returned group.** On a socket-closed / connection-closed-mid-response failure, resume the SAME agent from its transcript (`SendMessage`) rather than spawning a fresh one — a fresh spawn discards the group's already-gathered context and re-does the work. From the 2nd consecutive failure on the same group, `sleep` 2s→4s→8s→16s→32s (cap 32s, small jitter) before re-dispatching; cap ~5 attempts, then surface to the user — never a silent loop. Reset the delay after any success. Before treating a group as done, verify its writes landed on disk (mtime + `grep` for the expected new string); the harness does not auto-retry on socket close.
 
 ## `.progress.md` format (canonical)
 
-Full format spec at **[`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)**. Required fields include `**current_step:**`, `**last_passed_gate:**`, and a `## Decisions log` section in addition to `**Branch:**` / `**base_commit:**` / `**Last build:**`.
+Full format spec at **[`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)**. Required fields include `**current_step:**`, `**last_passed_gate:**`, and a `## Decisions log` section in addition to `**Branch:**` / `**base_commit:**` / `**Last build:**`. A `/task` record also carries `## Design-review notes`, which is **read-only to a per-group subagent**: it is the only surviving copy of the plan review's non-blocking remarks, and its note column is never reworded to match what was built.
 
 ## Rules
 
 1. Progress file = `ai-docs/plans/*.progress.md`. Updated at each checkpoint. Gitignored.
 2. On context reset: pass file path in Agent prompt: `"Read ai-docs/plans/YYYY-MM-DD-name.progress.md and continue"`.
 3. `%BUILD_CMD% <module-path>` BEFORE handoff — don't pass broken code.
-4. Maximum 3 design-defined groups per task. More needed → task is too large; decompose into separate tickets.
+4. **There is no cap on the NUMBER of design-defined groups.** One stood here and was removed rather than raised, because it was unsupported in two independent directions. It named no cost that grows with the group count — a handoff's cost is paid per handoff and is what the mechanism exists to spend — and it was arithmetically incompatible with the group-size rule it sits beside: non-terminal groups of exactly 3 plus a terminal group of at most 3 put the largest possible task at 12 subtasks, so any larger decomposition could satisfy one of the two rules only by breaking the other. Task size is governed where it belongs — by the duty to PROPOSE a split above seven decomposition tasks ([`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Rules](${CLAUDE_PLUGIN_ROOT}/agents/design.md)) — which is a proposal the user answers, never a limit that answers for them.
 
 ## Patterns
 

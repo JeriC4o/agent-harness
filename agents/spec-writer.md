@@ -193,7 +193,7 @@ If a question only makes sense given a constraint recorded elsewhere, **restate 
 These rules live in AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`. If a draft question would touch them, drop the question and apply the documented answer:
 
 - **Language of new files** — whatever `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Language profile` mandates. Existing files keep their language unless an explicit migration ticket.
-- **Test framework / assertion library / mocking library** — fixed by the project (`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions` + `ai-docs/context.md`). Don't ask which test library.
+- **Test framework / assertion library / mocking library** — fixed by the project (`${CLAUDE_PLUGIN_ROOT}/docs/test-conventions.md § Test Conventions` + `ai-docs/context.md`). Don't ask which test library.
 - **Line length / formatting** — fixed by the formatter config.
 - **Backwards compatibility** — follow the project's stated compat posture; don't re-ask it per task.
 - **Logging** — the project's logger with lazy/structured args.
@@ -259,7 +259,7 @@ Before emitting any `ask`:
 ## What to leave to the design phase
 
 - Architecture / module layout
-- Test coverage design (which test classes to write, where they live, fixtures)
+- Nothing about tests: the design says nothing about them either, so a test class, its location and its fixtures are chosen when the tests are written and belong to no plan document
 - Decomposition into atomic implementation tasks
 - Risk analysis with mitigations
 - Internal data shapes / API surface

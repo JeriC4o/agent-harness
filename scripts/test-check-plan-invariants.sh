@@ -303,19 +303,39 @@ has "  naming the sentence that should have been there" "$OUT" 'Expected lead: "
 hasnt "  and not as a wording difference" "$OUT" "leg1-wording: principle 5"
 
 fresh
-tweak docs/plan-invariants.md '\*Because identifiers are chosen[^*]*\*' ''
+tweak docs/plan-invariants.md '\*Because every sentence a design could write[^*]*\*' ''
 run
 check "a principle stripped of its one-clause reason -> rc 1" "$RC" "1"
 has "  it is not counted as present"      "$OUT" "finding leg1-reason: principle 3"
 has "  and the verdict's own count drops" "$OUT" "principles=7"
 
+# EVERY GAP IN THESE TWO PATTERNS IS `\s+`, including the ones that are a single
+# space on today's page. The page hard-wraps and the comparison collapses
+# internal whitespace on purpose, so where a line break falls inside a sentence
+# is not a fact about the page -- but a literal space in a mutation pattern pins
+# it anyway, and `tweak` on a pattern that has stopped matching reports its own
+# failure rather than a silent no-op. Spelling every gap this way is what keeps
+# the next re-wrap of this paragraph from reddening a leg about something else.
 fresh
-tweak docs/plan-invariants.md 'two failures at\s+once: invented content at authoring time, and a review loop' \
+tweak docs/plan-invariants.md 'two\s+failures\s+at\s+once:\s+invented\s+content\s+at\s+authoring\s+time,\s+and\s+a\s+review\s+loop' \
                               'one failure: a review loop'
 run
 check "the eighth principle naming only one of its two failures -> rc 1" "$RC" "1"
 has "  reported as a wording difference on principle 8" "$OUT" "finding leg1-wording: principle 8"
 has "  and the pinned sentence names the failure that went missing" "$OUT" "invented content at authoring time"
+
+# The eighth principle's second half -- the provenance obligation over a stated
+# number -- is pinned by the same mechanism as the first, and this is what shows
+# it. Without it the half could be reworded on the page and in the pinned copy
+# apart from one another with nothing here objecting, which is the state the
+# two-co-ordinated-edits authorisation route depends on not being in.
+fresh
+tweak docs/plan-invariants.md 'a\s+threshold\s+the\s+task\s+handed\s+down,\s+an\s+estimate\s+derived\s+in\s+place\s+with\s+its\s+derivation\s+shown' \
+                              'a threshold'
+run
+check "the eighth principle dropping two of its three admitted kinds of number -> rc 1" "$RC" "1"
+has "  reported as a wording difference on principle 8" "$OUT" "finding leg1-wording: principle 8"
+has "  and the pinned sentence names the kind that went missing" "$OUT" "an estimate derived in place"
 
 printf '\n== leg 2: the three sentences a shape-reading mechanism cannot be trusted with ==\n'
 # These three are the measured holes of the superseded classifier, which
@@ -349,7 +369,7 @@ Every design carries a per-test line number and an expected result for each item
 SENTENCES
 
 printf '\n== leg 2: re-wrapping a paragraph is not a change to the inventory ==\n'
-# THE 53-OF-53 PROPERTY, pinned here rather than left asserted in the design.
+# THE 56-OF-56 PROPERTY, pinned here rather than left asserted in the design.
 # The instrument reflows a run of non-blank lines only when EVERY line in it is
 # ordinary prose, so the one transformation applied is a true paragraph reflow;
 # two cruder instruments were tried first and both reported differences that
@@ -358,8 +378,8 @@ printf '\n== leg 2: re-wrapping a paragraph is not a change to the inventory ==\
 #
 # The file set is the CORPUS's markdown, not every tracked `*.md`: README.md
 # belongs to no surface and the check never reads it, while ai-docs/context.md
-# is the profile surface. Getting that set wrong is how a run covers 52 files
-# and reports success for 53, so the set's size and both edges are asserted.
+# is the profile surface. Getting that set wrong is how a run covers 54 files
+# and reports success for 56, so the set's size and both edges are asserted.
 corpus_md() {
   { git -C "$W" ls-files '*.md' | grep -Ev '^(ai-docs/|README\.md$)'
     git -C "$W" ls-files 'ai-docs/context.md'; } | sort -u
@@ -426,8 +446,8 @@ PY
 }
 
 fresh
-check "the corpus carries 53 markdown files, which is the set this property is about" \
-      "$(corpus_md | wc -l | tr -d ' ')" "53"
+check "the corpus carries 56 markdown files, which is the set this property is about" \
+      "$(corpus_md | wc -l | tr -d ' ')" "56"
 check "  README.md is NOT in it -- it belongs to no surface" "$(corpus_md | grep -c '^README.md$')" "0"
 check "  ai-docs/context.md IS in it -- the profile surface" \
       "$(corpus_md | grep -c '^ai-docs/context.md$')" "1"
@@ -525,7 +545,7 @@ printf '\n== leg 2: a relocation inside a CODE file is a change; inside PROSE it
 # line multiset identical, so a multiset comparison is silent by construction.
 #
 # THE SECOND IS NOT THE SAME LEG WITH A DIFFERENT FILE. It pins the BOUND: for
-# prose the comparison stays position-independent, which the 53-of-53 re-wrap
+# prose the comparison stays position-independent, which the 56-of-56 re-wrap
 # property above depends on, so the same class of mutation in markdown is
 # deliberately NOT reported. A fully positional comparison was the rejected
 # variant, and this leg is what would redden if someone took it.
@@ -730,7 +750,7 @@ has "  and what that message said before" "$OUT" "previously:"
 
 printf '\n== leg 3: an element arriving, by each route that can make one required ==\n'
 fresh
-tweak agents/design.md '^## Test Design$' "$LATE\\n## Test Design"
+tweak agents/design.md '^## Use cases$' "$LATE\\n## Use cases"
 run
 check "the design template gains an element -> rc 1" "$RC" "1"
 has "  named with the document it was mandated of" \

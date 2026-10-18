@@ -79,13 +79,17 @@ The working logic, as built.
 |---|---|---|
 | 1 | Wire the gate | one file |
 
-## Test Design
+## Use cases
 
-| AC | Verified by (intent) |
-|---|---|
-| AC1 | AC1 verified by: that the refusal fires while an unprocessed log is present, and does not fire when none is. |
-| AC2 | AC2 verified by: that the retained sections are compared against the previous commit rather than a captured copy. |
-| AC3 | AC3 verified by: that a criterion nothing covers still fails, with a covered criterion as the control. |
+- `the refusal` — run by the closing command before it deletes anything; run by the merge cleanup as its
+  last read of the log
+- `the retention check` — run by the closing command over the sections the fold keeps; run by a reviewer
+  reading a completed plan
+
+THIS FIXTURE IS THE MODEL OF A CORRECTLY FOLDED DESIGN for the whole suite, so it carries what such a
+document is allowed to carry and nothing else. It held a test-design section with one verification line
+per criterion until a design stopped saying anything about tests; a fixture left on that shape teaches
+the forbidden form to every reader of this suite.
 '
 
 mktree() { # -> a repository with a committed spec, design and redline log
@@ -257,16 +261,19 @@ has   "  verdict" "$OUT" "verdict=clean enumerated=2 findings=0"
 check "  and BOTH lines are dispositioned suppression, not merely counted" \
       "$(printf '%s\n' "$OUT" | grep -c ' suppression$')" "2"
 
-# The retention half of the criterion: a verification re-run over completed
-# DESIGNS is not suppression and must survive the narrowing untouched.
+# The retention half of the criterion: a coverage check over completed DESIGNS
+# is not suppression and must survive the narrowing untouched. The fixture
+# reproduces the live brief's wording, which changed when a design stopped
+# saying anything about tests -- a fixture left on the superseded sentence
+# asserts the disposition of a line the brief no longer contains.
 cat > "${S}/verification.md" <<'EOF'
 # Reviewer brief
 
-- **AC-verification re-run (mandatory).** Re-run every `AC<N> verified by:` line
-  from any `ai-docs/plans/done/*.design.md` against the shipped artefact.
+- **Use-case coverage (mandatory).** For every case listed under `## Use cases`
+  in any `ai-docs/plans/done/*.design.md`, name a shipped test that covers it.
 EOF
 run suppression "${S}/verification.md"
-check "control: the AC-verification re-run over completed designs stays clean" "$RC" "0"
+check "control: the use-case coverage check over completed designs stays clean" "$RC" "0"
 has   "  and is dispositioned as not conferring suppression" "$OUT" "not-suppression"
 
 cat > "${S}/heading.md" <<'EOF'
@@ -285,62 +292,6 @@ has "the live reviewer brief enumerates four instructions" "$OUT" "enumerated=4"
 run suppression "${S}/nope.md"
 check "a missing file is exit 2" "$RC" "2"
 has   "  and names it" "$OUT" "no such file"
-
-printf '\n== acintent: coverage, purity, and the rename that must change nothing ==\n'
-T=$(mktree)
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "control: every criterion covered by an intent line is clean" "$RC" "0"
-has   "  verdict" "$OUT" "verdict=clean"
-has   "  and the counts are reported" "$OUT" "criteria=3 intent_lines=3"
-
-T=$(mktree)
-sed -i.bak '/AC3 verified by:/d' "${T}/ai-docs/plans/t.design.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "a criterion with no covering intent line still fails" "$RC" "1"
-has   "  and names the criterion" "$OUT" "AC3 has no"
-
-T=$(mktree)
-printf '| AC1 | AC1 verified by: `bash scripts/test-check-redline.sh` filtered to the refusal leg. |\n' \
-  >> "${T}/ai-docs/plans/t.design.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "an intent line naming a script path is a finding" "$RC" "1"
-has   "  and quotes the token" "$OUT" "scripts/test-check-redline.sh"
-has   "  naming it as an identifier of the check" "$OUT" "names an identifier of the check"
-
-T=$(mktree)
-printf '| AC1 | AC1 verified by: the case `should refuse a present log()` in the suite. |\n' \
-  >> "${T}/ai-docs/plans/t.design.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "an intent line naming a test identifier is a finding" "$RC" "1"
-has   "  and quotes it" "$OUT" "names an identifier of the check"
-
-T=$(mktree)
-printf '| AC1 | AC1 verified by: running grep over the shipped brief. |\n' \
-  >> "${T}/ai-docs/plans/t.design.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "an intent line naming a bare command is a finding too" "$RC" "1"
-has   "  and names the command" "$OUT" "names the command [grep]"
-
-# AC22's own two-sided demonstration: RENAMING a shipped test changes nothing,
-# because no intent line names one. Asserted on the same tree before and after.
-T=$(mktree)
-printf 'should refuse a present log\n' > "${T}/suite.txt"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "before the rename, clean" "$RC" "0"
-sed -i.bak 's/should refuse a present log/should refuse while a log is unprocessed/' "${T}/suite.txt"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "after renaming a shipped test, still clean -- nothing named it" "$RC" "0"
-has   "  verdict" "$OUT" "verdict=clean"
-
-T=$(mktree)
-printf '# Spec\n\n## Scope\n\nNo criteria table here.\n' > "${T}/ai-docs/plans/t.spec.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "a spec with no criteria table is exit 2, not a vacuous pass" "$RC" "2"
-has   "  and says why" "$OUT" "no ## Acceptance Criteria table"
-
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/gone.design.md"
-check "an unreadable design is exit 2" "$RC" "2"
-has   "  and names it" "$OUT" "no such design"
 
 printf '\n== revision: a design subject and a verdict subject, both ways ==\n'
 R=$(mktemp -d)

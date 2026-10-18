@@ -77,7 +77,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   `**Spec:**`, `**Design:**`, `**Mode:**` — of which `Mode` is the one with a consumer: `R&D` or
   `Hybrid`, chosen once per task at the first divergence found while writing the code, with grounds that
   must cite the design.
-- **Code.** `scripts/check-redline.sh` — seven verbs (`pending`, `folded`, `suppression`, `acintent`,
+- **Code.** `scripts/check-redline.sh` — six verbs (`pending`, `folded`, `suppression`,
   `revision`, `paired`, `specform`) on the `0 clean / 1 findings / 2 cannot run` convention. `paired` is the pairing
   half for every key form and the marking pass's own exit check; `check-fix-plan.sh`'s `A7` and `A8` are
   the in-round halves. `skills/redline-fold/SKILL.md` is the closing fold; `/pr-merged` refuses on an
@@ -91,7 +91,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 - **What it is.** The base principles of what a spec and a design are, the record of the elements each
   one is required to be composed of, and the set of pages that define or enforce one. Eight numbered
-  sentences each carrying its own one-clause reason; fourteen elements keyed by document and token
+  sentences each carrying its own one-clause reason; thirteen elements keyed by document and token
   together; seven protected pages with a reason each, and seven documented near misses with why each one
   is out.
 - **Why it exists.** Measured damage: a self-improvement pass made a required element out of something

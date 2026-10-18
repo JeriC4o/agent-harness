@@ -328,8 +328,9 @@ For each recorded `%*_CMD%` value, take the first token and resolve it (`command
 check for a `./`-relative path). Missing → `major`.
 
 This check is **executed, never read**. A command table naming a binary nobody has looks perfectly correct
-on the page, and every later "the gate passed" claim inherits the defect. Same reasoning as
-`design-review`'s rule that a gate the design pins must be run twice before it is trusted.
+on the page, and every later "the gate passed" claim inherits the defect. The reasoning is the general
+one, and the example it used to cite is gone: `design-review` no longer has a rule about running a gate
+the design pins, because a design pins no command.
 
 ## Checklist S — Registry coherence (project surface)
 

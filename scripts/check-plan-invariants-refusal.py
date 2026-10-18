@@ -164,9 +164,12 @@ def run(ctx):
     # verdict on its own is deliberately NOT enough. That is the one distinction
     # that separates a rule REQUIRING an element from a rule about the COVERAGE of
     # an element already required: measured on the live tree, the post-merge
-    # repository pass assigns a severity to an intent nothing covers and says
+    # repository pass assigns a severity to a use case no test covers and says
     # nothing about any element being absent, while the design reviewer's contract
-    # spells `missing` and `present?` beside its own severities. Dropping the
+    # spells `missing` and `present?` beside its own severities. (That pass's
+    # predicate was rewritten when a design stopped saying anything about tests;
+    # the measurement survives the rewrite because what it turns on is unchanged
+    # -- the pass scores COVERAGE of a section the template already mandates.) Dropping the
     # requirement reports the first page as an unguarded route, which it is not.
     PRESENCE_SHAPE = re.compile(
         r'(?:missing|absent|present\b|presence|must exist|exists?\b|retained|retains|byte-identical|surviv\w+|binding)',

@@ -48,7 +48,9 @@ measured against it, so a correction is a marker plus a log row. Nothing here ha
 is in: the marking pass runs after implementation has begun, and neither implementation nor the
 review-and-fix cycle can be reached without a GO. **One window sits between the two and is the only
 post-GO rewrite there is:** a GO verdict carrying notes is closed by folding them in, which `/task` Step 8
-and `agents/self-review.md` both require to happen BEFORE the implementation diff starts. Nothing has been
+and `agents/self-review.md` both require to happen BEFORE the implementation diff starts — **both read
+those notes out of the task's working record, where Step 7 transcribes them, not out of the review
+response, so when you are spawned to fold one in that record is where it is.** Nothing has been
 measured against the base yet, so there is nothing to mark; once the diff starts, that window is shut and
 every correction is a marker plus a row.
 
@@ -185,7 +187,7 @@ evidence rather than with a preference:
 | A non-empty `## Open questions` — the base says of itself that it is incomplete | R&D, and the strongest single signal there is |
 | A risk phrased as unknown until implementation, or a measurement deferred to a named later task | R&D |
 | Work that creates a mechanism that does not exist yet | R&D |
-| Decisions carried as measured rather than assumed, anchors pinned to real `grep -n` output, a probe already run against the live tree | Hybrid — that base was built against facts and is unlikely to need widening |
+| Decisions carried as measured rather than assumed, and every claim about existing behaviour tied to the entity it is true of | Hybrid — that base was built against facts and is unlikely to need widening |
 | Work that changes something whose shape is already known and measured | Hybrid |
 
 A recommendation that needs a paragraph to justify has already failed: this gate exists to cost the user
@@ -226,10 +228,10 @@ task, so "afresh" means re-authored in place of the old content, never a second 
 `## Open questions`, every marker, amendment residue, and any record of superseded material. The first
 three are patterns a check can search for; the last two are not, and are the judgement step below.
 Everything else the design carries — the approach, the decomposition, the risks, the rejected
-alternatives, the test design — is **re-authored against the shipped state**, because a reader of the
+alternatives, the use cases — is **re-authored against the shipped state**, because a reader of the
 completed plan needs to know what was built and what was deliberately not chosen. Dropping a section is
-not a cheaper fold; it is a different and worse document, and the post-merge review still reads the
-verification intents from the design that survives.
+not a cheaper fold; it is a different and worse document, and the post-merge review still reads the use
+cases from the design that survives.
 
 **Write it SECTION BY SECTION, never in one call.** § Patterns records the hazard directly: a full-file
 rewrite of a large design is the highest-risk moment for a transport drop, with two observed attempts
@@ -275,7 +277,7 @@ is not a pass.
 - **Correctness:** the project's DI/wiring conventions (constructor injection, stereotype semantics, test doubles)? Concurrency scope correct?
 - **Migrations:** if DB schema changes — is a migration described (file path, migration id, rollback)? It must use the project's single migration tool and match the conventions of the sibling migrations (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § DB migrations`).
 - **Event wiring:** prefer an explicit call / poll / outbox row for NEW wiring over a framework event; an in-transaction listener does not insulate the enclosing transaction from its side effect (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Dependency injection / wiring`).
-- **Tests:** for every non-trivial logic — a test plan? (base class, entry point, the project's shared fixtures per `ai-docs/context.md`)
+- **Use cases:** every object the task builds carries its list — what it is used for, by whom or by what, and what it does in each case? **Nothing about tests belongs in that answer** (§ Rules), so a blank here is a missing use case and never a missing test plan.
 - **Risks:** breaking API changes? N+1 in new queries? Transactions where needed? Cancellation / shutdown safety?
 - **Economy:** YAGNI — no unnecessary abstractions?
 
@@ -317,14 +319,19 @@ Example, `M = 1` (single group):
 
 - [risk]: [mitigation]
 
-## Test Design
+## Use cases
 
-For each non-trivial task:
-- Base class / test config: the project's test-context setup or fixture
-- Entry point: service method, controller, dao
-- Scenarios: happy path, error cases, edge cases
-- Fixtures: which `TestXxx` classes
-- AC<N> verified by: <the verification INTENT — what must be observed, about which artefact, and with which control; never a test method, a file path or a command. E.g. "that the step refuses while the required record is absent, and does not refuse once it is present">
+**One list, per object the task builds. Nothing else.** For each object: what it is used for, by whom or
+by what, and what it does in each case.
+
+- `<object>` — <use case>; <use case>; <use case>
+
+**This section says NOTHING about tests.** No test design, no base class, no fixtures, no entry points, no
+scenario taxonomy, no per-criterion verification line, no suite, no control, no figure. A design document
+is finished before any test exists, so every sentence it could write about a test is a promise about
+something that is not there — and the whole class of them was removed rather than narrowed, because the
+narrowed versions kept regrowing. The uses an object has are knowable while the design is written; how
+it will be tested is not, and is not this document's business.
 
 ## Open questions
 
@@ -338,25 +345,16 @@ For each non-trivial task:
 - Don't write code — only the plan. Code is written by `/task` Step 8.
 - If scope > 7 tasks in decomposition — propose splitting into multiple tickets.
 - If unsure about the codebase — investigate via a path-filtered search + Read; don't guess.
-- **Never pin a command as an exit gate without having RUN it.** Every command THIS DESIGN PINS — the measurements it records under § Approach, the probes it quotes, anything it puts forward as a gate — must have been executed while writing the design, once as written, and once against input that must trip it. A `--help` check is not enough: a flag can exist in a *sibling* tool and be rejected by the one you are calling, so the gate could never emit the EMPTY output it demanded. Assume nothing about a CLI's flags from a sibling tool's surface, and treat a gate whose failure mode is empty output (`0 tests`, `No files matched`, an empty diff) as unproven until it has been shown able to come back non-empty. `design-review` rejects an unexecuted gate as `major`.
-  - **Its object is the design's OWN pinned gates, and no longer a per-criterion command.** The Test Design section states intent and names no command (§ Rules → AC-verification line), so there is no per-criterion command here left to falsify. The duty itself is unchanged and binds in full where that command is now recorded: the `Shown non-empty by` column of the round's `## Criterion checks (Round N)` section ([`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)), where a blank is a refusal rather than a default. Re-pointed, never dropped: "a check exists that covers this intent" says nothing about whether that check can come back non-empty, which is the whole of what this rule is for.
+- **Nothing in this document is proven by running it, because nothing here is run.** A design is written before the thing exists, so it pins no command, quotes no probe, and puts nothing forward as a gate. Where the approach rests on how something existing behaves, say what it does and name the entity it is true of — that is a claim a reader can check, and it needs no execution to write down. The duty that used to live here, that a pinned gate must be shown able to come back non-empty, binds in full where such a command is actually recorded: the round's own working record during implementation. It was re-pointed there, not dropped.
 - **A pre-approval correction is a REWRITE, and the document carries no account of what an earlier draft said.** While the design is being authored or reviewed, the way to correct it is to rework the affected sections (§ Workflow → Iteration): nothing has shipped for a base to diverge from, so there is nothing to mark. The document therefore carries no revision account at any stage — no narration of what a previous round found or argued, no quoted superseded wording, no sentence whose subject is an earlier draft rather than the system. Every such passage is read in full by every later whole-repository review and none of it describes the system. A correction's reasoning belongs in the review round's own findings table, which is where a reviewer can already see it and which no later review reads.
 - **Handoff-grouping requirement.** The `/task` workflow's Step 8 binds a `/context-reset` handoff at the start of **every** design-defined group, including the first and including single-subtask designs. The design must pre-compute boundaries in a `## Handoff plan` section. Four mandatory sub-points (every M ≥ 1):
   - **(a) When grouping is required** — `every M ≥ 1`.
-  - **(b) Maximum group size** — `3 consecutive subtasks`. Non-terminal groups MUST be exactly 3.
+  - **(b) Maximum group size** — `3 consecutive subtasks`. Non-terminal groups MUST be exactly 3. **The NUMBER of groups is unbounded**, and follows from `M` and this sub-point rather than being chosen: a cap of three groups stood in the handoff skill and was removed as unsupported, not least because it was arithmetically incompatible with this very sub-point — three non-terminal groups of 3 plus a terminal group of at most 3 put the largest admissible task at 12 subtasks, so any larger decomposition could satisfy one of the two rules only by breaking the other. Size is governed by the propose-a-split duty above, which the user answers.
   - **(c) Handoff destination** — `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. Named in prose at every boundary, including the entry into the first group.
   - **(d) Terminal-group sizing** — `1..3`. Sizes outside this range = design defect.
 
   Severity rubric (enforced by `design-review`): missing `## Handoff plan` for any M ≥ 1 = `major`; non-terminal group ≠ 3 = `major`; terminal group outside `1..3` = `major`; cosmetic issues (wording, ordering) = `minor`.
-- **AC-verification line is mandatory, and it states the verification INTENT — never an identifier.** Every AC in the spec carries an `AC<N> verified by: …` line in the design's Test Design section, saying what must be OBSERVED, about which artefact, and with which control. It may not name a test method, a file path or a command.
-  - **The distinction is which side of the test the name sits on, and the rule is unusable without it.** The identifiers of the CHECK — its method name, its file's path, the command that runs it — are all chosen while the tests are written, which is after the design is agreed; a design that promises them promises names that do not yet exist, and diverges by construction rather than occasionally, worse as the criterion count grows. The ARTEFACT UNDER TEST is named in the spec and is not chosen later, so naming it is not a violation. Allowed: "that the step refuses while the required record is absent, and does not refuse once it is present" — an observable property plus its control. Forbidden: the same thing written as a filtered invocation of a named suite.
-  - **A recorded measurement is not a pinned gate.** Commands quoted under § Approach as things that were run while designing are historical facts about what was observed, and a later rename cannot falsify them. What this forbids is pinning a command as a criterion's exit gate.
-  - The concrete command, identifier and path covering each intent — and the input shown to make each one fire — are recorded OUTSIDE the design, in the round's `## Criterion checks (Round N)` section. They therefore sit outside the frozen base and cannot falsify it.
-
-## Patterns
-
-Validated approaches the design subagent should keep applying (carrot signals; soft verbs).
-
+- **A design says NOTHING about tests. No exceptions, and no narrower version.** Not a test design, not a suite, not a fixture, not an entry point, not a scenario list, not a control, not a per-criterion verification line, not an assertion count, not a passed/failed total, not a before-and-after reading. Nowhere in the document, in no section, for no reason. The furthest this document goes is `## Use cases`: one list per object the task builds, saying what each is used for. Everything a design could state about a test is a promise about something that does not exist when the design is written, which is the one thing a required element may never be; and a figure taken from a suite is falsified by the next change that adds a test, buying a correction round per change and catching nothing. **The prohibition is the whole class rather than its worst members**, because the narrowed versions were tried and each one regrew — first as a per-criterion command, then as an intent line, then as a suite total.
 - **Default to** citing a `file:line` or an empirical result (a `javap` of the resolved jar, a JDK probe, an in-tree usage) for any load-bearing mechanism / semantics / interop claim — build-rule semantics, a macro's effect, a library's behaviour, Kotlin/Java interop — BEFORE pinning it as a design contract. Relay an unverified claim as "claims X (verify)", not as established fact.
   - **Corollary — tagging is NOT sufficient when the claim is load-bearing.** `[inferred]` / `[unverified]` / `[out of scope]` discharges the citation duty, never the verification duty. If a conclusion, headline, or AC rests SOLELY on a tagged claim, either verify it against source or state the conclusion conditionally — "honestly tagged" is not a third option. A scope boundary limits what must be INVESTIGATED; it never licenses a verdict about behaviour on the far side of it.
 - **Default to** grepping for the in-repo idiom before proposing any concurrency / locking primitive, and to stating the property as an observable failure mode ("does it ever wait? does it ever enqueue?") rather than as whether a lock is nominally acquired. A "PostgreSQL cannot do X" / "this never waits" sentence needs a `file:line`, an in-repo precedent, or an empirical check before it enters the design.

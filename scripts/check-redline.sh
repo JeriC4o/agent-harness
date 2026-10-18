@@ -6,7 +6,6 @@
 # Run:  check-redline.sh pending     <plans-dir>
 #       check-redline.sh folded      <spec> <design>
 #       check-redline.sh suppression <file>
-#       check-redline.sh acintent    <spec> <design>
 #       check-redline.sh revision    <file>
 #       check-redline.sh paired      <design> <log>
 #       check-redline.sh specform    <spec>
@@ -51,7 +50,7 @@
 # by the narrower pattern is a false green, so the wider one is part of the
 # check. The verb then asserts a per-line DISPOSITION rather than a count: of
 # the four the disjunction reaches in that file, two confer suppression and must
-# name the spec alone, one is the AC-verification re-run and is retained
+# name the spec alone, one is the use-case coverage check and is retained
 # verbatim, and one is a heading. It prints the enumerated count beside the
 # verdict, because an enumeration that silently narrowed its own input set is
 # the quietest false green there is.
@@ -71,7 +70,6 @@ die() { printf 'check-redline: %s\n' "$2" >&2; exit "$1"; }
 USAGE='usage: check-redline.sh pending     <plans-dir> [ref]
        check-redline.sh folded      <spec> <design>
        check-redline.sh suppression <file>
-       check-redline.sh acintent    <spec> <design>
        check-redline.sh revision    <file>
        check-redline.sh paired      <design> <log>
        check-redline.sh specform    <spec>'
@@ -272,7 +270,7 @@ do_specform() { # <spec>
 }
 
 case $VERB in
-  pending|folded|suppression|acintent|revision|paired|specform) ;;
+  pending|folded|suppression|revision|paired|specform) ;;
   *) die 2 "$USAGE" ;;
 esac
 
@@ -314,27 +312,6 @@ the stale claim'
 SUPPRESSION_MARKERS='do not raise
 intentional
 suppress'
-
-# The purity half of `acintent` keys on a BACKTICKED token plus this bounded
-# list of bare command words, and that is its stated bound: a backtick is how
-# these documents spell an identifier, and the distinction the rule rests on is
-# that an identifier of the CHECK is chosen while the tests are written, while
-# the ARTEFACT under test is named in the spec and is not chosen later. Semantic
-# coverage -- does this check really establish that property -- stays the
-# reviewer's judgement and is not claimed here.
-ACINTENT_COMMANDS='bash
-sh
-git
-grep
-jq
-awk
-sed
-pytest
-shellcheck
-%TEST_CMD%
-%BUILD_CMD%
-%LINT_CMD%
-%FORMAT_CMD%'
 
 FINDINGS=0
 finding() { FINDINGS=$((FINDINGS + 1)); printf '  finding: %s\n' "$1"; }
@@ -482,61 +459,6 @@ EOF
   [ "$FINDINGS" -eq 0 ]
 }
 
-# --- acintent ---------------------------------------------------------------
-do_acintent() {
-  local spec=$1 design=$2 id line no body tok cmd ncrit=0 nintent=0
-  readable "$spec" 'spec'
-  readable "$design" 'design'
-  printf 'check-redline: verb=acintent spec=%s design=%s\n' "$spec" "$design"
-
-  awk '
-    /^## / { inside = ($0 ~ /^## Acceptance Criteria[[:space:]]*$/); next }
-    inside && /^[[:space:]]*\|/ {
-      n = split($0, f, "|"); if (n < 3) next
-      id = f[2]; gsub(/[[:space:]]/, "", id)
-      if (id ~ /^AC[0-9]+$/) print id
-    }' "$spec" > "${WORK}/ac-ids"
-  [ -s "${WORK}/ac-ids" ] \
-    || die 2 "${spec} carries no ## Acceptance Criteria table, so there are no criteria to cover"
-
-  while IFS= read -r id; do
-    [ -n "$id" ] || continue
-    ncrit=$((ncrit + 1))
-    grep -qF -- "${id} verified by:" "$design" \
-      || finding "${id} has no \`${id} verified by:\` intent line in the design"
-  done < "${WORK}/ac-ids"
-
-  grep -nE -- 'AC[0-9]+ verified by:' "$design" > "${WORK}/intents"
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    nintent=$((nintent + 1))
-    no=${line%%:*}
-    body=${line#*:}
-    for tok in $(printf '%s' "$body" | awk 'BEGIN { RS = "`" } NR % 2 == 0 { print }'); do
-      case $tok in
-        */*|*.sh|*.md|*.json|*.py|*.kt|*.java|*.ts|*'('*')'*)
-          finding "${design}:${no} names an identifier of the check rather than the intent -- [${tok}]" ;;
-      esac
-    done
-    while IFS= read -r cmd; do
-      case $cmd in
-        '%'*) if printf '%s' "$body" | grep -qF -- "$cmd"; then
-                finding "${design}:${no} names the command [${cmd}]"
-              fi ;;
-        *)    if printf '%s' "$body" | grep -qE -- "(^|[^A-Za-z0-9_-])${cmd}([^A-Za-z0-9_-]|\$)"; then
-                finding "${design}:${no} names the command [${cmd}]"
-              fi ;;
-      esac
-    done <<EOF
-$ACINTENT_COMMANDS
-EOF
-  done < "${WORK}/intents"
-
-  printf 'check-redline: verb=acintent verdict=%s criteria=%s intent_lines=%s findings=%s\n' \
-    "$(verdict_word)" "$ncrit" "$nintent" "$FINDINGS"
-  [ "$FINDINGS" -eq 0 ]
-}
-
 # --- revision ---------------------------------------------------------------
 do_revision() {
   local file=$1 phrase lines
@@ -558,7 +480,6 @@ case $VERB in
   pending)     do_pending "$A1" "$A2" ;;
   folded)      do_folded "$A1" "$A2" ;;
   suppression) do_suppression "$A1" ;;
-  acintent)    do_acintent "$A1" "$A2" ;;
   revision)    do_revision "$A1" ;;
   paired)      do_paired "$A1" "$A2" ;;
   specform)    do_specform "$A1" ;;
