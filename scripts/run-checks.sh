@@ -162,18 +162,20 @@ MEMBERS_EOF
 # omission that nothing reports.
 EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
 # A delivery gate; the promotion gate a skill calls on its own; the fix-plan
-# gate a skill calls per review round; and the redline gate two skills call with
-# a path argument. The last two cannot instead be made documented members, and
-# for two DIFFERENT reasons -- collapsing them into one would leave the second
-# entry looking like a copied exemption rather than a reasoned one.
+# gate a skill calls per review round; and the two plan-document gates a skill
+# or a plan's author calls with path arguments. The last three cannot instead be
+# made documented members, and for two DIFFERENT reasons -- collapsing them into
+# one would leave the later entries looking like copied exemptions rather than
+# reasoned ones.
 # documented_checks recognises only the `bash scripts/<name>.sh` spelling inside
 # AGENTS.md's structural-checks span, and a skill-local path cannot take it.
-# scripts/check-redline.sh COULD take that spelling and still must not: a member
-# is invoked with no arguments, and every one of its verbs requires at least
-# one, so a documented member would report `cannot run` on every run. Either way
-# the two directions of the comparison could never agree, and each gate's own
-# test-*.sh suite is its entire mechanical coverage.
-EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh scripts/check-redline.sh'
+# scripts/check-redline.sh and scripts/check-plan-convergence.sh COULD take that
+# spelling and still must not: a member is invoked with no arguments, and both
+# require at least one -- every verb of the first, and both document paths of
+# the second -- so a documented member would report `cannot run` on every run.
+# Either way the two directions of the comparison could never agree, and each
+# gate's own test-*.sh suite is its entire mechanical coverage.
+EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh scripts/check-redline.sh scripts/check-plan-convergence.sh'
 
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
