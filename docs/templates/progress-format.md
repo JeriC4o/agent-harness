@@ -225,7 +225,10 @@ One per review round carrying at least one `⬜ Open` finding. The heading, the 
 ## Anchors and measurements in this file go stale while it is being written
 
 This file's sections cite `file:line` anchors and record measurements, and the files they point at are the
-ones the task is editing. Two rules, both learned by paying for them twice in one task.
+ones the task is editing. **The scope is those sections and nothing past them.** The committed redline log
+documented below carries no position to re-derive — its quoting field names an entity — and the duty
+covering what that log does carry is stated in `${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking,
+so no single rule spans both records. Two rules, both learned by paying for them twice in one task.
 
 **A pass that touches an EXISTING row re-derives every `file:line` and every measurement in it**, not only
 the fields it came to change. A row is a claim about a tree that later rounds are free to edit, so a figure
@@ -258,14 +261,14 @@ the drift this mechanism exists to reduce, so the derivation is visible in a sin
 |---|---|---|
 | `Key` | `R<round>.<finding #>` for a divergence a review round found, `S<step>.<ordinal>` for one implementation found | the round and number from the plan row; or, where no plan row exists, the step and the order of discovery |
 | `Type` | `added` \| `modified` \| `removed`, relative to the frozen base | the `redline:` disposition's type token |
-| `Artefact sentence diverged from` | the quoted sentence plus its backticked `file:line` | the plan row's `Arm A` cell, **verbatim** |
+| `Artefact sentence diverged from` | the quoted sentence plus the entity it sits in — the named file and a heading or numbered item inside it, which is a declared identity and so needs no id comment (`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`) | the plan row's `Arm A` cell, **transformed and not copied** — that cell carries a position because the fix-plan gate requires one of it, so the promotion resolves the position to the entity holding the sentence, and only the sentence travels verbatim |
 | `What shipped instead` | what the shipped artefact does instead | the disposition's reason text, **verbatim** |
 
 ```markdown
 | Key | Type | Artefact sentence diverged from | What shipped instead |
 |---|---|---|---|
-| R2.4 | modified | `<design-path>:120` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
-| S8.1 | added | `<design-path>:348` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
+| R2.4 | modified | `<design-path>` § `<heading or numbered item>` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
+| S8.1 | added | `<design-path>` § `<heading or numbered item>` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
 ```
 
 **The head above the table prescribes FIELDS, not layout** — the writer may arrange and expand them, and

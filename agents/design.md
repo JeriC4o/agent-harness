@@ -101,18 +101,24 @@ pass promotes it into the committed log. Nothing is written twice:
 | `Key` | `R<round>.<finding #>` — the round from the plan section's heading, the number from the row's `#` cell |
 | `Key`, no plan row | `S<step>.<ordinal>` — the step from the workflow, the ordinal from the order of discovery |
 | `Type` | the disposition's type token: `added`, `modified` or `removed`, relative to the frozen base |
-| `Artefact sentence diverged from` | the plan row's `Arm A` cell, **verbatim** |
+| `Artefact sentence diverged from` | the plan row's `Arm A` cell, **transformed and not copied** — that cell carries a position because the fix-plan gate requires one of it, and this log carries none, so the promotion resolves the position to the entity holding the sentence: the named file and a heading or numbered item inside it, with only the sentence travelling verbatim |
 | `What shipped instead` | the disposition's reason text, which **opens** the cell verbatim — a floor, not a cap: the pass may extend it with shipped facts a one-line reason could not hold, such as a second site corrected in the same pass |
 
 **With no plan row — a divergence found during implementation — this pass authors the row itself**, from
-the same two facts: the design sentence quoted verbatim, and what shipped. The derivation above exists so
+the same two facts: the design sentence quoted verbatim with the entity it sits in, and what shipped. The
+derivation above exists so
 that one divergence is not recorded twice, and where no plan row was ever written there is no second
 record to drift from.
 
-**A pass that touches an EXISTING row re-derives every `file:line` and every MEASUREMENT in it**, not only
-the fields it came to change. A row cites lines and measures sizes that later rounds are free to edit, so a
-figure correct when it was written is a claim about a tree that no longer exists — and this is the one
-record in the family that is committed, so a stale figure ships.
+**A pass that touches an EXISTING row re-derives every MEASUREMENT in it**, not only the fields it came to
+change. A row measures sizes that later rounds are free to edit, so a figure correct when it was written is
+a claim about a tree that no longer exists — and this is the one record in the family that is committed, so
+a stale figure ships. **There is no position in a row to re-derive**, because the quoting field names an
+entity instead. The duty covering positions belongs to the round's own gitignored working record alone,
+where it is stated on
+[`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)
+§ Anchors and measurements in this file go stale while it is being written; no single rule spans both
+records.
 
 The log is `ai-docs/plans/<spec-base>.redline.md`. It is **committed**, because the fold that consumes it
 runs after a human review and the progress file cannot survive that far. Its row format is defined in
