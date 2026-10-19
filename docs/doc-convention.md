@@ -107,26 +107,32 @@ No mandatory module / package doc. A top-of-file module/package doc block is wri
 
 ## Sample functions
 
-Use `@sample` over inline doc-comment code fences when the example is non-trivial:
+When the example is non-trivial, REFERENCE a sample defined elsewhere rather than inlining a code fence
+inside the doc-comment — item 6 of § Section order is that reference, where the language's doc tool
+supports one. The reason is rot, not tidiness: an inlined example is compiled by nothing and checked by
+nothing, so it goes stale while still reading as current, whereas a referenced sample lives in code the
+toolchain builds and fails when the signature it demonstrates moves.
 
-```kotlin
-/**
- * Validates a review request's diff signature.
- *
- * @sample com.example.review.samples.validateSimpleDiff
- */
-fun validate(req: ReviewRequest): Result<Unit> = …
-```
-
-Sample functions live in a sibling `samples/` package and are never invoked at runtime.
+Samples live beside the code they document, in a sibling location the build includes, and are never
+invoked at runtime. The tag's own spelling belongs to the project's doc tool and is recorded with the rest
+of the language profile in the consuming project's `ai-docs/context.md`. **Where the doc tool offers no
+such reference**, point at a named test or usage site instead — that keeps the example in checked code,
+which is the whole property; inlining a fence is the last resort, and then only short enough to be
+obviously correct.
 
 ## Mechanical heading scan
 
-To audit a changed file for doc-section presence + order:
+To audit a changed file for doc-section presence + order — **adjust the comment-prefix set to the file's
+own language and the tag set to the project's doc tool**, both recorded in the consuming project's
+`ai-docs/context.md`:
 
 ```bash
-grep -nE '/\*\*|\* @(param|return|throws|sample|see)' <changed-file>
+grep -nE '(/\*\*|^[[:space:]]*(#|//|///|\*|"""))|@(param|return|throws|sample|see)' <changed-file>
 ```
+
+**A prefix the language in front of you never writes makes this report clean**, which is
+indistinguishable from conformance. Before trusting a silent result, confirm the pattern fires on one
+doc-comment you can see in the file.
 
 ## Feature flags / build profiles
 

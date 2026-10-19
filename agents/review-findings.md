@@ -42,11 +42,11 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 - **Force-unwrap audit:** every unchecked non-null assertion / `unwrap()` / bang-operator outside test code. Ask: is there a non-panicking form? An explicit guard naming the invariant is fine; a bare force-unwrap without justification → `major`.
 - **Swallowed result:** a fallible call whose error branch is dropped without handling or logging → `major`.
 - **Unstructured concurrency:** a task launched on a global/ambient scope → `major`. A scope that leaks past the function boundary that owns it → `major`.
-- **Transactionality:** a service method performing > 1 DAO call without a transaction boundary → `major`. A wrong propagation mode → `minor`. **Self-invocation:** an intra-class call to the component's OWN transactional method bypasses the framework proxy, so the annotation is silently ignored → `major`; the in-class path must go through an explicit transaction template (or the method must move to a separate component). A background task doing DB side effects without an error guard → `major`.
-- **N+1 queries:** new DB query inside `for` / `map` / `forEach` loop → `major` unless explicitly batched.
+- **Atomicity:** a method performing > 1 state-changing call without a transaction boundary → `major`. Wrong nesting behaviour → `minor`. **Self-invocation:** an intra-class call to the component's OWN transactional method never crosses the interceptor, so the declared boundary is silently absent while the construct still reads as present → `major`; the in-class path must go through an explicit transaction template (or the method must move to a separate component). A background task performing state changes without an error guard → `major`.
+- **A query per element inside a loop:** a new query issued once per iteration of any loop or per-element operation → `major` unless explicitly batched into one round trip.
 - **Metric gauge supplier doing IO:** a gauge whose value supplier reads DB/IO on the metrics scrape thread → `major`; cache the value off the scrape path via a scheduled refresh (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Metrics`). Counters/timers on an operation are fine — only IO-touching gauge SUPPLIERS are the anti-pattern.
 - **Event wiring:** brand-new event-publishing wiring where a direct call / poll / outbox row would serve → `major` (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Dependency injection / wiring`). A listener performing a side effect inside the publisher's transaction without a `try/catch` or its own transaction boundary, where it must stay insulated → `minor`.
-- **SQL safety:** string-concatenated SQL or raw variable interpolation into a query → `blocker`.
+- **Injection safety:** a value concatenated or interpolated into a sentence another interpreter parses — a query, a shell command, a template — where it could have been bound as a parameter or escaped through that interpreter's own API → `blocker`.
 - **Integer arithmetic:** overflow / underflow possible on plausible inputs without check → `minor`.
 - **Logic:** off-by-one, wrong comparison direction, always-true / always-false conditions → `major`.
 - **Error handling:** silenced exceptions (an empty catch block) → `major`. A dropped error in a result-shaped chain → `minor`.
@@ -63,7 +63,7 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 - Production source file with ≥50 lines of non-trivial logic lacking a corresponding test file → `major`.
 - Tests covering only happy path, no error / edge cases → `minor`.
 - Cosmetic tests (revert the production fix and RE-RUN; the test still passes, or the mutation produces zero failures) → `major`. The mutation is executed, not reasoned about — and a NOT-CAUGHT verdict is withheld until the mutation is shown to have applied and nothing but the guard under test could have blocked it (`${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` § Checklist → 3. Test coverage). A broken control reads as a missing test every time.
-- Integration tests for any new controller / endpoint → `minor` if missing.
+- An end-to-end test for any new entry point reachable from OUTSIDE the module → `minor` if missing.
 
 ### 4. Performance
 
@@ -79,7 +79,7 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 - **DB migration placement:** a new migration in a second tool's format, or filed away from its table's sibling migrations → `major` (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § DB migrations`).
 - **Magic numbers:** numeric literals carrying semantic meaning without a named-constant extraction → `nit` (`minor` for recurrence in a previously-flagged file).
 - **Logging — eager message construction:** string concatenation into a log call instead of the lazy/structured-argument form → `minor` (or `major` on a hot path).
-- **Wiring:** field injection instead of constructor injection → `major`. A specialised stereotype annotation used where its semantics (transactions, exception translation) are not needed → `nit`.
+- **Wiring:** a collaborator assigned into a field instead of declared at construction → `major`. A specialised declaration used where its extra behaviour (a transaction boundary, an error translation) is not needed → `nit`.
 
 ### 6. Documentation conformance (`${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`)
 
@@ -89,8 +89,13 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 
 **Asking for a comment to be ADDED is a SUGGESTION, never a defect.** It carries no severity, never enters the findings table as `⬜ Open`, applies only with the PR author's agreement (who may decline without giving a reason), and is voiced ONCE per PR — restating it in a later round, reworded or re-severitied, is FORBIDDEN. Absence of a comment is the documented default, so "there is no justification here" is not a finding, and an identical construct elsewhere in the same file carrying no comment settles the question in the author's favour. Deliberately asymmetric with the narration row below: DELETING narration stays `major`. **One CLOSED exception — the `Missing @throws` row below**, which `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md § @throws requirement` makes mandatory; that is the one place the documented default is a comment rather than none. It covers `@throws` only — not the `Missing @param` / `Missing @return` / `Section ordering` rows (each presupposes a doc-comment that already exists, so none of them is an add-a-comment request) and not the `@Suppress` justification in Checklist 5.
 
+**Adjust the comment-prefix set to the module's own languages and the tag set to the project's doc tool**
+(both in the project's `ai-docs/context.md`) — and note that a prefix the language never writes makes this
+report clean, which reads exactly like conformance. Confirm the pattern fires on one doc-comment you can
+see before trusting a silent result.
+
 ```bash
-grep -rnE '/\*\*|\* @(param|return|throws|sample|see)' <module-path>
+grep -rnE '(/\*\*|^[[:space:]]*(#|//|///|\*|"""))|@(param|return|throws|sample|see)' <module-path>
 ```
 
 Flag each of:

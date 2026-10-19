@@ -37,11 +37,12 @@ After the merge lands, `/pr-merged` cleans up the local branch and its progress 
 Before every commit, run the project build gate (`%BUILD_CMD%`, AGENTS.md § Build & Test) over the changed
 module so dependency-graph regressions surface locally rather than in CI.
 
-A module-scoped build compiles only that module — it does **not** catch every downstream regression. When
-the diff changes a **public API signature** or a **constructor dependency of an injected component**, also
-build/test-compile the modules that depend on the changed symbol: find them first
-(`grep -rn "<ChangedSymbol>" --include='*.<ext>' .`), then run their test compile. A DI-container test in
-another module can break at context load without ever naming the new type.
+A module-scoped gate covers only that module and does **not** catch every downstream regression. Two
+classes break a file the diff never touched: an altered **published interface**, which can invalidate an
+unchanged call site, a test double built against the old shape included; and a change to **what a
+component requires of its collaborators**, which fails where that component is ASSEMBLED, not where it is
+named. Run the gate over dependents too, found by searching the **CHANGED** name — not the new one, which
+no dependent uses yet (`grep -rn "<ChangedName>" --include='*.<ext>' .`).
 
 ## Explicit-file staging
 

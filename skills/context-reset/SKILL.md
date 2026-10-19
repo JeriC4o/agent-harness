@@ -18,7 +18,7 @@ allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git branch:*), Ba
 
 When triggered (every design-defined group OR compaction detected):
 
-1. `%BUILD_CMD% <module-path>` — ensure code compiles.
+1. `%BUILD_CMD% <module-path>` — PASS.
 2. Update `ai-docs/plans/YYYY-MM-DD-name.progress.md` per canonical schema at [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md).
 3. Launch ONE `Agent` Tool call per **group** (per the design's `## Handoff plan`). The Subagent owns all subtasks in its group and runs them sequentially in-context, committing after each:
 

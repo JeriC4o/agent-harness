@@ -8,11 +8,15 @@ the relevant section.
 
 The per-project language profile — primary language, new-file rule, line length, formatter and linter
 commands, source/test roots, test-file mapping — lives in the consuming project's
-`ai-docs/context.md` § Language profile. Everything below this section is
-language-agnostic and needs no per-project edit.
+`ai-docs/context.md` § Language profile. **Every rule below this section is required to HOLD in any
+language, and one that cannot is a defect in this page rather than a rule to work around** — stated as an
+obligation on whoever edits here, because a page's description of its own contents rots while an
+imperative cannot. Where a rule needs a project's own spelling — a naming idiom, a doc tool's tags, a
+test-double library — it names the profile rather than carrying the spelling itself.
 
-Idiom rules that only make sense for one language (stdlib preferences, DI-framework conventions,
-migration-tool choice, metrics library) belong there too — not scattered through the sections below.
+Idiom rules that only make sense for one language (stdlib preferences, wiring-framework conventions,
+migration-tool choice, metrics library) belong in that profile too — not scattered through the sections
+below.
 
 ## Linter posture
 
@@ -49,11 +53,14 @@ cache(1024) { ... }    // ❌ what does 1024 mean?
 
 ## Dependency injection / wiring
 
-- **Constructor injection.** Never field injection. Constructor params are immutable + testable.
-- **Prefer the least-magical stereotype** that carries the semantics you need; reserve specialised
-  annotations for cases where their behaviour (transaction management, exception translation) matters.
-- **Configuration binds to a typed object**, not to individually-injected scalar values — one binder class
-  per config group, so defaults are readable in one place.
+- **Declare a component's collaborators at construction**, never by later assignment into a field. What is
+  supplied at construction is immutable and substitutable in a test; what is assigned afterwards is
+  neither.
+- **Prefer the plainest declaration that carries the semantics you need**, and reserve a specialised one
+  for where its extra behaviour — a transaction boundary, an error translation — is actually required.
+  Which declarations the project has, and what they are called, belong in its `ai-docs/context.md`.
+- **Bind a configuration group in ONE declared place**, not as individually injected scalars, so that
+  group's defaults are readable together rather than gathered from their use sites.
 - **Prefer explicit mechanisms for NEW wiring** — a direct call, a poll/discovery task, or an outbox/queue
   row — over publishing a framework event. An in-transaction event listener does NOT implicitly insulate
   the enclosing transaction from the listener's side effect: without a `try/catch` (or a new transaction
@@ -103,21 +110,22 @@ warranted; it is not a mandate to comment every public symbol.
 
 ## Metrics
 
-NEVER register a gauge whose value supplier performs an IO/DB read — the supplier runs on the scrape
-thread, where a timeout degrades the ENTIRE metrics payload. For any value needing a query (row counts,
-backlog sizes), cache it off the scrape path via a scheduled refresh. Counters/timers incremented on an
-operation are fine; only gauge SUPPLIERS that touch IO are the anti-pattern.
+NEVER put an IO or database read behind a value a monitoring collector PULLS synchronously — the read then
+runs on the collector's own thread, where a single timeout degrades the ENTIRE monitoring payload rather
+than the one value. For any value that needs a query (row counts, backlog sizes), refresh it off that path
+on a schedule and serve the cached figure. A counter or timer incremented by an operation is fine; only a
+pulled value that touches IO is the anti-pattern.
 
 ## DB migrations
 
-Pick ONE migration tool per repo and record it in `ai-docs/context.md`; never add a migration in a second
-tool's format because it is more familiar.
+Pick ONE schema / state-change tool per repo and record it in `ai-docs/context.md`; never file a change in
+a second tool's format because it is more familiar.
 
-**Local conventions — read the sibling migrations before writing.** Put an alteration in **that table's own
-migration file**, never aggregated into a shared cross-table file. Match the surrounding directory's
-changeset id format, its rollback posture (present or deliberately omitted), and its naming — these are
-conventions of the directory, not of the tool, so inspect the adjacent migrations rather than reasoning
-from the tool's documentation. Describe file path, migration id, and rollback plan in the design doc.
+**Local conventions — read the sibling migrations before writing.** Put an alteration in **that object's
+own migration file**, never aggregated into a shared cross-object file. Match the surrounding directory's
+id format, its rollback posture (present or deliberately omitted), and its naming — these are conventions
+of the directory, not of the tool, so inspect the adjacent migrations rather than reasoning from the
+tool's documentation. Describe file path, migration id, and rollback plan in the design doc.
 
 ## File size
 
@@ -140,22 +148,26 @@ in languages where cohesive value objects naturally group.
 
 - **Types:** `PascalCase`. **Functions / properties:** `camelCase` (or the language's idiom).
   **Constants:** `SCREAMING_SNAKE_CASE`. **Packages/modules:** the language's convention.
-- **Test classes:** `<UnderTest>Test`.
+- **Test units:** named by a mechanical mapping from the unit under test (`<UnderTest>Test` where the
+  language has classes), so a runner's filter and a reader both reach the test from the subject's name
+  alone. The project's own spelling is its test-file-mapping row in `ai-docs/context.md`.
 - **Test methods:** BDD `should …` names — `should <observable behaviour> [when <condition>]`. One
   meaningful user/system-as-user scenario per test; arrange/act/assert as blank-line blocks, not
   `// given` / `// when` / `// then` markers.
 
 ## Test fixture state
 
-**When a test bean/fixture factory captures mutable state in a closure, treat it as a leak until a reset
-exists.** Test containers and DI contexts are typically cached PER CLASS: database fixtures and mock
-auto-reset restore what the framework knows about, but nothing touches a plain mutable holder captured by a
-factory. That state survives across every test method in the class.
+**When a test fixture captures mutable state in a closure, treat it as a leak until a reset exists.** A
+test harness typically RECYCLES one context across the cases in a group: whatever it knows about — stored
+fixtures, recorded doubles — it restores, but nothing touches a plain mutable holder captured by a factory.
+That state survives every case in the group, **and it hides precisely because everything around it is
+being reset.** So enumerate what the harness restores, and treat anything captured outside that set as
+owing its own reset.
 
-- **Hoist it into its own injectable component** so a test can reach and reset it — a closure-captured
+- **Hoist it into its own addressable component** so a test can reach and reset it — a closure-captured
   value cannot be reached at all.
-- **Prefer resets that cannot drift** — clear *all* mocks, or reinitialise the whole holder — over a
-  hand-maintained enumeration that must be edited whenever a mock or key is added. A setup hook whose name
+- **Prefer resets that cannot drift** — reset *everything* the group recycles, or reinitialise the whole
+  holder — over a hand-maintained enumeration that must be edited whenever a double or key is added. A setup hook whose name
   advertises partial cleanup (`clearInvocationsOnly`) is a standing admission the enumeration is already
   incomplete.
 - **Diagnostic corollary.** When an integration test fails on a value that production code writes
