@@ -302,10 +302,10 @@ is not a pass.
 
 ## Decomposition
 
-| # | Task | Files | Depends on |
-|---|------|-------|------------|
-| 1 | ... | `<module>/<path>/Foo.<ext>` | — |
-| 2 | ... | `<module>/<path>/Bar.<ext>` | 1 |
+| # | Task | Files | Delivers | Depends on |
+|---|------|-------|----------|------------|
+| 1 | ... | `<module>/<path>/Foo.<ext>` | AC1, AC2 | — |
+| 2 | ... | `<module>/<path>/Bar.<ext>` | AC3 | 1 |
 
 ## Handoff plan
 

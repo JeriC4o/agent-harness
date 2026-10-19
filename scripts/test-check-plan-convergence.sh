@@ -30,8 +30,11 @@ check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want [$3], got [$2])"; 
 command -v python3 >/dev/null 2>&1 || { printf 'cannot run: python3 absent\n' >&2; exit 2; }
 
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT INT TERM
-mkdir -p "$T/docs" "$T/scripts" "$T/plans"
+mkdir -p "$T/docs" "$T/scripts" "$T/plans" "$T/skills/task/scripts"
 cp "${ROOT}/docs/plan-invariants.md" "$T/docs/plan-invariants.md"
+# The real file, not a stub: the minimum fragment length is BORROWED from it,
+# so a fixture carrying an invented assignment would test the fixture.
+cp "${ROOT}/skills/task/scripts/check-fix-plan.sh" "$T/skills/task/scripts/"
 cp "$CHECK" "${HERE}/check-plan-convergence.py" "$T/scripts/"
 git -C "$T" init -q
 git -C "$T" add -A >/dev/null 2>&1
@@ -47,7 +50,9 @@ tok() { # <spec|design> <ordinal, 1-based>
 SPEC_FIRST=$(tok spec 1)
 DESIGN_FIRST=$(tok design 1)
 DESIGN_SECOND=$(tok design 2)
-[ -n "$SPEC_FIRST" ] && [ -n "$DESIGN_FIRST" ] && [ -n "$DESIGN_SECOND" ] \
+DESIGN_FIFTH=$(tok design 5)
+DESIGN_SECOND_NAME=${DESIGN_SECOND#\#\# }
+[ -n "$SPEC_FIRST" ] && [ -n "$DESIGN_FIRST" ] && [ -n "$DESIGN_SECOND" ] && [ -n "$DESIGN_FIFTH" ] \
   && ok "the fixtures' section names were derived from the record" \
   || bad "the fixtures' section names were derived from the record"
 
@@ -141,6 +146,7 @@ write_pair 'The band is 20 + 20 = 40 wide.' 'Nothing.'
 out=$(run)
 hasnt "a true equation is silent" "$out" 'finding arithmetic'
 has "and it was examined rather than skipped" "$out" 'relations=1'
+has "a literal twice inside ONE sentence is one site, not two" "$out" 'repeats=0'
 write_pair 'There are 30 of one and 20 of the other, 51 together.' 'Nothing.'
 out=$(run)
 has "a false total over its addends is reported" "$out" 'which sum to 50'
@@ -154,6 +160,112 @@ hasnt "and it is not reported as a false relation" "$out" 'finding arithmetic'
 write_pair 'A re-derived figure in a self-review round is not a relation.' 'Nothing.'
 out=$(run)
 has "a hyphenated word is not an operator" "$out" 'relations=0'
+
+printf '\n== the completeness class, which HOLDS ==\n'
+COMPLETE="$DESIGN_SECOND
+| # | Task | Files | Delivers |
+|---|---|---|---|
+| 1 | Build it | \`scripts/new-thing.sh\` *(new)* | AC1 |
+
+The check at \`scripts/new-thing.sh\` exists because nothing else answers the question.
+
+$DESIGN_FIFTH
+- \`scripts/new-thing.sh\` — run by the author, which refuses on a finding"
+SPEC_ONE='| AC1 | The thing holds. |'
+write_pair "| AC | Criterion |
+|---|---|
+$SPEC_ONE" "$COMPLETE"
+out=$(run)
+hasnt "a complete object is silent" "$out" 'finding completeness'
+has "and it was examined rather than skipped" "$out" 'objects=1'
+has "the delivery column is derived from the document's own header" "$out" 'delivery-column=delivers'
+
+write_pair "| AC | Criterion |
+|---|---|
+$SPEC_ONE" "${COMPLETE/| 1 | Build it | \`scripts\/new-thing.sh\` *(new)* | AC1 |/| 1 | Build it | \`scripts\/other.sh\` | AC1 |}"
+out=$(run)
+has "an object no decomposition row names is reported" "$out" 'no stated place'
+write_pair "| AC | Criterion |
+|---|---|
+$SPEC_ONE" "${COMPLETE/- \`scripts\/new-thing.sh\` — run by the author, which refuses on a finding/- \`scripts\/other.sh\` — used somewhere}"
+out=$(run)
+has "an object with no use-case bullet is reported for its cases and its behaviour together" "$out" 'no stated cases and no stated behaviour'
+write_pair "| AC | Criterion |
+|---|---|
+$SPEC_ONE" "${COMPLETE/The check at \`scripts\/new-thing.sh\` exists because nothing else answers the question./Nothing else mentions it.}"
+out=$(run)
+has "an object named only in its row and its bullet is reported for its reason" "$out" 'no stated reason'
+
+write_pair "| AC | Criterion |
+|---|---|
+$SPEC_ONE
+| AC2 | A second thing holds. |" "$COMPLETE"
+out=$(run)
+has "a requirement no row delivers is reported" "$out" 'the requirement AC2 is stated in the spec'
+has "and both criteria were counted" "$out" 'criteria=2'
+write_pair "| AC | Criterion |
+|---|---|
+$SPEC_ONE" "${COMPLETE/| AC1 |/| AC1, AC9 |}"
+out=$(run)
+has "a row claiming a criterion the spec does not state is reported" "$out" 'claims to deliver AC9'
+
+printf '\n== section references, resolved against the document that makes them ==\n'
+write_pair 'Nothing.' "$COMPLETE
+
+The reason is given in § $DESIGN_SECOND_NAME, which carries it."
+out=$(run)
+hasnt "a reference to a section the document has is silent" "$out" 'refers to a section'
+has "and own-document references are counted apart from qualified ones" "$out" 'section-refs=1/1'
+write_pair 'Nothing.' "$COMPLETE
+
+The reason is given in § Nowhere At All, which carries it."
+out=$(run)
+has "a reference resolving to no heading is reported" "$out" 'refers to a section [Nowhere At All]'
+write_pair 'Nothing.' "$COMPLETE
+
+The reason is given in \`other-file.md\` § Nowhere At All, which carries it."
+out=$(run)
+hasnt "a reference qualified by a file name is not resolved here" "$out" 'refers to a section'
+has "but it is counted, so the figure says what this class did not carry" "$out" 'section-refs=0/1'
+
+printf '\n== the isolation class, which HOLDS ==\n'
+write_pair 'The window is 40 rounds wide, a threshold handed down. The same 40 is the cap, a threshold handed down.' 'Nothing.'
+out=$(run)
+has "the minimum fragment length is borrowed rather than chosen" "$out" 'fragment-min=24'
+has "a figure repeated across two statements is reported" "$out" 'states the figure [40] at 2 sites'
+write_pair 'The window is 40 rounds wide, a threshold handed down.' 'Nothing.'
+out=$(run)
+hasnt "a figure at one site is silent" "$out" 'finding isolation'
+write_pair 'This whole sentence is long enough to be located.
+
+This whole sentence is long enough to be located.' 'Nothing.'
+out=$(run)
+has "a whole statement repeated at two sites is reported" "$out" 'states the same span at 2 sites'
+write_pair 'Short enough. Short enough.' 'Nothing.'
+out=$(run)
+hasnt "a repeated statement below the borrowed length is silent" "$out" 'finding isolation'
+write_pair 'The first claim rests on a shared phrasing of some length here. A different claim rests on a shared phrasing of some length here too.' 'Nothing.'
+out=$(run)
+hasnt "a phrase shared INSIDE two different statements is silent" "$out" 'finding isolation'
+write_pair 'Nothing.' "$DESIGN_SECOND
+| # | Task | Files |
+|---|---|---|
+| 1 | A cell long enough to be located twice | \`scripts/a.sh\` |
+| 2 | A cell long enough to be located twice | \`scripts/b.sh\` |"
+out=$(run)
+has "a repeated table cell names the rows it sits in" "$out" '| 1 | A cell long enough to be located twice |'
+write_pair 'Nothing.' "$DESIGN_SECOND
+| # | Task | Files |
+|---|---|---|
+| 1 | A cell long enough to be located twice | \`scripts/a.sh\` |
+| 2 | A different cell, also long enough to locate | \`scripts/b.sh\` |"
+out=$(run)
+hasnt "two different cells at one site each are silent" "$out" 'states the same span'
+mv "$T/skills/task/scripts/check-fix-plan.sh" "$T/skills/task/scripts/gone.sh"
+out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
+check "an unreadable source for the borrowed length -> rc 2" "$rc" "2"
+has "and says it is borrowed rather than chosen here" "$out" 'borrowed from it rather than chosen here'
+mv "$T/skills/task/scripts/gone.sh" "$T/skills/task/scripts/check-fix-plan.sh"
 
 printf '\n== the derived regions ==\n'
 write_pair 'Nothing.' 'Nothing.'
