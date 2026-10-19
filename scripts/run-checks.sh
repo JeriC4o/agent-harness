@@ -59,7 +59,17 @@ die() { printf '%s\n' "$2" >&2; exit "$1"; }
 # drifted. test-run-checks.sh derives the tools the body invokes and requires
 # each to appear here, but it reads a CLOSED vocabulary of tool names: that leg
 # is a net for the tools it knows, never a proof about every possible command.
-for t in bash git jq sed grep sort comm xargs wc tr dirname; do
+#
+# `perl` is the one entry this script does not itself invoke, and it is here on
+# purpose. Five MEMBERS of the list below build their mutant fixtures with it —
+# the loop-index and loop-verdict verifications, and the bin-of, loop-grid and
+# loop-metrics suites — so on a host without it those positive controls cannot
+# run, and a could-not-run is not a pass. Demanding it here makes that failure
+# loud and early instead of surfacing mid-suite, where a missing interpreter
+# reads as a member defect. The containment leg in test-run-checks.sh compares
+# in one direction only (every tool the body invokes must appear here), so an
+# entry no call site in this file reaches does not redden it.
+for t in bash git jq sed grep sort comm xargs wc tr dirname perl; do
   command -v "$t" >/dev/null 2>&1 || die 2 "cannot run: $t is not on PATH. A missing tool is not a pass."
 done
 

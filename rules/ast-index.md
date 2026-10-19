@@ -5,7 +5,7 @@ On-demand rules for any code-search action. Subagents inherit the verbatim block
 ## Hierarchy
 
 1. **The `Grep` tool** (ripgrep under the hood) — the default for a content search inside this repo. It respects `.gitignore`, returns `file:line:content`, and takes a path filter (`glob`) and an output mode. Prefer it over shelling out: it is scoped, fast, and its results are already structured. (A session directive that says to work through Bash OVERRIDES this preference — [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Session start](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#session-start).)
-2. **`rg <pattern> -n --glob '<filter>' <path>`** via Bash — reach for it when you need ripgrep flags the tool does not expose (`-A`/`-B` context asymmetry, `--multiline`, `-o`, `--type-add`). **Carry a path filter by default** (`--glob '*.{kt,java}'` when hunting code) — see § Forbidden for why an unfiltered repo-wide content search is not a neutral act.
+2. **`rg <pattern> -n --glob '<filter>' <path>`** via Bash — reach for it when you need ripgrep flags the tool does not expose (`-A`/`-B` context asymmetry, `--multiline`, `-o`, `--type-add`). **Carry a path filter by default**, and spell it from the project's **own** source extensions as `ai-docs/context.md` § Language profile records them — see § Forbidden for why an unfiltered repo-wide content search is not a neutral act. **A filter spelled for another project's stack matches nothing and exits 0**, and that silent zero reads as absence; if you do not know this project's extensions, read them before searching rather than guessing a pair.
 3. **`git grep -n <pattern>`** — when the question is specifically about a *committed* state (`git grep -n <pattern> <rev>`), or when you want ripgrep-free behaviour that follows the index rather than the working tree. Note the inverse of `rg`: `git grep` searches tracked files only, so a brand-new untracked file is invisible to it.
 4. **Scoped `grep -rn` / `find`** — fine inside a known small directory. Never from `/` or `$HOME`.
 5. **Read with offset/limit** — for files >500 lines, run a heading scan first (`grep -nE '^(class|func|fun|def|type|interface|##) ' <file>`) to locate the section, then Read only the targeted slice.
@@ -16,8 +16,8 @@ On-demand rules for any code-search action. Subagents inherit the verbatim block
 
 - `find /`, or `find` / `grep -r` over `$HOME` (`~`). NEVER `run_in_background` a filesystem scan — a backgrounded `find` leaks a long-running process.
 - `grep -r` from the filesystem root or from `$HOME`. For an installed CLI/binary use `type` / `command -v` / `which`, not a tree scan.
-- **Never** search or `Read` under build-output directories (`target/`, `build/`, `dist/`, `node_modules/`, `.gradle/`) — they hold artefacts, never source, and they are on the read blacklist via `.gitignore`.
-- Any repo-wide content search whose file filter can match an **ASK-gated deployed-config file** (`application*.properties` and friends) — that is a gated read (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Permissions) regardless of the tool. Exclude it or ask first, and **mind the spelling per tool**: plain `grep -r` takes a glob (`--exclude=application*.properties`); ripgrep takes a negated glob (`-g '!application*.properties'`); a tool whose exclude flag takes a **regex** needs `application.*\.properties$` — passing the glob spelling to a regex flag silently misses `application-<profile>.properties`, the file that actually carries the deployed overrides. Drop the filter only when the PATTERN ITSELF cannot occur in a config file — a code symbol, an annotation, a class name. That is a property of the pattern's syntax, decidable before you run anything; it is NOT a guess about what the results will contain. Never reason "this probably won't hit a config file" — you cannot know a gated path is in the result set until it is already in context, at which point the gate has been breached.
+- **Never** search or `Read` under a build-output directory — it holds artefacts, never source. The authoritative list is **this project's own `.gitignore`**, which § Session start already makes the read blacklist; take the directories from there rather than from a remembered set, because a name this page carried that the ignore file does not list was on no blacklist at all while the sentence claimed it was.
+- Any repo-wide content search whose file filter can match an **ASK-gated deployed-config file** — that is a gated read (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Permissions) regardless of the tool. **The gated class is the project's own, declared on the `Deployed-config globs` line of its `ai-docs/context.md`**, so read it there rather than assuming a filename. Exclude it or ask first, and **mind the spelling per tool**: a glob-valued exclude flag takes a glob (`--exclude=config*.env`); ripgrep takes a negated glob (`-g '!config*.env'`); a tool whose exclude flag takes a **regex** needs `config.*\.env$` — passing the glob spelling to a regex flag silently misses `config-<environment>.env`, the file that actually carries the deployed overrides. Drop the filter only when the PATTERN ITSELF cannot occur in a config file — a code symbol, an annotation, a class name. That is a property of the pattern's syntax, decidable before you run anything; it is NOT a guess about what the results will contain. Never reason "this probably won't hit a config file" — you cannot know a gated path is in the result set until it is already in context, at which point the gate has been breached.
 - Reading files > 2000 lines without an offset/limit.
 - **Backticks inside a double-quoted search pattern** — the shell runs them as command substitution before the tool ever sees the pattern. Backticked test names collide with this constantly: use SINGLE quotes for the whole pattern, or drop the backticks from the pattern entirely.
 - **Free-form prose passed to a CLI through single quotes** — an apostrophe CLOSES the string and the shell re-parses the remainder, so the CLI still runs and posts a **truncated** payload with rc=0. Apostrophes, contractions and Markdown backticks all trip it, and the mangled artefact is visible to other people before it is visible to you. Build a prose payload with a quoted heredoc — `VAR=$(cat <<'EOF' … EOF)` — and pass `"$VAR"`. **EXCEPTION, and it is not rare: when the prose QUOTES a construct a `PreToolUse(Bash)` hook matches — a piped gate, a `git commit` on the default branch — the heredoc is REFUSED at dispatch, because the hook reads the command string and cannot tell a citation from a call. That text goes in through `Write` / `Edit`, or to a file passed by `--body-file`, whatever its destination (learning entry, PR body, issue body, progress file, spec). The same applies to a SCRIPT written through a heredoc whose body quotes such a construct.** See [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Hook false-positive guard](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#hook-false-positive-guard--body-content-matching-any-pretooluse-bash-regex). After any write to a shared surface (PR comment, PR description, issue comment), read the artefact back and check its LENGTH and TAIL: the send returns exit 0 with a summary line even when two thirds of the message is missing.
@@ -56,13 +56,16 @@ call ONE, orientation reads included. Where one is in force, NAME which half of 
 covers (a dedicated tool where the shell genuinely cannot do the job) rather than letting that exception
 cover the session by default.
 
-  Grep(pattern, glob: "*.{kt,java}", output_mode: "content")   — default; respects .gitignore
-  rg -n -g '*.{kt,java}' "<pattern>" <path>                    — when you need raw ripgrep flags
+  Grep(pattern, glob: "*.<src-ext>", output_mode: "content")   — default; respects .gitignore
+  rg -n -g '*.<src-ext>' "<pattern>" <path>                    — when you need raw ripgrep flags
   rg -n --hidden -g '!.git' "<pattern>" .                      — to include dot-dirs (skipped otherwise)
   git grep -n "<pattern>" <rev>                                — to ask about a COMMITTED state
   grep -rn "<pattern>" <small-dir>                             — fine inside a known small directory
 
 ALWAYS carry a path filter unless the pattern's own syntax cannot occur in a config file.
+`<src-ext>` is THIS project's source extension(s), from ai-docs/context.md § Language profile. Read them
+rather than guessing: a filter spelled for another project's stack matches nothing and exits 0, and that
+silent zero is indistinguishable from "the symbol is not in this repo".
 
 HIDDEN DIRS ARE SKIPPED BY DEFAULT. A sweep over the instruction surface without `--hidden`
 (or without naming the dot-directory as an explicit path) returns zero hits for strings that are plainly
@@ -72,11 +75,13 @@ with a keyword you know is present.
 NEVER `find` / `grep -r` over `/` or `$HOME`. For an installed binary use `type` / `command -v`.
 Never `run_in_background` a filesystem scan.
 
-ASK-GATED CONTENT: deployed-config files (`application*.properties` and friends) are ASK-gated
-(${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Permissions). The gate binds on ANY tool that surfaces the file's CONTENTS — a content
+ASK-GATED CONTENT: deployed-config files are ASK-gated
+(${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Permissions), and the gated class is THIS project's own —
+it is declared on the `Deployed-config globs` line of ai-docs/context.md, so read it there instead of
+assuming a filename. The gate binds on ANY tool that surfaces the file's CONTENTS — a content
 search IS a read of it, and an allow-listed search tool will NOT prompt. Constrain the filter so a
-gated path cannot be in the result set, or ask first. For a setting's DEFAULT, read the typed config
-binder class in source — ungated, and the actual default (a deployed file only ever shows an override).
+gated path cannot be in the result set, or ask first. For a setting's DEFAULT, read the declared
+default in source — ungated, and the actual default (a deployed file only ever shows an override).
 
 NEVER put backticks inside a DOUBLE-quoted pattern — the shell runs them as command substitution
 before the tool sees them. Use SINGLE quotes for the whole pattern, or drop the backticks.

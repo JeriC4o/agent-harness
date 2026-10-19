@@ -3,47 +3,48 @@
 **Tracked in:** GH-128
 **Spec:** ai-docs/plans/2026-10-16-design-contract-rework.spec.md
 **Design:** ai-docs/plans/2026-10-16-design-contract-rework.design.md
-**Mode:** R&D — the base says of itself that it is incomplete: it ships a non-empty
-`## Open questions` and its `## Risks` section carries figures the design itself marks as owed a
-re-derivation before anything is built on them. The author chose this mode for the whole task on the
-first implementation-found divergence, so a correction or an extension goes into this log as it is found,
-nothing restarts, and the closing fold is where the design becomes true again.
+
+**Mode:** R&D — chosen by the author for the WHOLE task on the first implementation-found divergence, and
+carried across the re-authoring because the mode was never the document's to decide. The grounds are
+restated against the base now in force rather than kept from the one it replaced: the base still says of
+itself that it is incomplete, carrying a non-empty `## Open questions` and a `## Risks` section whose
+mitigations name work that does not exist yet. What has changed is the KIND of incompleteness, and the
+change strengthens the mode rather than weakening it — each open question now passes the test the new
+principle states, so none of them can move the approach, the requirements or the decomposition, which is
+exactly the condition under which a correction belongs in this log instead of restarting the cycle. So a
+correction or an extension goes into this log as it is found, nothing restarts, and the closing fold is
+where the design becomes true again.
 
 ## Rows
 
 | Key | Type | Artefact sentence diverged from | What shipped instead |
 |---|---|---|---|
-| S8.1 | added | `ai-docs/plans/2026-10-16-design-contract-rework.design.md:630` — the Files column of decomposition row 2, which names seven paths: "`docs/agents-method.md`, `docs/test-conventions.md` *(new)*, `docs/code-style.md`, `agents/self-review.md`, `agents/spec-writer.md`, `skills/bugfix/SKILL.md`, `scripts/check-references.sh`" | Nine files changed, not seven. Two the base was silent about had to move because each pins a count the subtask falsified: `scripts/test-check-plan-invariants.sh`, which pins the corpus markdown-file count in **four** separate spellings — the comment heading naming the property, a prose sentence reasoning about the miscount, the assertion's label, and the assertion's expected value — and `scripts/check-plan-invariants.py`, which states the same count **twice** in comments defending the re-wrap-stability property. The new reference page moved the real count from 53 to 54 and the suite failed on exactly that pinned assertion; subtask 3 added a second page and moved the same six spellings again, to 55. The suite failure was **the gate working as intended and not a defect** — a stated count falsified by the same change that states it, which is this task's own subject met in its own tree. |
+| S8.1 | modified | § Decision 8 of the design, the paragraph opening **This is a seventh silent form against a header that enumerates six**, whose closing claim is: "Closing the hole makes that sentence true rather than changing what it claims" | The repair shipped exactly as that section specifies, the ruled-out direction and the paired-silent-case requirement included — and the header's sentence did not become true. It now opens with SEVEN silent forms and enumerates seven. The new member is a form the prediction could not have reached: a separator the shell would not treat as one because a backslash escapes it, OUTSIDE any quoted span. It was found by looking for a residual, measured silent both before and after the repair with its paired read silent in both, and the guard's own verification now asserts it silent as the seventh item beside its six siblings. So the quoted-span hole is closed as designed and the stated count is still falsified by the thing it counts, by a different member. Closing the escaped form is left to the author: the row's boundary sentence is "a separator that sits inside a quoted span", three parties reached that boundary by measurement, and widening a repair past its authorisation is not the implementer's call |
 
-## What this row does and does not claim
+**One row.** The log was empty by construction after the reset rather than by omission — see below — and
+this is the first divergence recorded against the base now in force.
 
-- **The failure was the mechanism working.** The suite's pinned assertion is there precisely so that a
-  change to the corpus cannot move the count silently. It fired. Nothing about this divergence is a
-  defect in the suite, in the payload, or in the subtask; the design's file list was simply short by the
-  two files that hold the figure the subtask moved.
-- **Both off-list files are verified at the current count.** All six spellings read 55, and
-  `bash scripts/test-check-plan-invariants.sh` reports **265 passed, 0 failed**, rc 0. The two comment
-  spellings in the payload were confirmed against the diff rather than inferred, and so were the four in
-  the suite.
-- **The count 53 still appears in the payload and is correctly untouched.** It states a different figure
-  there — the shell-spelling share of the corpus, not its markdown share — which is the hazard the design
-  names as "a sweep keyed on one spelling misses a third of its subject", met in the field: the superseded
-  value and a live unrelated value are the same token.
-- **One thing reported as a divergence is NOT one and deliberately has no row.** The extracted
-  `## Test Conventions` heading stays on the session-start page as an anchored pointer. Row 2 of the
-  decomposition asks in its own words for the extraction to leave "one anchored pointer" and to "keep the
-  heading text identical", so the retained heading is compliance with the row rather than a departure
-  from it. A row here for a non-divergence would be worse than a missing one, because the closing fold's
-  cost is meant to be proportional to the number of rows.
+## Why this log was reset, and what the reset cost
 
-## Not in this log, and where it went instead
+The design was **re-authored from scratch** rather than amended, so the document the previous row
+diverged from no longer exists. A row records a departure from a frozen base; when the base is replaced,
+a row against the old one names nothing, and the pairing gate said so in those terms — it reported
+`pairs=0` with the row carrying no marker in the design, run before the reset rather than inferred.
 
-**The amendment adding subtask 16** — closing the edit-time guard's blindness to a separator character
-used inside a quoted span of the command — is scope the author approved, so it amends the design rather
-than appearing here. A changed requirement goes to the spec, a changed artefact comes to this log, and
-new scope the author approves goes to the design; nothing is recorded in two of the three.
+**The reset cost nothing, and the reason is that the row's SUBJECT is gone rather than that the new base
+restates it.** The row recorded that a decomposition row named seven files where nine changed, because two
+files outside that row's list pin a count the subtask falsified. That subtask is not in the current plan
+at all: the work shipped, and the base authored after it plans only what is left. So there is no row left
+for the divergence to be a departure from.
 
-**The corrected instruction-file sizes** fold into the design for the same reason: they are planning
-inputs that a later subtask acts on, not a record of shipped work departing from the plan. The design now
-carries the freeze reading and the current reading side by side, each with its provenance, and the
-obligations below them are stated against the current one.
+**What is NOT claimed here, because it would be false.** The two off-list files were a verification suite
+and a verification payload, and naming a suite in a design is now forbidden outright, so the current base
+could not close that gap by listing them even if the subtask were still in the plan. The base records that
+limit in its own terms instead, and the repository's own derived-suite comparison is what makes such a
+path land. Version control holds the superseded log in full, so nothing about the earlier round is lost
+— only its standing as an open correction is.
+
+**One side effect worth naming:** the superseded row addressed its target by an ordinal within the design.
+That form is now forbidden outright, and the spec states the prohibition generally rather than only for
+plan documents. So the reset removes an instance of this task's own subject from this task's own
+artefacts, by replacement rather than by a sweep.

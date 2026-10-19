@@ -24,7 +24,7 @@ When triggered (every design-defined group OR compaction detected):
 
    ```
    Agent(subagent_type="general-purpose",
-         prompt="Read ai-docs/plans/YYYY-MM-DD-name.progress.md and complete Group <X>'s subtasks <N>–<M>, then return. DELETE any comment (doc-comment / `//` / `/* */`) that restates what the code, symbol name, type, or serialization tag already says — a field doc that paraphrases the field name IS narration; remove it. Keep ONLY a genuinely non-obvious 'why' (${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments). Applies to prod AND test code.")
+         prompt="Read ai-docs/plans/YYYY-MM-DD-name.progress.md and complete Group <X>'s subtasks <N>–<M>, then return. DELETE any comment (doc-comment / `//` / `/* */`) that restates what the code, symbol name, type, or serialization tag already says — a field doc that paraphrases the field name IS narration; remove it. Keep ONLY a genuinely non-obvious 'why', and KEEP any comment an instrument reads — a directive is not a comment, deleting one is a finding rather than a cleanup, and that section's membership test decides a form no example list names (${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments). Applies to prod AND test code.")
    ```
 
 4. Do NOT spawn one Agent per subtask. The group is the unit of fan-out; the subtask is the unit of commit.

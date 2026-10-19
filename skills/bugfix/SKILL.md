@@ -64,12 +64,12 @@ Find the single point of failure.
 
 1. Read only files involved in the trace.
 2. Find the line where the contract is violated.
-3. State: `"Root cause: ClassName.method() in path/Foo.kt line N — does X instead of Y"`.
+3. State: `"Root cause: ClassName.method() in path/Foo line N — does X instead of Y"`.
 4. Append to the trace:
 
    ```markdown
    ## Root Cause
-   `ClassName.method()` in `path/Foo.kt` line N — does X instead of Y
+   `ClassName.method()` in `path/Foo` line N — does X instead of Y
    Confirmed by user: ⏳ PENDING
    ```
 

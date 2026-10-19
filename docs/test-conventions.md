@@ -14,7 +14,7 @@ Language-agnostic rules. Framework-specific conventions (which DI test annotatio
 - A mock the test never stubs or verifies belongs in the class-level mock declaration list, not a standalone field. Reserve the field form for mocks the test actually stubs or verifies.
 - Prefer the mocking library's declarative stubbing form over the imperative one.
 - Use matchers on **all** args of a stubbed call, never a raw+matcher mix.
-- Prefer expressive matcher assertions; bare `assertEquals` / `assertTrue` at last resort only.
+- Prefer expressive matcher assertions; bare assertions at last resort only.
 - Inline single-use vars. Merge assertions via value-type equality rather than field-by-field checks.
 - Use the project's shared test fixtures; no domain mocks where a fixture exists.
 - No trivial delegate-to-DAO tests.

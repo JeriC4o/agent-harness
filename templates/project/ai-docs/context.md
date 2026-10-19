@@ -73,6 +73,17 @@ Idiom rules that only make sense for this project's language (stdlib preferences
 migration tool, metrics library) belong here, not in the harness's language-agnostic
 `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`.
 
+## Deployed configuration
+
+**Deployed-config globs:** `%DEPLOYED_CONFIG_GLOBS%`
+
+The file class whose CONTENTS are ASK-gated by `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Permissions
+— deploy manifests and anything else holding environment-specific values, in this project's own spelling.
+The harness search guard reads the line above at search time, so a content search whose file filter can
+match one of these globs is refused before it runs. One glob per backticked token, all on that one line;
+write `none` if this project has no such class, which silences the guard. Keep the line's `**…:**` key
+exactly as spelled — the guard matches on it.
+
 ## Build & test commands
 
 The canonical command table lives in this project's [`AGENTS.md` § Build & Test](../AGENTS.md#build--test); repeat here only the

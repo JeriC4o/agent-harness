@@ -18,7 +18,6 @@ entity from `ai-docs/context.md`, a file path, or a URL host. The gate runs when
 
 A candidate describes the **shape** of a mistake, never the instance:
 
-> ❌ The `DiffSet` merge in `server/core/Merge.kt` silently dropped rows when `PROJ-8812` landed.
 > ✅ A gate whose failure mode is empty output reports success when it matched nothing.
 
 If the lesson cannot survive having every project-specific noun removed, it is a project lesson — leave it

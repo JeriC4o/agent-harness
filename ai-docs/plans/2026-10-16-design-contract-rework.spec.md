@@ -23,8 +23,11 @@ sequencing section governs the ORDER the work is done in; it is not a licence to
 
    **What is marked and what is referenced is always an entity, never a position.** In source: a method, a
    class, a variable, inside a named file. In prose: a heading, or a numbered item. A file-and-line position
-   stops being the required form of a reference inside a durable plan document, and a position is never what
-   either side points at.
+   stops being a form of reference at all, and not only inside a plan document: the prohibition is general —
+   a position that outlives the task it was taken in, or that a reader may trust without it having been
+   re-derived, is forbidden wherever it sits, method pages, agent contracts, gate scripts and templates
+   included — and a plan document is one place it bites rather than the extent of it. A position is never
+   what either side points at.
 
    **The link between the two sides is an id they share.** A statement in a plan document carries an id; the
    same id appears in a comment on the entity that statement leans on. That shared id is what makes the
@@ -33,9 +36,14 @@ sequencing section governs the ORDER the work is done in; it is not a licence to
    is already a declared identity and carries the id without a comment.
 
    Source files are therefore edited by this work and an id convention begins to be maintained. Line numbers
-   keep exactly one use and lose the other: accepted in a round's own working record and in review output
-   regenerated against the file in front of it, forbidden as an anchor inside a durable document. The
-   distinguishing property claimed for an entity reference is detectability, not stability: a stale name
+   keep exactly one use and lose every other: accepted in output that outlives no task — written inside the
+   one it serves and deleted with it — and whose every position is re-derived against the file at the moment
+   the row carrying it is written or touched. A round's own working record and a review pass's own findings
+   both hold on both properties, and the second is what keeps a later reader, spawned fresh and never having
+   seen the file, from trusting a position somebody else wrote. A position failing either property is
+   forbidden wherever it sits: the carve-out is the output's properties, never the identity of the file
+   holding it.
+   The distinguishing property claimed for an entity reference is detectability, not stability: a stale name
    resolves to nothing, while a stale position resolves to something plausible.
 
    **The id comment also has to be admitted by the rules that strip comments.** The repository deletes a
@@ -52,11 +60,13 @@ sequencing section governs the ORDER the work is done in; it is not a licence to
 
 3. **The checks on a design become convergence classes, and the mechanical ones hold the work.** Beside the
    existing architectural check, four classes: logical completeness (every named object has a place, a
-   reason, a stated behaviour and something that will verify it; every requirement reaches an object; no
-   dangling section reference; no criterion without a verification line), isolation (one fact in one place),
-   semantic consistency (the document contradicts neither itself nor the artefacts it describes), and
-   arithmetic (a stated rate or formula holds). Three are mechanical; semantic consistency is the one
-   judgement class. What a design is checked against is convergence, never how much evidence it contains.
+   reason, a stated behaviour and the cases it is used in; every requirement reaches an object; no dangling
+   section reference), isolation (one fact in one place), semantic consistency (the document contradicts
+   neither itself nor the artefacts it describes), and arithmetic (a stated rate or formula holds). Three
+   are mechanical; semantic consistency is the one judgement class. **No class asks what verifies an
+   object**, because a design says nothing about tests: the furthest a completeness question reaches is the
+   cases an object is used in. What a design is checked against is convergence, never how much evidence it
+   contains.
 
    **All three mechanical classes refuse rather than advise**, and a route exists to excuse a single finding
    that is harmless. An excuse, once granted, stands permanently until someone removes it by hand. The route
@@ -114,10 +124,15 @@ those two classes anything to check in both directions.
 - **Re-running the prior-art research.** The issue's verdicts are taken as given, including the three that
   go against the position which opened it.
 - **Positions inside a round's own working record.** The record of a review round is deliberately the home
-  for the identifiers a durable plan may not carry; it is produced against the tree in front of it and
+  for the identifiers no durable surface may carry; it is produced against the tree in front of it and
   deleted with the task. Its file-and-line obligations stay exactly as they are — including its standing
   duty to re-derive every position in a row it touches — and a sweep that removed them would break the
   routes that read it.
+- **Sweeping the positional anchors already stored elsewhere in the tree.** This work changes the rule and
+  the form a reference takes; removing the anchors that predate it is a separate act, and whether and in
+  what order that happens is the author's to decide outside this plan. The same posture this section
+  already records for stale absolute figures, and for the same reason: changing what is admitted is not the
+  same work as correcting what was already admitted.
 - **Retro-fitting ids to entities no plan references.** An id is created on the entity a plan leans on,
   never as a coverage exercise over the tree. This is also what keeps the second direction of the check
   honest rather than unsatisfiable: the source side is marked only where a statement exists to name it.
@@ -140,7 +155,7 @@ those two classes anything to check in both directions.
 | Question | Decision |
 |---|---|
 | Does this task take all five plan items, or a narrower slice? | All five, as one spec and one task, with no work carved out into new tickets. The sequencing section constrains order only. |
-| How far does the move away from file-and-line references go? | All the way: an entity is marked in the source and the plan's statement names it through a shared id. Both halves hold at once and neither is an alternative to the other — what is marked and referenced is always an entity, and the id shared between the two sides is what the check reads in both directions. The author calls this the strongest available form. Measured before the choice: the tree carries no declared id of any form today, so every id this work relies on is one this work creates. |
+| How far does the move away from file-and-line references go? | All the way: an entity is marked in the source and the plan's statement names it through a shared id. Both halves hold at once and neither is an alternative to the other — what is marked and referenced is always an entity, and the id shared between the two sides is what the check reads in both directions. The author calls this the strongest available form. Measured before the choice: the tree carries no declared id of any form today, so every id this work relies on is one this work creates. **And the reach is the whole surface, not the plan document.** A file-and-line anchor is forbidden wherever it outlives the task it was taken in, or may be trusted without having been re-derived — method pages, agent contracts, gate scripts, templates — and the one carve-out is a property of the output rather than of the file holding it: it dies with the task, and every position in a row it touches is re-derived as that row is written. A plan document is where the rule was first written down, not where it stops. Whether the anchors that predate the rule are swept out of the tree is a separate act, recorded as outside this task's scope. |
 | What does an id sit on, and what may it never sit on? | An entity. In source that is a method, a class or a variable inside a named file; in prose a heading or a numbered item. Never a position, and never a region of a file identified by where it falls. A prose entity needs no comment, because its heading already is its declared identity. |
 | Which way does the check run? | Both, and that is the reason the form was chosen. Every id a plan names must resolve to the entity carrying it, and every id marked in the source must be named by some statement. One direction alone would leave either dangling statements or orphaned marks, and the two failures are discovered at different times. |
 | Is a bidirectional keyed pairing a new mechanism shape for this repository? | **No, and that is the strongest precedent available — it is already shipped here, not merely in an external toolchain.** The closing pass's own check already pairs a marker carrying a key inside a design against the row carrying that key inside the correction log, compares the two as sets in both directions, and reports a marker with no row and a row with no marker each as a finding. Item 2 extends that proven shape from design-to-log to design-to-source, so the work inherits a tested mechanism rather than inventing one — and inherits the three hazards it already records. |
@@ -154,6 +169,7 @@ those two classes anything to check in both directions.
 | Does the closing pass's existing retention-and-residue check need changing for item 5? | No, verified against it: it compares the retained contract sections against their text in version control, asserts the design free of the spent headings and the markers, and asserts the correction log gone. Not one of those assertions presumes the document was re-authored, so keeping the frozen text with corrections applied satisfies all of them unchanged. |
 | Which record loses its duty to re-derive file positions, and which keeps it? | Verified, because the same sentence sits in two contracts governing records with different lifetimes. The **committed** correction log loses it: its references become entity-plus-id, so there is no position left to re-derive. The **ephemeral** round working record keeps it untouched — it is produced against the tree in front of it, deleted with the task, and is the sanctioned home for positions. Reading the obligation as one rule over both records would have removed a duty that record still needs. |
 | Is the rule about a deliberately left-open gap in scope? | Yes — taken on in this task, authorised explicitly by the author on top of the earlier decision to do all of it. Leaving a question open now carries a stated price instead of being free, and the price needs no new mechanism because an approach-breaking divergence already routes back through the full cycle. |
+| What does the logical-completeness class ask of a named object, now that a design says nothing about tests? | Its place, its reason, its stated behaviour, and the cases it is used in — and nothing at all about what verifies it. The clause asking each object for something that will verify it is gone, and so is the one reporting a criterion that carries no verification line. The only thing a design could name as verifying an object is a test, and that element was removed from the document entirely; what survives on the design side is the list of cases each object is used in, which is what the class now reads. Coverage became a presence question answered after the fact, with the pointer carried on the test side, so a plan document enumerates nothing and this class has nothing to ask. |
 | Does the isolation class reach a paraphrase, or only a repeated literal? | Repeated literals, default taken and recorded rather than asked. That is the class of failure actually measured on the run that prompted this work, where one figure was pinned at three sites. Reaching a paraphrase needs judgement, which would move the class across the determinism boundary the whole plan rests on — three mechanical classes are what pays for the single judgement one — and paraphrased self-contradiction is already the judgement class's own subject. |
 | Who may excuse a mechanical finding? | The author, by an explicit act, and never the pass that produced the document. The repository's standing rule is that a rule enforced only by an instruction file is not a refusal, and the one comparable act in the tree is put to the author for exactly that reason. A self-excusing pass would make the refusal just decided advisory again. Removing an excuse is an act of the same kind, by the same hand. |
 | The issue states that every surface this work touches is a protected page whose edit fires an author-authorised refusal. Does it? | Not for all of them, verified against the live protected set. The design contract, the design-review contract and the closing-pass skill are inside the edit-time refusal; the principles page and the method page are deliberately outside it, the latter with a measured reason recorded on the principles page itself. The comment policy and the review passes that sweep comments are outside it too, and this work now also touches those. The work plans for a refusal on the first group and for the principles page's own two-edit authorisation route on the second, rather than assuming one mechanism covers both. |
@@ -250,7 +266,7 @@ those two classes anything to check in both directions.
 | AC1 | A number stated in a spec or a design that does not name, in the same sentence, which kind of number it is and how it was obtained is reported as a finding. |
 | AC2 | A number whose only possible origin is a measurement of the artefact the document describes is reported wherever it appears in either document, naming the number and where it sits. |
 | AC3 | An estimate whose derivation is shown in place is accepted, and so is a threshold handed down by the task. The obligation admits the derived figure that chooses between approaches and excludes only the figure that cannot exist when the document is written. |
-| AC4 | A reference in a durable plan document that identifies its target by position within a file is reported. One that identifies its target as a named entity — a method, a class or a variable in a named file, or a heading or numbered item in prose — is not. |
+| AC4 | A reference that identifies its target by position within a file is reported wherever that position outlives the task it was taken in, or may be trusted by a reader without having been re-derived — a plan document being one such place and not the extent of it. One that identifies its target as a named entity — a method, a class or a variable in a named file, or a heading or numbered item in prose — is not. |
 | AC5 | A reference whose named entity no longer exists is reported, naming the reference that failed to resolve; a reference whose entity exists is silent. |
 | AC6 | A statement that leans on a source entity carries an id, and the same id appears in a comment on that entity. A statement whose id is matched by no marked entity is reported, and a marked id that no statement names is reported, each naming the id and which side was missing. The number of pairs actually compared appears beside the verdict, so a document carrying no ids and a source carrying none do not read as agreement. Where the entity's language admits no comment, the obligation narrows: the statement names the entity, and the reference resolves in ONE direction only — from the statement to the entity it names, which must exist — and no reverse pairing is asserted for it. The guarantee that holds in both directions therefore does not cover those entities, and that limit is stated here rather than left to be inferred, because a criterion that silently loses a guarantee is worse than one that states where it stops. |
 | AC7 | An id resolves to exactly one entity. The same id marked on two entities, or claimed by two statements, is reported as ambiguous rather than passing in either direction. |
@@ -258,7 +274,7 @@ those two classes anything to check in both directions.
 | AC9 | The rule that admits such a comment states what makes it a directive rather than listing which syntaxes qualify, so a comment form the rule's examples never named is still classed correctly. |
 | AC10 | A position within a file remains accepted in a round's own working record and in review output produced against the file it describes and discarded with the round that produced it, and the obligations that read those positions — including the duty to re-derive every position in a row that is touched — are unchanged by this work. |
 | AC11 | The committed record of corrections carries no surviving obligation to re-derive a file position, because the references in it name entities and ids instead. The ephemeral working record's obligation is untouched, and no single rule spans both. |
-| AC12 | A plan naming an object that has no stated place, no reason, no stated behaviour, or nothing that will verify it is reported, naming the object and what it lacks. The same report covers a requirement that reaches no object, a section reference that resolves to nothing, and a criterion carrying no verification line. |
+| AC12 | A plan naming an object that has no stated place, no reason, no stated behaviour, or no stated cases it is used in is reported, naming the object and what it lacks. The same report covers a requirement that reaches no object and a section reference that resolves to nothing. What verifies an object is not a plan document's content, so nothing in this report concerns it: an object with nothing that verifies it is not reported, and neither is a criterion carrying no verification line. |
 | AC13 | A plan stating the same fact in two places that can drift apart is reported, naming both places. The reach is a repeated literal; a paraphrase is the judgement class's subject and not this one's. |
 | AC14 | A stated rate or formula whose arithmetic does not hold is reported, with the computed value shown beside the written one. |
 | AC15 | A finding of any of the three mechanical classes prevents the plan from being treated as agreed. The hold is a refusal and not a recommendation: nothing short of fixing the finding or excusing it explicitly lets the plan proceed. |

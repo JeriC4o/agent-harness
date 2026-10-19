@@ -313,7 +313,7 @@ else:
 # three cannot-run guards makes all three unreachable with an identical line
 # multiset -- while a moved paragraph is a re-wrap or a re-order and not a
 # change. Positional prose was tried and rejected as breaking: it reports every
-# re-ordering, and the 56 markdown files here are measured re-wrap-stable at
+# re-ordering, and the 59 markdown files here are measured re-wrap-stable at
 # three widths, which is the property that would be lost. A line's INDENTATION
 # is semantic in the same way, so it is read as part of the statement rather
 # than compared separately: a block de-indented out of its conditional does
@@ -453,7 +453,7 @@ def segment_prose(body):
         # running. Never mid-paragraph: a re-wrap can put a number-and-period at
         # the start of a line, and a rule that trusted the line start would then
         # read half a sentence as a new item. This rule is what makes every one
-        # of the 56 markdown files re-wrap-stable.
+        # of the 59 markdown files re-wrap-stable.
         if LIST_HEAD.match(plain.lstrip()) and (at_block_start or in_list):
             flush()
             buf.append(t)

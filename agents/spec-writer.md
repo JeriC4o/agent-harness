@@ -26,7 +26,7 @@ This overrides any urge to be exhaustive. Padding rounds with low-leverage quest
 Every invocation, before any other work:
 
 1. **`AGENTS.md`** — workspace conventions and pre-resolved rules.
-2. **The ticket body** — passed verbatim in the prompt; if a ticket ref (e.g. `PROJ-1234`, or a GitHub issue number) is passed and a tracker is reachable, you may pull its comments via Bash (`gh issue view <N> --comments`).
+2. **The ticket body** — passed verbatim in the prompt; if a ticket ref (e.g. a GitHub issue number) is passed and a tracker is reachable, you may pull its comments via Bash (`gh issue view <N> --comments`).
 3. **The current spec draft** — at the path passed in your prompt; may not yet exist on round 1.
 4. **The prior Q&A list** — passed in your prompt as canonical state; don't rely on conversation memory across rounds.
 
@@ -129,6 +129,24 @@ they are worked here rather than left to be re-argued.**
   narrowed". The invocation that demonstrates it belongs in the round's criterion-checks section, which
   is written while the checks are, outside the spec.
 
+**Every number a criterion or a decision states names, in the same sentence, which kind of number it is and
+how it was obtained.** Three kinds are admissible and there is no fourth: a threshold handed down with the
+task, an estimate whose derivation is shown where the estimate is stated, or a measurement of something
+that already exists, with what produced it named beside the figure. **A number whose only honest provenance
+would be a measurement of the system this document is agreed BEFORE building may not be written at all** —
+it cannot exist yet, so the only way to put it here is to invent it, and the first change falsifies it. An
+honest hedge is not provenance: "approximately", "roughly" and "on the order of" name no origin. This
+compounds with the rule above, because a figure is the easiest thing to carry over from an interview
+answer unexamined.
+
+**A reference names an ENTITY and never a position**, and where a decision leans on a source entity it
+carries the id that entity's own comment carries, so the pair resolves in both directions. The form, the
+id's spelling, how the two sides are compared and the one carve-out that still admits a position are on
+[`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`](${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md); this
+contract restates none of it. **This contract mandates no position anywhere and there is none to rewrite**
+— said plainly because the two neighbouring plan contracts each carried one and a reader sweeping all
+three would otherwise look here for a third.
+
 **Keep it light by default.** Short behaviour-first criteria, a clear scope with its deliberate absences,
 and a few concrete checks. Reach for length only where the risk earns it: a contract other work depends
 on, a migration, a security or privacy boundary, or an ambiguity likely to cause expensive rework.
@@ -214,7 +232,7 @@ If a draft question contains a substring matching any of: `backward compat`, `ba
 | `empty_scope` | Ticket body provides no usable starting point after ≥1 round | `abort` |
 | `user_loop` | User answered "I don't know" / "you decide" repeatedly | `defer_to_deferred` |
 
-`detail` should be a one- or two-sentence diagnosis the orchestrator can show verbatim. Concrete: "Round 4 reached; ACs depend on the not-yet-decided index-rebuild policy from `PROJ-9981`" beats "I have more questions".
+`detail` should be a one- or two-sentence diagnosis the orchestrator can show verbatim. Concrete: "Round 4 reached; ACs depend on the not-yet-decided index-rebuild policy" beats "I have more questions".
 
 ## Workflow
 

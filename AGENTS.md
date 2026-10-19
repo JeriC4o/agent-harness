@@ -217,6 +217,17 @@ one `python3`; no compiled sources.
 - **Any PR touching plugin-loaded content bumps `.claude-plugin/plugin.json`'s patch version.** The
   install cache is keyed by version, so an unbumped fix silently never reaches an installed copy. See
   [`README.md` § Releasing](README.md#releasing).
+- **Renaming a `## ` heading in `templates/project/ai-docs/context.md` updates the heading exclusion in
+  `scripts/check-candidate.sh` in the same act.** That gate derives a promotion candidate's deny
+  vocabulary from the project's own `ai-docs/context.md`, which starts life as a copy of that template,
+  and subtracts a hand-written list of generic section names. Nothing derives either list from the other.
+  Today most arms are inert, because a later stage of the same pipeline admits only single-word tokens —
+  the live ones are `%`, `Overview`, `Registry` and `Layout`. The hazard is forward: rename a heading to
+  a **single word** and it silently becomes a deny term, refusing any candidate that contains that common
+  word, with no visible cause. This is recorded here rather than beside the Propagation Rule's sync
+  groups for the same reason as the learning-log mirror above — the gate is a method file and
+  `templates/` does not exist in a consuming project, so no method page may name the other side. The
+  script carries the full rationale, including why the list is stated rather than derived.
 
 ## Register
 

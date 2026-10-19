@@ -30,17 +30,11 @@
       "Read(**/.env)",
       "Read(**/*.keys)",
       "Read(**/secrets.json)",
-      "Read(**/GoogleService-Info.plist)",
-      "Read(**/*Keys*.swift)",
       "Read(**/*Secrets*)",
       "Read(**/.DS_Store)",
       "Read(**/*.log)",
       "Read(.idea/**)",
-      "Read(.vscode/**)",
-      "Read(out/**)",
-      "Read(build/**)",
-      "Read(target/**)",
-      "Read(node_modules/**)"
+      "Read(.vscode/**)"
     ]
   }
 }

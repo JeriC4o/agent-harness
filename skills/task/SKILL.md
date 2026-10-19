@@ -11,7 +11,7 @@ Full workflow for a task. Steps execute **strictly in sequence** — proceeding 
 > **Commit authorisation.** `git commit` / `git push` / `gh pr create` are ASK-level for Claude; Step 12 prepares the staged-file list + message, confirms, then commits. Hook behaviour (`auto-stage-learnings`, `archive-protection-reminder`, `branch-protection`): [reference.md § Commit authorisation + hooks](reference.md#commit-authorisation--hooks).
 
 The task may originate from either:
-- a **ticket key** (e.g. `/task PROJ-1234`) — `/interview` reads the ticket during Steps 1–5 if the project has a tracker reachable from this session; otherwise the key is carried as a reference only.
+- a **ticket key** — `/interview` reads the ticket during Steps 1–5 if the project has a tracker reachable from this session; otherwise the key is carried as a reference only.
 - a **user description** (e.g. `/task add foo to bar`) or empty (`/interview` interviews the user).
 
 > **⚡ Compaction recovery check — read FIRST on every invocation.**

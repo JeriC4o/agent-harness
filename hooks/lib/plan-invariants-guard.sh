@@ -41,18 +41,23 @@
 # that one writer escaping the refusal -- which the detection legs still catch,
 # since an edit that escapes this guard does not escape them.
 #
-# THE SIX SILENT FORMS OF THE WRITE ARM, every one of them under-firing. Three
-# never spell the protected path as a literal token, so no resolution rule
-# reaches them: a glob, a command substitution that produces the path, and a
-# target list read from a file. One follows from the write condition: a writer
+# THE SEVEN SILENT FORMS OF THE WRITE ARM, every one of them under-firing.
+# Three never spell the protected path as a literal token, so no resolution
+# rule reaches them: a glob, a command substitution that produces the path, and
+# a target list read from a file. One follows from the write condition: a writer
 # whose construct is not listed. Two follow from operand rules kept deliberately
 # narrow -- an interpreter script's variable-indirected writer, and a directory
-# change that is not a leading prefix.
+# change that is not a leading prefix. One follows from segmentation: a
+# separator the shell would not treat as one because a BACKSLASH escapes it,
+# outside any quoted span. Its QUOTED cousin was silent here too and this count
+# read six while it was, which is why the escaped form is spelled out rather
+# than folded into the operand rules; the neutralisation before the segment
+# loop closes the quoted one and does not reach this.
 #
 # THE ACCEPTANCE CONDITION ADDS TWO OF ITS OWN, also under-firing: the payload
 # invoked directly, which never spells the entry point the condition matches on,
 # and the acceptance flag reached through a variable or a shell alias rather
-# than spelled in the command. All eight are asserted in the suite rather than
+# than spelled in the command. All nine are asserted in the suite rather than
 # claimed here.
 #
 # Tests: hooks/lib/test-plan-invariants-guard.sh
@@ -242,6 +247,50 @@ path_shaped() {
   return 1
 }
 
+# THE EIGHT SEGMENTATION CHARACTERS, as data, because two steps read them: the
+# neutralisation below and the translation that feeds the segment loop. Spelled
+# once so the two cannot be edited apart -- a character present in one and not
+# the other reopens exactly the hole the neutralisation closes. The suite reads
+# this assignment and sweeps every character in it.
+SEGMENT_SEPARATORS=';&|(){}`'
+
+# A SEPARATOR INSIDE A QUOTED SPAN IS NOT A SEPARATOR, and by segmentation time
+# nothing recorded that it was quoted: the padding below replaces both quote
+# characters with spaces, and the translation feeding the segment loop cuts on
+# all eight. So `sed -i '' 's|a|b|g' <protected page>` put its in-place writer
+# and its resolved path in different segments, each missing the other, and the
+# arm went silent on every one of the eight and in both quote spellings.
+# Neutralised here, while the quotes are still there to read, leaving the
+# quoting itself intact and the eight characters meaningful wherever the shell
+# would treat them as a separator. An inert character rather than a deletion,
+# so the span stays the single token the shell would make of it.
+#
+# Shrinking the separator set was the ruled-out repair: those characters are
+# what makes a compound command segment at all, and the silences this guard
+# deliberately keeps -- a read beside a write, a directory change that is not a
+# leading prefix -- are read off that same segmentation.
+#
+# A separator the shell would not treat as one because a BACKSLASH escapes it,
+# outside any quoted span, is NOT reached by this. It is the enumerated residual
+# the header names.
+#
+# The fallback is to the UNTOUCHED text, never to an empty string: an awk that
+# is absent or that fails would otherwise empty `padded` and silence the whole
+# write arm, which is a wider silence than the one being closed.
+neutralised=$(printf '%s' "$rest" | awk -v seps="$SEGMENT_SEPARATORS" '
+{
+  out = ""; q = ""
+  for (i = 1; i <= length($0); i++) {
+    c = substr($0, i, 1)
+    if (q == "") { if (c == "\"" || c == "\47") q = c }
+    else if (c == q) q = ""
+    else if (index(seps, c) > 0) c = "_"
+    out = out c
+  }
+  print out
+}' 2>/dev/null) || neutralised=""
+[ -n "$neutralised" ] && rest=$neutralised
+
 padded=$(printf '%s' "$rest" | sed -e 's/>>/ @APPEND@ /g' -e 's/>/ @REDIR@ /g' -e "s/[\"']/ /g")
 
 WRITER_WORDS=' patch truncate shred rm install ed tee '
@@ -347,7 +396,7 @@ while IFS= read -r seg; do
     for t in "$@"; do path_shaped "$t" && record_hit "$(join_dir "$t")"; done
   fi
 done <<EOF
-$(printf '%s' "$padded" | tr ';&|(){}`' '\n\n\n\n\n\n\n\n')
+$(printf '%s' "$padded" | tr "$SEGMENT_SEPARATORS" '\n\n\n\n\n\n\n\n')
 EOF
 
 # The interpreter construct. Only the path-shaped tokens inside the write call's

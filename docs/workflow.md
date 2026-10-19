@@ -316,8 +316,8 @@ Per AGENTS.md `## Workflow` AXIOM 2: after every push to a feature branch with a
 
 ## PR title + body shape
 
-- **PR title:** `<TICKET-KEY>: <conventional-commits header>` when the project uses ticket keys
-  (e.g. `PROJ-123: feat(api): add label endpoint`); a bare conventional-commits header otherwise.
+- **PR title:** `<TICKET-KEY>: <conventional-commits header>` when the project uses ticket keys; a bare
+  conventional-commits header otherwise.
 - **PR body:** summary paragraph(s) ONLY — what changed and why, ≤3 bullets. Markdown renders, so bullets
   and inline code are fine; the constraint is *content* (summary-only), not plain text. **NEVER** add
   `## Summary` / `## Test plan` section headers, test-count or stats lines ("N tests green", "all ACs

@@ -177,6 +177,20 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | Formatter | none |
 | Linter (the gate) | `shellcheck` for `.sh`; `jq -e .` for JSON manifests. **Neither the `shell-syntax` member nor `untracked-shell` globs anything but `*.sh`, so no gate in the pre-commit list parses a payload sibling by walking the tree** — each is asserted by the suite that owns its entry point instead: `scripts/check-plan-invariants.py` is `ast.parse`d by a leg of `scripts/test-check-plan-invariants.sh`, which the single entry point runs, and both files are additionally asserted tracked by the check itself, because a file read for its data while untracked makes the local run green and every other clone a cannot-run |
 | Source root / test root | n/a — no compiled sources |
+| Required external interpreters | `python3` and `perl`, beside the `awk` and `jq` the payload files above need. `python3` runs `scripts/check-plan-invariants.py` and is the plan-invariants check's own scanning tool. `perl` executes nowhere in the tree's shipped code and is still a hard dependency of the mandatory check list: five of its members build their mutant fixtures with it — the loop-index and loop-verdict verifications under `hooks/lib/`, and the bin-of, loop-grid and loop-metrics suites under `scripts/` — so on a host without it those positive controls cannot run, and a could-not-run is not a pass. `scripts/run-checks.sh` demands it in the same preflight roster as the tools it invokes itself, which is what makes that failure loud and early rather than mid-suite. **A word-list mention is not an invocation:** `hooks/lib/plan-invariants-guard.sh` and its own verification carry the name as DATA, inside the vocabulary that recognises a command writing a file in place, and neither runs it |
+
+## Deployed configuration
+
+**Deployed-config globs:** `.env` `.env.*`
+
+The file class whose CONTENTS are ASK-gated by
+[`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Permissions](../docs/agents-method.md#permissions). The
+search guard `hooks/lib/deployed-config-guard.sh` reads the line above at search time, so the gated class
+is this project's own spelling rather than one stack's filenames carried inside a method file. One glob
+per backticked token, all on that one line; a project with no such class writes `none`, which silences the
+guard. **This project holds no deployed configuration in the tree** — the two globs are the class the
+method surface itself names, they are gitignored here, and the declaration exists so the guard has a class
+to read rather than one to invent.
 
 ## Build & test commands
 

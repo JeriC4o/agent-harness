@@ -50,18 +50,18 @@ A public function that asserts a precondition, throws an argument/state exceptio
 
 `@return` is required when:
 
-- The return type is a multi-shaped result (sealed class, `Result<T>`, `Either`).
+- The return type is a multi-shaped result.
 - `null` carries semantic meaning (a `Foo?` whose null encodes "not found" vs "deleted").
 - The return is a collection whose ordering / sortedness / nullability of elements is invariant.
 
 `@return` is NOT required for:
 
-- Single-shape returns where the type name is self-explanatory (`fun userId(): UserId`).
+- Single-shape returns where the type name is self-explanatory.
 - Unit / `void` return types.
 
 ## Code fences
 
-- Tag every fence with the sample's language (` ```kotlin `, ` ```go `, ` ```ts `).
+- Tag every fence with the sample's language.
 - Markdown in doc-comments: use backtick fences for code blocks.
 
 ## Self-sufficiency: no repo-internal references
