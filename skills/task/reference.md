@@ -127,6 +127,45 @@ The interview handles entry-mode detection, scope confirmation, clarifying-quest
 
 **Before Step 6:** confirm spec exists at `ai-docs/plans/YYYY-MM-DD-name.spec.md` and user has approved its `## Acceptance Criteria`.
 
+## Step 7 — the two convergence halves (detail)
+
+The step produces BOTH results before the review spawn, and the review reads both. The ordering is
+the obligation: a judgement class may never be the only check standing, and nothing in either
+contract asks for that — it is satisfied by the deterministic check running in the same step.
+
+**The deterministic half** is `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec> <design>`,
+its own bare call. Six classes, three of which HOLD a plan — completeness, isolation, arithmetic —
+and three of which only report. Read the per-class roster and the counts beside the verdict rather
+than the exit status: a class reporting zero over a document with content examined nothing, and a
+plan whose findings are all excused exits 0 while saying so in those terms. A cannot-run is not a
+pass. The author's own exit check already ran this before handing back
+([`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Rules](${CLAUDE_PLUGIN_ROOT}/agents/design.md#rules)),
+so a holding finding arriving here means the plan changed after that check or the check was skipped
+— either is worth saying out loud rather than re-running quietly.
+
+**The judgement half** is the `plan-convergence` reader. Its output is a report and never a verdict,
+so there is nothing here to route on: the findings travel into the review, which rules on them.
+
+```
+Agent(subagent_type="general-purpose", prompt="
+  Read ${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md and follow it.
+  Spec: ai-docs/plans/YYYY-MM-DD-name.spec.md
+  Design: ai-docs/plans/YYYY-MM-DD-name.design.md
+")
+```
+
+**Three figures in its report are part of the result and not decoration.** The agreement across its
+three readings, with the healthy figure it states before the first; the coverage line, naming each
+of its two classes covered or uncovered against the planted faults it reads on every run; and the
+outcome word, where `cannot-run` is not a pass. A report arriving without them is incomplete —
+re-spawn it rather than reading the finding list alone, because a finding list with no agreement
+figure cannot be told from a stable one.
+
+**Neither half is a verdict and neither blocks by itself.** What blocks is the reviewer's own rule
+([`${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` § Rules](${CLAUDE_PLUGIN_ROOT}/agents/design-review.md#rules)):
+GO is unavailable while an unexcused holding finding stands. Granting an excuse is the design
+author's act and leaves a checkable record; it is not the reviewer's and not the orchestrator's.
+
 ## Step 8 — progress-file creation template (detail)
 
 Create using canonical format at [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md). Required: `**Branch:**`, `**base_commit:**`, `**Last build:**`, `**current_step:**`, `**last_passed_gate:**`, `**entry_args:**`, `## Decisions log`. For `/task` also `**Issue:**` / `**Spec:**` / `**Design:**`.
@@ -186,6 +225,13 @@ Claude prepares the title + body per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md §
 - **Title:** `<TICKET-KEY>: <conventional-commits header>` when the project uses ticket keys; a bare conventional-commits header otherwise.
 - **Body:** summary paragraph(s) only — what changed and why, ≤3 bullets. Markdown renders, so bullets / inline code / links are fine — the constraint is *content* (summary-only). **NEVER** add `## Summary` / `## Test plan` section headers, test-count/stats lines, or `Co-Authored-By:` trailers (unless the user asks). **Name no ticket key other than the PR's own** — in a tracker-integrated repo a key in the description creates a remote link and can transition that ticket's status, and neither is undone by editing the text afterwards; backtick-wrap a key a human reader genuinely needs. Detail belongs in the commit body (`git log`) + the diff, not the PR description.
 - **Pass the body via `--body-file`** whenever it contains backticks, apostrophes, or a construct a `PreToolUse(Bash)` hook matches — see [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Hook false-positive guard`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#hook-false-positive-guard--body-content-matching-any-pretooluse-bash-regex).
+
+## Patterns
+
+Validated approaches `/task` should keep applying (carrot signals; soft verbs). **Each is stated in full elsewhere and this is a pointer list, not a second statement** — it was not: three rules lived only here until they were moved to the page that carries their siblings, which is the shape this list exists to avoid.
+
+- **Default to** resuming the SAME agent from its transcript (`SendMessage`) on a transport-level drop, with exponential backoff from the 2nd consecutive failure, rather than cold-spawning a replacement that discards its gathered context. Full rule: [SKILL.md § Step 8](SKILL.md#step-8-implementation); re-stated for the design phase in [SKILL.md § Design Amendment](SKILL.md#design-amendment-re-entrant--triggered-from-step-8-or-step-11).
+- **Writing and receiving a spawn prompt** — mark every factual claim with how it was obtained, treat a restated rule as a reminder rather than enforcement, read an instruction that contradicts itself as evidence rather than as a command, and read a relayed finding for which artefact it actually points at. All four, with the measurements behind them: [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication) and § Tooling.
 
 ## FORBIDDEN
 

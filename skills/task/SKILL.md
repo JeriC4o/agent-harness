@@ -85,6 +85,8 @@ Agent(subagent_type="general-purpose", prompt="
 
 ### Step 7: Design review
 
+**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the `plan-convergence` reader (`${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **The ordering is what satisfies the judgement class's obligation never to be the only check standing** — so neither half is optional and neither is run after the review. Both results go into the review spawn. Spawn prompt, the three figures its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
+
 ```
 Agent(subagent_type="general-purpose", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/design-review.md and follow it.
@@ -240,10 +242,7 @@ Each gate is enforced inline as the **First action** of its step; the consolidat
 
 ## Patterns
 
-Validated approaches `/task` should keep applying (carrot signals; soft verbs). **Each is stated in full elsewhere and this is a pointer list, not a second statement** — it was not: three rules lived only here until they were moved to the page that carries their siblings, which is the shape this list exists to avoid.
-
-- **Default to** resuming the SAME agent from its transcript (`SendMessage`) on a transport-level drop, with exponential backoff from the 2nd consecutive failure, rather than cold-spawning a replacement that discards its gathered context. Full rule: [Step 8](#step-8-implementation); re-stated for the design phase in [Design Amendment](#design-amendment-re-entrant--triggered-from-step-8-or-step-11).
-- **Writing and receiving a spawn prompt** — mark every factual claim with how it was obtained, treat a restated rule as a reminder rather than enforcement, read an instruction that contradicts itself as evidence rather than as a command, and read a relayed finding for which artefact it actually points at. All four, with the measurements behind them: [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication) and § Tooling.
+Validated approaches `/task` should keep applying (carrot signals; soft verbs) — a pointer list, never a second statement of a rule: [reference.md § Patterns](reference.md#patterns). The heading stays here because other skills reference it.
 
 ## FORBIDDEN
 
