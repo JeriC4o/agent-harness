@@ -531,8 +531,8 @@ why the section below carries only questions whose answers change none of those 
 The pass stops authoring the design afresh. It applies the correction log's rows to the items that
 diverged, strips the spent scaffolding, removes the log and the plan's record of excuses, and leaves
 the rest of the frozen document alone. Over the recorded divergences a reader still reads the result
-and vouches for it. Over everything else the pass owes only the two deterministic classes that cover
-what rots unnoticed — numbers, and references to code — and owes no reader's assertion that the
+and vouches for it. Over everything else the pass owes only the three reporting classes that cover
+what rots unnoticed — provenance, reference and pairing — and owes no reader's assertion that the
 whole document describes what shipped.
 
 **The replacement principle carries its own reason, and that reason answers the one it displaces.**
@@ -961,7 +961,7 @@ could
 
 ## Open questions
 
-Each of the four below changes none of the approach, the requirements or how the work breaks up —
+Each item below changes none of the approach, the requirements or how the work breaks up —
 which is the test the new principle states, applied to this document as it was written.
 
 - **Whether the arithmetic class has any external precedent to borrow from.** The research behind

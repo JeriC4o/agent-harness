@@ -301,8 +301,8 @@ those two classes anything to check in both directions.
 
 ## Open questions
 
-All decisions this spec needs are taken. Three items are left open deliberately, and none of them changes
-the approach, the requirements, or how the work breaks up.
+All decisions this spec needs are taken. The items in this section are left open deliberately, and none
+of them changes the approach, the requirements, or how the work breaks up.
 
 - **Who runs the semantic class** — the existing review contract, or a reader of its own with its own
   invocation. Left to the design; both satisfy the judgement criteria above, and the choice is about cost
