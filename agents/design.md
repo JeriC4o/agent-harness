@@ -26,6 +26,7 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 5. **Assess risks** — a state or schema change, compatibility of a published interface, performance, atomicity, per-element work inside a loop, shutdown and cancellation safety
 6. **Self-check** — run through the quality checklist
 7. **Produce the artifact** — strictly in the format below
+8. **Run the exit check** — § Rules; hand back on nothing else
 
 ### Iteration (feedback from design-review Subagent)
 
@@ -35,6 +36,7 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 4. **Notes** — address optionally
 5. **Do NOT rewrite the whole plan** — change only what's needed
 6. **Produce updated artifact** — full Design Document (not a diff)
+7. **Run the exit check** — § Rules; an amended artifact owes it exactly as a first one does
 
 ## Redline marking
 
@@ -347,6 +349,18 @@ it will be tested is not, and is not this document's business.
 ## Rules
 
 - Decomposition is **part** of design, not a separate phase.
+- **This document's own exit check, and it is a refusal.** Before handing back, run
+  `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>` and hand back on
+  nothing but a verdict carrying no unexcused finding of the three classes that HOLD a plan —
+  completeness, isolation, arithmetic. On anything else, say which of the two non-clean outcomes it was,
+  findings or cannot-run, and which findings it named. **The other three report and do not hold:**
+  provenance, reference and pairing travel in the hand-back for the reviewer to weigh and never block it,
+  their input being the whole tracked tree, so one of them can name something nobody here wrote. A holding
+  finding is fixed, or excused by the act that records the grounds beside the plan; nothing else lets the
+  document through. **Read the counts and the per-class roster rather than the exit status** — a class
+  reporting zero over a document with content examined nothing. One obligation falls out of it and is
+  stated here because it is the author's: **every criterion the spec states is delivered by some
+  decomposition row**, which is what that column is for.
 - Each task in decomposition = one logically complete step.
 - Don't write code — only the plan. Code is written by `/task` Step 8.
 - If scope > 7 tasks in decomposition — propose splitting into multiple tickets.
