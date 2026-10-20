@@ -91,10 +91,10 @@ Agent(
 
 #### 3a-bis. Option-grounding (Explore) — before surfacing any `ask` round
 
-When the spec-writer returns `status: ask` with options that hinge on a code-level mechanism (a transaction/proxy boundary, a concurrency-scope choice, an event-vs-poll wiring decision, a propagation mode), the orchestrator MUST ground those options in the actual codebase BEFORE surfacing them — an option the code forbids is a wasted user turn.
+When the spec-writer returns `status: ask` with options that hinge on a code-level mechanism (a boundary an interceptor applies, a concurrency-scope choice, an event-versus-poll wiring decision, how a nested call behaves), the orchestrator MUST ground those options in the actual codebase BEFORE surfacing them — an option the code forbids is a wasted user turn.
 
-- Quick search / Read pass on the cited mechanism (e.g. confirm whether a transactional call site crosses a proxy boundary; confirm a DAO's propagation mode; check whether the module enables the framework feature the option assumes).
-- If exploration shows an option is structurally impossible (e.g. a self-invoked proxied call the framework will silently ignore), drop or annotate that option before `AskUserQuestion`; do NOT surface a dead choice.
+- Quick search / Read pass on the cited mechanism (e.g. confirm whether a call site actually crosses the boundary an interceptor applies; confirm what a data-access call does when nested; check whether the module enables the framework feature the option assumes).
+- If exploration shows an option is structurally impossible (e.g. a self-invoked call that never crosses the interceptor and so silently loses the boundary), drop or annotate that option before `AskUserQuestion`; do NOT surface a dead choice.
 - Record what you explored in the state file's `prior_qa` note for the round, so the constraint travels forward.
 
 This is option-grounding only — it does NOT draft the spec (the spec-writer owns the write) and does NOT replace the user decision; it removes infeasible options so the user chooses among real ones.

@@ -97,7 +97,7 @@ A `//` inside a doc-comment code fence is fine when:
 - (i) It's useful to a docs reader independent of the repo (e.g. `// for n=10 this is ~3 calls`).
 
 A `//` inside a doc-comment code fence is rule-(ii) violating when:
-- It assumes repo-internal architecture or contributor convention (`// uses the DAO's batch-upsert`).
+- It assumes repo-internal architecture or contributor convention (`// goes through the store layer's batch-upsert path`).
 
 Rule-(ii) matches → REJECT.
 
