@@ -252,7 +252,7 @@ printf '\n== the clean case, and the figures a narrowed run cannot fake ==\n'
 fresh; run
 check "an unmutated copy of the tree -> rc 0" "$RC" "0"
 has "  the verdict says clean rather than silent" "$OUT" "check-plan-invariants: clean"
-has "  all eight principles counted"              "$OUT" "principles=8"
+has "  every principle counted"                   "$OUT" "principles=9"
 BASE_PAGES=$(figure pages)
 BASE_STMT=$(figure statements)
 BASE_ELEM=$(figure elements)
@@ -307,7 +307,7 @@ tweak docs/plan-invariants.md '\*Because every sentence a design could write[^*]
 run
 check "a principle stripped of its one-clause reason -> rc 1" "$RC" "1"
 has "  it is not counted as present"      "$OUT" "finding leg1-reason: principle 3"
-has "  and the verdict's own count drops" "$OUT" "principles=7"
+has "  and the verdict's own count drops" "$OUT" "principles=8"
 
 # EVERY GAP IN THESE TWO PATTERNS IS `\s+`, including the ones that are a single
 # space on today's page. The page hard-wraps and the comparison collapses

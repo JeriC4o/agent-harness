@@ -5,8 +5,8 @@
 #
 # There are two payload siblings: this one, and check-plan-invariants-refusal.py
 # beside it, which holds leg 4 and which this file loads. The pinned
-# expectations -- the eight sentences and the one severity spelling -- are
-# literals below, because the second leg no longer measures a sentence against a
+# expectations -- the principles and the one severity spelling -- are literals
+# below, because the second leg no longer measures a sentence against a
 # vocabulary and the data that remains does not earn a file of its own.
 #
 # Tests: scripts/test-check-plan-invariants.sh
@@ -237,7 +237,7 @@ if MODE != 'accept' and RECORD not in set(TRACKED):
             % RECORD)
 
 # ---------------------------------------------------------------------------
-# Leg 1. The eight sentences, pinned.
+# Leg 1. The principles, pinned sentence by sentence.
 #
 # WHY A SECOND COPY. A document compared only against itself cannot detect its
 # own rewording. PINNED is an EXPECTATION WITH PROVENANCE, not a second
@@ -258,6 +258,7 @@ PINNED = [
     "**Neither document carries a record of superseded material, and no verdict may require one.** *Because every such passage is read in full by every later whole-repository review and none of it describes the system.*",
     "**The closing fold runs once, after approval.** It applies the correction log's rows to the design items that diverged, collapses the spec to its record of deliberate absence, and leaves the rest of the frozen document alone. *Because an untouched sentence is now either caught mechanically — a number whose provenance is gone, an identity that no longer pairs in either direction — or it is prose stating neither, which is accepted as unnoticed rather than re-derived against the chance that it rotted.*",
     "**A required element of a spec or a design must be knowable at the time the document is authored, and so must the origin of every number either document states.** An element whose content is only determined later is forbidden. A stated number names, in the same sentence, which kind it is — a threshold the task handed down, an estimate derived in place with its derivation shown, or a measurement of something that already exists — and how it was obtained; a figure whose only honest origin would be a measurement of the artefact the document describes is forbidden with it, that measurement being one nobody can take while the document is still being written. *Because it guarantees two failures at once: invented content at authoring time, and a review loop at the end that cannot converge — the document is corrected against reality, reality moves on, and the correction reopens.*",
+    "**A question left open must be one whose answer would change neither the chosen approach, nor the requirements, nor how the work breaks up.** A gap failing that test is closed before the plan is agreed; a gap passing it that later turns out to have changed any of the three re-enters the full design-and-review cycle rather than being patched in place. *Because the gap is paid for either way, and the cheaper-looking price — note it and carry on — is the one that falls due as a rewrite of an agreed plan at the moment the work is most committed to it.*",
 ]
 
 PRINCIPLE_COUNT = 0
@@ -265,9 +266,9 @@ doc_body = read(PRINCIPLES_DOC)
 if doc_body is None:
     blocked('%s is unreadable, so there is no authority on the wording to compare against' % PRINCIPLES_DOC)
 else:
-    section = doc_body.split('## The eight principles', 1)
+    section = doc_body.split('## The base principles', 1)
     if len(section) < 2:
-        blocked('%s carries no "## The eight principles" section, and an empty extraction must not read as agreement'
+        blocked('%s carries no "## The base principles" section, and an empty extraction must not read as agreement'
                 % PRINCIPLES_DOC)
         doc_items = {}
     else:
@@ -276,7 +277,7 @@ else:
         for m in re.finditer(r'(?m)^(\d+)\. (.*?)(?=^\d+\. |^\S|\Z)', body, re.S):
             doc_items[int(m.group(1))] = norm(m.group(2))
         if not doc_items:
-            blocked('%s § The eight principles yielded no numbered sentence' % PRINCIPLES_DOC)
+            blocked('%s § The base principles yielded no numbered sentence' % PRINCIPLES_DOC)
     for idx, want in enumerate(PINNED, 1):
         lead = want.split('**')[1] if '**' in want else want[:40]
         got = doc_items.get(idx)

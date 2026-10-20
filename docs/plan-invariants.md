@@ -16,7 +16,7 @@ reads can itself be brought level in the same pass as the change it would have r
 edit-time refusal does not reach; and that refusal recognises an edit by its shape, so a writer it does
 not recognise reaches the page and is then caught by the comparison instead.
 
-## The eight principles
+## The base principles
 
 1. **One writer per artefact.** The orchestrator writes neither a spec nor a design; each is written only
    by its owning subagent. *Because a party that both writes a document and reports on it can close a
@@ -51,12 +51,21 @@ not recognise reaches the page and is then caught by the comparison instead.
    guarantees two failures at once: invented content at authoring time, and a review loop at the end that
    cannot converge — the document is corrected against reality, reality moves on, and the correction
    reopens.*
+9. **A question left open must be one whose answer would change neither the chosen approach, nor the
+   requirements, nor how the work breaks up.** A gap failing that test is closed before the plan is
+   agreed; a gap passing it that later turns out to have changed any of the three re-enters the full
+   design-and-review cycle rather than being patched in place. *Because the gap is paid for either way,
+   and the cheaper-looking price — note it and carry on — is the one that falls due as a rewrite of an
+   agreed plan at the moment the work is most committed to it.*
 
-**Seven of the eight are prohibitions; the eighth is a test and an obligation.** The first seven say what
-may not happen. The eighth hands a reader a question to apply to a proposed element: can its content be
-known when the document is written? If not, it is out — and the reason is not taste. An element whose
-content arrives later forces the author to invent it, and the end-of-task review then corrects the
-document against a tree that keeps moving, so the correction reopens every round.
+**All but two are prohibitions; the remaining two are tests, and each hands a reader a question rather
+than a boundary.** The prohibitions say what may not happen. The eighth asks of a proposed element: can
+its content be known when the document is written? If not, it is out — and the reason is not taste. An
+element whose content arrives later forces the author to invent it, and the end-of-task review then
+corrects the document against a tree that keeps moving, so the correction reopens every round. The ninth
+asks the same kind of question of a gap: would answering it change the approach, the requirements or the
+decomposition? If it would, the gap is not one this plan may leave open, because the answer arrives after
+the plan is agreed and lands as a rewrite rather than as a note.
 
 **The obligation half asks a second question of every number, and its answer is provenance rather than
 silence.** Which kind of number is this, and how was it obtained? A threshold the task handed down, an
@@ -194,7 +203,7 @@ sitting outside both sets while every run read as clean.
 ## The authorisation route
 
 **A change to a principle is two co-ordinated edits, and that is the authorisation route rather than a
-hole.** The verification holds its own copy of the eight sentences, so an edit to this page alone is
+hole.** The verification holds its own copy of the numbered sentences, so an edit to this page alone is
 loud. Changing this page AND that copy together passes — and the diff a human reads then carries both
 halves, which is exactly what "not silently" means.
 
@@ -202,7 +211,7 @@ halves, which is exactly what "not silently" means.
 |---|---|
 | The wording of a principle | Edit this page and the verification's pinned copy in the same change |
 | Removing a principle | The same two edits; the verification reports an absence distinctly from a wording difference, because a vanished principle protects nothing while a reworded one still says something |
-| Adding a ninth principle | The same route, because an addition can contradict a sentence already here |
+| Adding a principle | The same route, because an addition can contradict a sentence already here |
 | Adding or removing a required element | Edit the page that mandates it and the record on this page; a one-sided edit is reported in whichever direction it went |
 | Any edit to a protected page | Allow the refusal when it fires. Allowing it lets the edit proceed, so installing or repairing this protection never requires switching it off |
 | Bringing the record level after a change you have read and accepted | Run the verification's own acceptance route, which prints the report it is about to take in before it rewrites the record, so nothing is accepted unread. No other command and no part of an ordinary gate run advances the record, and the acceptance run is itself put to the author — so a pass that edits instruction material cannot quietly level the record behind the change it would have reported |

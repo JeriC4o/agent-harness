@@ -90,13 +90,13 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 ## Plan invariants
 
 - **What it is.** The base principles of what a spec and a design are, the record of the elements each
-  one is required to be composed of, and the set of pages that define or enforce one. Eight numbered
-  sentences each carrying its own one-clause reason; thirteen elements keyed by document and token
-  together; seven protected pages with a reason each, and seven documented near misses with why each one
-  is out.
+  one is required to be composed of, and the set of pages that define or enforce one. A numbered
+  sentence per principle, each carrying its own one-clause reason; thirteen elements keyed by document
+  and token together; seven protected pages with a reason each, and seven documented near misses with
+  why each one is out.
 - **Why it exists.** Measured damage: a self-improvement pass made a required element out of something
   that cannot be known at the time the document is authored, which bought invented content at authoring
-  time and an end-of-task review loop that could not converge. Seven of the eight principles are
+  time and an end-of-task review loop that could not converge. All but two of the principles are
   prohibitions, so a hunt for a principle's opposite is structurally blind to an ADDITION — and an
   addition is how the measured damage arrived. That is why the verification COMPARES a recorded statement
   inventory instead of reading sentences and ruling on them: arrived, departed and textually changed are
@@ -252,8 +252,8 @@ meanings.
   exposure is reachable by ordinary ordering, not only by a pass covering its tracks.
 
   **The verification is a CHANGE detector against an accepted record, not a presence assertion — so a
-  clean verdict means less than it looks.** The eight principles do get a presence assertion, a pinned
-  copy inside the verification reported as an absence when one vanishes. Nothing else does. Measured:
+  clean verdict means less than it looks.** The numbered principles do get a presence assertion, a
+  pinned copy inside the verification reported as an absence when one vanishes. Nothing else does. Measured:
   deleting the principles page's own statement of its limit reports 7 departures with their text and moves
   the statement total down by exactly those **7**, so it cannot STOP being stated unseen — the DELTA is the
   measured fact and the absolutes are not, because they move with every later change; but had that
