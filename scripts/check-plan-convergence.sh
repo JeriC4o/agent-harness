@@ -4,9 +4,16 @@
 # every relation the documents state actually hold?
 #
 # Run:  check-plan-convergence.sh [--root <dir>] <spec> <design>
+#       check-plan-convergence.sh --excuse '<class>|<spot>|<subject>' --grounds '<why>' <spec> <design>
 # Exit: 0 clean, 1 findings, 2 cannot run -- which is NOT a pass.
 #
 # Tests: scripts/test-check-plan-convergence.sh
+#
+# THE GRANT ACT IS A FLAG AND NOT A SECOND ENTRY POINT, because it must see the
+# finding before it waives it: it runs every class with excusing suspended,
+# prints the finding carrying the key in full, and only then appends a row to
+# the record beside the plan. An ordinary run writes nothing, ever. The key is
+# copied off a finding line, which carries it, so neither half is retyped.
 #
 # WHY IT IS ITS OWN CHECK rather than a verb of the plan-document gate or a leg
 # of the plan-invariants verification. The verification's payload is at this
@@ -34,7 +41,9 @@
 # that is not a clean 0 and says WHICH of the two it got, because the two have
 # different remedies: findings are fixed or excused in the plan, while a
 # cannot-run means this check examined less than it reported and nothing about
-# the plan has been established.
+# the plan has been established. A 0 is not always the word `clean`: a plan
+# whose every finding is excused also exits 0 and says so in those terms, so a
+# caller that treats 0 as nothing-to-see loses the waivers.
 #
 # WHAT A CLEAN VERDICT MEANS, and the bound is the point of saying it: no figure
 # in either document sits in a clause silent about its origin, and no relation
@@ -52,14 +61,18 @@ set -uo pipefail
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(cd -- "${HERE}/.." && pwd -P)
-USAGE='usage: check-plan-convergence.sh [--root <dir>] <spec> <design>'
+USAGE='usage: check-plan-convergence.sh [--root <dir>] [--excuse <key> --grounds <why>] <spec> <design>'
 
 SPEC=''
 DESIGN=''
+EXCUSE=''
+GROUNDS=''
 while [ $# -gt 0 ]; do
   case "$1" in
     --root) [ -d "${2:-}" ] || { printf 'check-plan-convergence: no such directory: %s\n' "${2:-}" >&2; exit 2; }
             ROOT=$(cd -- "$2" && pwd -P); shift 2 ;;
+    --excuse)  EXCUSE=${2:-}; shift 2 ;;
+    --grounds) GROUNDS=${2:-}; shift 2 ;;
     -h|--help) sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) printf 'check-plan-convergence: %s\n' "$USAGE" >&2; exit 2 ;;
     *)  if [ -z "$SPEC" ]; then SPEC=$1
@@ -72,6 +85,15 @@ done
 
 [ -n "$SPEC" ] && [ -n "$DESIGN" ] \
   || { printf 'check-plan-convergence: %s\n' "$USAGE" >&2; exit 2; }
+
+# Grounds a later reader can check are half of what the act records, so neither
+# flag is any use without the other and an act missing one writes nothing.
+if [ -n "$EXCUSE" ] && [ -z "$GROUNDS" ]; then
+  printf 'check-plan-convergence: cannot run -- --excuse needs --grounds, in terms a later reader can check\n' >&2; exit 2
+fi
+if [ -n "$GROUNDS" ] && [ -z "$EXCUSE" ]; then
+  printf 'check-plan-convergence: cannot run -- --grounds excuses nothing without --excuse naming the finding\n' >&2; exit 2
+fi
 
 # Each of these is a cannot-run rather than a finding, because a document that
 # is not there was not examined, and an unexamined document is not a clean one.
@@ -97,4 +119,4 @@ PAYLOAD="${HERE}/check-plan-convergence.py"
 # `-B`: a gate must not leave a build artefact in the tree it just swept.
 # Without it the first run writes scripts/__pycache__/, which nothing tracks,
 # nothing ignores, and both tree-walking gates would eventually trip over.
-exec python3 -B "$PAYLOAD" "$ROOT" "$SPEC" "$DESIGN"
+exec python3 -B "$PAYLOAD" "$ROOT" "$SPEC" "$DESIGN" "$EXCUSE" "$GROUNDS"

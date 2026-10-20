@@ -27,8 +27,13 @@ import sys
 ROOT = sys.argv[1]
 SPEC = sys.argv[2]
 DESIGN = sys.argv[3]
+# Empty on an ordinary run. Non-empty only on the grant act, which is the one
+# route that writes the excuse record -- see THE GRANT ACT below.
+GRANT_KEY = sys.argv[4] if len(sys.argv) > 4 else ''
+GRANT_GROUNDS = sys.argv[5] if len(sys.argv) > 5 else ''
 
 findings = []
+excused = []
 cannot = []
 
 # Which classes HOLD a plan and which only report. Stated once here so every
@@ -38,9 +43,77 @@ cannot = []
 # total, which is why the verdict carries both.
 HOLDING = ('completeness', 'isolation', 'arithmetic')
 
+# ---------------------------------------------------------------------------
+# The excuse route.
+# ---------------------------------------------------------------------------
+# THE KEY IS CLASS, SPOT AND SUBJECT, and every part of that is chosen against
+# one requirement: editing the passage a finding is about must not revoke the
+# excuse, and the same fault returning at that spot must come back excused. So
+# the statement's own text is NOT in the key. The spot NAMES AN ENTITY -- a
+# document and the heading its statement sits under, or the file a tree-wide
+# finding is in -- because a position in the key would be the very anti-pattern
+# the class beside this one reports, and because a position moves when the
+# passage is edited, which is the case the requirement rules out by name.
+#
+# WHERE THE SUBJECT IS THE PASSAGE ITSELF the bound is reached and is stated
+# rather than hidden: a repeated SPAN has no smaller subject than the span, so
+# rewriting it does change the key and the excuse lapses. That is the honest
+# answer rather than a gap -- once one of the two sites is rewritten the two
+# sites no longer say the same thing, so the excuse is about a fault that is no
+# longer there.
+#
+# THE RECORD IS PER-PLAN AND ITS ABSENCE IS THE EMPTY STATE, which is a third
+# polarity beside the two records above it. Most plans excuse nothing, so an
+# absent record means nothing is excused and the run proceeds. What is NOT
+# tolerated is a record that exists while being invisible to every other clone,
+# or one this check cannot read: the first makes this run quieter than everyone
+# else's and the second leaves it guessing what is excused, so both take the
+# cannot-run branch.
+#
+# THE GRANT ACT IS THE ONLY ROUTE THAT WRITES IT. An ordinary run reports an
+# excused finding as excused and writes nothing at all. The act takes a key off
+# a finding line, runs every class with excusing suspended so the finding is
+# still there to be seen, PRINTS IT IN FULL, and only then appends the row --
+# which is what "shows the finding it is about to excuse before excusing it"
+# asks for. Removing a row is the same kind of act done by hand, which is why
+# the record is a table a reader can find a row in rather than a digest.
+EXCUSE_FIELD = '|'
+SPEC_SUFFIX = '.spec.md'
+EXCUSE_SUFFIX = '.excuses.md'
 
-def finding(cls, text):
-    findings.append('finding %s: %s' % (cls, text))
+EXCUSES = {}
+EXCUSE_PATH = None
+SUSPEND_EXCUSES = bool(GRANT_KEY)
+
+EXCUSE_HEADER = """# Excused convergence findings: %s
+
+Each row waives ONE finding of `check-plan-convergence.sh` for this plan and no other. Granted by
+`check-plan-convergence.sh --excuse '<class>%s<spot>%s<subject>' --grounds '<why>'`, which prints the
+finding before writing the row. Removed by deleting its row, which is an act of the same kind. The
+format is `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § The record of excused findings
+(committed).
+
+| Class | Spot | Subject | Grounds |
+|---|---|---|---|
+"""
+
+
+def key_of(cls, spot, subject):
+    # A field separator inside a part would split the key where it is parsed, so
+    # it collapses to a space. The collision that admits is between two subjects
+    # differing only in that character.
+    return EXCUSE_FIELD.join(
+        norm(part).replace(EXCUSE_FIELD, ' ')[:80] for part in (cls, spot, subject))
+
+
+def finding(cls, spot, subject, text):
+    key = key_of(cls, spot, subject)
+    line = 'finding %s [excuse: %s]: %s' % (cls, key, text)
+    if not SUSPEND_EXCUSES and key in EXCUSES:
+        excused.append((cls, 'excused %s [%s]: %s -- on the grounds: %s'
+                        % (cls, key, text, EXCUSES[key])))
+        return
+    findings.append((cls, line))
 
 
 def blocked(text):
@@ -154,6 +227,11 @@ def region(body, token):
 # a figure whose own sentence named its kind. Two consumers with opposite
 # dispositions do not share one function; a third would be worth extracting for.
 # ---------------------------------------------------------------------------
+# The heading each statement sits under, which is the entity half of an excuse
+# key. The segmenter is the only pass that knows it, so it records it here as it
+# goes rather than a second walk recovering it.
+SECTION_OF = {}
+
 FENCE = re.compile(r'^\s*(?:```|~~~)')
 QUOTE_MARK = re.compile(r'^\s*(?:>\s?)+')
 LIST_HEAD = re.compile(r'^\s*(?:[-*+]|\d+[.)])\s+')
@@ -186,10 +264,13 @@ def split_sentences(text):
 
 def statements(body):
     out, buf = [], []
+    section = ''
 
     def flush():
         if buf:
-            out.extend(split_sentences(' '.join(buf)))
+            for unit in split_sentences(' '.join(buf)):
+                out.append(unit)
+                SECTION_OF.setdefault(unit, section)
             del buf[:]
 
     in_fence = False
@@ -211,9 +292,13 @@ def statements(body):
             at_block_start = True
             continue
         stripped = plain.lstrip()
-        if HEADING_LINE.match(stripped) or stripped.startswith('|'):
+        head = HEADING_LINE.match(stripped)
+        if head is not None or stripped.startswith('|'):
             flush()
+            if head is not None:
+                section = norm(head.group(2))
             out.append(text)
+            SECTION_OF.setdefault(text, section)
             at_block_start = True
             in_list = False
             continue
@@ -238,6 +323,11 @@ def statements(body):
         at_block_start = False
     flush()
     return out
+
+
+def spot_of(doc, statement):
+    section = SECTION_OF.get(norm(statement), '')
+    return '%s %s' % (doc, ('\u00a7 ' + section) if section else '(no heading above it)')
 
 
 # ---------------------------------------------------------------------------
@@ -419,7 +509,7 @@ def arithmetic(doc, body, units):
                 if computed is None:
                     NOT_EVALUABLE += 1
                 elif not same(computed, written):
-                    finding('arithmetic',
+                    finding('arithmetic', spot_of(doc, statement), norm(m.group(0)),
                             '%s states [%s] where the operands compute to %s: %s'
                             % (doc, norm(m.group(0)), show(computed), norm(statement)[:200]))
             hit = TOTAL_WORD.search(clause) or TOTAL_PHRASE.search(clause)
@@ -430,7 +520,7 @@ def arithmetic(doc, body, units):
                 if len(addends) < 2:
                     NOT_EVALUABLE += 1
                 elif not same(sum(addends), total):
-                    finding('arithmetic',
+                    finding('arithmetic', spot_of(doc, statement), norm(hit.group(0)),
                             '%s states a total of %s over the addends %s, which sum to %s: %s'
                             % (doc, show(total), ' + '.join(show(a) for a in addends),
                                show(sum(addends)), norm(statement)[:200]))
@@ -489,12 +579,12 @@ def provenance(doc, body, units, built):
                               or TOTAL_PHRASE.search(clause)):
                 named = ['derivation']
             if not named:
-                finding('provenance',
+                finding('provenance', spot_of(doc, statement), literal,
                         '%s states [%s] in a clause naming neither which kind of number it is nor how it was obtained: %s'
                         % (doc, literal, norm(statement)[:200]))
             for path in built:
                 if '`%s`' % path in raw_clause:
-                    finding('provenance',
+                    finding('provenance', spot_of(doc, statement), '%s in %s' % (literal, path),
                             '%s states [%s] in the same clause as `%s`, a path this plan creates, so the figure could only come from measuring the artefact the document describes: %s'
                             % (doc, literal, path, norm(statement)[:200]))
                     break
@@ -709,7 +799,8 @@ def completeness(spec_body, design_body, spec_tokens, design_tokens, built, unit
         elif not bullets[obj].strip():
             lacks.append('no stated cases and no stated behaviour -- its bullet carries no clause')
         if lacks:
-            finding('completeness', 'the object `%s` has %s' % (obj, '; '.join(lacks)))
+            finding('completeness', 'design', obj,
+                    'the object `%s` has %s' % (obj, '; '.join(lacks)))
 
     # The other direction: a bullet whose leading item is an object no row names
     # at all is caught by the place test above, which is why this class needs no
@@ -722,10 +813,10 @@ def completeness(spec_body, design_body, spec_tokens, design_tokens, built, unit
     for cell in delivery_cells(design_body, design_tokens):
         delivered |= cell
     for crit in sorted(stated - delivered, key=lambda c: int(c[2:])):
-        finding('completeness',
+        finding('completeness', 'design', crit,
                 'the requirement %s is stated in the spec and no decomposition row delivers it' % crit)
     for crit in sorted(delivered - stated, key=lambda c: int(c[2:])):
-        finding('completeness',
+        finding('completeness', 'design', crit,
                 'a decomposition row claims to deliver %s, which the spec does not state' % crit)
 
     for doc, body in (('spec', spec_body), ('design', design_body)):
@@ -746,7 +837,7 @@ def completeness(spec_body, design_body, spec_tokens, design_tokens, built, unit
                     continue
                 SECTION_REFS += 1
                 if not resolves(want, known):
-                    finding('completeness',
+                    finding('completeness', spot_of(doc, statement), want,
                             '%s refers to a section [%s] that no heading in it resolves to: %s'
                             % (doc, want, norm(statement)[:160]))
 
@@ -806,7 +897,7 @@ def isolation(doc, units, minimum):
         if len(where) < 2:
             continue
         REPEATS += 1
-        finding('isolation',
+        finding('isolation', doc, literal,
                 '%s states the figure [%s] at %d sites that can drift apart: %s'
                 % (doc, literal, len(where),
                    ' || '.join(norm(s)[:90] for s in where[:3])))
@@ -827,7 +918,7 @@ def isolation(doc, units, minimum):
         # sites are two different rows. A repeated whole statement IS its own
         # site, so the surrounding text is printed only where it adds one.
         shown = [norm(s)[:90] for s in where[:3] if norm(s) != span]
-        finding('isolation',
+        finding('isolation', doc, span,
                 '%s states the same span at %d sites that can drift apart -- [%s]%s'
                 % (doc, len(where), span[:160],
                    (': ' + ' || '.join(shown)) if shown else ''))
@@ -988,7 +1079,7 @@ def reference(paths, record):
             if row in record:
                 ACCOUNTED += 1
                 continue
-            finding('reference',
+            finding('reference', path, token,
                     '%s carries a position the baseline does not account for -- [%s]; a reader may trust it without re-deriving it, and the record row that would account for it is: %s'
                     % (path, token, row))
 
@@ -1109,18 +1200,18 @@ def pairing(units, paths):
 
     for slug, where in sorted(claimed_by.items()):
         if len(where) > 1:
-            finding('pairing',
+            finding('pairing', 'the plan pair', slug,
                     'the id [%s] is claimed by %d statements, so it resolves to more than one of them: %s'
                     % (slug, len(where), ' || '.join(norm(s)[:80] for _d, s in where[:3])))
     for slug, sites in sorted(marks.items()):
         if len(sites) > 1:
-            finding('pairing',
+            finding('pairing', sites[0][0], slug,
                     'the id [%s] is marked at %d sites, so it resolves to more than one entity: %s'
                     % (slug, len(sites), ' || '.join('%s -- %s' % (p, l[:60]) for p, l in sites[:3])))
 
     for slug, doc, statement, files in claims:
         if not files:
-            finding('pairing',
+            finding('pairing', spot_of(doc, statement), slug,
                     '%s claims the id [%s] while naming no file in the tree, so nothing bounds where its mark may sit: %s'
                     % (doc, slug, norm(statement)[:160]))
             continue
@@ -1133,16 +1224,99 @@ def pairing(units, paths):
             # whole of what resolves here, and no reverse pairing is asserted.
             PAIRS += 1
             continue
-        finding('pairing',
+        finding('pairing', spot_of(doc, statement), slug,
                 '%s claims the id [%s] that no mark carries in any file it names (%s), so the reference resolves to nothing: %s'
                 % (doc, slug, ', '.join(files[:4]), norm(statement)[:160]))
 
     for slug, sites in sorted(marks.items()):
         if slug in claimed_by:
             continue
-        finding('pairing',
+        finding('pairing', sites[0][0], slug,
                 'the id [%s] is marked in %s and no statement of this plan claims it: %s'
                 % (slug, sites[0][0], sites[0][1][:120]))
+
+
+SEPARATOR_CELL = re.compile(r'^[-: ]+$')
+
+
+def excuse_path():
+    """Beside the plan, by the construction the correction log is named by."""
+    if not SPEC.endswith(SPEC_SUFFIX):
+        blocked('the spec at %s does not end in %s, so the record beside it cannot be named and this run cannot know what is excused'
+                % (SPEC, SPEC_SUFFIX))
+        return None
+    return SPEC[:-len(SPEC_SUFFIX)] + EXCUSE_SUFFIX
+
+
+def read_excuses(paths):
+    global EXCUSE_PATH
+    EXCUSE_PATH = excuse_path()
+    if EXCUSE_PATH is None or not os.path.exists(EXCUSE_PATH):
+        return
+    # BOTH SIDES THROUGH realpath, because the root arrives already resolved
+    # while a path given on the command line does not: under a temporary
+    # directory behind a symlink the two disagree, the relative path comes out
+    # full of parent steps, and a staged record read as untracked.
+    rel = os.path.relpath(os.path.realpath(EXCUSE_PATH), os.path.realpath(ROOT))
+    if rel not in set(paths):
+        blocked('%s exists and is not in the index, so this run is quieter than every other clone of this repository -- stage it'
+                % EXCUSE_PATH)
+        return
+    body = read_path(EXCUSE_PATH)
+    if body is None:
+        blocked('%s could not be read, so this run cannot know which of its findings are excused'
+                % EXCUSE_PATH)
+        return
+    for line in body.split('\n'):
+        if not line.lstrip().startswith('|'):
+            continue
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if len(cells) < 4 or cells[0].lower() == 'class' or SEPARATOR_CELL.match(cells[0]):
+            continue
+        # A row this check cannot read leaves it guessing, and a guess in either
+        # direction is wrong: ignoring the row raises a finding the author
+        # believes is excused, and admitting it excuses something nobody stated.
+        if not all(cells[:4]):
+            blocked('%s carries a row with an empty cell -- class, spot, subject and grounds are all required, and a row short of one excuses nothing checkably: %s'
+                    % (EXCUSE_PATH, norm(line)[:160]))
+            continue
+        EXCUSES[key_of(cells[0], cells[1], cells[2])] = cells[3]
+
+
+def grant():
+    """Show the finding, then excuse it. The only route that writes the record."""
+    parts = GRANT_KEY.split(EXCUSE_FIELD)
+    if len(parts) != 3 or not all(part.strip() for part in parts):
+        print('check-plan-convergence: cannot run -- an excuse key is class%sspot%ssubject, copied off a finding line, and this one is not: %s'
+              % (EXCUSE_FIELD, EXCUSE_FIELD, GRANT_KEY))
+        sys.exit(2)
+    if GRANT_KEY in EXCUSES:
+        print('check-plan-convergence: ALREADY EXCUSED -- %s carries this key and nothing was written: %s'
+              % (EXCUSE_PATH, GRANT_KEY))
+        sys.exit(0)
+    hits = [line for _cls, line in findings if ('[excuse: %s]' % GRANT_KEY) in line]
+    if not hits:
+        print('check-plan-convergence: cannot run -- no finding of this run carries that key, and an excuse for a finding nobody can see excuses nothing: %s'
+              % GRANT_KEY)
+        sys.exit(2)
+    print('check-plan-convergence: the finding this act is about to excuse, in full:')
+    for line in hits:
+        print('  %s' % line)
+    row = '| %s |\n' % ' | '.join(part.strip() for part in parts + [norm(GRANT_GROUNDS)])
+    fresh = not os.path.exists(EXCUSE_PATH)
+    try:
+        with open(EXCUSE_PATH, 'a', encoding='utf-8') as fh:
+            if fresh:
+                fh.write(EXCUSE_HEADER % (os.path.basename(SPEC), EXCUSE_FIELD, EXCUSE_FIELD))
+            fh.write(row)
+    except OSError as exc:
+        print('check-plan-convergence: cannot run -- %s could not be written, so nothing was excused (%s)'
+              % (EXCUSE_PATH, exc))
+        sys.exit(2)
+    print('check-plan-convergence: EXCUSED -- the row above is now recorded at %s' % EXCUSE_PATH)
+    if fresh:
+        print('  it is a COMMITTED record and this run did not stage it: git add %s' % EXCUSE_PATH)
+    sys.exit(0)
 
 
 # ---------------------------------------------------------------------------
@@ -1171,6 +1345,7 @@ BASELINE = None
 if not cannot:
     MINIMUM = fragment_minimum()
     BASELINE = recorded_positions(TRACKED_PATHS)
+    read_excuses(TRACKED_PATHS)
 
 if not cannot:
     BUILT = built_paths(DESIGN_BODY, RECORDED['design'])
@@ -1190,21 +1365,28 @@ if not cannot:
     reference(TRACKED_PATHS, BASELINE)
     pairing([(_k, all_units[_k]) for _k, _b, _t in DOCUMENTS], TRACKED_PATHS)
 
+if GRANT_KEY and not cannot:
+    grant()
+
 
 def counts():
-    held = sum(1 for f in findings if f.split(':', 1)[0].split()[1] in HOLDING)
+    held = sum(1 for cls, _line in findings if cls in HOLDING)
+    # SPLIT BY WHETHER THE CLASS HOLDS, because one mixed figure cannot say
+    # whether ten excuses waived ten holds or quieted ten reports: the first is
+    # a plan proceeding over ten findings, the second is noise management.
+    waived = sum(1 for cls, _line in excused if cls in HOLDING)
     return ('documents=%d statements=%d regions=%d/%d numbers=%d identities=%d '
             'relations=%d not-evaluable=%d built=%d objects=%d criteria=%d '
             'delivery-column=%s section-refs=%d/%d fragment-min=%s repeats=%d '
             'swept=%d positions=%d accounted=%d undecodable=%d '
-            'claims=%d marks=%d pairs=%d '
+            'claims=%d marks=%d pairs=%d excused-holding=%d excused-reporting=%d '
             'holding=%d reporting=%d findings=%d'
             % (len(DOCUMENTS), STATEMENTS, REGIONS_PRESENT, REGIONS_DERIVED, NUMBERS,
                IDENTITIES, RELATIONS, NOT_EVALUABLE, len(BUILT), OBJECTS, CRITERIA,
                DELIVERY_COLUMN, SECTION_REFS, SECTION_REFS + QUALIFIED_REFS,
                MINIMUM if MINIMUM is not None else '-', REPEATS,
                SWEPT, POSITIONS, ACCOUNTED, UNDECODABLE,
-               CLAIMS, MARKS, PAIRS,
+               CLAIMS, MARKS, PAIRS, waived, len(excused) - waived,
                held, len(findings) - held, len(findings)))
 
 
@@ -1223,13 +1405,20 @@ def roster():
                            % (POSITIONS, SWEPT, ACCOUNTED)),
                           ('pairing', '%d claimed ids against %d marks, %d pairs compared'
                            % (CLAIMS, MARKS, PAIRS))):
-        mine = [f for f in findings if f.startswith('finding %s:' % cls)]
+        mine = [line for got, line in findings if got == cls]
+        waived = [line for got, line in excused if got == cls]
         state = 'examined-with-findings (%d)' % len(mine) if mine else 'examined-clean'
+        if waived:
+            state += ', %d excused' % len(waived)
         print('  class %-13s %s -- %s%s'
               % (cls, examined, state, '  HOLDS' if cls in HOLDING else '  reports'))
 
 
-for line in findings:
+for _cls, line in findings:
+    print(line)
+# AN EXCUSED FINDING IS REPORTED RATHER THAN OMITTED, so a plan carrying ten of
+# them cannot read as a clean one.
+for _cls, line in excused:
     print(line)
 
 if cannot:
@@ -1239,7 +1428,20 @@ if cannot:
     roster()
     sys.exit(2)
 
-print('check-plan-convergence: %s | %s'
-      % ('clean' if not findings else '%d findings' % len(findings), counts()))
+# THE WORD `clean` IS RESERVED FOR A RUN THAT WAIVED NOTHING. A plan whose every
+# finding is excused exits 0, because the caller refuses on the unexcused
+# holding count and there is none -- but it must not READ as clean, which is
+# what the requirement behind the waived count asks for and what a fourth
+# verdict word delivers where a count beside `clean` would not.
+if findings and excused:
+    STATE = '%d findings and %d excused' % (len(findings), len(excused))
+elif findings:
+    STATE = '%d findings' % len(findings)
+elif excused:
+    STATE = 'no unexcused finding, proceeding over %d excused' % len(excused)
+else:
+    STATE = 'clean'
+
+print('check-plan-convergence: %s | %s' % (STATE, counts()))
 roster()
 sys.exit(1 if findings else 0)

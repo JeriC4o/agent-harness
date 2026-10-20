@@ -52,6 +52,7 @@ DESIGN_FIRST=$(tok design 1)
 DESIGN_SECOND=$(tok design 2)
 DESIGN_FIFTH=$(tok design 5)
 DESIGN_SECOND_NAME=${DESIGN_SECOND#\#\# }
+SPEC_FIRST_NAME=${SPEC_FIRST#\#\# }
 [ -n "$SPEC_FIRST" ] && [ -n "$DESIGN_FIRST" ] && [ -n "$DESIGN_SECOND" ] && [ -n "$DESIGN_FIFTH" ] \
   && ok "the fixtures' section names were derived from the record" \
   || bad "the fixtures' section names were derived from the record"
@@ -81,7 +82,9 @@ marked() { printf '%s\n' "$1" > "$T/scripts/marked.sh"; }
 account(){ printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$BASE"; }
 
 write_pair 'Nothing.' 'Nothing.'
-run | sed -n 's/^finding reference: .*that would account for it is: //p' | sort -u >> "$BASE"
+# The finding line carries its excuse key between the class and the colon, so
+# the row is taken from the tail rather than from a fixed prefix.
+run | sed -n 's/^finding reference .*that would account for it is: //p' | sort -u >> "$BASE"
 git -C "$T" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
 out=$(run)
 hasnt "a record seeded from the tree leaves the reference class clean" "$out" 'finding reference'
@@ -414,6 +417,112 @@ write_pair 'The key in `data.json` is the one this leans on [json-key].' 'Nothin
 out=$(run)
 hasnt "a claim against a language admitting no comment resolves on the file alone" "$out" 'finding pairing'
 has "and it still counts as a pair, with no reverse pairing asserted" "$out" 'pairs=1'
+
+
+printf '\n== the excuse route: the grant act, and what an ordinary run does with its record ==\n'
+EX="$T/plans/a.excuses.md"
+rm -f "$EX"
+PKEY="provenance|spec § ${SPEC_FIRST_NAME}|40"
+AKEY="arithmetic|spec § ${SPEC_FIRST_NAME}|20 + 20 = 41"
+grant() { bash "$SUB" --root "$T" --excuse "$1" --grounds "$2" \
+  "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1; }
+
+write_pair 'The window is 40 rounds wide. The band is 20 + 20 = 41 wide.' 'Nothing.'
+out=$(run)
+has "every finding line carries the key that would excuse it" "$out" "[excuse: ${PKEY}]"
+has "and nothing is excused before an act grants one" "$out" 'excused-holding=0 excused-reporting=0'
+
+bash "$SUB" --root "$T" --excuse "$PKEY" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
+check "--excuse without --grounds -> rc 2" "$?" "2"
+bash "$SUB" --root "$T" --grounds 'why' "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
+check "--grounds without --excuse -> rc 2" "$?" "2"
+[ -e "$EX" ] && bad "a refused act wrote no record" || ok "a refused act wrote no record"
+
+out=$(grant 'provenance|spec|not-a-subject-of-any-finding' 'why'); rc=$?
+check "a key matching no finding of the run -> rc 2" "$rc" "2"
+has "and says an excuse for an unseen finding excuses nothing" "$out" 'excuses nothing'
+out=$(grant 'provenance|only-two-parts' 'why'); rc=$?
+check "a key that is not three parts -> rc 2" "$rc" "2"
+[ -e "$EX" ] && bad "neither refusal wrote a record" || ok "neither refusal wrote a record"
+
+out=$(grant "$PKEY" 'The figure is a worked example in a template, not a measurement.'); rc=$?
+check "the grant act -> rc 0" "$rc" "0"
+has "and it shows the finding BEFORE excusing it" "$out" 'about to excuse, in full'
+has "and the finding it shows is the one the key names" "$out" 'spec states [40] in a clause naming neither'
+has "and it names the record it wrote" "$out" 'EXCUSED -- the row above is now recorded'
+has "and it says the record is committed and unstaged" "$out" 'COMMITTED record and this run did not stage it'
+out=$(run); rc=$?
+check "an existing record outside the index -> rc 2" "$rc" "2"
+has "and says the run is quieter than every other clone" "$out" 'quieter than every other clone'
+git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+
+out=$(run)
+has "the waived finding is reported as excused rather than omitted" "$out" 'excused provenance'
+has "and its grounds travel with it" "$out" 'a worked example in a template'
+hasnt "and it is no longer counted as a finding" "$out" "finding provenance [excuse: ${PKEY}]"
+has "the waived count prints beside the verdict, split by whether the class holds" "$out" 'excused-holding=0 excused-reporting=1'
+has "and the holding count is untouched by waiving a reporting finding" "$out" 'holding=1'
+
+BEFORE=$(cksum < "$EX")
+out=$(run)
+AFTER=$(cksum < "$EX")
+check "an ordinary run writes nothing to the record" "$AFTER" "$BEFORE"
+out=$(grant "$PKEY" 'a second time'); rc=$?
+check "granting the same key twice -> rc 0 and no second row" "$rc" "0"
+has "and says so" "$out" 'ALREADY EXCUSED'
+AFTER=$(cksum < "$EX")
+check "the record is byte-identical after the repeat" "$AFTER" "$BEFORE"
+
+printf '\n== an excuse survives the passage being edited, and dies with its plan ==\n'
+write_pair 'The window is 40 rounds wide, a span rewritten since. The band is 20 + 20 = 41 wide.' 'Nothing.'
+out=$(run)
+has "rewording the passage does not revoke the waiver" "$out" 'excused provenance'
+write_pair 'Nothing numeric here. The band is 20 + 20 = 41 wide.' 'Nothing.'
+out=$(run)
+hasnt "the fault removed reports nothing at all" "$out" 'excused provenance'
+write_pair 'The window is 40 rounds wide. The band is 20 + 20 = 41 wide.' 'Nothing.'
+out=$(run)
+has "the same fault returning at that spot comes back waived" "$out" 'excused provenance'
+cp "$T/plans/a.spec.md" "$T/plans/b.spec.md"
+cp "$T/plans/a.design.md" "$T/plans/b.design.md"
+out=$(bash "$SUB" --root "$T" "$T/plans/b.spec.md" "$T/plans/b.design.md" 2>&1)
+hasnt "an unrelated plan inherits nothing -- the record does not travel" "$out" 'excused provenance'
+has "and it objects again from scratch" "$out" 'spec states [40] in a clause naming neither'
+
+printf '\n== a waiver over a HOLDING class, and the record this check cannot read ==\n'
+out=$(grant "$AKEY" 'The arithmetic is deliberately wrong in a worked example of a false equation.')
+has "a holding finding can be waived too, the route being open to any class" "$out" 'EXCUSED'
+git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+out=$(run); rc=$?
+check "a pair with nothing unexcused left -> rc 0, the caller refusing on holds" "$rc" "0"
+hasnt "and it does NOT read as clean, which is what the waived count is for" "$out" 'check-plan-convergence: clean'
+has "it says in words that it is proceeding over the waivers" "$out" 'proceeding over 2 excused'
+has "the split says a hold was waived rather than a report quieted" "$out" 'excused-holding=1 excused-reporting=1'
+has "and the holding count falls to zero" "$out" 'holding=0'
+has "the roster names the waivers per class" "$out" ', 1 excused'
+printf '| arithmetic | spec | 20 + 20 = 41 |  |\n' >> "$EX"
+git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+out=$(run); rc=$?
+check "a row with an empty required cell -> rc 2, never a quiet waiver" "$rc" "2"
+has "and names the row it could not read" "$out" 'excuses nothing checkably'
+git -C "$T" checkout -- plans/a.excuses.md 2>/dev/null || sed -i.bak '/| arithmetic | spec | 20 + 20 = 41 |  |/d' "$EX"
+rm -f "$EX.bak"
+git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+cp "$T/plans/a.spec.md" "$T/plans/c.md"
+out=$(bash "$SUB" --root "$T" "$T/plans/c.md" "$T/plans/a.design.md" 2>&1); rc=$?
+check "a spec not named by the record's own construction -> rc 2" "$rc" "2"
+has "and says the record beside it cannot be named" "$out" 'cannot be named'
+rm -f "$T/plans/c.md" "$T/plans/b.spec.md" "$T/plans/b.design.md"
+
+printf '\n== the record suffix against THIS repository own ignore rules ==\n'
+# Run rather than reasoned about: the two suffixes sit in the same directory and
+# only one of them is swallowed.
+git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.progress.md" \
+  && ok "the working record's suffix IS ignored here" \
+  || bad "the working record's suffix IS ignored here"
+git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.excuses.md" \
+  && bad "the excuse record's suffix is NOT ignored here" \
+  || ok "the excuse record's suffix is NOT ignored here"
 
 printf '\n== the derivation cannot run on a record it cannot read ==\n'
 write_pair 'Nothing.' 'Nothing.'

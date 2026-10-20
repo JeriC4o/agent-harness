@@ -317,6 +317,41 @@ rested on rather than as a preference.
   not matched by the ignore rules and not deleted by the merge-time progress-file cleanup; nothing else
   removes it.
 
+## The record of excused findings (committed)
+
+`ai-docs/plans/<spec-base>.excuses.md` — named by the same construction as the redline log above and
+committed for the same lifecycle reason. **The suffix is not matched by the ignore rules**, which is
+confirmed rather than assumed: `git check-ignore -v` on both reports the working record ignored and this
+one not. Each row waives **one** finding of the plan-convergence check, for **this plan and no other**.
+
+| Column | Holds | Why that and not something else |
+|---|---|---|
+| `Class` | the class the check's own finding line names | one fault in two classes is two findings |
+| `Spot` | **an entity** — the document plus the heading or numbered item the finding sits under, or the file a tree-wide finding is in | a position here is the anti-pattern the check's own reference class reports, and it moves when the passage is edited — the case a waiver must survive |
+| `Subject` | the figure, object, requirement, id, position token or repeated span the finding is about | it makes the key specific without quoting the passage, so rewording the sentence keeps the waiver |
+| `Grounds` | why the finding does no harm **here**, in terms a later reader can check | a reason nobody can check is indistinguishable from suppression |
+
+```markdown
+| Class | Spot | Subject | Grounds |
+|---|---|---|---|
+| isolation | <design-path> § <heading or numbered item> | <the figure, object, id or span> | <why it does no harm here> |
+```
+
+- **Granted by an act that shows the finding first**, and by nothing else: the check's
+  `--excuse '<class>|<spot>|<subject>' --grounds '<why>'` runs every class with waiving suspended, prints
+  the finding carrying that key, and only then appends the row. **No ordinary run writes here**, and a key
+  matching no finding of the run is refused — an excuse for a finding nobody can see excuses nothing.
+- **A waived finding stays visible**, reported as excused with its grounds, and the waived count prints
+  beside the verdict **split by whether its class holds the plan**: one mixed figure cannot say whether ten
+  waivers let a plan proceed over ten holds or merely quieted ten reports.
+- **Editing the passage does not revoke a waiver**, and the same fault returning at that spot comes back
+  waived. **The one bound:** where the subject *is* a passage — a repeated span — rewriting it does change
+  the key, which is correct, because the two sites then no longer say the same thing.
+- **Removing a row is an act of the same kind as granting one**, done by hand, which is why this is a table
+  a reader can find a row in. **Lifecycle:** created by the task's first grant act, moved to
+  `ai-docs/plans/done/` with the plan trio, and **removed by the fold together with the redline log** by
+  nobody's explicit act, because the plan's end of life ends the spot every row covers.
+
 ## Criterion checks (Round N)
 
 Where the CONCRETE check set lives, and the ONLY place in the task that holds one. **The design says
