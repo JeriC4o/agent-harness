@@ -289,6 +289,13 @@ Don't pre-empt `design`. If a question's answer "would change the architecture" 
 - Items genuinely unanswerable now (depend on benchmark data, external feedback).
 - Items with sensible defaults the `design` Subagent can defend.
 - **Not** a place to dump questions you didn't have time to ask.
+- **The test every item here must pass, applied as you write it:** would the answer change the chosen
+  approach, what the system must do, or how the work breaks up? If it would change any of the three, it
+  does not belong here — settle it this round by asking, or by taking a defensible default and recording
+  it under § Key decisions. The cost of getting this wrong is not a question left hanging: the answer
+  turns up after the plan has been agreed, where it is paid as a rewrite of the agreed plan rather than
+  as an addition to it. The rule's authority is
+  [`${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md`](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md).
 
 ## Patterns
 

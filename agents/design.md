@@ -211,20 +211,15 @@ The closing pass, invoked by `/redline-fold` once the PR is approved, producing 
 separate commit. It runs only when the log carries at least one row; with none, the frozen plan already
 describes what shipped and there is nothing to correct.
 
-**Two WINDOWS, and which one applies is read rather than assumed.** EARLY: the PR is still open, and the
+**Two WINDOWS, and you are told which rather than deciding it.** EARLY: the PR is still open and the
 commit joins it. LATE: the merge already happened and a log survived it, so the pass runs on a fresh
-branch off the default one and gets its own PR. The word is *window* and not *régime* on purpose: this
-file already uses *régime* for the pre-GO / post-GO freeze axis, and the correction MODE is a third axis
-again. One name over three axes makes every sweep ambiguous, which this mechanism's own spec refused on
-exactly that ground. **The late window is the common case, not the exception**
-— a human who approves a PR usually merges it in the same action, and nothing holds the early window
-open. It costs nothing but time, and for a reason this contract already relies on: the log is committed
-precisely so it survives the merge, where a gitignored record would not. What it does cost is the interval
-itself — until the late pass runs, the default branch carries a design whose markers point into a log and
-a spec that was never collapsed, so early stays preferred. One thing is better late and only one: the
-shipped state is final, so there is no ambiguity left about what the rows are applied against. **In the late
-window the gate runs BEFORE the `done/` move**, because it resolves the pre-fold text relative to the
-spec's directory at HEAD and the merge commit holds the trio in the active one.
+branch off the default one. Which one it is, why the late one exists rather than being a repair for
+carelessness, what the interval costs, and the gate's ordering inside it are the invoking skill's and are
+stated in full on
+[`${CLAUDE_PLUGIN_ROOT}/skills/redline-fold/SKILL.md`](${CLAUDE_PLUGIN_ROOT}/skills/redline-fold/SKILL.md),
+which establishes the window before spawning you. *Window* and not *régime* on purpose: this file already
+uses *régime* for the pre-GO / post-GO freeze axis and the correction MODE is a third axis again, and one
+name over three axes makes every sweep ambiguous.
 
 **It KEEPS the frozen design and applies the log's rows to the items that diverged.** It does not author
 the document afresh, and the reason the re-authoring existed is answered rather than dropped: an untouched
@@ -380,6 +375,7 @@ it will be tested is not, and is not this document's business.
   - **Corollary — tagging is NOT sufficient when the claim is load-bearing.** `[inferred]` / `[unverified]` / `[out of scope]` discharges the citation duty, never the verification duty. If a conclusion, headline, or AC rests SOLELY on a tagged claim, either verify it against source or state the conclusion conditionally — "honestly tagged" is not a third option. A scope boundary limits what must be INVESTIGATED; it never licenses a verdict about behaviour on the far side of it.
 - **Default to** grepping for the in-repo idiom before proposing any concurrency / locking primitive, and to stating the property as an observable failure mode ("does it ever wait? does it ever enqueue?") rather than as whether a lock is nominally acquired. A "this store cannot do X" / "this never waits" sentence needs a named entity with its id, an in-repo precedent, or an empirical check before it enters the design.
 - **Every number this document states names, in the same sentence, which kind of number it is and how it was obtained.** Three kinds are admissible and there is no fourth: a threshold the task handed down, an estimate whose derivation is shown where the estimate is stated, or a measurement of something that already exists, with the command that produced it beside the figure. **A number whose only honest provenance would be a measurement of the thing this document describes may not be written at all** — it cannot exist while the document is being written, so the only way to produce it is to invent it, and the next change falsifies it. An estimate that chooses between approaches is admissible precisely BECAUSE its derivation travels with it: a reader can redo the arithmetic without opening anything. An honest hedge is not provenance — "approximately", "roughly" and "on the order of" name no origin.
+- **A gap you leave open must be one whose answer would change none of three things: the approach this document chose, the requirements it is built against, or how it breaks the work up.** Apply that to every line of the open-questions section as you write it, and close the ones that fail — decide, take a defensible default, or ask. A gap that fails the test and is left anyway is not a note: its answer lands after the GO, and the only route that can absorb it then is the full design-and-review cycle, which is the expensive one.
 - **A reference names an ENTITY and never a position, and a statement that leans on a source entity carries the id that entity's own comment carries**, so the pair resolves in both directions. The form, the id's spelling, how the two sides are compared and the one carve-out that still admits a position are on [`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`](${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md); this contract restates none of it and points there instead.
 - **Prefer** measuring a ticket's asserted data facts and its named proxy metric against a REAL corpus before any design or test encodes them. A ticket's description of a data format is a claim, not a fact, and a named proxy is a hypothesis, not a specification — run the smallest query that could falsify each one first. Tests written from an unverified premise lock the premise in, and a green suite then argues FOR the wrong design. State what the HEALTHY case should look like before running a new detector, so a negative result can be reported as a result rather than read as an unfinished detector.
 - **Prefer** small targeted `Edit` calls to specific sections over a full-file `Write` when amending an existing large doc (a ~50KB `*.design.md` rewrite is the highest-risk moment for a transport drop — observed attempts of 51s and 291s both died before the write landed). Short per-call generations hold the streaming connection open for less time and almost always complete. This keeps the AGENTS.md AXIOM intact — the design subagent still owns the write, via `Edit` rather than a full-file `Write`. After any amendment run, verify on disk (mtime + `grep` for the expected new string); the harness does not auto-retry on socket close.
