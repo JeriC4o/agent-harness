@@ -245,7 +245,7 @@ If a draft question contains a substring matching any of: `backward compat`, `ba
    - **The DATE half of any `YYYY-MM-DD-<slug>` filename is READ, never derived** — take it from the session environment context (`Today's date is …`), never by copying or incrementing a prior plan file's prefix. Normally `spec_path` arrives resolved in your input contract and you simply honour it; derive one only when it is absent, and verify the composed name carries the session date. Same rule for the spec's `**Date:**` header. Sync group: this mirrors `${CLAUDE_PLUGIN_ROOT}/skills/interview/SKILL.md` Step 2 — the two are worded differently, so a lexical grep will not find the pair; keep them aligned by hand.
 3. Extract scope as a numbered list (in / out / deferred).
 4. Apply AGENTS.md defaults silently.
-5. Identify design-affecting ambiguities. For each: ask (high-leverage), default-and-record-in-Key-Decisions, or defer to `## Open questions`.
+5. Identify design-affecting ambiguities. For each: ask (high-leverage), default-and-record-in-Key-Decisions, or defer to `## Open questions` — and the third route is open only to an ambiguity whose answer would change none of the chosen approach, what the system must do, or how the work breaks up. One that would change any of the three takes one of the first two routes, or the spec is `unresolvable`; see § What goes in `## Open questions`.
 6. Write the spec.
 7. Return YAML: `ready` / `ask` / `unresolvable`.
 
