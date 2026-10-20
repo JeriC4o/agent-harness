@@ -8,11 +8,14 @@
 # what makes a removed registration a finding rather than a silence.
 #
 # WHY IT IS A SECOND FILE AT ALL. The payload crossed this repository's hard
-# 1000-line limit and no documented exemption fits a hand-written script, so one
-# leg moves out. This span was measured the cheapest of the three candidates: it
-# is a pure SINK. Of the nine names it defines, not one is read anywhere else in
-# the payload -- context in, findings appended, nothing exported -- where leg 3
-# exports two names and leg 2 four over 381 lines.
+# 1000-line limit, whose two documented exemptions -- auto-generated code and
+# single large expressions -- fit no hand-written script, so one leg moves out;
+# the per-file route that does fit is the Thousand-line exemption row in
+# ai-docs/context.md, which the payload now holds. This span was measured the
+# cheapest of the three candidates: it is a pure SINK. Of the nine names it
+# defines, not one is read anywhere else in the payload -- context in, findings
+# appended, nothing exported -- where leg 3 exports two names and leg 2 four
+# over 381 lines.
 #
 # WHAT A BROKEN SIBLING COSTS, and where that is guarded. A sibling that exists
 # but cannot be EXECUTED is the failure mode the design named when it chose one

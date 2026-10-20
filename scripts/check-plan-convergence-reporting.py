@@ -4,12 +4,14 @@
 # route and the report; this carries these three classes and nothing else.
 #
 # WHY IT IS A THIRD FILE AT ALL. The single payload reached 1,447 lines against
-# this repository's hard thousand-line limit, and no documented exemption fits a
-# hand-written script. The seam is the one the check already states as data --
-# which classes HOLD a plan and which only report -- rather than a cut chosen to
-# make files of similar size: a caller refuses on the holding count, so the
-# three classes OUTSIDE that count are the group with a reason to travel
-# together.
+# this repository's hard thousand-line limit, whose two documented exemptions --
+# auto-generated code and single large expressions -- fit no hand-written
+# script; the per-file route the verification payload took is recorded as the
+# Thousand-line exemption row in ai-docs/context.md. The seam is the one the
+# check already states as data -- which classes HOLD a plan and which only
+# report -- rather than a cut chosen to make files of similar size: a caller
+# refuses on the holding count, so the three classes OUTSIDE that count are the
+# group with a reason to travel together.
 #
 # THE TWO GROUPS HAVE NO EDGE BETWEEN THEM, and that is what made the seam free.
 # Every helper here is called only by a class here. The three relation patterns

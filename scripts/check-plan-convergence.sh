@@ -108,11 +108,13 @@ command -v python3 >/dev/null 2>&1 \
   || { printf 'check-plan-convergence: cannot run -- python3 is the scanning tool, and the host grep is not a substitute: it has been measured answering 0 to a pattern it refused on a complexity limit\n' >&2; exit 2; }
 
 # THE PAYLOAD IS THREE FILES BESIDE THIS ONE, because the single file reached
-# 1,447 lines against this repository's hard 1000-line limit, which ships no
-# exemption for a hand-written script. The six classes moved out in the two
-# groups this check already states as data: the three that HOLD a plan into one
-# sibling, the three whose findings are a report into the other. What the core
-# keeps is what both groups read.
+# 1,447 lines against this repository's hard 1000-line limit, whose two
+# documented exemptions -- auto-generated code and single large expressions --
+# fit no hand-written script. A per-file route does exist and the verification
+# payload took it: the Thousand-line exemption row in ai-docs/context.md. The
+# six classes moved out in the two groups this check already states as data:
+# the three that HOLD a plan into one sibling, the three whose findings are a
+# report into the other. What the core keeps is what both groups read.
 #
 # A payload that EXISTS but cannot be loaded reports as findings rather than as
 # a cannot-run unless something stops it, and rc 1 is the one outcome a run that
