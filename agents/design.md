@@ -266,17 +266,19 @@ to their pre-fold text — because the design has no section that can carry it: 
 built, never the boundary of what was deliberately not built. That write belongs to the spec's owner, not
 to this subagent and not to the orchestrator.
 
-**The log is removed from the tree.** Nothing downstream reads it — the post-merge reading list names the
-spec and the design and no third class — and the commit history preserves the record. A surviving log is
-therefore the unambiguous mechanical signal that the fold never ran, which is what lets the merge-time
-workflow refuse on one.
+**The log is removed from the tree, and the plan's record of excused findings goes with it** — the plan's
+end of life ends the spot every row of that record covers. Nothing downstream reads either, the post-merge
+reading list naming the spec and the design and no third class, and the commit history preserves both. A
+surviving log is therefore the unambiguous mechanical signal that the fold never ran, which is what lets
+the merge-time workflow refuse on one. **The two do not always arrive together** — a plan may waive a
+finding without ever diverging — so each is removed on its own account.
 
 **The whole output is gated**, by `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh folded <spec> <design>`:
 the three retained spec sections byte-compared against the previous commit, the design asserted free of
-all three residue patterns, and the log asserted gone. The comparand is version control deliberately — it
-predates the rewrite and therefore cannot BE the rewrite, which a copy captured by this same pass could
-not promise. Its three outcomes are this repository's: clean, findings, and cannot-run, where cannot-run
-is not a pass.
+all three residue patterns, and the log and the record of excused findings each asserted gone on its own
+finding. The comparand is version control deliberately — it predates the rewrite and therefore cannot BE
+the rewrite, which a copy captured by this same pass could not promise. Its three outcomes are this
+repository's: clean, findings, and cannot-run, where cannot-run is not a pass.
 
 ## Quality checklist
 

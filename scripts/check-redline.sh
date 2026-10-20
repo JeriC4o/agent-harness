@@ -31,12 +31,13 @@
 # the rule necessarily does. That is why it is a SPOT-CHECK the FOLD runs as its
 # own step -- `skills/redline-fold/SKILL.md` calls `revision <design>` directly
 # -- and NOT a leg inside `folded`, which checks the retained spec sections, the
-# residue headings, the marker and the log and never reads the phrase list. The
-# distinction is worth the sentence: a comment that promises a leg the code does
-# not have is the quietest kind of false green, and this one is the phrase list's
-# only caller outside its own suite. Likewise the assertion that every section
-# describes the shipped state is a judgement step in the fold's brief, not a leg
-# here. A fragment
+# residue headings, the marker, the log and the record of excused findings, and
+# never reads the phrase list. The distinction is worth the sentence: a comment
+# that promises a leg the code does not have is the quietest kind of false green,
+# and this one is the phrase list's only caller outside its own suite. Likewise
+# the fold's judgement step -- reading the CORRECTED ITEMS and vouching for them
+# -- lives in the fold's brief and is not a leg here, and its subject is the
+# items a log row was recorded against rather than every section. A fragment
 # search for superseded material is actively misleading, not merely weak: a
 # document that records its own corrections holds the superseded wording inside
 # a quotation, so an absence proved from a fragment is a false positive.
@@ -157,10 +158,14 @@ do_paired() { # <design> <log>
         # THE GROUNDS MUST BE READ OFF THE DESIGN, not merely present. What is
         # assertable here is the CITATION, never which mode was recommended --
         # a check that judged the recommendation would be judging a judgement.
-        # A backticked token carrying a line number or a section heading is
-        # evidence pointing at the document; a preference carries neither.
+        # A backticked SECTION HEADING is evidence pointing at the document; a
+        # preference carries none. A line-addressed token used to satisfy this
+        # as well and no longer does: a position outlives nothing and the
+        # citation would be trusted without being re-derived, which is the
+        # anti-pattern the plan-convergence reference class reports. Grounds
+        # cite an entity.
         # The whole mode BLOCK is read rather than its first line, because the
-        # grounds wrap and the anchors land after the wrap in every real
+        # grounds wrap and the heading lands after the wrap in every real
         # example. Bound, stated as contract: this catches grounds that cite
         # NOTHING. It cannot tell a relevant citation from an irrelevant one,
         # and the reader the gate exists for -- the user confirming the
@@ -168,8 +173,8 @@ do_paired() { # <design> <log>
         modeblock=$(awk '/^\*\*Mode:\*\*/ { f = 1 }
                          f && /^[[:space:]]*$/ { exit }
                          f { print }' "$log")
-        printf '%s\n' "$modeblock" | grep -qE '`[^`]*(##|:[0-9]+)[^`]*`' \
-          || finding 'the mode grounds cite nothing from the design -- no backticked anchor and no section heading -- so there is no evidence to disagree with'
+        printf '%s\n' "$modeblock" | grep -qE '`[^`]*##[^`]*`' \
+          || finding 'the mode grounds cite no section of the design -- no backticked heading -- so there is no evidence to disagree with'
       fi
     fi
   fi
@@ -371,7 +376,7 @@ do_pending() {
 
 # --- folded -----------------------------------------------------------------
 do_folded() {
-  local spec=$1 design=$2 sdir plans base h p log=''
+  local spec=$1 design=$2 sdir plans base h p log='' excuses=''
   readable "$spec" 'spec'
   readable "$design" 'design'
   sdir=$(dirname -- "$spec")
@@ -415,6 +420,21 @@ EOF
     log="${log}${log:+ }${p}"
   done
   [ -z "$log" ] || finding "the redline log survives at ${log}, and the fold removes it"
+
+  # THE RECORD OF EXCUSED FINDINGS GOES WITH THE LOG, and it is asserted by the
+  # SAME literal-path construction rather than by a glob over the directory: a
+  # glob would also match a sibling plan's record, which this fold has no
+  # business removing and whose survival is correct. The plan's end of life ends
+  # the spot every row of it covers, so a surviving record means the same thing
+  # a surviving log does -- this pass did not finish. Reported SEPARATELY from
+  # the log, because the two do not always arrive together: a plan can waive a
+  # finding without ever diverging, so one finding naming both would leave the
+  # reader guessing which record actually survived.
+  for p in "${plans}/${base}.excuses.md" "${plans}/done/${base}.excuses.md"; do
+    [ -f "$p" ] || continue
+    excuses="${excuses}${excuses:+ }${p}"
+  done
+  [ -z "$excuses" ] || finding "the record of excused findings survives at ${excuses}, and the fold removes it with the log"
 
   printf 'check-redline: verb=folded verdict=%s findings=%s\n' "$(verdict_word)" "$FINDINGS"
   [ "$FINDINGS" -eq 0 ]

@@ -191,6 +191,45 @@ run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
 check "a log left in done/ is found too, from a spec in the active directory" "$RC" "1"
 has   "  and names it" "$OUT" "done/t.redline.md"
 
+# THE RECORD OF EXCUSED FINDINGS, which the fold removes WITH the log. The
+# fixture carries none, which is why every leg above is clean on it: most plans
+# waive nothing and an absent record is the ordinary state. These legs plant one.
+#
+# THE SIBLING CONTROL IS THE LEG THAT MATTERS. A glob over the plans directory
+# would satisfy every firing leg here and ALSO redden on another plan's record,
+# which this fold has no business removing -- so the firing legs alone cannot
+# tell the literal-path construction from a glob, and the silent one can.
+mkexcuses() { # <tree> <relative directory> <spec base>
+  { printf '| Class | Spot | Subject | Grounds |\n'
+    printf '|---|---|---|---|\n'
+    printf '| isolation | `%s.design.md` § Approach | the figure 24 | a restated disposition, not a fact two places could disagree about |\n' "$3"
+  } > "${1}/${2}/${3}.excuses.md"
+}
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "a surviving record of excused findings is a finding on its own" "$RC" "1"
+has   "  and names where it survives" "$OUT" "the record of excused findings survives at"
+has   "  by path" "$OUT" "ai-docs/plans/t.excuses.md"
+hasnt "  and does not report the log, which is gone" "$OUT" "the redline log survives"
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans/done t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "a record left in done/ is found too, from a spec in the active directory" "$RC" "1"
+has   "  and names it" "$OUT" "done/t.excuses.md"
+
+T=$(mktree); mkexcuses "$T" ai-docs/plans t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "both surviving -> findings" "$RC" "1"
+has   "  the log on its own finding" "$OUT" "the redline log survives at"
+has   "  and the record on a separate one, so the reader knows which step was skipped" \
+      "$OUT" "the record of excused findings survives at"
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans u
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "control: ANOTHER plan's record of excused findings is not this fold's business" "$RC" "0"
+has   "  verdict" "$OUT" "verdict=clean"
+
 # The spec collapsed in done/, which is where the fold actually finds it.
 T=$(mktree)
 git -C "$T" mv ai-docs/plans/t.spec.md ai-docs/plans/done/t.spec.md
@@ -442,7 +481,7 @@ mkmode() { # <row keys> <mode line, or empty for none>
   mkpair "$1" "$1" "${2:--}"
 }
 
-mkmode 'S8.1' '**Mode:** R&D — the base took four unplanned extensions (`:351`)'
+mkmode 'S8.1' '**Mode:** R&D — `## Open questions` names four unplanned extensions'
 run paired "${W}/d.md" "${W}/l.md"
 check "an implementation-step row with a mode naming its grounds is clean" "$RC" "0"
 has   "  and the mode is reported, so a reader need not open the log" "$OUT" "mode=R&D"
@@ -460,18 +499,20 @@ has   "  because the grounds are what the choice is disagreed with on" "$OUT" "g
 # THE GROUNDS MUST BE READ OFF THE DESIGN, not merely present. The criterion is
 # that the recommendation is checked on its EVIDENCE and never on which mode was
 # recommended -- so what is assertable is that the grounds CITE the design: a
-# backticked anchor carrying a line number, or a backticked section heading.
-# A preference carries neither. The whole mode BLOCK is read, not its first
-# line, because the grounds wrap and the anchors land after the wrap in every
-# real example.
-mkmode 'S8.1' '**Mode:** R&D — `## Open questions` at `:870` opens "None blocking"'
+# backticked SECTION HEADING. A preference carries none, and neither does a
+# line-addressed token any more -- a position outlives nothing, so grounds cite
+# an entity. The leg below asserts that direction rather than leaving it to the
+# pattern. The whole mode BLOCK is read, not its first line, because the grounds
+# wrap and the heading lands after the wrap in every real example.
+mkmode 'S8.1' '**Mode:** R&D — `## Open questions` opens "None blocking"'
 run paired "${W}/d.md" "${W}/l.md"
-check "grounds citing a design anchor are clean" "$RC" "0"
+check "grounds citing a design section are clean" "$RC" "0"
 has   "  mode" "$OUT" "mode=R&D"
 
 mkmode 'S8.1' '**Mode:** Hybrid — the base is carried as measured (`:351`)'
 run paired "${W}/d.md" "${W}/l.md"
-check "a line-number citation alone satisfies it" "$RC" "0"
+check "a line-number citation alone no longer satisfies it" "$RC" "1"
+has   "  and the message asks for a section rather than naming the position" "$OUT" "no backticked heading"
 
 mkmode 'S8.1' '**Mode:** R&D — because I prefer it'
 run paired "${W}/d.md" "${W}/l.md"
