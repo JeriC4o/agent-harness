@@ -18,7 +18,7 @@
 # all have a direction in which the obvious spelling fails, and a single-ended
 # assertion cannot see it.
 #
-# THE SEVEN RESIDUAL FORMS ARE ASSERTED SILENT so the stated bound is a measured
+# THE SIX RESIDUAL FORMS ARE ASSERTED SILENT so the stated bound is a measured
 # fact rather than a claim. Every one of them under-fires, which is the property
 # that matters: there is no shape on which the house style meets a refusal it
 # would want switched off.
