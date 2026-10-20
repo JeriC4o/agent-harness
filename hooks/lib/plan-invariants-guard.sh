@@ -41,29 +41,27 @@
 # that one writer escaping the refusal -- which the detection legs still catch,
 # since an edit that escapes this guard does not escape them.
 #
-# THE SEVEN SILENT FORMS OF THE WRITE ARM, every one of them under-firing.
+# THE SIX SILENT FORMS OF THE WRITE ARM, every one of them under-firing.
 # Three never spell the protected path as a literal token, so no resolution
 # rule reaches them: a glob, a command substitution that produces the path, and
 # a target list read from a file. One follows from the write condition: a writer
 # whose construct is not listed. Two follow from operand rules kept deliberately
 # narrow -- an interpreter script's variable-indirected writer, and a directory
-# change that is not a leading prefix. One follows from segmentation: a
-# separator the shell would not treat as one because a BACKSLASH escapes it,
-# outside any quoted span. Its QUOTED cousin was silent here too and this count
-# read six while it was, which is why the escaped form is spelled out rather
-# than folded into the operand rules; the neutralisation before the segment
-# loop closes the quoted one and does not reach this.
+# change that is not a leading prefix. The escaped separator that used to be the
+# seventh is closed: the neutralisation reaches a separator a BACKSLASH escapes
+# outside any quoted span, as well as its quoted cousin.
 #
 # THE ACCEPTANCE CONDITION ADDS TWO OF ITS OWN, also under-firing: the payload
 # invoked directly, which never spells the entry point the condition matches on,
 # and the acceptance flag reached through a variable or a shell alias rather
-# than spelled in the command. All nine are asserted in the suite rather than
+# than spelled in the command. All eight are asserted in the suite rather than
 # claimed here.
 #
 # Tests: hooks/lib/test-plan-invariants-guard.sh
 
 set -ufo pipefail
 
+# [protected]
 PROTECTED='agents/spec-writer.md
 agents/design.md
 agents/design-review.md
@@ -207,10 +205,73 @@ case "$cmd" in
     esac ;;
 esac
 
+# THE EIGHT SEGMENTATION CHARACTERS, as data, because three steps read them: the
+# neutralisation below, the padding after it and the translation that feeds the
+# segment loop. Spelled once so the three cannot be edited apart -- a character
+# present in one and not the others reopens exactly the hole the neutralisation
+# closes. The suite reads this assignment and sweeps every character in it, in
+# both the quoted spelling and the escaped one.
+SEGMENT_SEPARATORS=';&|(){}`'
+
+# The command as ONE line first, because the walk below carries quote state
+# across the whole of it: a newline inside a quoted span is a separator only to
+# the translation that feeds the segment loop, and the walk has to have
+# neutralised it before then.
+joined=$(printf '%s' "$cmd" | tr '\n' ';')
+
+# A SEPARATOR INSIDE A QUOTED SPAN IS NOT A SEPARATOR, and by segmentation time
+# nothing recorded that it was quoted: the padding below replaces both quote
+# characters with spaces, and the translation feeding the segment loop cuts on
+# all eight. So `sed -i '' 's|a|b|g' <protected page>` put its in-place writer
+# and its resolved path in different segments, each missing the other, and the
+# arm went silent on every one of the eight and in both quote spellings.
+# Neutralised here, while the quotes are still there to read, leaving the
+# quoting itself intact and the eight characters meaningful wherever the shell
+# would treat them as a separator. An inert character rather than a deletion,
+# so the span stays the single token the shell would make of it.
+#
+# A SEPARATOR A BACKSLASH ESCAPES, OUTSIDE ANY QUOTED SPAN, IS NOT ONE EITHER,
+# and the same walk closes it: the backslash is tracked left to right, so an
+# escaped backslash followed by a real separator still segments. Inside a quoted
+# span no escape rule is needed, because every separator there is neutralised
+# already.
+#
+# THE WALK RUNS BEFORE THE PADDING, AND THAT ORDER IS THE WHOLE OF WHY THE
+# ESCAPED FORM CLOSES. Measured with the walk after the padding instead: seven
+# of the eight escaped forms closed and the statement separator stayed silent,
+# because the padding had already put a space between the backslash and the
+# character it escaped.
+#
+# Shrinking the separator set was the ruled-out repair: those characters are
+# what makes a compound command segment at all, and the silences this guard
+# deliberately keeps -- a read beside a write, a directory change that is not a
+# leading prefix -- are read off that same segmentation.
+#
+# The fallback is to the UNTOUCHED text, never to an empty string: an awk that
+# is absent or that fails would otherwise empty `padded` and silence the whole
+# write arm, which is a wider silence than the one being closed.
+neutralised=$(printf '%s' "$joined" | awk -v seps="$SEGMENT_SEPARATORS" '
+{
+  out = ""; q = ""; esc = 0
+  for (i = 1; i <= length($0); i++) {
+    c = substr($0, i, 1)
+    if (esc) { esc = 0; if (index(seps, c) > 0) c = "_" }
+    else if (q == "") {
+      if (c == "\\") esc = 1
+      else if (c == "\"" || c == "\47") q = c
+    }
+    else if (c == q) q = ""
+    else if (index(seps, c) > 0) c = "_"
+    out = out c
+  }
+  print out
+}' 2>/dev/null) || neutralised=""
+[ -n "$neutralised" ] && joined=$neutralised
+
 # Separators are padded before the prefix walk so `cd <dir>; <edit>` and
 # `cd <dir>&&<edit>` present the directory as a token of its own, the way the
 # spaced spelling already does.
-flat=$(printf '%s' "$cmd" | tr '\n' ';' | sed -e 's/;/ ; /g' -e 's/&&/ \&\& /g')
+flat=$(printf '%s' "$joined" | sed -e 's/;/ ; /g' -e 's/&&/ \&\& /g')
 
 # A leading directory change is resolved because `cd <dir> && <edit>` is
 # permitted house style here and spells a real path -- just not the one this
@@ -238,6 +299,7 @@ done
 
 join_dir() { case "$1" in /*) printf '%s' "$1" ;; *) printf '%s' "${dirpfx:+${dirpfx}/}$1" ;; esac; }
 
+# [path-shaped]
 path_shaped() {
   case "${1:-}" in
     ''|-*|@*@) return 1 ;;
@@ -247,56 +309,16 @@ path_shaped() {
   return 1
 }
 
-# THE EIGHT SEGMENTATION CHARACTERS, as data, because two steps read them: the
-# neutralisation below and the translation that feeds the segment loop. Spelled
-# once so the two cannot be edited apart -- a character present in one and not
-# the other reopens exactly the hole the neutralisation closes. The suite reads
-# this assignment and sweeps every character in it.
-SEGMENT_SEPARATORS=';&|(){}`'
-
-# A SEPARATOR INSIDE A QUOTED SPAN IS NOT A SEPARATOR, and by segmentation time
-# nothing recorded that it was quoted: the padding below replaces both quote
-# characters with spaces, and the translation feeding the segment loop cuts on
-# all eight. So `sed -i '' 's|a|b|g' <protected page>` put its in-place writer
-# and its resolved path in different segments, each missing the other, and the
-# arm went silent on every one of the eight and in both quote spellings.
-# Neutralised here, while the quotes are still there to read, leaving the
-# quoting itself intact and the eight characters meaningful wherever the shell
-# would treat them as a separator. An inert character rather than a deletion,
-# so the span stays the single token the shell would make of it.
-#
-# Shrinking the separator set was the ruled-out repair: those characters are
-# what makes a compound command segment at all, and the silences this guard
-# deliberately keeps -- a read beside a write, a directory change that is not a
-# leading prefix -- are read off that same segmentation.
-#
-# A separator the shell would not treat as one because a BACKSLASH escapes it,
-# outside any quoted span, is NOT reached by this. It is the enumerated residual
-# the header names.
-#
-# The fallback is to the UNTOUCHED text, never to an empty string: an awk that
-# is absent or that fails would otherwise empty `padded` and silence the whole
-# write arm, which is a wider silence than the one being closed.
-neutralised=$(printf '%s' "$rest" | awk -v seps="$SEGMENT_SEPARATORS" '
-{
-  out = ""; q = ""
-  for (i = 1; i <= length($0); i++) {
-    c = substr($0, i, 1)
-    if (q == "") { if (c == "\"" || c == "\47") q = c }
-    else if (c == q) q = ""
-    else if (index(seps, c) > 0) c = "_"
-    out = out c
-  }
-  print out
-}' 2>/dev/null) || neutralised=""
-[ -n "$neutralised" ] && rest=$neutralised
-
+# [padded]
 padded=$(printf '%s' "$rest" | sed -e 's/>>/ @APPEND@ /g' -e 's/>/ @REDIR@ /g' -e "s/[\"']/ /g")
 
+# [writer-words]
 WRITER_WORDS=' patch truncate shred rm install ed tee '
 GIT_WRITE_SUBS=' checkout restore rm mv '
+# [inplace-cmds]
 INPLACE_CMDS=' sed gsed perl ruby '
 
+# [has-write-construct]
 has_write_construct() { # <text>
   case "$1" in *'@REDIR@'*|*'@APPEND@'*) return 0 ;; esac
   for w in $WRITER_WORDS $INPLACE_CMDS dd mv cp; do

@@ -191,8 +191,8 @@ in a branch name and a spec header, where a bare `#` does not belong. It maps on
 ## Language profile
 
 See [`ai-docs/context.md`](ai-docs/context.md) § Language profile. In short: Markdown instruction files
-plus POSIX shell, with six non-shell payload files in three other languages — two `awk`, one `jq` and
-three `python3`; no compiled sources. Each is a SIBLING a `.sh` entry point loads from its own directory,
+plus POSIX shell, with eight non-shell payload files in three other languages — two `awk`, one `jq` and
+five `python3`; no compiled sources. Each is a SIBLING a `.sh` entry point loads from its own directory,
 never an entry point itself, so every caller still invokes a shell script. **The count in this sentence
 moves whenever a payload sibling is added**, and nothing derives it — the sibling list it summarises is on
 the profile page, and the two have already fallen out of step once.

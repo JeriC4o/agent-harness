@@ -35,7 +35,15 @@ cp "${ROOT}/docs/plan-invariants.md" "$T/docs/plan-invariants.md"
 # The real file, not a stub: the minimum fragment length is BORROWED from it,
 # so a fixture carrying an invented assignment would test the fixture.
 cp "${ROOT}/skills/task/scripts/check-fix-plan.sh" "$T/skills/task/scripts/"
-cp "$CHECK" "${HERE}/check-plan-convergence.py" "$T/scripts/"
+# All three payloads, because the entry point preflights each one by name and
+# the core loads the two siblings from its own directory: a sandbox carrying
+# only the core would make every leg below a cannot-run.
+cp "$CHECK" "${HERE}/check-plan-convergence.py" \
+   "${HERE}/check-plan-convergence-holding.py" \
+   "${HERE}/check-plan-convergence-reporting.py" "$T/scripts/"
+PAYLOADS="${HERE}/check-plan-convergence.py
+${HERE}/check-plan-convergence-holding.py
+${HERE}/check-plan-convergence-reporting.py"
 git -C "$T" init -q
 git -C "$T" add -A >/dev/null 2>&1
 SUB="$T/scripts/check-plan-convergence.sh"
@@ -103,10 +111,21 @@ out=$(bash "$SUB" --root "$T" "$T/plans/missing.spec.md" "$T/plans/a.design.md" 
 has "and names it as a cannot-run" "$out" 'cannot run'
 bash "$SUB" --root "$T" "$T/plans/a.spec.md" >/dev/null 2>&1
 check "one path only -> rc 2 usage" "$?" "2"
-mv "$T/scripts/check-plan-convergence.py" "$T/scripts/hidden.py"
-bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
-check "an absent payload -> rc 2, never rc 1" "$?" "2"
-mv "$T/scripts/hidden.py" "$T/scripts/check-plan-convergence.py"
+# ONE LEG PER PAYLOAD, and each asserts that the message NAMES the file that
+# went missing: a cannot-run reporting that something is absent without saying
+# which thing leaves the reader to find it, and three paths is where that cost
+# starts. The rc is asserted as 2 and never 1, because rc 1 is the findings
+# code and a check that could not load a third of itself must not take it.
+for payload in check-plan-convergence.py \
+               check-plan-convergence-holding.py \
+               check-plan-convergence-reporting.py; do
+  mv "$T/scripts/${payload}" "$T/scripts/hidden.py"
+  bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
+  check "an absent ${payload} -> rc 2, never rc 1" "$?" "2"
+  out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1)
+  has "  and the message names which payload is missing" "$out" "$payload"
+  mv "$T/scripts/hidden.py" "$T/scripts/${payload}"
+done
 
 printf '\n== the provenance class, each accepted kind paired with the silent case ==\n'
 write_pair 'The window is 40 rounds wide.' 'Nothing.'
@@ -542,24 +561,48 @@ check "a record outside the index -> rc 2" "$rc" "2"
 has "and says the run reads a file no other clone has" "$out" 'not in the index'
 git -C "$T" add docs/plan-invariants.md >/dev/null 2>&1
 
-printf '\n== the payload parses, which no shell test can see ==\n'
-python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" "${HERE}/check-plan-convergence.py" \
-  && ok "check-plan-convergence.py parses" || bad "check-plan-convergence.py parses"
+printf '\n== every payload parses, which no shell test can see ==\n'
+# All three, enumerated from the list built beside the sandbox copy: an
+# unparseable sibling comes out of `exec_module` and would otherwise exit 1,
+# the findings code, so the one file nobody parsed is the one that can lie.
+while IFS= read -r payload; do
+  [ -n "$payload" ] || continue
+  python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" "$payload" \
+    && ok "${payload##*/} parses" || bad "${payload##*/} parses"
+done <<EOF
+$PAYLOADS
+EOF
 
 printf '\n== the check holds no section token of a spec or a design as a literal ==\n'
 # The condition on which this check stays out of the edit-time refusal's page
 # set. Asserted against the record's own rows rather than against a list here,
 # so widening the record cannot leave this leg testing a stale set.
+#
+# TWO -e EXPRESSIONS AND NOT ONE WITH AN ALTERNATION. A BRE `\|` is a GNU
+# extension: the host sed here accepts the script, prints nothing and exits 0,
+# so the row list came back empty and the sweep below ran zero comparisons while
+# reading exactly like a clean one. The count is asserted non-empty for the same
+# reason -- an extraction that stopped matching must fail here rather than
+# shrink this leg to nothing.
+ELEMENT_TOKENS=$(sed -n '/^## The required elements of a spec and of a design$/,/^## /p' \
+                   "${ROOT}/docs/plan-invariants.md" \
+                 | sed -n -e 's/^| *spec *| `\([^`]*\)` *|.*/\1/p' \
+                          -e 's/^| *design *| `\([^`]*\)` *|.*/\1/p')
+TOKEN_COUNT=$(printf '%s\n' "$ELEMENT_TOKENS" | grep -c '^##')
+check "the element tokens were extracted from the record, and there are some" \
+  "$( [ "${TOKEN_COUNT:-0}" -gt 0 ] && echo yes || echo no )" "yes"
 LEAKED=''
 while IFS= read -r t; do
   [ -n "$t" ] || continue
-  grep -qF -- "\`$t\`" "${HERE}/check-plan-convergence.py" && LEAKED="${LEAKED}${LEAKED:+ }[$t]"
+  for payload in $PAYLOADS; do
+    grep -qF -- "\`$t\`" "$payload" && LEAKED="${LEAKED}${LEAKED:+ }[$t in ${payload##*/}]"
+  done
   grep -qF -- "\`$t\`" "$CHECK" && LEAKED="${LEAKED}${LEAKED:+ }[$t in the wrapper]"
 done <<EOF
-$(sed -n '/^## The required elements of a spec and of a design$/,/^## /p' "${ROOT}/docs/plan-invariants.md" \
-   | sed -n 's/^| *\(spec\|design\) *| `\([^`]*\)` *|.*/\2/p')
+$ELEMENT_TOKENS
 EOF
-check "no element token is backticked in either file" "$LEAKED" ""
+check "no element token is backticked in any of the four files, over ${TOKEN_COUNT} tokens" \
+  "$LEAKED" ""
 
 printf '\n== this repository own plan pair is examined rather than skipped ==\n'
 LIVE_SPEC=$(ls "${ROOT}"/ai-docs/plans/*.spec.md 2>/dev/null | head -1)

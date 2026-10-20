@@ -143,9 +143,15 @@ marks the finding `✅ Fixed`. The shape: a finding reports that a design's miti
 thing that catches a failure, and that check has since been deleted. **Both remedies are valid** — ship
 the check, or correct the sentence. Choosing the code-side remedy routes to the normal path **correctly
 by a diff-keyed table**: the table is satisfied, not violated, while the sentence stays false. Nothing
-between "choose fix" and "mark `✅ Fixed`" re-reads it.
+between "choose fix" and "mark `✅ Fixed`" re-reads it. Two consequences follow, and the step text
+carries both as obligations with their reasons left here: the two arms are checked in order, A first,
+because choosing a remedy is what defeats the subject test; and the closing gate re-reads the cited
+sentence in its own file, because shipping the thing a sentence promised makes the sentence true only if
+the shipped thing does what the sentence says it does.
 
 **Why the marking beat runs before the apply.** The `applied` verb asserts that the design carries each
 `redline:` row's marker and the log carries its row, so a marking pass that ran afterwards would be
 asserted against a tree that does not yet hold what it is about to write. The order is not a preference
-between two workable sequences — one of them makes the assertion meaningless.
+between two workable sequences — one of them makes the assertion meaningless. The same assertion is why a
+corrective marking invocation COMPLETES the round's one pass rather than being a second one: the
+once-per-round bound is satisfied, not broken, by finishing a pass that did not land.

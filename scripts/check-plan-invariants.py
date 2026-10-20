@@ -788,6 +788,7 @@ SPEC_CONTRACT = 'agents/spec-writer.md'
 DESIGN_CONTRACT = 'agents/design.md'
 REVIEW_CONTRACT = 'agents/design-review.md'
 ENFORCER = 'scripts/check-redline.sh'
+# [severity]
 SEVERITY = r'(?:is a `(?:major|minor|blocker)` finding|=\s*`(?:major|minor|blocker)`|is `(?:major|minor|blocker)`)'
 
 DERIVED = set()
@@ -819,6 +820,7 @@ for _t in fenced_sections(DESIGN_CONTRACT):
 # branch could only ever manufacture a spurious ARRIVAL against the record.
 # Removed rather than left harmless: a derivation arm with no possible subject
 # is indistinguishable from one whose subject has not been written yet.
+# [element-token]
 ELEMENT_TOKEN = re.compile(r'^##\s+\S.*$')
 _rev = read(REVIEW_CONTRACT)
 if _rev is None:

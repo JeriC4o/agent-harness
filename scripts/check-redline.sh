@@ -96,6 +96,7 @@ A2=${3:-}
 # THE COUNT IS PART OF THE VERDICT, not decoration: an empty design and an empty
 # log pair vacuously, and `pairs=0` is the only thing that distinguishes "both
 # directions checked and agreed" from "there was nothing to check".
+# [do-paired]
 do_paired() { # <design> <log>
   local design=$1 log=$2 k pairs modeline='' modeblock='' rest='' mode='n/a'
   readable "$design" 'design'

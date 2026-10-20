@@ -1,7 +1,13 @@
-# The logic half of check-plan-convergence.sh: the plan pair, the classes that
-# read it and the report. Invoked as
+# The logic half of check-plan-convergence.sh: the plan pair, what every class
+# reads, the excuse route and the report. Invoked as
 # `python3 check-plan-convergence.py <root> <spec> <design>` by the wrapper
 # beside it, which owns the flags, the preflights and the exit convention.
+#
+# There are three payload files: this one, check-plan-convergence-holding.py
+# with the three classes that HOLD a plan, and
+# check-plan-convergence-reporting.py with the three whose findings are a
+# report. This file loads both -- see THE TWO PAYLOAD SIBLINGS below for what
+# stays here and why.
 #
 # Tests: scripts/test-check-plan-convergence.sh
 #
@@ -19,6 +25,7 @@
 # the section's presence, which is the shape that makes a page protected, and a
 # cannot-run would let this check hold a plan on a missing heading. The region
 # is empty, the examined count prints as zero, and a reader weighs the zero.
+import importlib.util
 import os
 import re
 import subprocess
@@ -434,162 +441,31 @@ def clause_at(text, offset):
     return text[start:end]
 
 
-# ---------------------------------------------------------------------------
-# The arithmetic class. Holds.
-# ---------------------------------------------------------------------------
-# ITS BOUND, stated because every other check in this tree states its own: the
-# class reaches a relation whose operands AND result are all literal in one
-# clause, in two spellings -- an operator chain closed by an equals sign, and a
-# list of addends closed by a stated total. A relation written in prose with no
-# second figure to check it against is not a relation this class can evaluate,
-# and a rate stated once has no arithmetic to fail. A candidate it recognises
-# and cannot evaluate is COUNTED beside the verdict rather than dropped, because
-# a class that silently skipped what it could not read would report a clean
-# arithmetic over a document full of it.
+
+# THE THREE RELATION PATTERNS ARE HERE BECAUSE BOTH GROUPS READ THEM. The
+# arithmetic class evaluates what they match; the provenance class reads the
+# same three to decide that a derivation shown in place answers the provenance
+# obligation without a word for it. One holding class and one reporting class,
+# so a pattern held in either sibling would make the other sibling depend on
+# it -- the same reason the built-path marking below is not in a sibling.
 #
-# THE NOT-EVALUABLE SET IS CLOSED to three shapes, and that is deliberate rather
-# than thrifty: an earlier version counted any clause carrying an operator
-# between two tokens, which matched every hyphenated word in both documents and
-# reported 255 relations where there are none. A counter that over-counts is as
-# useless as one that under-counts, and worse, because it reads as coverage.
+# TWO SPELLINGS, and the arithmetic class's own header states the bound they
+# reach: an operator chain closed by an equals sign, and a list of addends
+# closed by a stated total.
 EQUATION = re.compile(r'(\d[\d,.]*(?:\s*[-+*/×÷]\s*\d[\d,.]*)+)\s*=\s*(\d[\d,.]*)')
 TOTAL_WORD = re.compile(r'(\d[\d,.]*)\s+(?:together|in total|in all|all told|between them)\b')
 TOTAL_PHRASE = re.compile(r'\b(?:summing to|for a total of|which totals?|adding up to)\s+(\d[\d,.]*)')
-SPACED_EQUALS = re.compile(r'\s=\s')
-NOT_EVALUABLE = 0
-RELATIONS = 0
-
-
-def evaluate(chain):
-    """A left-to-right walk with the two multiplicative operators taken first."""
-    tokens = re.findall(r'\d[\d,.]*|[-+*/×÷]', chain)
-    if not tokens or len(tokens) % 2 == 0:
-        return None
-    try:
-        values = [value_of(tokens[0])]
-        ops = []
-        for i in range(1, len(tokens), 2):
-            op, rhs = tokens[i], value_of(tokens[i + 1])
-            if op in ('*', '×'):
-                values[-1] *= rhs
-            elif op in ('/', '÷'):
-                if rhs == 0:
-                    return None
-                values[-1] /= rhs
-            else:
-                ops.append(op)
-                values.append(rhs)
-        total = values[0]
-        for op, rhs in zip(ops, values[1:]):
-            total = total + rhs if op == '+' else total - rhs
-        return total
-    except (ValueError, IndexError):
-        return None
-
-
-def same(a, b):
-    return abs(a - b) < 1e-9
-
-
-def show(value):
-    return '%d' % round(value) if same(value, round(value)) else ('%g' % value)
-
-
-def arithmetic(doc, body, units):
-    global NOT_EVALUABLE, RELATIONS
-    for statement in units:
-        text = masked(statement)
-        for clause in CLAUSE_SPLIT.split(text):
-            equations = 0
-            for m in EQUATION.finditer(clause):
-                equations += 1
-                RELATIONS += 1
-                computed = evaluate(m.group(1))
-                written = value_of(m.group(2))
-                if computed is None:
-                    NOT_EVALUABLE += 1
-                elif not same(computed, written):
-                    finding('arithmetic', spot_of(doc, statement), norm(m.group(0)),
-                            '%s states [%s] where the operands compute to %s: %s'
-                            % (doc, norm(m.group(0)), show(computed), norm(statement)[:200]))
-            hit = TOTAL_WORD.search(clause) or TOTAL_PHRASE.search(clause)
-            if hit is not None:
-                RELATIONS += 1
-                total = value_of(hit.group(1))
-                addends = [value_of(v) for v in re.findall(r'(?<![\w.,-])(\d[\d,.]*)', clause[:hit.start(1)])]
-                if len(addends) < 2:
-                    NOT_EVALUABLE += 1
-                elif not same(sum(addends), total):
-                    finding('arithmetic', spot_of(doc, statement), norm(hit.group(0)),
-                            '%s states a total of %s over the addends %s, which sum to %s: %s'
-                            % (doc, show(total), ' + '.join(show(a) for a in addends),
-                               show(sum(addends)), norm(statement)[:200]))
-            # A clause asserting an equality whose sides this class cannot read
-            # as literals is the third not-evaluable shape, and the one that
-            # answers "a relation with a non-literal operand is counted rather
-            # than silently skipped".
-            if equations == 0 and SPACED_EQUALS.search(clause):
-                RELATIONS += 1
-                NOT_EVALUABLE += 1
-
 
 # ---------------------------------------------------------------------------
-# The provenance class. Reports.
-# ---------------------------------------------------------------------------
-# THE THREE ADMISSIBLE KINDS ARE THE BASE PRINCIPLE'S, and this vocabulary
-# recognises that a clause NAMES one. It never rules on whether the provenance
-# it names is true: that is a reading, and a reading belongs to the judgement
-# class. So a clean provenance verdict means no figure's clause is silent about
-# its origin, never that every stated origin is honest.
+# The built-path marking. Shared, which is why it is here.
 #
-# THE UNIT IS THE CLAUSE INSIDE THE SENTENCE, because the obligation is written
-# as "in the same sentence ... and not in a later paragraph a reader has to
-# find". The consequence is worth stating rather than discovering: a bullet
-# naming its provenance in a lead sentence and its figures in the next is
-# reported, and the remedy the principle names is to carry the provenance into
-# the sentence stating the figure, never to delete the figure.
-PROVENANCE = (
-    ('threshold', re.compile(
-        r'\bthreshold\b|\bhanded down\b|\bset by the\b|\bby instruction\b|\bthe cap\b'
-        r'|\bthe ceiling\b|\bthe limit\b|\brefuses\b|\bforbids\b|\bmandat\w+', re.I)),
-    ('derivation', re.compile(r'\bderiv\w+|\bestimat\w+|\barithmetic\b', re.I)),
-    ('measurement', re.compile(
-        r'\bmeasur\w+|\bread (?:from|off|out of)\b|\breported by\b|\bcounted\b|\bcount of\b'
-        r'|\bobserved\b|\breproduc\w+|\bcensus\b|\breports\b|\bby `|\bwith `|\bfrom `', re.I)),
-)
-NUMBERS = 0
-
-
-def provenance(doc, body, units, built):
-    global NUMBERS
-    for statement in units:
-        text = masked(statement)
-        for literal, offset in figures(statement):
-            NUMBERS += 1
-            # Both substitutions in `masked` preserve length, so one offset
-            # addresses the blanked text and the authored text alike -- the
-            # first for the provenance vocabulary, the second because a path is
-            # only visible where its backticks survive.
-            clause = clause_at(text, offset)
-            raw_clause = clause_at(statement, offset)
-            named = [kind for kind, pat in PROVENANCE if pat.search(clause)]
-            # An equation or a stated total in the same clause IS the derivation
-            # shown in place, so it answers the obligation without a word for it.
-            if not named and (EQUATION.search(clause) or TOTAL_WORD.search(clause)
-                              or TOTAL_PHRASE.search(clause)):
-                named = ['derivation']
-            if not named:
-                finding('provenance', spot_of(doc, statement), literal,
-                        '%s states [%s] in a clause naming neither which kind of number it is nor how it was obtained: %s'
-                        % (doc, literal, norm(statement)[:200]))
-            for path in built:
-                if '`%s`' % path in raw_clause:
-                    finding('provenance', spot_of(doc, statement), '%s in %s' % (literal, path),
-                            '%s states [%s] in the same clause as `%s`, a path this plan creates, so the figure could only come from measuring the artefact the document describes: %s'
-                            % (doc, literal, path, norm(statement)[:200]))
-                    break
-
-
+# THE DISPATCH IS ITS CALL SITE AND BOTH GROUPS CONSUME THE RESULT: the
+# provenance class reads it to reach a figure only a measurement of the artefact
+# this plan describes could have produced, and the completeness class reads it
+# as half of its object set. One reporting class and one holding class, so
+# holding it in either sibling would make that sibling a dependency of the
+# other.
+# ---------------------------------------------------------------------------
 BUILT_PATH = re.compile(r'`([^`]+)`\s*\*\(new\)\*')
 
 
@@ -618,624 +494,12 @@ def built_paths(body, tokens):
 
 
 # ---------------------------------------------------------------------------
-# The completeness class. Holds.
-#
-# EVERY REGION THIS CLASS READS IS FOUND BY SHAPE, NEVER BY SECTION NAME, and
-# that is the same constraint the file header states rather than a second one: a
-# decomposition row is a table row whose first cell is a bare ordinal, a
-# use-case bullet is a list item opening with a backticked item and a dash, and
-# a criterion row is a table row whose first cell is a criterion token. The
-# derived element list says WHICH slices of the document to look in; the shapes
-# say what to look for inside them. So renaming a section moves what is
-# examined, which the region census shows, and never what this class believes a
-# document must contain.
-#
-# ITS BOUND. Place, cases and the criterion link are structural questions with
-# structural answers. REASON is the one that is not, and the mechanical reading
-# shipped here is narrower than the words it serves: the class asks whether the
-# document mentions the object somewhere other than the row that schedules it
-# and the bullet that lists its uses, never whether what it says there is a
-# reason. A clause that names a case while saying nothing about what the object
-# does in it is a judgement too, and belongs to the judgement class.
-#
-# THE MENTION IS SOUGHT DOCUMENT-WIDE RATHER THAN IN THE APPROACH ALONE, which
-# is WIDER than the locus the plan behind this class names, and the reason is
-# the condition in the file header: reading one named section means locating it,
-# and this file may hold no section name as a literal. The only other route is
-# the record's row ORDER, which would make the locus silently wrong the first
-# time a row moved. So the reading loses the case of an object mentioned outside
-# the approach and nowhere inside it, and the loss is disclosed here rather than
-# left to be discovered.
+# The excuse record's persistence: where it lives, how a run reads it, and the
+# one act that writes it. It belongs to the excuse route stated at the top of
+# this file, and it is here rather than in a sibling for that reason -- a
+# boundary drawn at the next banner rather than at the route would have put it
+# inside the pairing class, which neither reads nor writes it.
 # ---------------------------------------------------------------------------
-DECOMP_ROW = re.compile(r'^\|\s*(\d+)\s*\|')
-USE_CASE_BULLET = re.compile(r'^[-*+]\s+`([^`]+)`\s*[—–-]\s*(\S.*)$')
-CRITERION_ROW = re.compile(r'^\|\s*(AC\d+)\s*\|')
-CRITERION_TOKEN = re.compile(r'\bAC\d+\b')
-SECTION_REF = re.compile(r'§\s+([^,.;:|)"—]+)')
-# The header cell that names which requirements a row delivers. The design
-# contract's own decomposition template is the authority on the spelling; this
-# set is what a document is RECOGNISED by, and a document whose table carries
-# none of them is read whole and said to have been, rather than read as
-# delivering nothing.
-DELIVERY_HEADERS = frozenset(('delivers', 'delivered', 'delivering', 'criteria', 'requirements'))
-
-OBJECTS = 0
-CRITERIA = 0
-SECTION_REFS = 0
-QUALIFIED_REFS = 0
-DELIVERY_COLUMN = 'absent'
-
-
-def rows_of(body, tokens, pattern):
-    out = []
-    for token in tokens:
-        for line in region(body, token).split('\n'):
-            text = norm(line)
-            if pattern.match(text):
-                out.append(text)
-    return out
-
-
-def use_case_bullets(body, tokens):
-    """{leading item: the clauses after it} for every use-case-shaped bullet."""
-    out = {}
-    for token in tokens:
-        buf = ''
-        for line in region(body, token).split('\n'):
-            text = norm(line)
-            if USE_CASE_BULLET.match(text):
-                if buf:
-                    m = USE_CASE_BULLET.match(buf)
-                    out.setdefault(m.group(1).strip(), m.group(2))
-                buf = text
-            elif buf and text and not text.startswith(('|', '#')) \
-                    and not re.match(r'^[-*+]\s', text):
-                buf = buf + ' ' + text
-            else:
-                if buf:
-                    m = USE_CASE_BULLET.match(buf)
-                    out.setdefault(m.group(1).strip(), m.group(2))
-                buf = ''
-        if buf:
-            m = USE_CASE_BULLET.match(buf)
-            out.setdefault(m.group(1).strip(), m.group(2))
-    return out
-
-
-def delivery_cells(body, tokens):
-    """The criterion tokens each decomposition row claims to deliver."""
-    global DELIVERY_COLUMN
-    out = []
-    for token in tokens:
-        index = None
-        for line in region(body, token).split('\n'):
-            text = norm(line)
-            if text.startswith('|') and not DECOMP_ROW.match(text):
-                cells = [c.strip().lower() for c in text.strip('|').split('|')]
-                for i, cell in enumerate(cells):
-                    if cell in DELIVERY_HEADERS:
-                        index = i
-                        DELIVERY_COLUMN = cell
-                        break
-                continue
-            if not DECOMP_ROW.match(text):
-                continue
-            cells = text.strip('|').split('|')
-            cell = cells[index] if index is not None and index < len(cells) else text
-            out.append(set(CRITERION_TOKEN.findall(cell)))
-    return out
-
-
-def resolves(want, known):
-    """Does a section reference name a heading the document carries?
-
-    COMPARED ON LEADING WORDS, because a reference has no closing delimiter: the
-    sentence runs on past the heading's name, so neither string is a prefix of
-    the other -- measured, a live reference to a numbered decision was reported
-    as dangling because the five words of sentence after it were taken as part
-    of the name. Two shared leading words resolve it, or one when that is the
-    whole reference, which keeps a one-word heading reachable without letting a
-    single shared article resolve anything.
-    """
-    wanted = want.lower().split()
-    if not wanted:
-        return True
-    for heading in known:
-        got = heading.lower().split()
-        shared = 0
-        for a, b in zip(wanted, got):
-            if a != b:
-                break
-            shared += 1
-        if shared >= 2 or (shared >= 1 and shared == len(wanted)):
-            return True
-    return False
-
-
-def headings_of(body):
-    out = []
-    in_fence = False
-    for line in body.split('\n'):
-        plain = QUOTE_MARK.sub('', line)
-        if FENCE.match(plain):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        got = HEADING_LINE.match(plain.lstrip())
-        if got is not None:
-            out.append(norm(got.group(2)))
-    return out
-
-
-def completeness(spec_body, design_body, spec_tokens, design_tokens, built, units):
-    global OBJECTS, CRITERIA, SECTION_REFS, QUALIFIED_REFS
-    rows = rows_of(design_body, design_tokens, DECOMP_ROW)
-    bullets = use_case_bullets(design_body, design_tokens)
-    objects = list(built)
-    for item in bullets:
-        if item not in objects:
-            objects.append(item)
-    OBJECTS = len(objects)
-    row_text = ' '.join(rows)
-
-    for obj in objects:
-        marked = '`%s`' % obj
-        lacks = []
-        if marked not in row_text:
-            lacks.append('no stated place -- no decomposition row names it')
-        # The bullet is excluded by its CONTENT and not by its marker: the
-        # segmentation strips a list marker before splitting, so a rule keyed on
-        # the marker matched nothing and every object's own bullet counted as a
-        # mention elsewhere -- the finding-losing direction, and silent.
-        own_bullet = re.compile(r'^(?:[-*+]\s+)?%s\s*[—–-]' % re.escape(marked))
-        elsewhere = [s for s in units
-                     if marked in s and not DECOMP_ROW.match(s)
-                     and not own_bullet.match(s)]
-        if not elsewhere:
-            lacks.append('no stated reason -- the document names it only in its row and its bullet')
-        if obj not in bullets:
-            lacks.append('no stated cases and no stated behaviour -- it has no use-case bullet')
-        elif not bullets[obj].strip():
-            lacks.append('no stated cases and no stated behaviour -- its bullet carries no clause')
-        if lacks:
-            finding('completeness', 'design', obj,
-                    'the object `%s` has %s' % (obj, '; '.join(lacks)))
-
-    # The other direction: a bullet whose leading item is an object no row names
-    # at all is caught by the place test above, which is why this class needs no
-    # second pass over the bullets.
-    stated = set()
-    for crit in rows_of(spec_body, spec_tokens, CRITERION_ROW):
-        stated.add(CRITERION_ROW.match(crit).group(1))
-    CRITERIA = len(stated)
-    delivered = set()
-    for cell in delivery_cells(design_body, design_tokens):
-        delivered |= cell
-    for crit in sorted(stated - delivered, key=lambda c: int(c[2:])):
-        finding('completeness', 'design', crit,
-                'the requirement %s is stated in the spec and no decomposition row delivers it' % crit)
-    for crit in sorted(delivered - stated, key=lambda c: int(c[2:])):
-        finding('completeness', 'design', crit,
-                'a decomposition row claims to deliver %s, which the spec does not state' % crit)
-
-    for doc, body in (('spec', spec_body), ('design', design_body)):
-        known = headings_of(body)
-        for statement in statements(body):
-            for m in SECTION_REF.finditer(statement):
-                want = norm(m.group(1))
-                if not want:
-                    continue
-                # A reference QUALIFIED by a file name points outside this
-                # document, and resolving it means reading the tree -- which is
-                # another class's input set. Counted, so the figure beside the
-                # verdict says how much of the reference load this class did not
-                # carry.
-                before = statement[:m.start()].rstrip()
-                if before.endswith('`') or before.endswith('.md') or before.endswith(')'):
-                    QUALIFIED_REFS += 1
-                    continue
-                SECTION_REFS += 1
-                if not resolves(want, known):
-                    finding('completeness', spot_of(doc, statement), want,
-                            '%s refers to a section [%s] that no heading in it resolves to: %s'
-                            % (doc, want, norm(statement)[:160]))
-
-
-# ---------------------------------------------------------------------------
-# The isolation class. Holds.
-#
-# THE MINIMUM FRAGMENT LENGTH IS BORROWED, NOT CHOSEN, and the borrowing is
-# load-bearing twice over: a second stated length would be the duplicated fact
-# this class exists to report, and a value invented here would be a number whose
-# provenance the class beside it would refuse. An unreadable source is a
-# cannot-run for that reason -- falling back to a default IS choosing one.
-#
-# ITS BOUND, AND THE UNIT IS WHERE THE WHOLE COST SITS. The reach is a repeated
-# LITERAL: the same figure at two sites, or a whole statement or table cell of at
-# least that length repeated at two sites. The unit is deliberately NOT a sliding
-# window over the text: measured on one real plan pair, a 24-character window
-# found 438 repeats, almost every one a fragment of shared English phrasing
-# inside two different sentences -- and this class HOLDS, so an over-counting
-# unit does not merely add noise, it stops every plan. A repeated statement or
-# cell is the same FACT in two places, which is what the requirement asks for; a
-# repeated phrase inside two different claims is not. A paraphrase is the
-# judgement class's subject either way.
-#
-# It still over-fires where a document legitimately restates a whole short
-# clause, and a single harmless finding is what the excuse route is for.
-# ---------------------------------------------------------------------------
-FRAGMENT_SOURCE = 'skills/task/scripts/check-fix-plan.sh'
-FRAGMENT_NAME = 'ARMA_QUOTE_MIN'
-REPEATS = 0
-
-
-def fragment_minimum():
-    body = read_rel(FRAGMENT_SOURCE)
-    if body is None:
-        blocked('%s could not be read, and the minimum fragment length is borrowed from it rather than chosen here'
-                % FRAGMENT_SOURCE)
-        return None
-    m = re.search(r'(?m)^\s*%s=(\d+)' % FRAGMENT_NAME, body)
-    if m is None:
-        blocked('%s no longer states %s, so the minimum fragment length could not be borrowed and inventing one is the thing this class refuses'
-                % (FRAGMENT_SOURCE, FRAGMENT_NAME))
-        return None
-    return int(m.group(1))
-
-
-def isolation(doc, units, minimum):
-    global REPEATS
-    # A SITE IS A STATEMENT, not an occurrence. The same literal twice inside one
-    # sentence cannot drift apart -- one edit moves both -- and counting
-    # occurrences reported `20 + 20 = 41` as a duplicated fact against itself.
-    sites = {}
-    for statement in units:
-        for literal in set(lit for lit, _off in figures(statement)):
-            sites.setdefault(literal, []).append(statement)
-    for literal, where in sorted(sites.items()):
-        if len(where) < 2:
-            continue
-        REPEATS += 1
-        finding('isolation', doc, literal,
-                '%s states the figure [%s] at %d sites that can drift apart: %s'
-                % (doc, literal, len(where),
-                   ' || '.join(norm(s)[:90] for s in where[:3])))
-
-    spans = {}
-    for statement in units:
-        text = norm(statement)
-        pieces = [c.strip() for c in text.strip('|').split('|')] if text.startswith('|') else [text]
-        for piece in pieces:
-            if len(piece) >= minimum:
-                spans.setdefault(piece, []).append(text)
-    for span, where in sorted(spans.items()):
-        if len(where) < 2:
-            continue
-        REPEATS += 1
-        # BOTH SITES ARE NAMED, and a repeated table CELL is the case where the
-        # span does not name them by itself: there the span is the cell and the
-        # sites are two different rows. A repeated whole statement IS its own
-        # site, so the surrounding text is printed only where it adds one.
-        shown = [norm(s)[:90] for s in where[:3] if norm(s) != span]
-        finding('isolation', doc, span,
-                '%s states the same span at %d sites that can drift apart -- [%s]%s'
-                % (doc, len(where), span[:160],
-                   (': ' + ' || '.join(shown)) if shown else ''))
-
-
-# ---------------------------------------------------------------------------
-# The reference class. Reports.
-# ---------------------------------------------------------------------------
-# THREE SHAPES AND THE SET IS CLOSED. A token joining a file to a digit run with
-# a colon, optionally a digit range; a prose reference naming a line or a line
-# range; and a line-addressed slice of a file a command names. Nothing else, and
-# the exclusions carry their reason: a position a command PRODUCES is not a
-# reference to one, so `grep -n` is outside the class, and a count taken from
-# one end of a stream addresses no line of the file's content, so a prefix or a
-# suffix length is not a position either.
-#
-# THE HOUSE IDIOM IS CARVED OUT BY ITS TARGET RATHER THAN BY ITS SHAPE. A script
-# printing its own header as help slices the file it is running from, where the
-# slice is re-derived by every run and outlives nothing -- which is the carve-out
-# the reference rule already states, met in its commonest form.
-#
-# THE ADMISSIBLE EXTENSIONS ARE DERIVED FROM THE TRACKED TREE RATHER THAN
-# LISTED, and the first shape is ambiguous without that bound: a version string
-# followed by a colon and a digit run has exactly the same shape, and so does a
-# host with a port. A reference can only name a kind of file this repository
-# holds, so the tree's own extension set is the honest bound -- and it says out
-# loud that a reference to a kind of file nothing here carries is outside the
-# sweep, where a list would have said nothing and drifted as well.
-#
-# THE BASELINE IS THE COMPARAND AND AN ARRIVAL IS WHAT GETS REPORTED. Sweeping
-# the positions that predate the rule is outside this work by the requirements'
-# own boundary, and a class reporting all of them on its first run would ship a
-# gate that is red on arrival. One row per accounted position -- shape, path and
-# the token itself -- so swapping one anchor for another is an arrival rather
-# than a wash, which a per-file count could not have seen.
-#
-# AN EMPTY RECORD IS LEGITIMATE WHERE AN ABSENT ONE IS NOT, which is the
-# OPPOSITE polarity from the statement inventory's record, and the comparison is
-# the reason. Empty here means nothing is accounted for, so every position is an
-# arrival and the failure direction is loud. Absent means the comparand could
-# not be read at all, and a sweep against nothing must not report what it found
-# as arrivals it established.
-#
-# THE RECORD IS SKIPPED BY THE SWEEP THAT READS IT. Every row carries the token
-# it accounts for, so a record inside its own input set would justify each of
-# its rows by holding it.
-#
-# WHAT LEVELS THE RECORD IS NOT HERE, and that is a gap rather than a choice.
-# The design behind this class gives the record an explicit act that prints what
-# it is about to take in, the way the statement inventory's acceptance does, and
-# no row of the plan that builds this check delivers one. So the record moves by
-# a hand edit today, and every arrival finding prints the row that would account
-# for it, which is what keeps that edit from needing a second derivation.
-BASELINE_RECORD = 'ai-docs/fixtures/positional-references.baseline'
-
-PATH_LINE = re.compile(r'(?<![\w/])([A-Za-z0-9_][\w./-]*\.([A-Za-z0-9]{1,10})):(\d+(?:-\d+)?)(?![\w])')
-PROSE_LINE = re.compile(r'(?<![\w-])lines?[ \t]+\d+(?:[ \t]*[-–—][ \t]*\d+)?', re.I)
-SLICE_SED = re.compile(
-    r'''sed[ \t]+(?:-[A-Za-z]+[ \t]*)*-n[ \t]*(?P<q>['"]?)'''
-    r'''(?P<script>\d+(?:,(?:\d+|\$|/[^/]*/))?[pdq])(?P=q)[ \t]+(?P<target>[^\s|;)&]+)''')
-SLICE_AWK = re.compile(
-    r'''awk[ \t]+(?P<q>['"])(?P<script>[^'"]*(?:FNR|NR)[ \t]*'''
-    r'''(?:==|>=|<=|>|<)[ \t]*\d+[^'"]*)(?P=q)[ \t]+(?P<target>[^\s|;)&]+)''')
-# The running script in every spelling the house style uses for it.
-RUNNING_SCRIPT = ('"$0"', "'$0'", '$0')
-
-SWEPT = 0
-POSITIONS = 0
-ACCOUNTED = 0
-UNDECODABLE = 0
-
-
-def tree_extensions(paths):
-    out = set()
-    for path in paths:
-        base = path.rsplit('/', 1)[-1]
-        if '.' in base[1:]:
-            out.add(base.rsplit('.', 1)[1].lower())
-    return out
-
-
-def positions_in(body, exts):
-    """(shape, token) for every position the text claims, in the three shapes."""
-    out = []
-    for m in PATH_LINE.finditer(body):
-        if m.group(2).lower() in exts:
-            out.append(('path-line', m.group(0)))
-    for m in PROSE_LINE.finditer(body):
-        out.append(('prose-line', norm(m.group(0))))
-    # LINE BY LINE for the command shape, because a quoted script matched across
-    # a hard wrap is not a command: the target would be read from whatever word
-    # opened the next line.
-    for line in body.split('\n'):
-        for pattern in (SLICE_SED, SLICE_AWK):
-            for m in pattern.finditer(line):
-                # Whatever closes the construct AROUND the command comes with
-                # the target, which is the match's tail -- in prose a backtick
-                # and the sentence's own full stop, and the carve-out keyed on
-                # the bare spelling missed every quoted command on a page. A
-                # quote character is NOT stripped here: it is how the running
-                # script is spelled.
-                if m.group('target').rstrip('`).,;:') not in RUNNING_SCRIPT:
-                    # The target is the match's tail, so whatever closes the
-                    # construct around it comes with it. Stripping that keeps the
-                    # recorded token from moving when the quoting around an
-                    # unchanged command does.
-                    out.append(('command-slice', norm(m.group(0)).rstrip('"\'`)')))
-    return out
-
-
-def recorded_positions(paths):
-    """The rows of the baseline record, or None when it could not be read.
-
-    Untracked is a cannot-run for the reason the element record's own check
-    gives: a record read here and absent from every other clone makes this run
-    green and every other one a cannot-run.
-    """
-    if BASELINE_RECORD not in set(paths):
-        blocked('%s is the comparand for every position this class reports and is not in the index, so this run compares against a file no other clone has -- stage it'
-                % BASELINE_RECORD)
-        return None
-    body = read_rel(BASELINE_RECORD)
-    if body is None:
-        blocked('%s could not be read, and a sweep with no comparand must not report what it found as arrivals it established'
-                % BASELINE_RECORD)
-        return None
-    rows = set()
-    for line in body.split('\n'):
-        if not line.strip() or line.startswith('#'):
-            continue
-        rows.add(line.rstrip('\n'))
-    return rows
-
-
-def reference(paths, record):
-    global SWEPT, POSITIONS, ACCOUNTED, UNDECODABLE
-    exts = tree_extensions(paths)
-    for path in paths:
-        if path == BASELINE_RECORD:
-            continue
-        try:
-            with open(os.path.join(ROOT, path), encoding='utf-8') as fh:
-                body = fh.read()
-        except UnicodeDecodeError:
-            # A file that is not text carries no reference anyone reads, so it is
-            # counted rather than blocking the run. A file that cannot be OPENED
-            # is the other case and takes the branch below.
-            UNDECODABLE += 1
-            continue
-        except OSError as exc:
-            blocked('%s is in the tracked tree and could not be opened, so the positions it carries were never swept (%s)'
-                    % (path, exc))
-            continue
-        SWEPT += 1
-        for shape, token in positions_in(body, exts):
-            POSITIONS += 1
-            row = '%s\t%s\t%s' % (shape, path, token)
-            if row in record:
-                ACCOUNTED += 1
-                continue
-            finding('reference', path, token,
-                    '%s carries a position the baseline does not account for -- [%s]; a reader may trust it without re-deriving it, and the record row that would account for it is: %s'
-                    % (path, token, row))
-
-
-# ---------------------------------------------------------------------------
-# The pairing class. Reports.
-# ---------------------------------------------------------------------------
-# THE SHAPE FILTER BINDS BOTH SIDES, which is what the reference rule asks of it
-# and the first of the three hazards the shipped keyed pairing already paid for.
-# One expression recognises a statement's claim and an entity's mark, so a
-# document explaining the convention in angle brackets carries neither.
-#
-# TWO LOCI, DECIDED BY THE LANGUAGE AND NOT BY A FILE LIST. A mark on a source
-# entity sits in a comment; a mark on a prose entity rides its heading or its
-# numbered item, which are already declared identities. Every language in this
-# tree spells a line comment the same way, and a language that does not is a
-# widening this class would have to learn rather than one it silently covers.
-#
-# A BRACKETED TOKEN INSIDE A BACKTICK SPAN IS A TOKEN BEING NAMED, never a claim
-# or a mark, and the same goes for one inside a fenced block. Measured: without
-# the first rule a character class quoted in a regular expression read as a
-# claim, and without the second a template placeholder in a fenced example read
-# as a mark on five separate pages.
-#
-# THE MARK SIDE IS THE FILES THE PLAN NAMES, and that is the bound the reference
-# rule itself states -- a mark sits inside one of the files the claiming
-# statement names, because nothing else bounds where it may be. The sweep still
-# reads the tree rather than the plan, which is why this class reports and does
-# not hold: a mark can arrive in a named file from a commit the plan under
-# review never touched. Measured on this tree, the alternative reading is what
-# decided it: a sweep over every tracked file finds six bracketed tokens that no
-# plan claims, every one of them an optional argument in a usage synopsis, and
-# all six would be reported against every plan forever.
-#
-# WHERE A LANGUAGE ADMITS NO COMMENT the obligation narrows and says so: the
-# claim resolves in one direction only, from the statement to the file it names,
-# which must exist, and no reverse pairing is asserted for it.
-ID_SHAPE = re.compile(r'(?<![\w\]])\[([a-z0-9][a-z0-9-]*)\](?![(\[:])')
-COMMENTLESS = ('.json',)
-PROSE_FILE = ('.md',)
-COMMENT_LINE = re.compile(r'^[ \t]*#')
-NUMBERED_ITEM = re.compile(r'^[ \t]*\d+[.)][ \t]')
-
-CLAIMS = 0
-MARKS = 0
-PAIRS = 0
-
-
-def ids_in(text):
-    return [m.group(1) for m in ID_SHAPE.finditer(TICK_SPAN.sub(
-        lambda m: ' ' * len(m.group(0)), text))]
-
-
-def named_files(statement, known):
-    out = []
-    for m in TICK_SPAN.finditer(statement):
-        token = m.group(0).strip('`').strip()
-        if token in known and token not in out:
-            out.append(token)
-    return out
-
-
-def marks_in(path, body):
-    """The ids marked in `path`, each with the line that carries the mark.
-
-    A path the plan has yet to create is not in the tree, so no mark can sit in
-    one -- which is why a claim bounded only by such a path is reported below
-    rather than resolved here.
-    """
-    out = []
-    if path.endswith(COMMENTLESS):
-        return out
-    prose = path.endswith(PROSE_FILE)
-    in_fence = False
-    for line in body.split('\n'):
-        plain = QUOTE_MARK.sub('', line)
-        if FENCE.match(plain):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        locus = (HEADING_LINE.match(plain.lstrip()) or NUMBERED_ITEM.match(plain)) \
-            if prose else COMMENT_LINE.match(plain)
-        if not locus:
-            continue
-        for slug in ids_in(line):
-            out.append((slug, norm(line)))
-    return out
-
-
-def pairing(units, paths):
-    global CLAIMS, MARKS, PAIRS
-    known = set(paths)
-    named = []
-    claims = []
-    for doc, doc_units in units:
-        for statement in doc_units:
-            files = named_files(statement, known)
-            for path in files:
-                if path not in named:
-                    named.append(path)
-            for slug in ids_in(statement):
-                claims.append((slug, doc, statement, files))
-    CLAIMS = len(claims)
-
-    marks = {}
-    for path in named:
-        body = read_rel(path)
-        if body is None:
-            continue
-        for slug, line in marks_in(path, body):
-            marks.setdefault(slug, []).append((path, line))
-            MARKS += 1
-
-    claimed_by = {}
-    for slug, doc, statement, _files in claims:
-        claimed_by.setdefault(slug, []).append((doc, statement))
-
-    for slug, where in sorted(claimed_by.items()):
-        if len(where) > 1:
-            finding('pairing', 'the plan pair', slug,
-                    'the id [%s] is claimed by %d statements, so it resolves to more than one of them: %s'
-                    % (slug, len(where), ' || '.join(norm(s)[:80] for _d, s in where[:3])))
-    for slug, sites in sorted(marks.items()):
-        if len(sites) > 1:
-            finding('pairing', sites[0][0], slug,
-                    'the id [%s] is marked at %d sites, so it resolves to more than one entity: %s'
-                    % (slug, len(sites), ' || '.join('%s -- %s' % (p, l[:60]) for p, l in sites[:3])))
-
-    for slug, doc, statement, files in claims:
-        if not files:
-            finding('pairing', spot_of(doc, statement), slug,
-                    '%s claims the id [%s] while naming no file in the tree, so nothing bounds where its mark may sit: %s'
-                    % (doc, slug, norm(statement)[:160]))
-            continue
-        where = [p for p, _l in marks.get(slug, []) if p in files]
-        if where:
-            PAIRS += 1
-            continue
-        if all(p.endswith(COMMENTLESS) for p in files):
-            # The one-direction narrowing: the named file exists, which is the
-            # whole of what resolves here, and no reverse pairing is asserted.
-            PAIRS += 1
-            continue
-        finding('pairing', spot_of(doc, statement), slug,
-                '%s claims the id [%s] that no mark carries in any file it names (%s), so the reference resolves to nothing: %s'
-                % (doc, slug, ', '.join(files[:4]), norm(statement)[:160]))
-
-    for slug, sites in sorted(marks.items()):
-        if slug in claimed_by:
-            continue
-        finding('pairing', sites[0][0], slug,
-                'the id [%s] is marked in %s and no statement of this plan claims it: %s'
-                % (slug, sites[0][0], sites[0][1][:120]))
-
-
 SEPARATOR_CELL = re.compile(r'^[-: ]+$')
 
 
@@ -1320,6 +584,53 @@ def grant():
 
 
 # ---------------------------------------------------------------------------
+# The two payload siblings.
+# ---------------------------------------------------------------------------
+# WHAT STAYS HERE AND WHY. The single payload reached 1,447 lines against this
+# repository's hard thousand-line limit, so the six classes move out in the two
+# groups this check already states as data -- the three that HOLD a plan into
+# one sibling, the three that report into the other. What this file keeps is
+# what BOTH groups read: the section-name derivation, the segmenter, the numeral
+# readers, the three relation patterns, the built-path marking, the excuse route
+# and the report. No helper of any class is called from any other class, which
+# is what let the seam be drawn at the groups at all.
+#
+# THE GUARD WRAPS THE MODULE EXECUTION, NOT THE SPEC LOOKUP, copied with its
+# reason from the verification payload's own loader beside this check: uncaught,
+# `FileNotFoundError` for an absent sibling and `SyntaxError` for an unparseable
+# one both come out of `exec_module` and exit 1, the FINDINGS code, so a check
+# that could not load a third of itself would read as a check that found
+# problems. The entry point catches absent and unreadable more cheaply, before
+# python3 starts, and names which path it was; this catches unparseable, which
+# no shell test can see. `except Exception` is deliberately broad: what matters
+# is not which exception a sibling raises but that none of them reaches the
+# interpreter's exit path. The filename is hyphenated and so not importable by
+# `import`, hence a path off `__file__`.
+def load_sibling(name):
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
+    try:
+        spec = importlib.util.spec_from_file_location(name[:-3].replace('-', '_'), path)
+        if spec is None or spec.loader is None:
+            raise ImportError('no loader for %s' % path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module
+    except Exception as exc:
+        blocked('the payload sibling %s could not be loaded (%s: %s), so the classes it carries never ran -- which is a cannot-run and not a clean sweep'
+                % (path, type(exc).__name__, exc))
+        return None
+
+
+# A FIGURE A SIBLING OWNS IS READ THROUGH HERE, never off the module handle,
+# because the report prints on the cannot-run branch as well and a sibling that
+# never loaded has no attribute to read. The absent value is the figure's own
+# empty state rather than a zero for everything, which is why the delivery
+# column passes its own.
+def tally(module, name, absent=0):
+    return getattr(module, name, absent) if module is not None else absent
+
+
+# ---------------------------------------------------------------------------
 # The run.
 # ---------------------------------------------------------------------------
 SPEC_BODY = read_path(SPEC)
@@ -1335,16 +646,19 @@ if SPEC_BODY is not None:
 if DESIGN_BODY is not None:
     DOCUMENTS.append(('design', DESIGN_BODY, RECORDED['design']))
 
+HOLDING_CLASSES = load_sibling('check-plan-convergence-holding.py')
+REPORTING_CLASSES = load_sibling('check-plan-convergence-reporting.py')
+
 REGIONS_PRESENT = 0
 REGIONS_DERIVED = 0
 STATEMENTS = 0
 BUILT = []
+CONTEXT = {}
 
-MINIMUM = None
-BASELINE = None
+# THE RECORD IS READ BEFORE ANY CLASS RUNS, and that order is the whole of what
+# makes a waiver effective: `finding` consults EXCUSES as each finding is made,
+# so a class running ahead of this would report what the record waives.
 if not cannot:
-    MINIMUM = fragment_minimum()
-    BASELINE = recorded_positions(TRACKED_PATHS)
     read_excuses(TRACKED_PATHS)
 
 if not cannot:
@@ -1356,14 +670,33 @@ if not cannot:
         _units = statements(_body)
         all_units[_kind] = _units
         STATEMENTS += len(_units)
-        provenance(_kind, _body, _units, BUILT)
-        arithmetic(_kind, _body, _units)
-        isolation(_kind, _units, MINIMUM)
-    if len(DOCUMENTS) == 2:
-        completeness(SPEC_BODY, DESIGN_BODY, RECORDED['spec'], RECORDED['design'],
-                     BUILT, all_units['design'])
-    reference(TRACKED_PATHS, BASELINE)
-    pairing([(_k, all_units[_k]) for _k, _b, _t in DOCUMENTS], TRACKED_PATHS)
+    # ONE MAPPING FOR BOTH SIBLINGS, each unpacking the names it reads. A
+    # positional signature this wide is one transposed argument away from a
+    # silent defect, which is the class of mistake this whole check exists to
+    # make loud -- the same reason the verification's own sibling takes one.
+    CONTEXT = {
+        'finding': finding, 'blocked': blocked, 'norm': norm, 'read_rel': read_rel,
+        'region': region, 'statements': statements, 'spot_of': spot_of,
+        'masked': masked, 'figures': figures, 'value_of': value_of,
+        'clause_at': clause_at, 'CLAUSE_SPLIT': CLAUSE_SPLIT,
+        'EQUATION': EQUATION, 'TOTAL_WORD': TOTAL_WORD, 'TOTAL_PHRASE': TOTAL_PHRASE,
+        'HEADING_LINE': HEADING_LINE, 'FENCE': FENCE, 'QUOTE_MARK': QUOTE_MARK,
+        'TICK_SPAN': TICK_SPAN, 'ROOT': ROOT, 'built': BUILT,
+        'documents': [(_k, _b, all_units[_k]) for _k, _b, _t in DOCUMENTS],
+        'bodies': dict((_k, _b) for _k, _b, _t in DOCUMENTS),
+        'tokens': dict((_k, _t) for _k, _b, _t in DOCUMENTS),
+        'tracked_paths': TRACKED_PATHS,
+    }
+
+# EACH GROUP IS ASKED IN TURN AND THE BLOCK IS RE-TESTED BETWEEN THEM, because
+# each group preflights an input it BORROWS rather than chooses -- the holding
+# group the minimum fragment length, the reporting group the baseline record --
+# and a preflight that could not read its source must stop the classes behind it
+# instead of letting them report against a bound nobody established.
+if not cannot and HOLDING_CLASSES is not None:
+    HOLDING_CLASSES.run(CONTEXT)
+if not cannot and REPORTING_CLASSES is not None:
+    REPORTING_CLASSES.run(CONTEXT)
 
 if GRANT_KEY and not cannot:
     grant()
@@ -1375,18 +708,33 @@ def counts():
     # whether ten excuses waived ten holds or quieted ten reports: the first is
     # a plan proceeding over ten findings, the second is noise management.
     waived = sum(1 for cls, _line in excused if cls in HOLDING)
+    minimum = tally(HOLDING_CLASSES, 'MINIMUM', None)
+    own_refs = tally(HOLDING_CLASSES, 'SECTION_REFS')
     return ('documents=%d statements=%d regions=%d/%d numbers=%d identities=%d '
             'relations=%d not-evaluable=%d built=%d objects=%d criteria=%d '
             'delivery-column=%s section-refs=%d/%d fragment-min=%s repeats=%d '
             'swept=%d positions=%d accounted=%d undecodable=%d '
             'claims=%d marks=%d pairs=%d excused-holding=%d excused-reporting=%d '
             'holding=%d reporting=%d findings=%d'
-            % (len(DOCUMENTS), STATEMENTS, REGIONS_PRESENT, REGIONS_DERIVED, NUMBERS,
-               IDENTITIES, RELATIONS, NOT_EVALUABLE, len(BUILT), OBJECTS, CRITERIA,
-               DELIVERY_COLUMN, SECTION_REFS, SECTION_REFS + QUALIFIED_REFS,
-               MINIMUM if MINIMUM is not None else '-', REPEATS,
-               SWEPT, POSITIONS, ACCOUNTED, UNDECODABLE,
-               CLAIMS, MARKS, PAIRS, waived, len(excused) - waived,
+            % (len(DOCUMENTS), STATEMENTS, REGIONS_PRESENT, REGIONS_DERIVED,
+               tally(REPORTING_CLASSES, 'NUMBERS'), IDENTITIES,
+               tally(HOLDING_CLASSES, 'RELATIONS'),
+               tally(HOLDING_CLASSES, 'NOT_EVALUABLE'),
+               len(BUILT),
+               tally(HOLDING_CLASSES, 'OBJECTS'),
+               tally(HOLDING_CLASSES, 'CRITERIA'),
+               tally(HOLDING_CLASSES, 'DELIVERY_COLUMN', 'absent'),
+               own_refs, own_refs + tally(HOLDING_CLASSES, 'QUALIFIED_REFS'),
+               minimum if minimum is not None else '-',
+               tally(HOLDING_CLASSES, 'REPEATS'),
+               tally(REPORTING_CLASSES, 'SWEPT'),
+               tally(REPORTING_CLASSES, 'POSITIONS'),
+               tally(REPORTING_CLASSES, 'ACCOUNTED'),
+               tally(REPORTING_CLASSES, 'UNDECODABLE'),
+               tally(REPORTING_CLASSES, 'CLAIMS'),
+               tally(REPORTING_CLASSES, 'MARKS'),
+               tally(REPORTING_CLASSES, 'PAIRS'),
+               waived, len(excused) - waived,
                held, len(findings) - held, len(findings)))
 
 
@@ -1394,17 +742,27 @@ def roster():
     """What each class examined, so a run that narrowed its own input set is
     distinguishable from a clean one. A zero where a non-zero is expected is a
     report about the run and never a clean verdict."""
-    for cls, examined in (('provenance', '%d numbers in %d documents' % (NUMBERS, len(DOCUMENTS))),
+    minimum = tally(HOLDING_CLASSES, 'MINIMUM', None)
+    for cls, examined in (('provenance', '%d numbers in %d documents'
+                           % (tally(REPORTING_CLASSES, 'NUMBERS'), len(DOCUMENTS))),
                           ('arithmetic', '%d relations, %d of them not evaluable'
-                           % (RELATIONS, NOT_EVALUABLE)),
+                           % (tally(HOLDING_CLASSES, 'RELATIONS'),
+                              tally(HOLDING_CLASSES, 'NOT_EVALUABLE'))),
                           ('completeness', '%d objects, %d criteria, %d own-document section references'
-                           % (OBJECTS, CRITERIA, SECTION_REFS)),
+                           % (tally(HOLDING_CLASSES, 'OBJECTS'),
+                              tally(HOLDING_CLASSES, 'CRITERIA'),
+                              tally(HOLDING_CLASSES, 'SECTION_REFS'))),
                           ('isolation', '%d repeated literals at or above %s characters'
-                           % (REPEATS, MINIMUM if MINIMUM is not None else '-')),
+                           % (tally(HOLDING_CLASSES, 'REPEATS'),
+                              minimum if minimum is not None else '-')),
                           ('reference', '%d positions in %d swept files, %d of them accounted for'
-                           % (POSITIONS, SWEPT, ACCOUNTED)),
+                           % (tally(REPORTING_CLASSES, 'POSITIONS'),
+                              tally(REPORTING_CLASSES, 'SWEPT'),
+                              tally(REPORTING_CLASSES, 'ACCOUNTED'))),
                           ('pairing', '%d claimed ids against %d marks, %d pairs compared'
-                           % (CLAIMS, MARKS, PAIRS))):
+                           % (tally(REPORTING_CLASSES, 'CLAIMS'),
+                              tally(REPORTING_CLASSES, 'MARKS'),
+                              tally(REPORTING_CLASSES, 'PAIRS')))):
         mine = [line for got, line in findings if got == cls]
         waived = [line for got, line in excused if got == cls]
         state = 'examined-with-findings (%d)' % len(mine) if mine else 'examined-clean'

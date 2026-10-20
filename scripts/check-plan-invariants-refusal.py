@@ -171,11 +171,13 @@ def run(ctx):
     # the measurement survives the rewrite because what it turns on is unchanged
     # -- the pass scores COVERAGE of a section the template already mandates.) Dropping the
     # requirement reports the first page as an unguarded route, which it is not.
+    # [presence-shape]
     PRESENCE_SHAPE = re.compile(
         r'(?:missing|absent|present\b|presence|must exist|exists?\b|retained|retains|byte-identical|surviv\w+|binding)',
         re.I)
 
 
+    # [defines-element]
     def defines_element(path, body):
         for block in re.findall(r'(?ms)^```markdown\n(.*?)^```', body):
             for t in re.findall(r'(?m)^(##\s+\S.*?)\s*$', block):

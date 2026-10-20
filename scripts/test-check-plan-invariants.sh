@@ -369,7 +369,7 @@ Every design carries a per-test line number and an expected result for each item
 SENTENCES
 
 printf '\n== leg 2: re-wrapping a paragraph is not a change to the inventory ==\n'
-# THE 61-OF-61 PROPERTY, pinned here rather than left asserted in the design.
+# THE 62-OF-62 PROPERTY, pinned here rather than left asserted in the design.
 # The instrument reflows a run of non-blank lines only when EVERY line in it is
 # ordinary prose, so the one transformation applied is a true paragraph reflow;
 # two cruder instruments were tried first and both reported differences that
@@ -379,7 +379,7 @@ printf '\n== leg 2: re-wrapping a paragraph is not a change to the inventory ==\
 # The file set is the CORPUS's markdown, not every tracked `*.md`: README.md
 # belongs to no surface and the check never reads it, while ai-docs/context.md
 # is the profile surface. Getting that set wrong is how a run covers 54 files
-# and reports success for 61, so the set's size and both edges are asserted.
+# and reports success for 62, so the set's size and both edges are asserted.
 corpus_md() {
   { git -C "$W" ls-files '*.md' | grep -Ev '^(ai-docs/|README\.md$)'
     git -C "$W" ls-files 'ai-docs/context.md'; } | sort -u
@@ -446,8 +446,8 @@ PY
 }
 
 fresh
-check "the corpus carries 61 markdown files, which is the set this property is about" \
-      "$(corpus_md | wc -l | tr -d ' ')" "61"
+check "the corpus carries 62 markdown files, which is the set this property is about" \
+      "$(corpus_md | wc -l | tr -d ' ')" "62"
 check "  README.md is NOT in it -- it belongs to no surface" "$(corpus_md | grep -c '^README.md$')" "0"
 check "  ai-docs/context.md IS in it -- the profile surface" \
       "$(corpus_md | grep -c '^ai-docs/context.md$')" "1"
@@ -547,7 +547,7 @@ printf '\n== leg 2: a relocation inside a CODE file is a change; inside PROSE it
 # line multiset identical, so a multiset comparison is silent by construction.
 #
 # THE SECOND IS NOT THE SAME LEG WITH A DIFFERENT FILE. It pins the BOUND: for
-# prose the comparison stays position-independent, which the 61-of-61 re-wrap
+# prose the comparison stays position-independent, which the 62-of-62 re-wrap
 # property above depends on, so the same class of mutation in markdown is
 # deliberately NOT reported. A fully positional comparison was the rejected
 # variant, and this leg is what would redden if someone took it.

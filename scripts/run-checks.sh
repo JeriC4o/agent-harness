@@ -175,6 +175,7 @@ EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
 # the second -- so a documented member would report `cannot run` on every run.
 # Either way the two directions of the comparison could never agree, and each
 # gate's own test-*.sh suite is its entire mechanical coverage.
+# [exempt-checks]
 EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh scripts/check-redline.sh scripts/check-plan-convergence.sh'
 
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }

@@ -54,6 +54,10 @@ spelling is the shape filter, and **it binds both sides** — a statement's id a
 recognised by the same rule. A page explaining the convention writes its templates with angle brackets,
 which are not slug characters, so explaining the mechanism does not turn a document into a marked one.
 
+**The obligation is discharged once per entity**, by the statement that establishes the lean; a
+later mention names the entity and carries no id. Two statements claiming one id is the ambiguity
+this page reports, so repeating it manufactures that report rather than strengthening the pairing.
+
 **Where the entity is prose**, its heading or numbered item is already a declared identity and carries the
 id without a comment.
 

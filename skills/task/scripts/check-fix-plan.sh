@@ -347,6 +347,7 @@ arma_anchor() { # <cell> -> the first backticked path:line it quotes
 # across these files. A passing window proves the quoted text occurs within W
 # lines of the cited line -- not that the cited sentence is the quoted one.
 ARMA_QUOTE_WINDOW=3
+# [arma-quote-min]
 ARMA_QUOTE_MIN=24
 
 arma_quote_fault() { # <path:line> <restored cell> -> the fault, or nothing

@@ -192,7 +192,7 @@ evidence rather than with a preference:
 
 | Signal, quoted from the design | Points to |
 |---|---|
-| A non-empty `## Open questions` — the base says of itself that it is incomplete | R&D, and the strongest single signal there is |
+| A non-empty `## Open questions` — every gap it may carry is one this contract's own open-gap rule admits, so the section records a question the WORK answers rather than a hole in the base | R&D, and the strongest single signal there is |
 | A risk phrased as unknown until implementation, or a measurement deferred to a named later task | R&D |
 | Work that creates a mechanism that does not exist yet | R&D |
 | Decisions carried as measured rather than assumed, and every claim about existing behaviour tied to the entity it is true of | Hybrid — that base was built against facts and is unlikely to need widening |

@@ -107,14 +107,34 @@ command -v git >/dev/null 2>&1 \
 command -v python3 >/dev/null 2>&1 \
   || { printf 'check-plan-convergence: cannot run -- python3 is the scanning tool, and the host grep is not a substitute: it has been measured answering 0 to a pattern it refused on a complexity limit\n' >&2; exit 2; }
 
+# THE PAYLOAD IS THREE FILES BESIDE THIS ONE, because the single file reached
+# 1,447 lines against this repository's hard 1000-line limit, which ships no
+# exemption for a hand-written script. The six classes moved out in the two
+# groups this check already states as data: the three that HOLD a plan into one
+# sibling, the three whose findings are a report into the other. What the core
+# keeps is what both groups read.
+#
 # A payload that EXISTS but cannot be loaded reports as findings rather than as
 # a cannot-run unless something stops it, and rc 1 is the one outcome a run that
 # could not complete may not report. Absent and unreadable are caught here,
-# before python3 starts; an unparseable payload is caught by a leg of the suite,
-# which parses it as its own assertion.
+# before python3 starts, separately and per file, and every message NAMES the
+# path it is about -- a cannot-run that cannot say what is missing is this
+# repository's own recurring defect. The unparseable case is caught by the
+# core payload's own loader, which wraps the module EXECUTION rather than the
+# spec lookup, and by a leg of the suite that parses all three.
 PAYLOAD="${HERE}/check-plan-convergence.py"
 [ -r "$PAYLOAD" ] \
   || { printf 'check-plan-convergence: cannot run -- the payload %s is missing or unreadable, and an absent payload is not a clean sweep\n' "$PAYLOAD" >&2; exit 2; }
+HOLDING_PAYLOAD="${HERE}/check-plan-convergence-holding.py"
+[ -e "$HOLDING_PAYLOAD" ] \
+  || { printf 'check-plan-convergence: cannot run -- the payload sibling %s does not exist, so the three classes that HOLD a plan would never run and a verdict without them is not a clean sweep\n' "$HOLDING_PAYLOAD" >&2; exit 2; }
+[ -r "$HOLDING_PAYLOAD" ] \
+  || { printf 'check-plan-convergence: cannot run -- the payload sibling %s is unreadable\n' "$HOLDING_PAYLOAD" >&2; exit 2; }
+REPORTING_PAYLOAD="${HERE}/check-plan-convergence-reporting.py"
+[ -e "$REPORTING_PAYLOAD" ] \
+  || { printf 'check-plan-convergence: cannot run -- the payload sibling %s does not exist, so the three classes whose findings are a report would never run and a verdict without them is not a clean sweep\n' "$REPORTING_PAYLOAD" >&2; exit 2; }
+[ -r "$REPORTING_PAYLOAD" ] \
+  || { printf 'check-plan-convergence: cannot run -- the payload sibling %s is unreadable\n' "$REPORTING_PAYLOAD" >&2; exit 2; }
 
 # `-B`: a gate must not leave a build artefact in the tree it just swept.
 # Without it the first run writes scripts/__pycache__/, which nothing tracks,

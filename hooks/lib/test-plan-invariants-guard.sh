@@ -340,6 +340,28 @@ while [ "$k" -le "${#SEPS}" ]; do
   k=$((k+1))
 done
 
+printf '\n== PAIRED: a separator a BACKSLASH escapes, outside any quoted span ==\n'
+# The cousin of the loop above, and the seventh residual form until the walk
+# learned the escape: the separator is data to the shell here too, but it sits
+# in no quoted span, so a walk reading quote state alone never reached it. Swept
+# over the same characters, read out of the guard rather than retyped, and every
+# write PAIRED with a READ in the identical spelling -- a repair that bought its
+# confirmations by firing on reads would cost more than the hole.
+#
+# THE ORDER INSIDE THE GUARD IS WHAT MAKES THIS CLOSE. Measured with the walk
+# after the padding instead: seven of these eight fired and the statement
+# separator alone stayed silent, because the padding had already put a space
+# between the backslash and the character it escaped.
+k=1
+while [ "$k" -le "${#SEPS}" ]; do
+  sep=$(printf '%s' "$SEPS" | cut -c"$k")
+  sh_asks   "an in-place write whose script delimiter is an escaped [${sep}] fires" \
+            "sed -i '' s\\${sep}a\\${sep}b\\${sep}g agents/design.md"
+  sh_silent "  while a READ of the same page in that spelling is silent" \
+            "sed -n s\\${sep}a\\${sep}b\\${sep}p agents/design.md"
+  k=$((k+1))
+done
+
 printf '\n== PAIRED: the same blindness in the other spellings the house style reaches for ==\n'
 sh_asks   "an alternate script flag carries it"               "sed -i '' -e 's|a|b|g' agents/design.md"
 sh_silent "  while the read spelling of that is silent"       "sed -n -e 's|a|b|p' agents/design.md"
@@ -373,7 +395,7 @@ done
 sh_silent "and so is a write to a near miss reached through a cd" \
           "cd skills/interview && printf x >> SKILL.md"
 
-printf '\n== the SEVEN residual forms, every one of them under-firing ==\n'
+printf '\n== the SIX residual forms, every one of them under-firing ==\n'
 sh_silent "1. a glob never spells the path as a literal token" \
           "printf x >> agents/design*.md"
 sh_silent "2. a command substitution that produces the path" \
@@ -388,12 +410,6 @@ sh_silent "6a. a directory change that is not a leading prefix -- subshell" \
           "(cd agents && printf x >> design.md)"
 sh_silent "6b. the same, behind a guard command" \
           "true && cd agents && printf x >> design.md"
-# The cousin of the form the neutralisation closes, and the reason it is spelled
-# out rather than folded into the operand rules: the separator is data to the
-# shell here too, but it sits in no quoted span, so the walk that reads quote
-# state never reaches it.
-sh_silent "7. a separator the shell would not treat as one, because a backslash escapes it" \
-          "sed -i '' s\\|a\\|b\\|g agents/design.md"
 
 printf '\n== POSITIVE CONTROL: drop the write condition, a read is refused ==\n'
 MUT_W="${WORK}/no-write-condition.sh"
@@ -443,6 +459,8 @@ else
   check "  and so does the double-quoted spelling" "$n" "0"
   # The paired read was silent under the mutant too, which is what makes the
   # pair a discriminator rather than two readings of one state.
+  n=$(fire "$(sh_payload "sed -i '' s\\|a\\|b\\|g agents/design.md")" "$PROJ" "$MUT_Q" | wc -c | tr -d ' ')
+  check "  and so does the backslash-escaped spelling, which the same walk closes" "$n" "0"
   n=$(fire "$(sh_payload "sed -n 's|a|b|p' agents/design.md")" "$PROJ" "$MUT_Q" | wc -c | tr -d ' ')
   check "  while the paired read was already silent, so the pair is what discriminates" "$n" "0"
 fi
