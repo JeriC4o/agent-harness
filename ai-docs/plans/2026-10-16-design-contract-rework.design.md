@@ -46,10 +46,12 @@ the tree, so planning them again would be planning work that exists:
 
 ### The measured ground this plan stands on
 
-Every figure below is a measurement of something that exists now, with the command that produced it
-named beside it. No figure here is a measurement of anything this plan builds.
+Every figure below is a measurement of something that already exists, taken with the command named
+beside it before any subtask of this plan ran — so these are the measurements the plan was built
+against and not claims about the tree it leaves behind. No figure here is a measurement of anything
+this plan builds.
 
-- **The protected page set is seven paths**, read from the `PROTECTED` assignment in
+- **The protected page set is seven paths**, read from the `PROTECTED` assignment [protected] in
   `hooks/lib/plan-invariants-guard.sh` (`grep 'PROTECTED='` and the entries it opens). **Every one
   of the seven is edited by this plan** — the two writer contracts, the review contract, the
   closing-pass skill, the task skill and its reference sibling, and the plan-document gate — and
@@ -70,26 +72,28 @@ reports 999
 invoked
   with no arguments, every verb of the plan-document gate requires one, so a documented member would
   report
-  could-not-run on every run. Read from `EXEMPT_CHECKS` and the comment above it in
+  could-not-run on every run. Read from `EXEMPT_CHECKS` [exempt-checks] and the comment above it in
   `scripts/run-checks.sh`.
   The new check has the same shape and joins that exemption; its absence from both lists would
   otherwise be
   reported by the runner's own stray-check arm.
 - **The live test for protected-page membership has exactly three shapes**, read from
-`defines_element` in
+`defines_element` [defines-element] in
   `scripts/check-plan-invariants-refusal.py`: a fenced markdown block whose level-two headings are
   element
   tokens; a shell-style assignment one of whose entries is an element token; and any line carrying a
   backticked element token together with a presence, absence or retention word, where that word list
   is the
-  payload's own `PRESENCE_SHAPE` and a severity verdict alone is deliberately not enough. The scan skips
+  payload's own `PRESENCE_SHAPE` [presence-shape] and a severity verdict alone is deliberately not
+  enough. The scan skips
   the principles page and the guard by name, and one further class by filename pattern, which no path
   named in the decomposition matches. This is the test AC33 turns on, and it is why every new page
   and script below carries a stated constraint rather than a hope.
 - **The element derivation's second route reads the review contract**, taking any line that
   carries
 both a
-  severity verdict and a backticked element-shaped token (the `SEVERITY` pattern and `ELEMENT_TOKEN` in
+  severity verdict and a backticked element-shaped token (the `SEVERITY` pattern [severity] and
+  `ELEMENT_TOKEN` [element-token] in
   `scripts/check-plan-invariants.py`). Both the open-question wording and the convergence-class
   wording this
   plan adds to that contract name sections the record already carries, so the derivation yields
@@ -113,8 +117,9 @@ both a
   the 35,000-character early-warning band that `docs/agents-method.md` defines below the
   40,000-character cap: `agents/self-review.md` at 35,267 and `skills/task/SKILL.md` at 35,427.
   Three more have almost no headroom, and the audit skill's reference sibling has the least of any
-  file here: that sibling at 34,790 with 210 bytes of room, `docs/claude-tools-hierarchy.md` at
-  34,966 and `docs/workflow.md` at 34,930. The rest have room: `agents/design.md` 30,811,
+  file here: that sibling at 34,790, `docs/claude-tools-hierarchy.md` at 34,966 and
+  `docs/workflow.md` at 34,930, each read against the band figure above. The rest have room:
+  `agents/design.md` 30,811,
   `docs/plan-invariants.md` 19,478, `docs/templates/progress-format.md` 31,051,
   `skills/task/reference.md` 21,951, `agents/design-review.md` 14,354, `agents/review-findings.md`
   18,309, `docs/code-style.md` 16,827, `skills/ai-audit/SKILL.md` 14,333,
@@ -125,8 +130,8 @@ both a
   next one** — `awk '/^### Project-defined Hooks/{f=1;print;next} /^## /{f=0} f'
   docs/claude-tools-hierarchy.md | wc -c` and the same form for the other two, so the figure is
   addressed by the heading and not by where it falls. That page's project-defined-hooks inventory
-  is 28,520 bytes against the page's 34,966, so the page is four-fifths one list and moving the
-  list leaves a short index behind. The validated-approaches section of `agents/self-review.md` is
+  is 28,520 bytes, which is four-fifths of the page, so moving the list leaves a short index
+  behind. The validated-approaches section of `agents/self-review.md` is
   3,837 bytes and carries soft verbs rather than obligations. The review-fixes step of
   `skills/task/SKILL.md` is 9,095 bytes, while that round's procedure already lives on its own
   page. The largest section of the audit skill's reference sibling — its frontmatter-and-config
@@ -135,11 +140,13 @@ both a
   is a measurement of existing text; which block actually moves is settled per edit by the rule
   under *Size is planned work* below.
 - **The marked-id pairing has a shipped precedent with three paid-for hazards**, in the
-  plan-document gate's `paired` verb: it extracts keys from both sides, compares by set equality
+  `do_paired` function [do-paired] of `scripts/check-redline.sh`, which is the plan-document gate's
+  `paired` verb: it extracts keys from both sides, compares by set equality
   rather than containment, reports each direction separately, filters by the key's shape on both
   sides so a document quoting the convention is not a marked document, and prints the pair count
   so two unmarked sides cannot agree vacuously. Read from that verb and its header.
-- **A minimum-fragment length already exists in this repository**, `ARMA_QUOTE_MIN=24` in
+- **A minimum-fragment length already exists in this repository**, `ARMA_QUOTE_MIN=24`
+  [arma-quote-min] in
   `skills/task/scripts/check-fix-plan.sh`, used there to decide when a quoted fragment is long
   enough to identify a sentence. The isolation class borrows that constant rather than choosing
   one.
@@ -178,7 +185,11 @@ broadening one in the other direction. Split, because the requirement that an ex
 visible and counted exists so that a plan carrying excuses cannot read as clean, and one mixed
 figure cannot say whether ten excuses waived ten holds or quieted ten reports: the first is a plan
 proceeding over ten findings, the second is noise management. Two figures on a verdict line that
-already carries several is the whole cost of telling those apart.
+already carries several is the whole cost of telling those apart. The grants live in
+`ai-docs/plans/<spec-base>.excuses.md`, which exists to keep the grounds for proceeding over a
+finding beside the plan they were granted for, so they outlive the round that granted them and end
+only when the closing pass retires the plan. Version control is what carries them to whoever
+reviews the pull request; a round's own working notes never travel that far.
 
 **The check holds no element token as a literal.** It needs the section names to LOCATE regions of
 the document under examination — the rows the completeness class reads its objects from, the bullets
@@ -562,17 +573,21 @@ confirmation with its full text. The identical command with one of the segmentat
 the delimiter is silent, exit 0.
 
 **The mechanism, established from the code and addressed by entity.** The shell arm's `padded`
-assignment replaces both quote characters with spaces before anything else reads the command. The
+assignment [padded] in `hooks/lib/plan-invariants-guard.sh` replaces both quote characters with
+spaces before anything else reads the command. The
 segment loop is then fed through a translation that turns each of eight characters — the two
 statement separators, the pipe, the two bracket pairs and the backtick — into a newline, and reads
 each resulting line as its own pipeline segment with its own command word. By the time segmentation
 runs, nothing records which characters sat inside a quoted span, so a substitution delimiter that
 happens to be one of the eight cuts the command into pieces. The arm's two conditions then hold in
-different segments, each missing the other: the segment carrying the in-place writer sets the
-in-place flag but offers `path_shaped` no operand it will accept — one candidate is rejected as an
+different segments, each missing the other, and every entity named here is in
+`hooks/lib/plan-invariants-guard.sh`: the segment carrying the in-place writer sets the
+in-place flag but offers `path_shaped` [path-shaped] no operand it will accept — one candidate is
+rejected as an
 option, the other for carrying neither slash nor dot — while the segment carrying the resolved
 protected path has a fragment of the substitution script as its command word, which is in neither
-`WRITER_WORDS` nor `INPLACE_CMDS`, so `has_write_construct` sees nothing beside the path.
+`WRITER_WORDS` [writer-words] nor `INPLACE_CMDS` [inplace-cmds], so `has_write_construct`
+[has-write-construct] sees nothing beside the path.
 
 **The defect's boundary is one sentence — a separator character inside a quoted span — and it covers
 all eight characters and both quote spellings.** The silent set is derivable from the code rather
@@ -703,11 +718,14 @@ of them
   loads, procedure and rationale move — and the file is re-measured after the move.
 
 **Two crossings are certain rather than conditional, and both are planned work.** The
-tool-and-subagent inventory page has under a hundred characters of headroom and the new reader
-contract obliges it a row, so that subtask moves the page's project-defined-hooks inventory to its
-own page in the same change and leaves an index behind. The audit skill's reference sibling has 210
-bytes of room and takes two added instructions, so its largest section moves in the same change for
-the same reason. Neither is written as a condition on a measurement, because a conditional
+tool-and-subagent inventory page is one of those the ground above measures with almost no headroom,
+and the new reader contract obliges it a row, so that subtask moves the page's
+project-defined-hooks inventory to `docs/hook-inventory.md`, which exists to hold that inventory so
+the tool-and-subagent page a round loads stays an index. The audit skill's reference sibling is
+measured there with almost none either and takes two added instructions, so its largest section
+moves to `docs/frontmatter-recommendations.md`, which exists to hold recommendations away from the
+sibling a round opens for obligations. Neither is written as a condition on a measurement, because
+a conditional
 extraction turns the row's own measurement obligation into a branch, and a tie within tens of bytes
 either way is exactly the state in which a branch becomes a coin toss.
 
@@ -731,7 +749,7 @@ either way is exactly the state in which a branch becomes a coin toss.
 |---|------|-------|----------|------------|
 | 1 | **The reference rule and the id convention, stated once.** A new reference page: what an entity reference is in source and in prose; the id's spelling and its shape filter binding both sides; comparison by equality over whole ids; uniqueness enforced by an ambiguity report; the one-direction narrowing where a language admits no comment; and the carve-out as two conditions together — the output outlives no task AND every position in it is re-derived as the row carrying it is written. A pointer from the session-start method page, which is the only always-loaded surface. Page staged with an intent-to-add before any verification run is believed | `docs/entity-references.md` *(new)*, `docs/agents-method.md` | AC4, AC6, AC9, AC10 | — |
 | 2 | **The comment admission.** The membership rule on the policy page — a comment an instrument reads is a directive, and an instrument is whatever fails or changes behaviour when the comment goes — with deleting one named as a finding rather than a cleanup. The per-change comment sweep's example list becomes a pointer, which shrinks that file; the whole-branch review contract, the whole-branch review skill and the handoff instruction take the same pointer | `docs/code-style.md`, `agents/self-review.md`, `agents/review-findings.md`, `skills/project-review/SKILL.md`, `skills/context-reset/SKILL.md` | AC8, AC9 | 1 |
-| 3 | **The plan-document contracts and the audit surfaces take the two obligations and lose their positional mandates.** Both writer contracts and the review contract state the provenance obligation in their own words and the reference-and-id obligation as a pointer to the page from row 1; the three sentences that currently mandate citing a position for a load-bearing claim are rewritten to mandate naming an entity with its id. **The audit surfaces take three changes.** The archived-reference clause becomes the entity-resolution check on the letter table and in its own narrowing on the reference sibling, reporting how many such references it resolved and claiming no coverage of the archive as it stands. And **both** recording instructions stop mandating a line number: the skill's run-the-checklist step names the rule and the entity it conflicts with, and the sibling's learning-record field-coherence clause names the entry — the entity its own reason already points at, since the append-only rule forbids fixing the field in place. Both reports travel the step that writes a finding into the committed learning record, where nobody re-derives a position. **The reference sibling takes two of those edits into 210 bytes of room to the band** by `wc -c`, so the extraction is planned work and not a contingency: its largest section — the frontmatter-and-config improvement recommendations, 7,523 bytes, recommendations rather than obligations — moves to its own page in the same change, and the file is measured immediately before and after regardless | `agents/design.md`, `agents/spec-writer.md`, `agents/design-review.md`, `skills/ai-audit/SKILL.md`, `skills/ai-audit/reference.md`, `docs/frontmatter-recommendations.md` *(new)* | AC1, AC2, AC3, AC4, AC5, AC6, AC35 | 1 |
+| 3 | **The plan-document contracts and the audit surfaces take the two obligations and lose their positional mandates.** Both writer contracts and the review contract state the provenance obligation in their own words and the reference-and-id obligation as a pointer to the page from row 1; the three sentences that currently mandate citing a position for a load-bearing claim are rewritten to mandate naming an entity with its id. **The audit surfaces take three changes.** The archived-reference clause becomes the entity-resolution check on the letter table and in its own narrowing on the reference sibling, reporting how many such references it resolved and claiming no coverage of the archive as it stands. And **both** recording instructions stop mandating a line number: the skill's run-the-checklist step names the rule and the entity it conflicts with, and the sibling's learning-record field-coherence clause names the entry — the entity its own reason already points at, since the append-only rule forbids fixing the field in place. Both reports travel the step that writes a finding into the committed learning record, where nobody re-derives a position. **The reference sibling takes two of those edits into a file the ground above measures with almost no headroom**, so the extraction is planned work and not a contingency: its largest section — the frontmatter-and-config improvement recommendations, recommendations rather than obligations — moves to its own page in the same change, and the file is measured immediately before and after regardless | `agents/design.md`, `agents/spec-writer.md`, `agents/design-review.md`, `skills/ai-audit/SKILL.md`, `skills/ai-audit/reference.md`, `docs/frontmatter-recommendations.md` *(new)* | AC1, AC2, AC3, AC4, AC5, AC6, AC35 | 1 |
 | 4 | **The committed correction log moves to entity-plus-id; the ephemeral record keeps its positions.** The log's row field that quotes a diverged sentence carries the entity and its id instead of a position, and the duty to re-derive every position in a touched row splits: the ephemeral sections keep it verbatim, the committed log loses it because there is no position left to re-derive. No single rule spans both records afterwards. **The copy relation between the two records is the hidden half and is severed here rather than described away:** that field is specified today as a verbatim copy of the fix plan's own cell, and the fix-plan gate refuses a cell quoting no position — so the promotion into the committed log becomes a TRANSFORMATION, stated in both places that specify the field. Measured, so the file list is bounded: the arm that pairs a marker with a row keys on the row's first cell alone and never reads this field, so neither gate changes, and the ephemeral cell keeps its position and its gate untouched | `docs/templates/progress-format.md`, `agents/design.md` | AC10, AC11 | 1, 3 |
 | 5 | **The check's wrapper, its payload, and the two plan-pair-local classes.** Three outcomes with a could-not-run that is not a pass; the examined counts beside the verdict, including the not-evaluable count; the provenance class and the arithmetic class; section names derived from the required-element record at run time rather than held as literals; a derived section absent from the document under examination yields an empty region and a zero count, never a finding about the section. The runner's path-argument exemption takes the new check, and the profile's gate inventory is reconciled with what the runner derives from the index — **but the check's name must not enter the profile's structural-checks span in the `bash scripts/<name>.sh` spelling**, because that span is parsed and a check named there while exempt from membership reddens the inventory member in one direction; measured precedent, the existing path-argument gate is named nowhere in that span | `scripts/check-plan-convergence.sh` *(new)*, `scripts/check-plan-convergence.py` *(new)*, `AGENTS.md`, `scripts/run-checks.sh` | AC1, AC2, AC3, AC14 | 3 |
 | 6 | **The completeness and isolation classes.** Objects read from the decomposition's file cells and the use-case bullets; place, reason, cases and behaviour answered structurally with the judgement boundary stated; a criterion no row reaches and a section reference resolving to nothing in the same report; repeated numbers and repeated spans of at least the borrowed minimum length, naming both sites. The decomposition template gains the cell naming which criteria a row delivers | `scripts/check-plan-convergence.py`, `agents/design.md` | AC12, AC13 | 5 |
@@ -856,8 +874,7 @@ reference
   there is reported, which is the distinction § Decision 3 states and the thing this bullet must
   not quietly widen. **And the mitigation is an instruction and nothing more:** the clause is a
   checklist letter a reader runs, so a pass that forgets to print the count reads exactly like a
-  pass that printed a zero. There is no mechanical backstop, and pretending otherwise is the claim
-  the spec forbids.
+  pass that printed a zero.
 - **The isolation class over-fires on a repeated literal that is not a duplicated fact.** A
   heading, a path, a template word and a borrowed constant all repeat legitimately. Mitigation:
   the class reaches a repeated number or a span of at least the borrowed minimum length, a
