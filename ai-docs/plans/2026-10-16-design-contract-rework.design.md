@@ -11,7 +11,7 @@ question carries a price, the closing pass stops re-authoring, and a comment an 
 never swept. The mechanisms are a convergence check carrying six deterministic classes, three of
 which hold a plan while the other three report, a route to excuse one finding, a judgement class
 held to a stated standard, and a bidirectional pairing between a statement and the source entity it
-leans on.
+leans on. **[REDLINE S8.5]**
 
 The shape of the solution is the one this repository already runs for the base principles: **each
 rule is stated once on the surface that owns it, restated in its own words only where a party must
@@ -66,7 +66,7 @@ reports 999
   header spells its ceiling as a hard thousand-line limit and records that an earlier leg was moved to a
   sibling for exactly that reason, so the repository's own reading of the figure is the stricter
   one. Either
-  way the new classes cannot be legs of it; they need their own wrapper and payload.
+  way the new classes cannot be legs of it; they need their own wrapper and payload. **[REDLINE R1.2]**
 - **The gate runner already exempts a check that takes a path argument**, and says why: a member
   is
 invoked
@@ -155,7 +155,7 @@ both a
 
 Six deterministic classes and the excuse route land in a new check,
 `scripts/check-plan-convergence.sh` with a payload beside it, rather than as verbs of the existing
-plan-document gate or legs of the existing verification.
+plan-document gate or legs of the existing verification. **[REDLINE R1.1]**
 
 Three grounds, each measured above: the verification payload is at the hard line limit, so it has no
 room; the plan-document gate is a protected page, so every edit to it costs an authorisation and it
@@ -243,7 +243,7 @@ contract's own bullet shape requires each clause to say what the object does in 
 bullet with no clause states neither, and the finding names both. A clause that names a case while
 saying nothing about what the object does in it is a judgement, and it belongs to the judgement
 class rather than here. Stating that boundary is what keeps the holding classes deterministic, which
-is what pays for the single judgement one.
+is what pays for the single judgement one. **[REDLINE S8.4]**
 
 **How a requirement reaches an object.** The decomposition carries a cell naming the criteria each
 row delivers, and the class compares the union of those cells against the spec's criteria in both
@@ -327,7 +327,7 @@ against a **baseline record** of the positions that predate it, committed at
 only by an explicit act that prints what it is about to take in, copied from the statement
 inventory's acceptance route — the one comparable act in the tree — and the author runs it. The
 baseline is what makes "the rule binds from here" a mechanical statement rather than a promise, and
-it leaves the sweep exactly where the spec put it: the author's to schedule.
+it leaves the sweep exactly where the spec put it: the author's to schedule. **[REDLINE R1.3]**
 
 **This class reports and does not hold a plan, and the reason is the input set rather than the
 class's weight.** Its requirement says a position is reported, never that it holds; and its input is
@@ -454,7 +454,7 @@ so the one widened exclusion path test that accounts for the baseline record acc
 the verification's unaccounted figure stays at zero without a second change. And because the
 references gate walks every markdown file it finds on disk, a planted fault may not be a broken link
 or an unresolvable anchor — a document planting one would redden that gate instead of this reader,
-so the planted faults are confined to the classes the reader rules on.
+so the planted faults are confined to the classes the reader rules on. **[REDLINE S8.2]**
 
 ### Decision 5 — where each rule is stated once, and the comment admission's single home
 
@@ -503,7 +503,7 @@ on the two writer contracts as the author's test and on the review contract as a
 statement is satisfied by the other's presence: the author's half is a test applied while writing,
 the reviewer's is a verdict.
 
-Three consequences are planned rather than discovered, each measured above:
+Three consequences are planned rather than discovered, each measured above: **[REDLINE R1.6]**
 
 - **The page's heading states a count and must stop.** It is renamed to a form that states none.
   The verification payload carries that heading's exact text three times — once as the body split
@@ -606,7 +606,7 @@ script flag, for an interpreter spelling of the same edit, for a brace-delimited
 against the guarded record as well as the protected pages, both lists being read by the same arm.
 Closing only the pipe would ship a demonstration that passes while the double-quoted spelling of the
 identical command stays silent, which is precisely what the demonstration obligation exists to
-prevent.
+prevent. **[REDLINE R1.10]**
 
 **This is a seventh silent form against a header that enumerates six.** The guard's own header opens
 its enumeration with the count and lists them: a glob, a command substitution producing the path, a
@@ -727,7 +727,7 @@ moves to `docs/frontmatter-recommendations.md`, which exists to hold recommendat
 sibling a round opens for obligations. Neither is written as a condition on a measurement, because
 a conditional
 extraction turns the row's own measurement obligation into a branch, and a tie within tens of bytes
-either way is exactly the state in which a branch becomes a coin toss.
+either way is exactly the state in which a branch becomes a coin toss. **[REDLINE S8.3]**
 
 ### Rejected alternatives
 
