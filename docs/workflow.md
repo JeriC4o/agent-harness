@@ -362,7 +362,7 @@ the agreed approach?** The two answers go different ways.
   section.
 - **Non-breaking → one marker on the diverged item, one row in the task's committed redline log, and the
   code fix lands in the same round.** The design is not rewritten mid-task; it is corrected once, after
-  the PR is approved, by `/redline-fold`, which authors the as-built document afresh. Who marks, what the
+  the PR is approved, by `/redline-fold`, which applies the log's rows. Who marks, what the
   marker carries and what a row holds:
   [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking](${CLAUDE_PLUGIN_ROOT}/agents/design.md#redline-marking).
 

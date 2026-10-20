@@ -36,9 +36,11 @@ not recognise reaches the page and is then caught by the comparison instead.
 6. **Neither document carries a record of superseded material, and no verdict may require one.** *Because
    every such passage is read in full by every later whole-repository review and none of it describes the
    system.*
-7. **The closing fold runs once, after approval.** It authors the design afresh and collapses the spec to
-   its record of deliberate absence. *Because an in-place edit leaves every sentence the editor did not
-   touch, and what it does not touch is what nobody re-read.*
+7. **The closing fold runs once, after approval.** It applies the correction log's rows to the design
+   items that diverged, collapses the spec to its record of deliberate absence, and leaves the rest of the
+   frozen document alone. *Because an untouched sentence is now either caught mechanically — a number
+   whose provenance is gone, an identity that no longer pairs in either direction — or it is prose stating
+   neither, which is accepted as unnoticed rather than re-derived against the chance that it rotted.*
 8. **A required element of a spec or a design must be knowable at the time the document is authored, and
    so must the origin of every number either document states.** An element whose content is only
    determined later is forbidden. A stated number names, in the same sentence, which kind it is — a

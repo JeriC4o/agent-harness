@@ -72,7 +72,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   which items are settled and skips them.
 - **Why it exists.** The design is frozen at the design-review GO verdict and is NOT rewritten during the
   work. A divergence that does not break the agreed approach is marked and logged instead of reopening
-  the planning chain, and one closing fold after the PR is approved authors the corrected design afresh.
+  the planning chain, and one closing fold after the PR is approved applies the log's rows to the items that diverged.
 - **Identity.** The spec base name. Its head carries four required fields — `**Tracked in:**`,
   `**Spec:**`, `**Design:**`, `**Mode:**` — of which `Mode` is the one with a consumer: `R&D` or
   `Hybrid`, chosen once per task at the first divergence found while writing the code, with grounds that

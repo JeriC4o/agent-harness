@@ -209,7 +209,7 @@ what explains to a later reader why the log holds the number of rows it holds.
 
 The closing pass, invoked by `/redline-fold` once the PR is approved, producing the as-built design as a
 separate commit. It runs only when the log carries at least one row; with none, the frozen plan already
-describes what shipped and there is nothing to author.
+describes what shipped and there is nothing to correct.
 
 **Two WINDOWS, and which one applies is read rather than assumed.** EARLY: the PR is still open, and the
 commit joins it. LATE: the merge already happened and a log survived it, so the pass runs on a fresh
@@ -222,42 +222,41 @@ open. It costs nothing but time, and for a reason this contract already relies o
 precisely so it survives the merge, where a gitignored record would not. What it does cost is the interval
 itself — until the late pass runs, the default branch carries a design whose markers point into a log and
 a spec that was never collapsed, so early stays preferred. One thing is better late and only one: the
-shipped state is final, so "re-author against what shipped" has no ambiguity left in it. **In the late
+shipped state is final, so there is no ambiguity left about what the rows are applied against. **In the late
 window the gate runs BEFORE the `done/` move**, because it resolves the pre-fold text relative to the
 spec's directory at HEAD and the merge commit holds the trio in the active one.
 
-**It AUTHORS the design afresh. It does not edit the frozen one.** An in-place edit leaves every sentence
-the editor did not touch, and what it did not touch is exactly what nobody re-read — stale by omission,
-and invisible to any check that looks only at what changed. A freshly authored document cannot inherit a
-stale sentence through a gap. The output path is unchanged: `ai-docs/plans/done/` holds one design per
-task, so "afresh" means re-authored in place of the old content, never a second file.
+**It KEEPS the frozen design and applies the log's rows to the items that diverged.** It does not author
+the document afresh, and the reason the re-authoring existed is answered rather than dropped: an untouched
+sentence is now either caught mechanically — a number whose provenance is gone, an identity that no longer
+pairs in either direction — or it is prose stating neither, which is accepted as unnoticed. The output
+path is unchanged: `ai-docs/plans/done/` holds one design per task, so the corrected document replaces the
+old content in place, never as a second file.
 
-**"Afresh" is not "only what is needed."** The strip set is closed and short: `## Handoff plan`,
-`## Open questions`, every marker, amendment residue, and any record of superseded material. The first
-three are patterns a check can search for; the last two are not, and are the judgement step below.
-Everything else the design carries — the approach, the decomposition, the risks, the rejected
-alternatives, the use cases — is **re-authored against the shipped state**, because a reader of the
-completed plan needs to know what was built and what was deliberately not chosen. Dropping a section is
-not a cheaper fold; it is a different and worse document, and the post-merge review still reads the use
-cases from the design that survives.
+**The strip set is unchanged, closed and short:** `## Handoff plan`, `## Open questions`, every marker,
+amendment residue, and any record of superseded material. The first three are patterns a check can search
+for; the last two are not, and are the judgement step below. **Nothing else is dropped and nothing else is
+re-derived** — the approach, the decomposition, the risks, the rejected alternatives and the use cases
+stay as the frozen document states them except where a row says otherwise, because the post-merge review
+reads them from the design that survives.
 
-**Write it SECTION BY SECTION, never in one call.** § Patterns records the hazard directly: a full-file
-rewrite of a large design is the highest-risk moment for a transport drop, with two observed attempts
-dying before the write landed. The fold's input is a document of exactly that size class, so one
-full-file write is the shape most likely to lose the whole pass. The two instructions are not in tension
-— "afresh" constrains what the content is derived FROM (the shipped state, not the previous text),
-"section by section" constrains how the bytes are DELIVERED. An implementer reading only the first reaches
-for one call, which is why both are stated together.
+**Write it SECTION BY SECTION, never in one call — and that instruction survives on its own terms**,
+having never depended on the re-authoring. § Patterns records the hazard: a full-file rewrite of a large
+design is the highest-risk moment for a transport drop, with two observed attempts dying before the write
+landed. The fold's input is a document of that size class whatever its content is derived from. Only the
+derived-from half changed; "section by section" constrains how the bytes are DELIVERED and is untouched.
 
 Then, in this order:
 
 1. **Verify on disk** — mtime plus a search for an expected new string. The harness does not retry on a
    socket close, so an unverified write is an unknown one.
-2. **Assert POSITIVELY that every section describes the shipped state.** This is a judgement step and is
-   named as one. It cannot be done by searching for superseded wording: a document that records its own
-   corrections holds that wording inside a quotation, so an absence proved from a fragment is a false
-   positive rather than a weak result. The bounded scan for the phrases that introduce a revision account
-   is a **spot-check** beside the judgement, never a substitute for it.
+2. **Read the corrected ITEMS and vouch for them** — the items a row was recorded against, never every
+   section. This is a judgement step and is named as one. It cannot be done by searching for superseded
+   wording: a document that records its own corrections holds that wording inside a quotation, so an
+   absence proved from a fragment is a false positive rather than a weak result. The bounded scan for the
+   phrases that introduce a revision account is a **spot-check** beside it, never a substitute. **Over
+   everything else no reader asserts anything** — a stale sentence carrying neither a number nor an
+   identity is accepted as unnoticed.
 3. **Run the residue check AFTER that verification**, so a partial write is caught as a residue failure
    rather than passing as a fold.
 
