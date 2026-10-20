@@ -83,10 +83,12 @@ def tracked():
 RECORD_DOC = 'docs/plan-invariants.md'
 RECORD_HEADING = '## The required elements of a spec and of a design'
 
+TRACKED_PATHS = tracked()
+
 # An untracked record would be read here and absent from every other clone,
 # which makes the local run green and every other one a cannot-run -- the same
 # shape as a gate whose input set narrows without saying so.
-if RECORD_DOC not in set(tracked()):
+if RECORD_DOC not in set(TRACKED_PATHS):
     blocked('%s is read as the source of the section names and is not in the index, so this run reads a file no other clone has -- stage it'
             % RECORD_DOC)
 
@@ -832,6 +834,318 @@ def isolation(doc, units, minimum):
 
 
 # ---------------------------------------------------------------------------
+# The reference class. Reports.
+# ---------------------------------------------------------------------------
+# THREE SHAPES AND THE SET IS CLOSED. A token joining a file to a digit run with
+# a colon, optionally a digit range; a prose reference naming a line or a line
+# range; and a line-addressed slice of a file a command names. Nothing else, and
+# the exclusions carry their reason: a position a command PRODUCES is not a
+# reference to one, so `grep -n` is outside the class, and a count taken from
+# one end of a stream addresses no line of the file's content, so a prefix or a
+# suffix length is not a position either.
+#
+# THE HOUSE IDIOM IS CARVED OUT BY ITS TARGET RATHER THAN BY ITS SHAPE. A script
+# printing its own header as help slices the file it is running from, where the
+# slice is re-derived by every run and outlives nothing -- which is the carve-out
+# the reference rule already states, met in its commonest form.
+#
+# THE ADMISSIBLE EXTENSIONS ARE DERIVED FROM THE TRACKED TREE RATHER THAN
+# LISTED, and the first shape is ambiguous without that bound: a version string
+# followed by a colon and a digit run has exactly the same shape, and so does a
+# host with a port. A reference can only name a kind of file this repository
+# holds, so the tree's own extension set is the honest bound -- and it says out
+# loud that a reference to a kind of file nothing here carries is outside the
+# sweep, where a list would have said nothing and drifted as well.
+#
+# THE BASELINE IS THE COMPARAND AND AN ARRIVAL IS WHAT GETS REPORTED. Sweeping
+# the positions that predate the rule is outside this work by the requirements'
+# own boundary, and a class reporting all of them on its first run would ship a
+# gate that is red on arrival. One row per accounted position -- shape, path and
+# the token itself -- so swapping one anchor for another is an arrival rather
+# than a wash, which a per-file count could not have seen.
+#
+# AN EMPTY RECORD IS LEGITIMATE WHERE AN ABSENT ONE IS NOT, which is the
+# OPPOSITE polarity from the statement inventory's record, and the comparison is
+# the reason. Empty here means nothing is accounted for, so every position is an
+# arrival and the failure direction is loud. Absent means the comparand could
+# not be read at all, and a sweep against nothing must not report what it found
+# as arrivals it established.
+#
+# THE RECORD IS SKIPPED BY THE SWEEP THAT READS IT. Every row carries the token
+# it accounts for, so a record inside its own input set would justify each of
+# its rows by holding it.
+#
+# WHAT LEVELS THE RECORD IS NOT HERE, and that is a gap rather than a choice.
+# The design behind this class gives the record an explicit act that prints what
+# it is about to take in, the way the statement inventory's acceptance does, and
+# no row of the plan that builds this check delivers one. So the record moves by
+# a hand edit today, and every arrival finding prints the row that would account
+# for it, which is what keeps that edit from needing a second derivation.
+BASELINE_RECORD = 'ai-docs/fixtures/positional-references.baseline'
+
+PATH_LINE = re.compile(r'(?<![\w/])([A-Za-z0-9_][\w./-]*\.([A-Za-z0-9]{1,10})):(\d+(?:-\d+)?)(?![\w])')
+PROSE_LINE = re.compile(r'(?<![\w-])lines?[ \t]+\d+(?:[ \t]*[-–—][ \t]*\d+)?', re.I)
+SLICE_SED = re.compile(
+    r'''sed[ \t]+(?:-[A-Za-z]+[ \t]*)*-n[ \t]*(?P<q>['"]?)'''
+    r'''(?P<script>\d+(?:,(?:\d+|\$|/[^/]*/))?[pdq])(?P=q)[ \t]+(?P<target>[^\s|;)&]+)''')
+SLICE_AWK = re.compile(
+    r'''awk[ \t]+(?P<q>['"])(?P<script>[^'"]*(?:FNR|NR)[ \t]*'''
+    r'''(?:==|>=|<=|>|<)[ \t]*\d+[^'"]*)(?P=q)[ \t]+(?P<target>[^\s|;)&]+)''')
+# The running script in every spelling the house style uses for it.
+RUNNING_SCRIPT = ('"$0"', "'$0'", '$0')
+
+SWEPT = 0
+POSITIONS = 0
+ACCOUNTED = 0
+UNDECODABLE = 0
+
+
+def tree_extensions(paths):
+    out = set()
+    for path in paths:
+        base = path.rsplit('/', 1)[-1]
+        if '.' in base[1:]:
+            out.add(base.rsplit('.', 1)[1].lower())
+    return out
+
+
+def positions_in(body, exts):
+    """(shape, token) for every position the text claims, in the three shapes."""
+    out = []
+    for m in PATH_LINE.finditer(body):
+        if m.group(2).lower() in exts:
+            out.append(('path-line', m.group(0)))
+    for m in PROSE_LINE.finditer(body):
+        out.append(('prose-line', norm(m.group(0))))
+    # LINE BY LINE for the command shape, because a quoted script matched across
+    # a hard wrap is not a command: the target would be read from whatever word
+    # opened the next line.
+    for line in body.split('\n'):
+        for pattern in (SLICE_SED, SLICE_AWK):
+            for m in pattern.finditer(line):
+                # Whatever closes the construct AROUND the command comes with
+                # the target, which is the match's tail -- in prose a backtick
+                # and the sentence's own full stop, and the carve-out keyed on
+                # the bare spelling missed every quoted command on a page. A
+                # quote character is NOT stripped here: it is how the running
+                # script is spelled.
+                if m.group('target').rstrip('`).,;:') not in RUNNING_SCRIPT:
+                    # The target is the match's tail, so whatever closes the
+                    # construct around it comes with it. Stripping that keeps the
+                    # recorded token from moving when the quoting around an
+                    # unchanged command does.
+                    out.append(('command-slice', norm(m.group(0)).rstrip('"\'`)')))
+    return out
+
+
+def recorded_positions(paths):
+    """The rows of the baseline record, or None when it could not be read.
+
+    Untracked is a cannot-run for the reason the element record's own check
+    gives: a record read here and absent from every other clone makes this run
+    green and every other one a cannot-run.
+    """
+    if BASELINE_RECORD not in set(paths):
+        blocked('%s is the comparand for every position this class reports and is not in the index, so this run compares against a file no other clone has -- stage it'
+                % BASELINE_RECORD)
+        return None
+    body = read_rel(BASELINE_RECORD)
+    if body is None:
+        blocked('%s could not be read, and a sweep with no comparand must not report what it found as arrivals it established'
+                % BASELINE_RECORD)
+        return None
+    rows = set()
+    for line in body.split('\n'):
+        if not line.strip() or line.startswith('#'):
+            continue
+        rows.add(line.rstrip('\n'))
+    return rows
+
+
+def reference(paths, record):
+    global SWEPT, POSITIONS, ACCOUNTED, UNDECODABLE
+    exts = tree_extensions(paths)
+    for path in paths:
+        if path == BASELINE_RECORD:
+            continue
+        try:
+            with open(os.path.join(ROOT, path), encoding='utf-8') as fh:
+                body = fh.read()
+        except UnicodeDecodeError:
+            # A file that is not text carries no reference anyone reads, so it is
+            # counted rather than blocking the run. A file that cannot be OPENED
+            # is the other case and takes the branch below.
+            UNDECODABLE += 1
+            continue
+        except OSError as exc:
+            blocked('%s is in the tracked tree and could not be opened, so the positions it carries were never swept (%s)'
+                    % (path, exc))
+            continue
+        SWEPT += 1
+        for shape, token in positions_in(body, exts):
+            POSITIONS += 1
+            row = '%s\t%s\t%s' % (shape, path, token)
+            if row in record:
+                ACCOUNTED += 1
+                continue
+            finding('reference',
+                    '%s carries a position the baseline does not account for -- [%s]; a reader may trust it without re-deriving it, and the record row that would account for it is: %s'
+                    % (path, token, row))
+
+
+# ---------------------------------------------------------------------------
+# The pairing class. Reports.
+# ---------------------------------------------------------------------------
+# THE SHAPE FILTER BINDS BOTH SIDES, which is what the reference rule asks of it
+# and the first of the three hazards the shipped keyed pairing already paid for.
+# One expression recognises a statement's claim and an entity's mark, so a
+# document explaining the convention in angle brackets carries neither.
+#
+# TWO LOCI, DECIDED BY THE LANGUAGE AND NOT BY A FILE LIST. A mark on a source
+# entity sits in a comment; a mark on a prose entity rides its heading or its
+# numbered item, which are already declared identities. Every language in this
+# tree spells a line comment the same way, and a language that does not is a
+# widening this class would have to learn rather than one it silently covers.
+#
+# A BRACKETED TOKEN INSIDE A BACKTICK SPAN IS A TOKEN BEING NAMED, never a claim
+# or a mark, and the same goes for one inside a fenced block. Measured: without
+# the first rule a character class quoted in a regular expression read as a
+# claim, and without the second a template placeholder in a fenced example read
+# as a mark on five separate pages.
+#
+# THE MARK SIDE IS THE FILES THE PLAN NAMES, and that is the bound the reference
+# rule itself states -- a mark sits inside one of the files the claiming
+# statement names, because nothing else bounds where it may be. The sweep still
+# reads the tree rather than the plan, which is why this class reports and does
+# not hold: a mark can arrive in a named file from a commit the plan under
+# review never touched. Measured on this tree, the alternative reading is what
+# decided it: a sweep over every tracked file finds six bracketed tokens that no
+# plan claims, every one of them an optional argument in a usage synopsis, and
+# all six would be reported against every plan forever.
+#
+# WHERE A LANGUAGE ADMITS NO COMMENT the obligation narrows and says so: the
+# claim resolves in one direction only, from the statement to the file it names,
+# which must exist, and no reverse pairing is asserted for it.
+ID_SHAPE = re.compile(r'(?<![\w\]])\[([a-z0-9][a-z0-9-]*)\](?![(\[:])')
+COMMENTLESS = ('.json',)
+PROSE_FILE = ('.md',)
+COMMENT_LINE = re.compile(r'^[ \t]*#')
+NUMBERED_ITEM = re.compile(r'^[ \t]*\d+[.)][ \t]')
+
+CLAIMS = 0
+MARKS = 0
+PAIRS = 0
+
+
+def ids_in(text):
+    return [m.group(1) for m in ID_SHAPE.finditer(TICK_SPAN.sub(
+        lambda m: ' ' * len(m.group(0)), text))]
+
+
+def named_files(statement, known):
+    out = []
+    for m in TICK_SPAN.finditer(statement):
+        token = m.group(0).strip('`').strip()
+        if token in known and token not in out:
+            out.append(token)
+    return out
+
+
+def marks_in(path, body):
+    """The ids marked in `path`, each with the line that carries the mark.
+
+    A path the plan has yet to create is not in the tree, so no mark can sit in
+    one -- which is why a claim bounded only by such a path is reported below
+    rather than resolved here.
+    """
+    out = []
+    if path.endswith(COMMENTLESS):
+        return out
+    prose = path.endswith(PROSE_FILE)
+    in_fence = False
+    for line in body.split('\n'):
+        plain = QUOTE_MARK.sub('', line)
+        if FENCE.match(plain):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        locus = (HEADING_LINE.match(plain.lstrip()) or NUMBERED_ITEM.match(plain)) \
+            if prose else COMMENT_LINE.match(plain)
+        if not locus:
+            continue
+        for slug in ids_in(line):
+            out.append((slug, norm(line)))
+    return out
+
+
+def pairing(units, paths):
+    global CLAIMS, MARKS, PAIRS
+    known = set(paths)
+    named = []
+    claims = []
+    for doc, doc_units in units:
+        for statement in doc_units:
+            files = named_files(statement, known)
+            for path in files:
+                if path not in named:
+                    named.append(path)
+            for slug in ids_in(statement):
+                claims.append((slug, doc, statement, files))
+    CLAIMS = len(claims)
+
+    marks = {}
+    for path in named:
+        body = read_rel(path)
+        if body is None:
+            continue
+        for slug, line in marks_in(path, body):
+            marks.setdefault(slug, []).append((path, line))
+            MARKS += 1
+
+    claimed_by = {}
+    for slug, doc, statement, _files in claims:
+        claimed_by.setdefault(slug, []).append((doc, statement))
+
+    for slug, where in sorted(claimed_by.items()):
+        if len(where) > 1:
+            finding('pairing',
+                    'the id [%s] is claimed by %d statements, so it resolves to more than one of them: %s'
+                    % (slug, len(where), ' || '.join(norm(s)[:80] for _d, s in where[:3])))
+    for slug, sites in sorted(marks.items()):
+        if len(sites) > 1:
+            finding('pairing',
+                    'the id [%s] is marked at %d sites, so it resolves to more than one entity: %s'
+                    % (slug, len(sites), ' || '.join('%s -- %s' % (p, l[:60]) for p, l in sites[:3])))
+
+    for slug, doc, statement, files in claims:
+        if not files:
+            finding('pairing',
+                    '%s claims the id [%s] while naming no file in the tree, so nothing bounds where its mark may sit: %s'
+                    % (doc, slug, norm(statement)[:160]))
+            continue
+        where = [p for p, _l in marks.get(slug, []) if p in files]
+        if where:
+            PAIRS += 1
+            continue
+        if all(p.endswith(COMMENTLESS) for p in files):
+            # The one-direction narrowing: the named file exists, which is the
+            # whole of what resolves here, and no reverse pairing is asserted.
+            PAIRS += 1
+            continue
+        finding('pairing',
+                '%s claims the id [%s] that no mark carries in any file it names (%s), so the reference resolves to nothing: %s'
+                % (doc, slug, ', '.join(files[:4]), norm(statement)[:160]))
+
+    for slug, sites in sorted(marks.items()):
+        if slug in claimed_by:
+            continue
+        finding('pairing',
+                'the id [%s] is marked in %s and no statement of this plan claims it: %s'
+                % (slug, sites[0][0], sites[0][1][:120]))
+
+
+# ---------------------------------------------------------------------------
 # The run.
 # ---------------------------------------------------------------------------
 SPEC_BODY = read_path(SPEC)
@@ -853,8 +1167,10 @@ STATEMENTS = 0
 BUILT = []
 
 MINIMUM = None
+BASELINE = None
 if not cannot:
     MINIMUM = fragment_minimum()
+    BASELINE = recorded_positions(TRACKED_PATHS)
 
 if not cannot:
     BUILT = built_paths(DESIGN_BODY, RECORDED['design'])
@@ -871,6 +1187,8 @@ if not cannot:
     if len(DOCUMENTS) == 2:
         completeness(SPEC_BODY, DESIGN_BODY, RECORDED['spec'], RECORDED['design'],
                      BUILT, all_units['design'])
+    reference(TRACKED_PATHS, BASELINE)
+    pairing([(_k, all_units[_k]) for _k, _b, _t in DOCUMENTS], TRACKED_PATHS)
 
 
 def counts():
@@ -878,11 +1196,15 @@ def counts():
     return ('documents=%d statements=%d regions=%d/%d numbers=%d identities=%d '
             'relations=%d not-evaluable=%d built=%d objects=%d criteria=%d '
             'delivery-column=%s section-refs=%d/%d fragment-min=%s repeats=%d '
+            'swept=%d positions=%d accounted=%d undecodable=%d '
+            'claims=%d marks=%d pairs=%d '
             'holding=%d reporting=%d findings=%d'
             % (len(DOCUMENTS), STATEMENTS, REGIONS_PRESENT, REGIONS_DERIVED, NUMBERS,
                IDENTITIES, RELATIONS, NOT_EVALUABLE, len(BUILT), OBJECTS, CRITERIA,
                DELIVERY_COLUMN, SECTION_REFS, SECTION_REFS + QUALIFIED_REFS,
                MINIMUM if MINIMUM is not None else '-', REPEATS,
+               SWEPT, POSITIONS, ACCOUNTED, UNDECODABLE,
+               CLAIMS, MARKS, PAIRS,
                held, len(findings) - held, len(findings)))
 
 
@@ -896,7 +1218,11 @@ def roster():
                           ('completeness', '%d objects, %d criteria, %d own-document section references'
                            % (OBJECTS, CRITERIA, SECTION_REFS)),
                           ('isolation', '%d repeated literals at or above %s characters'
-                           % (REPEATS, MINIMUM if MINIMUM is not None else '-'))):
+                           % (REPEATS, MINIMUM if MINIMUM is not None else '-')),
+                          ('reference', '%d positions in %d swept files, %d of them accounted for'
+                           % (POSITIONS, SWEPT, ACCOUNTED)),
+                          ('pairing', '%d claimed ids against %d marks, %d pairs compared'
+                           % (CLAIMS, MARKS, PAIRS))):
         mine = [f for f in findings if f.startswith('finding %s:' % cls)]
         state = 'examined-with-findings (%d)' % len(mine) if mine else 'examined-clean'
         print('  class %-13s %s -- %s%s'

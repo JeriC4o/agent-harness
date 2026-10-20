@@ -63,6 +63,29 @@ write_pair() { # <spec body> <design body>
   printf '# Design\n\n%s\n\n%s\n' "$DESIGN_FIRST" "$2" > "$T/plans/a.design.md"
 }
 
+# THE RECORD THE REFERENCE CLASS COMPARES AGAINST IS SEEDED FROM THE TREE THESE
+# FIXTURES START WITH, never typed: the copied real files carry positions of
+# their own, and a hand-written record would have to be re-typed every time one
+# of them changes. Seeding leaves a planted position as the only arrival.
+mkdir -p "$T/ai-docs/fixtures"
+BASE="$T/ai-docs/fixtures/positional-references.baseline"
+printf '# Positions accounted for.\n' > "$BASE"
+: > "$T/docs/swept.md"
+: > "$T/scripts/marked.sh"
+printf '{"a": 1}\n' > "$T/data.json"
+git -C "$T" add ai-docs/fixtures/positional-references.baseline docs/swept.md \
+  scripts/marked.sh data.json >/dev/null 2>&1
+
+swept()  { printf '%s\n' "$1" > "$T/docs/swept.md"; }
+marked() { printf '%s\n' "$1" > "$T/scripts/marked.sh"; }
+account(){ printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$BASE"; }
+
+write_pair 'Nothing.' 'Nothing.'
+run | sed -n 's/^finding reference: .*that would account for it is: //p' | sort -u >> "$BASE"
+git -C "$T" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
+out=$(run)
+hasnt "a record seeded from the tree leaves the reference class clean" "$out" 'finding reference'
+
 printf '\n== the three outcomes ==\n'
 write_pair 'Nothing numeric here.' 'Nothing numeric here either.'
 out=$(run); rc=$?
@@ -280,6 +303,117 @@ has "its present-region count falls, which is what a reader weighs" "$out" 'regi
 # verdict line carries either way: a loose substring here passed over its own
 # subject once already.
 has "and nothing reports the section as absent" "$out" 'findings=0'
+
+
+printf '\n== the reference class, against the record that makes it start green ==\n'
+write_pair 'Nothing.' 'Nothing.'
+swept 'The rule is stated at `docs/plan-invariants.md:120`, which carries it.'
+out=$(run)
+has "a path-and-line token the record does not account for is reported" "$out" 'docs/plan-invariants.md:120'
+has "and the finding prints the row that would account for it" "$out" 'path-line	docs/swept.md	docs/plan-invariants.md:120'
+account 'path-line' 'docs/swept.md' 'docs/plan-invariants.md:120'
+out=$(run)
+hasnt "the same token once the record accounts for it is silent" "$out" 'finding reference'
+POSN=$(printf '%s' "$out" | sed -n 's/.* positions=\([0-9]*\) .*/\1/p')
+ACCN=$(printf '%s' "$out" | sed -n 's/.* accounted=\([0-9]*\) .*/\1/p')
+check "and a clean reference verdict accounts for every position it examined" "$POSN" "$ACCN"
+swept 'The rule is stated at `docs/plan-invariants.bin:120`, which carries it.'
+out=$(run)
+hasnt "a token whose extension no tracked file carries is outside the sweep" "$out" 'finding reference'
+swept 'The rule is stated at line 42 of the page, which carries it.'
+out=$(run)
+has "a prose reference naming a line is reported" "$out" 'prose-line	docs/swept.md	line 42'
+swept 'The rule is stated on the first line of the page, which carries it.'
+out=$(run)
+hasnt "a prose sentence naming no line number is silent" "$out" 'finding reference'
+swept 'The help text comes out of `sed -n '"'"'3,20p'"'"' docs/plan-invariants.md`.'
+out=$(run)
+has "a line-addressed slice of another file is reported" "$out" 'command-slice'
+swept 'The help text comes out of `sed -n '"'"'3,20p'"'"' "$0"`.'
+out=$(run)
+hasnt "the same slice of the running script is the carve-out and is silent" "$out" 'finding reference'
+swept 'The count comes out of `grep -n thing docs/plan-invariants.md`.'
+out=$(run)
+hasnt "a command that PRODUCES a position is not a reference to one" "$out" 'finding reference'
+swept ''
+out=$(run)
+has "the swept file count is printed, so a narrowed input set is visible" "$out" 'swept='
+mv "$BASE" "$T/ai-docs/fixtures/moved"
+out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
+check "an absent record -> rc 2, never a clean sweep" "$rc" "2"
+has "and says a sweep with no comparand establishes nothing" "$out" 'must not report what it found'
+mv "$T/ai-docs/fixtures/moved" "$BASE"
+git -C "$T" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
+git -C "$T" rm -q --cached ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
+# The fixture's own precondition, asserted rather than assumed: this removal has
+# failed silently once, on an index entry the seeding had left behind, and the
+# leg then measured a tracked record while its label said otherwise.
+git -C "$T" ls-files --error-unmatch ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1 \
+  && bad "the record was removed from the index" || ok "the record was removed from the index"
+out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
+check "a record outside the index -> rc 2" "$rc" "2"
+has "and says the run compares against a file no other clone has" "$out" 'no other clone has'
+git -C "$T" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
+cp "$BASE" "$T/ai-docs/fixtures/full"
+printf '# Nothing accounted for.\n' > "$BASE"
+out=$(run); rc=$?
+check "an EMPTY record is legitimate rather than a cannot-run" "$rc" "1"
+has "and every position becomes an arrival, which is the loud direction" "$out" 'accounted=0'
+cp "$T/ai-docs/fixtures/full" "$BASE"
+
+printf '\n== the pairing class, both directions and the ambiguity report ==\n'
+marked '# the refusal this claim leans on [refusal-arm]'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-arm].' 'Nothing.'
+out=$(run)
+hasnt "a claim whose mark sits in a file it names pairs" "$out" 'finding pairing'
+has "and the pair count is printed, so two empty sides cannot read as agreement" "$out" 'pairs=1'
+has "and both sides were counted" "$out" 'claims=1 marks=1'
+# THE OTHER DOCUMENT NAMES THE MARKED FILE ON PURPOSE. Marks are swept over the
+# files the PAIR names, so a fixture naming the marked file nowhere leaves this
+# leg passing because the mark was never read -- proved by muting the
+# claiming-statement bound and watching the leg stay green.
+write_pair 'The guard in `docs/swept.md` refuses an empty set [refusal-arm].' 'The other guard lives in `scripts/marked.sh`.'
+out=$(run)
+has "a claim whose mark sits in a file it does not name is reported" "$out" 'resolves to nothing'
+has "and the mark it could not use was read rather than skipped" "$out" 'marks=1'
+write_pair 'The guard refuses an empty set [refusal-arm].' 'Nothing.'
+out=$(run)
+has "a claim naming no file in the tree is reported" "$out" 'nothing bounds where its mark may sit'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set.' 'Nothing.'
+out=$(run)
+has "a mark no statement claims is reported" "$out" 'no statement of this plan claims it'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-arm].' 'The same guard in `scripts/marked.sh` refuses it [refusal-arm].'
+out=$(run)
+has "an id claimed by two statements is reported as ambiguous" "$out" 'claimed by 2 statements'
+marked '# the refusal this claim leans on [refusal-arm]
+# and a second entity carrying the same mark [refusal-arm]'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-arm].' 'Nothing.'
+out=$(run)
+has "an id marked at two sites is reported as ambiguous" "$out" 'marked at 2 sites'
+marked '# the refusal this claim leans on [refusal-arm]'
+write_pair 'The guard in `scripts/marked.sh` refuses a set spelled `[refusal-arm]`.' 'Nothing.'
+out=$(run)
+has "a bracketed token inside a backtick span is not a claim" "$out" 'claims=0'
+marked 'printf "%s" "[refusal-arm]"'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set.' 'Nothing.'
+out=$(run)
+has "a bracketed token outside a comment in a source file is not a mark" "$out" 'marks=0'
+marked '# nothing marked here'
+swept '# A heading carrying its own id [prose-entity]'
+write_pair 'The section in `docs/swept.md` states the rule [prose-entity].' 'Nothing.'
+out=$(run)
+has "a mark riding a prose heading pairs, needing no comment" "$out" 'pairs=1'
+swept '```
+# A heading inside a fenced block [prose-entity]
+```'
+write_pair 'The section in `docs/swept.md` states the rule.' 'Nothing.'
+out=$(run)
+has "a bracketed token inside a fenced block is not a mark" "$out" 'marks=0'
+swept ''
+write_pair 'The key in `data.json` is the one this leans on [json-key].' 'Nothing.'
+out=$(run)
+hasnt "a claim against a language admitting no comment resolves on the file alone" "$out" 'finding pairing'
+has "and it still counts as a pair, with no reverse pairing asserted" "$out" 'pairs=1'
 
 printf '\n== the derivation cannot run on a record it cannot read ==\n'
 write_pair 'Nothing.' 'Nothing.'

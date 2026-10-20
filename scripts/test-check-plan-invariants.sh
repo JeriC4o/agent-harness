@@ -508,7 +508,8 @@ RULES = {
     'learning-record': lambda p: p == 'ai-docs/learnings.md' or p.startswith('ai-docs/learnings/'),
     'repository-mechanics': lambda p: (p.startswith(('.claude-plugin/', '.claude/',
                                                      'ai-docs/fixtures/loop-corpus/'))
-                                       or p in ('.gitignore', 'README.md')),
+                                       or p in ('.gitignore', 'README.md',
+                                                'ai-docs/fixtures/positional-references.baseline')),
 }
 none, many = [], []
 for p in tracked:

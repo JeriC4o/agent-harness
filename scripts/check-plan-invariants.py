@@ -136,9 +136,10 @@ EXCLUDED_SURFACES = (
     # excluding them is not that nobody reads them. It is that none of them
     # states a rule a spec or a design is held to. A mandate planted in one is
     # outside this detection, which is what naming the exclusion says out loud.
+    # The second committed record is NAMED rather than reached by a prefix on the fixtures root: the first is skipped above, before any rule runs, so a prefix would leave two mechanisms claiming one file.
     ('repository-mechanics', 'they configure or declare the repository, or are committed measurement data, so none of them states a rule a spec or a design is held to -- read by an agent in three cases, but never as instruction material',
      lambda p: (p.startswith(('.claude-plugin/', '.claude/', 'ai-docs/fixtures/loop-corpus/'))
-                or p in ('.gitignore', 'README.md'))),
+                or p in ('.gitignore', 'README.md', 'ai-docs/fixtures/positional-references.baseline'))),
 )
 
 
