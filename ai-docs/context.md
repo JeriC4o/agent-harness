@@ -98,46 +98,40 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   that cannot be known at the time the document is authored, which bought invented content at authoring
   time and an end-of-task review loop that could not converge. All but two of the principles are
   prohibitions, so a hunt for a principle's opposite is structurally blind to an ADDITION — and an
-  addition is how the measured damage arrived. That is why the verification COMPARES a recorded statement
-  inventory instead of reading sentences and ruling on them: arrived, departed and textually changed are
-  three answers a comparison gives exactly — with relocated as a fourth for the files taking the code
-  spelling, where a line's position is semantics and prose's position-independence would hide it — an
-  addition is the same kind of answer as a contradiction, and no class of passage can be set aside as
-  harmless because nothing is set aside at all.
+  addition is how the measured damage arrived. **What answers that today is narrower than the argument
+  that built the mechanism, and the narrowing is the point of this bullet.** The answer is confined to
+  REQUIRED ELEMENTS, in two directions that are each other's control: the element set is DERIVED from the
+  three loci that mandate one and compared against the published record both ways, so an element arriving
+  is the same kind of answer as an element departing and neither the derivation nor the record can move
+  alone; and the per-page sweep reports a page that acquires a rule making an element required, which is
+  the arrival the derivation cannot see at all, because it reads those three loci and nothing else. An
+  addition ANYWHERE ELSE in the instruction material is not an answer this verification gives, and that
+  is recorded as a bound under `GH-116` rather than left for a reader to discover from a clean verdict.
 - **Identity.** `docs/plan-invariants.md` is the authority on the wording of the principles and on the
-  required-element record. It is method, not profile, so it ships to every installing project. The
-  recorded statement inventory is the other half and sits on the opposite side of that line:
-  `ai-docs/fixtures/plan-invariants.inventory` is profile, because an inventory of this repository's own
-  instruction material is a project fact. It is one row per corpus file — surface, git blob sha, path —
-  so previous text is fetched from this repository's own object store rather than held as a second
-  committed copy of the corpus, which measured 2.52 MB against the record's 9.8 kB.
+  required-element record. It is method, not profile, so it ships to every installing project; the
+  mechanism carries no profile-side artefact.
 - **Code.** `scripts/check-plan-invariants.sh` is the entry point and loads two payload siblings from its
-  own directory — `scripts/check-plan-invariants.py`, which holds the corpus, three of the legs and the
-  report, and `scripts/check-plan-invariants-refusal.py`, which holds leg 4 and which the first loads.
-  Four legs (principle integrity, the inventory comparison, addition, refusal agreement) on the
+  own directory — `scripts/check-plan-invariants.py`, which holds the corpus, two of the legs and the
+  report, and `scripts/check-plan-invariants-refusal.py`, which holds leg 3 and which the first loads.
+  Three legs (principle integrity, addition, refusal agreement) on the
   `0 clean / 1 findings / 2 cannot run` convention, run as the `plan-invariants` member of
   `scripts/run-checks.sh` and covered by `scripts/test-check-plan-invariants.sh`. The split is a size
   consequence and the failure mode that argued against it is guarded rather than absent: the entry point
   preflights the sibling's existence and readability, and the first sibling's loader wraps the module
   EXECUTION — not the spec lookup, which was measured catching neither failure — so an unloadable sibling
   is a cannot-run and never the findings code. Its verdict line carries the principle, element, surface,
-  page, statement, unaccounted and finding counts followed by a per-surface roster, and `--accept` is the
-  only thing that levels the record: it prints the report it is about to take in before rewriting
-  anything.
+  page, unaccounted and finding counts followed by a per-surface roster.
   `hooks/lib/plan-invariants-guard.sh` is the edit-time refusal, registered on two `PreToolUse` matchers
-  so both the editing tools and the shell route reach it; it covers the record and an acceptance
-  invocation as well as the seven protected pages, by a second one-member list kept deliberately apart
-  from the list the refusal-agreement leg compares against the table.
+  so both the editing tools and the shell route reach it; it covers the seven protected pages and nothing
+  else, through the one list the refusal-agreement leg compares against the table.
 - **Invariant.** The record is not the route by which an element becomes required: it is cross-checked
   against the pages that mandate one, in both directions, so a one-sided edit is reported whichever side
   it happened on. A change to a principle is two co-ordinated edits — this page and the verification's
-  own pinned copy — and that is the authorisation route rather than a hole. The path the verification
-  reads and the path the guard guards are asserted to agree in both directions, because one side alone is
-  satisfiable by a guard that guards nothing and the other by a guard that guards the wrong file. The
-  detection is wider than the refusal by construction, and the bound is stated rather than hidden: a
-  contradicting or adding edit is caught and named, never prevented, and the comparison reports a change
-  to a statement's TEXT and never a meaning — so a clean verdict means no statement differs from the
-  record, never that no instruction implies a new requirement.
+  own pinned copy — and that is the authorisation route rather than a hole. The detection is wider than
+  the refusal by construction, and the bound is stated rather than hidden: a contradicting or adding edit
+  is caught and named, never prevented, and each leg reports an IDENTITY rather than a text difference —
+  so a clean verdict means those three identities agree, never that no instruction implies a new
+  requirement.
 
 ---
 
@@ -156,7 +150,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
-| `ai-docs/fixtures/` | Frozen real-world inputs a gate replays, committed and never refreshed as routine maintenance — `loop-corpus/` holds the loop ledger's replayed call rows, and `plan-invariants.inventory` is the recorded statement inventory the plan-invariants gate compares the tree against. That one diverges from the root's own contract (a maintained record rather than a frozen replay input, one file rather than a corpus subdirectory with a checksummed baseline) and is the least-bad fit among the roots a method file is allowed to name; it is levelled only by `check-plan-invariants.sh --accept`, which is the clause of that contract it does satisfy |
+| `ai-docs/fixtures/` | Frozen real-world inputs a gate replays, committed and never refreshed as routine maintenance — `loop-corpus/` holds the loop ledger's replayed call rows, `plan-convergence-planted.md` the planted plan pair the convergence reader reads on every run, and `positional-references.baseline` the recorded positions the convergence check reports arrivals against |
 
 ## Tech stack
 
@@ -178,7 +172,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | Linter (the gate) | `shellcheck` for `.sh`; `jq -e .` for JSON manifests. **Neither the `shell-syntax` member nor `untracked-shell` globs anything but `*.sh`, so no gate in the pre-commit list parses a payload sibling by walking the tree** — each is asserted by the suite that owns its entry point instead: `scripts/check-plan-invariants.py` is `ast.parse`d by a leg of `scripts/test-check-plan-invariants.sh`, and `scripts/check-plan-convergence.py` with both of its siblings — `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py` — by a leg of `scripts/test-check-plan-convergence.sh` that enumerates all three, each run by its single entry point, and the invariants payloads are additionally asserted tracked by the check itself, because a file read for its data while untracked makes the local run green and every other clone a cannot-run |
 | Source root / test root | n/a — no compiled sources |
 | Required external interpreters | `python3` and `perl`, beside the `awk` and `jq` the payload files above need. `python3` runs all five `.py` payloads above — `scripts/check-plan-invariants.py` with the refusal sibling it loads, and `scripts/check-plan-convergence.py` with the holding and reporting siblings it loads — and is the scanning tool of both plan-document checks, each of which preflights it by name and names every payload it could not find. `perl` executes nowhere in the tree's shipped code and is still a hard dependency of the mandatory check list: five of its members build their mutant fixtures with it — the loop-index and loop-verdict verifications under `hooks/lib/`, and the bin-of, loop-grid and loop-metrics suites under `scripts/` — so on a host without it those positive controls cannot run, and a could-not-run is not a pass. `scripts/run-checks.sh` demands it in the same preflight roster as the tools it invokes itself, which is what makes that failure loud and early rather than mid-suite. **A word-list mention is not an invocation:** `hooks/lib/plan-invariants-guard.sh` and its own verification carry the name as DATA, inside the vocabulary that recognises a command writing a file in place, and neither runs it |
-| Thousand-line exemption | `scripts/check-plan-invariants.py` is the one file in this repository **exempt from `docs/code-style.md` § File size**: `wc -l` reported 1,001 lines before this branch's two id comments landed and reports 1,003 now, against a hard limit of one thousand. The only seam that removes the overage moves the `PINNED` list — the check's own second copy of the base-principle sentences, eleven lines of data by `wc -l` over that assignment — into a fourth payload file, which by that subtraction lands the payload at about 992, eight lines under the limit; the payload's own header already argues against that file, on the ground that the data left after the second leg stopped measuring a sentence against a vocabulary does not earn one. This row records that the three lines are tolerated rather than paid for that way, and names the seam if it is ever revisited. The convergence payload took the other route: it crossed the same limit at 1,447 lines and was split into three files instead. The core file that split left measures 805 lines, inside the 800–1000 band `docs/code-style.md` calls **hard-ish** and routes to a justification in the pull-request description: what that file keeps is what both sibling groups read — the plan pair, the segmentation, the numeral readers, the excuse route and the report — so a further cut would have to cross machinery both siblings call rather than follow a seam the check already states as data, and the five lines above 800 are tolerated on that ground. This row is the durable record of that justification, and the pull request carries the same one when it opens. |
+| Thousand-line exemption | **No file in this repository is exempt from `docs/code-style.md` § File size today**, and the row keeps this heading because three files cite it by name — `scripts/check-plan-convergence.sh`, `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py`, a measurement taken with `grep -rl 'Thousand-line exemption'` over the tree. What the row records is the band below that limit. The convergence payload answered the same limit by splitting rather than by an exemption: it crossed it at 1,447 lines and became three files. The core file that split left measures 802 lines, inside the 800–1000 band `docs/code-style.md` calls **hard-ish** and routes to a justification in the pull-request description: what that file keeps is what both sibling groups read — the plan pair, the segmentation, the numeral readers, the excuse route and the report — so a further cut would have to cross machinery both siblings call rather than follow a seam the check already states as data, and the two lines above 800 are tolerated on that ground. This row is the durable record of that justification, and the pull request carries the same one when it opens. |
 
 ## Deployed configuration
 
@@ -235,39 +229,27 @@ meanings.
 
 - `GH-10` — the ≥2-distinct-projects promotion threshold is reasoned, not observed. Revisit once two
   projects carry candidates.
-- `GH-116` — three bounds of the statement-inventory verification, none of which any gate reports,
-  measured against a corpus of **122 pages and 27,361 statements** as the branch leaves it. **Read the
-  statement total as an as-of figure and never as a fixed one:** it moves by the net lines any later
-  change adds to the examined surfaces, so a reader whose measurement differs is watching the corpus
-  move rather than catching this entry out. What has to stay true for the bounds below to mean
-  anything is the BOUNDS, not the magnitude.
+- `GH-116` — two bounds of the plan-invariants verification, neither of which any gate reports. The first
+  is this entry's own, recorded against a corpus of **122 pages** as that branch left it; the second is
+  `GH-130`'s, where the corpus measures 137 pages. **Read a page figure as an as-of measurement and never
+  as a fixed one:** it moves with every file that joins or leaves the examined surfaces, so a reader whose
+  measurement differs is watching the corpus move rather than catching this entry out. What has to stay
+  true for the bounds below to mean anything is the BOUNDS, not the magnitude.
 
-  **The record can be levelled in the same pass as the change it would have reported, and this is
-  EVIDENCED rather than theoretical.** It is closed as far as the refusal reaches: the record and the
-  acceptance route are both put to the author, so a pass that edits rule material cannot do the second
-  half unprompted. Outside that reach it is open. The evidence arrived from this task's own work rather
-  than from a probe: prose describing the superseded mechanism was still in the tree when the first
-  acceptance ran, so it entered the record as the corpus's accepted state and **the comparison was silent
-  on it by construction**. It cost nothing, because the plan had already assigned that prose to a later
-  step and a positive control now shows the span is no longer blind. What it establishes is that the
-  exposure is reachable by ordinary ordering, not only by a pass covering its tracks.
+  **Nothing asserts that the principles page reaches an installed copy at all.** The install gate
+  inventories skills, agents and hook events and has no documentation arm, so a release that delivered
+  this page to nobody would be reported by no check here. It is a bound
+  in its own right: nothing it rests on is a property of what the verification compares, so no change to
+  the comparisons can close it.
 
-  **The verification is a CHANGE detector against an accepted record, not a presence assertion — so a
-  clean verdict means less than it looks.** The numbered principles do get a presence assertion, a
-  pinned copy inside the verification reported as an absence when one vanishes. Nothing else does. Measured:
-  deleting the principles page's own statement of its limit reports 7 departures with their text and moves
-  the statement total down by exactly those **7**, so it cannot STOP being stated unseen — the DELTA is the
-  measured fact and the absolutes are not, because they move with every later change; but had that
-  sentence never shipped,
-  nothing would have reddened. The same shape applies to whether the principles page reaches an INSTALL:
-  the install gate inventories skills, agents and hook events and has no documentation arm. Six of the
-  twenty-three criteria are recorded as partial for bounds of exactly this kind, each with its own.
-
-  **Whether the report's volume stays proportionate once the corpus is in its steady state. Revisit with
-  a count, not a judgement.** Measured on this branch's own change: 2,448 report lines across 18 differing
-  files, of which 2,369 were the statements of seven new files, against tens of lines for an ordinary
-  prose edit. The figure to revisit against is what the landed verification prints over the next few
-  tasks, not the one measured here while it was being built.
+  **Two classes of change are from now on caught by the pull-request diff and by nothing mechanical:** a
+  mandate arriving on an examined page that the element derivation does not read, in words the coverage
+  sweep does not recognise; and a change to prose that is not one of the principles' own numbered
+  sentences, those sentences being the only prose any surviving comparison pins, so the explanatory
+  paragraphs around them, and prose anywhere else on the examined surfaces, are pinned by nothing. This is
+  the bound `GH-130` created, written down rather than left to be rediscovered: the decision rests on a
+  human's approval of a pull request being the approval of the edits in it, so what this entry keeps open
+  is what a later reader does about the bound.
 - `GH-11` — `/harness:improve` Step 5b has never produced a candidate on a real Learning Log; every part
   is unit-tested, the path is not.
 - `GH-72` — the tier-1 fan-out arm became reachable when the hook started reading `agent_id` off the

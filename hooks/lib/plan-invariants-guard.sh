@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
 # PreToolUse refusal on the pages that define or enforce a required element of a
-# spec or a design, and on the record the verification compares the tree
-# against. Registered on two matchers: the file-editing tools and the shell.
+# spec or a design. Registered on two matchers: the file-editing tools and the
+# shell.
 #
 # Run:  fed a PreToolUse payload on stdin; emits an `ask` decision or nothing.
 # Exit: always 0. A malformed payload, an absent jq or an unreadable field
@@ -19,8 +19,6 @@
 # set from PROTECTED below and compares it against the table in
 # docs/plan-invariants.md in both directions, so an unguarded route and a
 # surplus interruption are both reported rather than sitting there unnoticed.
-# It reads GUARDED_RECORD the same way and against its own expectation: the path
-# it reads as the record must be the path this file guards, in both directions.
 #
 # WHY THE SHELL ARM HAS TWO CONDITIONS. A command must carry a write CONSTRUCT
 # and the resolved repo-relative path of one of that construct's write operands
@@ -38,8 +36,7 @@
 # its failure DIRECTION. A read-only allowlist misses an unlisted reader and the
 # cost is an interruption on a read, over a set that grows by one entry per new
 # reading tool. A write-construct list misses an unlisted writer and the cost is
-# that one writer escaping the refusal -- which the detection legs still catch,
-# since an edit that escapes this guard does not escape them.
+# that one writer escaping the refusal.
 #
 # THE SIX SILENT FORMS OF THE WRITE ARM, every one of them under-firing.
 # Three never spell the protected path as a literal token, so no resolution
@@ -49,13 +46,8 @@
 # narrow -- an interpreter script's variable-indirected writer, and a directory
 # change that is not a leading prefix. The escaped separator that used to be the
 # seventh is closed: the neutralisation reaches a separator a BACKSLASH escapes
-# outside any quoted span, as well as its quoted cousin.
-#
-# THE ACCEPTANCE CONDITION ADDS TWO OF ITS OWN, also under-firing: the payload
-# invoked directly, which never spells the entry point the condition matches on,
-# and the acceptance flag reached through a variable or a shell alias rather
-# than spelled in the command. All eight are asserted in the suite rather than
-# claimed here.
+# outside any quoted span, as well as its quoted cousin. All six are asserted in
+# the suite rather than claimed here.
 #
 # Tests: hooks/lib/test-plan-invariants-guard.sh
 
@@ -69,25 +61,6 @@ skills/redline-fold/SKILL.md
 skills/task/SKILL.md
 skills/task/reference.md
 scripts/check-redline.sh'
-
-# A SECOND, ONE-MEMBER LIST, and it is deliberately not part of PROTECTED. The
-# record defines no required element of either document, so admitting it to the
-# protected set would make the verification's refusal-agreement leg report it as
-# a surplus interruption -- correctly. It gets its own agreement assertion
-# instead, in both directions: the path the verification reads is the path this
-# guard guards.
-#
-# WHY IT IS GUARDED AT ALL. The record is what the comparison measures the tree
-# against, so bringing it level is how a change to instruction material stops
-# being reported. A pass that edited a rule AND levelled the record in one go
-# would report nothing -- and the self-improvement path is exactly such a pass.
-GUARDED_RECORD='ai-docs/fixtures/plan-invariants.inventory'
-
-# The verification's own entry point. It is NOT guarded -- editing it is not
-# refused -- and it appears here only so the basename fast path below cannot
-# return before the acceptance condition is reached: an acceptance invocation
-# names this file rather than any guarded path.
-VERIFICATION='scripts/check-plan-invariants.sh'
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd) || exit 0
 "${HERE}/harness-managed.sh" || exit 0
@@ -121,11 +94,9 @@ rel_of() {
 
 is_protected() {
   [ -n "${1:-}" ] || return 1
-  for q in $PROTECTED $GUARDED_RECORD; do [ "$1" = "$q" ] && return 0; done
+  for q in $PROTECTED; do [ "$1" = "$q" ] && return 0; done
   return 1
 }
-
-is_record() { [ "${1:-}" = "$GUARDED_RECORD" ]; }
 
 HITS=""
 record_hit() {
@@ -142,32 +113,18 @@ emit() { # <marker-and-reason>
   exit 0
 }
 
-# The two guarded classes are refused for DIFFERENT reasons, so the message
-# carries the reason that applies rather than one that covers both loosely. A
-# command reaching both gets both sentences, in that order.
-why_for() { # <hits>
-  pages=0; rec=0
-  for h in $1; do
-    if is_record "$h"; then rec=1; else pages=1; fi
-  done
-  w=""
-  [ "$pages" = 1 ] && w="That page defines or enforces a required element of a spec or a design, so EVERY edit to it is put to you, whatever the edit touches: a typo fix in an unrelated paragraph is refused exactly as a change to the required-element set is."
-  [ "$rec" = 1 ] && w="${w:+$w }That file is the recorded statement inventory the verification compares this tree against, so levelling it is how a change to instruction material stops being reported -- which is why an edit to it, and an acceptance run that rewrites it, are put to you just as an edit to a protected page is."
-  printf '%s' "$w"
-}
-
-reason_for() { # <lead> <pages> <why>
+reason_for() { # <lead> <pages>
   r="${CLAUDE_PLUGIN_ROOT:-}"
   a=$("${HERE}/plugin-ref.sh" docs/plan-invariants.md 2>/dev/null)
   [ -n "$a" ] || a="${r:+$r/}docs/plan-invariants.md — correct operation of the plugin requires read access to the plugin directory${r:+ $r}"
-  printf '%s -- %s. %s ALLOWING this call lets the edit proceed, which is the authorisation route rather than a way round it -- installing or repairing this protection never requires switching it off. What makes a page a member, the seven members with a reason each, and the near misses deliberately left out: %s.' \
-    "$1" "$2" "$3" "$a"
+  printf '%s -- %s. That page defines or enforces a required element of a spec or a design, so EVERY edit to it is put to you, whatever the edit touches: a typo fix in an unrelated paragraph is refused exactly as a change to the required-element set is. ALLOWING this call lets the edit proceed, which is the authorisation route rather than a way round it -- installing or repairing this protection never requires switching it off. What makes a page a member, the seven members with a reason each, and the near misses deliberately left out: %s.' \
+    "$1" "$2" "$a"
 }
 
 if [ -n "$fp" ]; then
   record_hit "$fp"
   [ -n "$HITS" ] || exit 0
-  emit "$(reason_for 'CONFIRM: this edit targets a protected plan-invariants page' "$HITS" "$(why_for "$HITS")")"
+  emit "$(reason_for 'CONFIRM: this edit targets a protected plan-invariants page' "$HITS")"
 fi
 
 [ -n "$cmd" ] || exit 0
@@ -176,34 +133,11 @@ fi
 # a command carrying none of them cannot be one of those forms. The forms that
 # hide the basename -- a glob, a substitution, a list read from a file -- are the
 # stated residual, not something this fast path gives up.
-#
-# THE VERIFICATION'S OWN BASENAME IS IN THIS TOKEN SET and that placement is
-# load-bearing: an acceptance invocation names the verification rather than any
-# guarded path, so without it this fast path would return before the acceptance
-# condition below was ever reached. Admitting the token costs no surplus,
-# because what fires is still decided by is_protected, and the entry point is in
-# neither guarded list.
 seen_basename=0
-for q in $PROTECTED $GUARDED_RECORD $VERIFICATION; do
+for q in $PROTECTED; do
   case "$cmd" in *"${q##*/}"*) seen_basename=1; break ;; esac
 done
 [ "$seen_basename" = 1 ] || exit 0
-
-# THE THIRD CONDITION CLASS, beside the two the arm already carries. The other
-# two ask whether a command carries a write CONSTRUCT and whether one of that
-# construct's write operands resolves into a guarded path; this one matches on
-# the SHAPE OF THE INVOCATION, because an acceptance run rewrites the record
-# without any write construct appearing in the command at all.
-#
-# Its two residuals, both under-firing and both asserted in the suite: the
-# payload invoked directly, which never spells the entry point this matches on,
-# and the flag reached through a variable or a shell alias rather than spelled.
-case "$cmd" in
-  *"${VERIFICATION##*/}"*)
-    case "$cmd" in
-      *--accept*) record_hit "$GUARDED_RECORD" ;;
-    esac ;;
-esac
 
 # THE EIGHT SEGMENTATION CHARACTERS, as data, because three steps read them: the
 # neutralisation below, the padding after it and the translation that feeds the
@@ -514,4 +448,4 @@ EOF
 fi
 
 [ -n "$HITS" ] || exit 0
-emit "$(reason_for 'CONFIRM: this command writes to a protected plan-invariants page' "$HITS" "$(why_for "$HITS")")"
+emit "$(reason_for 'CONFIRM: this command writes to a protected plan-invariants page' "$HITS")"

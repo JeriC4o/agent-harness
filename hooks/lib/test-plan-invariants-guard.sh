@@ -70,15 +70,8 @@ scripts/test-check-redline.sh
 skills/interview/SKILL.md
 docs/workflow.md'
 
-# The record is guarded by a list of its own, so it is named here by itself. It
-# is NOT one of the protected pages: it defines no required element, and the
-# verification's refusal-agreement leg would report it as a surplus
-# interruption if the guard carried it in that list.
-RECORD='ai-docs/fixtures/plan-invariants.inventory'
-VERIFICATION='scripts/check-plan-invariants.sh'
-
 build_tree(){ # <root>
-  for rel in $PROTECTED_PAGES $NEAR_MISSES $VERIFICATION SKILL.md; do
+  for rel in $PROTECTED_PAGES $NEAR_MISSES SKILL.md; do
     case "$rel" in */*) mkdir -p "$1/${rel%/*}" ;; esac
     : > "$1/$rel"
   done
@@ -86,12 +79,6 @@ build_tree(){ # <root>
 build_tree "$PROJ"
 build_tree "$PLAIN"
 : > "$PROJ/AGENTS.md"
-# The record is created in the MANAGED fixture only. Its directory is one of the
-# two markers the harness-managed guard keys on, so creating it in the unmanaged
-# fixture would make that fixture managed and every no-op assertion below would
-# pass for the wrong reason -- measured, by doing exactly that.
-mkdir -p "$PROJ/${RECORD%/*}"
-: > "$PROJ/$RECORD"
 check "the managed fixture carries the marker the guard keys on" \
   "$( [ -f "$PROJ/AGENTS.md" ] && echo yes || echo no )" "yes"
 check "the unmanaged fixture carries neither marker" \
@@ -159,71 +146,6 @@ $out
 EOF
 then bad "an unexpanded plugin-root token reached the reason"
 else ok "no unexpanded plugin-root token in the reason" ; fi
-
-printf '\n== the record: both firing directions, because neither is observable from the other ==\n'
-asks   "an edit to the record is put to the author" "$(ed_payload "${PROJ}/${RECORD}")"
-sh_asks "a shell write to the record fires"         "printf x >> ${RECORD}"
-sh_silent "a READ of the record is silent"          "cat ${RECORD}"
-sh_silent "and so is a sed -n range over it"        "sed -n '1,5p' ${RECORD}"
-
-out=$(fire "$(ed_payload "${PROJ}/${RECORD}")")
-case "$(reason "$out")" in
-  *"$RECORD"*) ok "the reason names the record" ;;
-  *) bad "the reason does not name the record: [$(reason "$out")]" ;;
-esac
-# The record is refused for a different reason from a protected page, so the
-# message carries that reason rather than one that covers both loosely.
-case "$(reason "$out")" in
-  *'recorded statement inventory'*) ok "and says why levelling it is what is being authorised" ;;
-  *) bad "the record's refusal does not say why the record is guarded" ;;
-esac
-case "$(reason "$out")" in
-  *'defines or enforces a required element'*)
-    bad "the record's refusal claims it defines a required element, which it does not" ;;
-  *) ok "and does not claim the record defines a required element" ;;
-esac
-
-printf '\n== the acceptance route: a third condition class, matching the INVOCATION ==\n'
-# An acceptance run rewrites the record with no write construct anywhere in the
-# command, so neither of the arm's other two conditions can see it.
-sh_asks "an acceptance run fires"                      "bash ${VERIFICATION} --accept"
-sh_asks "and so does one with a root override first"   "bash ${VERIFICATION} --root . --accept"
-sh_asks "and one reached through a leading cd"         "cd scripts && bash check-plan-invariants.sh --accept"
-sh_silent "while an ORDINARY run of the same check is silent" "bash ${VERIFICATION}"
-sh_silent "and a read of the entry point is silent"    "cat ${VERIFICATION}"
-sh_silent "and an edit to the entry point is not refused -- it is not guarded" \
-          "printf x >> ${VERIFICATION}"
-
-# The fast path returns early on a command naming no guarded basename, and an
-# acceptance invocation names the verification rather than the record. If the
-# entry point's own basename were not in that token set, every assertion above
-# would pass for the wrong reason -- the mutant shows the token set is what
-# carries them.
-MUT_A="${WORK}/no-verification-token.sh"
-sed 's@^for q in \$PROTECTED \$GUARDED_RECORD \$VERIFICATION; do$@for q in $PROTECTED $GUARDED_RECORD; do@' \
-  "$GUARD" > "$MUT_A"
-chmod +x "$MUT_A"
-if cmp -s "$GUARD" "$MUT_A"; then
-  bad "the fast-path mutation did not apply, so this control measures nothing"
-else
-  ok "the mutation applied"
-  d=$(decision "$(fire "$(sh_payload "printf x >> ${RECORD}")" "$PROJ" "$MUT_A")")
-  check "  the mutant still fires on a write to the record, so it is running" "${d:-silent}" "ask"
-  n=$(fire "$(sh_payload "bash ${VERIFICATION} --accept")" "$PROJ" "$MUT_A" | wc -c | tr -d ' ')
-  check "  and without the entry point's token the acceptance run walks straight past" "$n" "0"
-fi
-
-printf '\n== the acceptance condition'"'"'s two residuals, both under-firing ==\n'
-sh_silent "1. the payload invoked directly never spells the entry point" \
-          "python3 scripts/check-plan-invariants.py . accept ${RECORD}"
-sh_silent "2. the acceptance flag reached through a variable set in another call" \
-          "bash ${VERIFICATION} \"\$ACCEPT_FLAG\""
-# The neighbouring case that is NOT a residual, and the pair is what shows where
-# the boundary sits: assigning the flag in the SAME command still spells it in
-# the string this condition matches, so that spelling fires. The residual is
-# only a flag the command string does not carry at all.
-sh_asks "while assigning the flag in the same command still fires" \
-        "F=--accept; bash ${VERIFICATION} \$F"
 
 printf '\n== the shell arm, direct write forms ==\n'
 sh_asks   "an in-place edit fires"            "sed -i '' agents/design.md"
@@ -374,9 +296,6 @@ sh_asks   "backticked text replaced inside a double-quoted script fires" \
 sh_silent "  while a grep over backticked text is silent"     "grep -n \"a\\\`b\\\`c\" agents/design.md"
 sh_asks   "reached through a leading cd it still fires"       "cd agents && sed -i '' 's|a|b|g' design.md"
 sh_silent "  while the same cd with a read is silent"         "cd agents && grep -n 'a|b' design.md"
-sh_asks   "and it fires on the guarded record, which the same arm reads" \
-          "sed -i '' 's|a|b|g' ${RECORD}"
-sh_silent "  while a read of the record in that spelling is silent" "grep -n 'a|b' ${RECORD}"
 
 printf '\n== the basename collision the resolution exists to get right ==\n'
 # SKILL.md names two protected pages and eleven unprotected ones; reference.md
@@ -520,26 +439,6 @@ case "$FIRST" in
 esac
 check "the entry point the manifest invokes by path is executable" \
   "$(git -C "$ROOT" ls-files -s hooks/lib/plan-invariants-guard.sh | awk '{print $1}')" "100755"
-
-printf '\n== the record is guarded by a list of its OWN, not by the protected-page list ==\n'
-# The verification compares PROTECTED against the protected-page table in both
-# directions, so a record admitted to that list would be reported as a surplus
-# interruption. Asserted here as well as there, because this is the file whose
-# data the other one reads.
-PROT=$(sed -n "/^PROTECTED='/,/'$/p" "$GUARD")
-case "$PROT" in
-  *"$RECORD"*) bad "the record is inside PROTECTED, which the refusal-agreement leg will report as surplus" ;;
-  *) ok "the record is absent from PROTECTED" ;;
-esac
-REC=$(sed -n "/^GUARDED_RECORD='/,/'$/p" "$GUARD")
-case "$REC" in
-  *"$RECORD"*) ok "and present in the one-member list of its own" ;;
-  *) bad "GUARDED_RECORD does not name the record: [$REC]" ;;
-esac
-case "$PROT" in
-  *'agents/design.md'*) ok "while PROTECTED still carries the pages that do define an element" ;;
-  *) bad "PROTECTED no longer carries agents/design.md, so the extraction above is reading nothing" ;;
-esac
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

@@ -163,12 +163,11 @@ def provenance(doc, body, units, built):
 # the token itself -- so swapping one anchor for another is an arrival rather
 # than a wash, which a per-file count could not have seen.
 #
-# AN EMPTY RECORD IS LEGITIMATE WHERE AN ABSENT ONE IS NOT, which is the
-# OPPOSITE polarity from the statement inventory's record, and the comparison is
-# the reason. Empty here means nothing is accounted for, so every position is an
-# arrival and the failure direction is loud. Absent means the comparand could
-# not be read at all, and a sweep against nothing must not report what it found
-# as arrivals it established.
+# AN EMPTY RECORD IS LEGITIMATE WHERE AN ABSENT ONE IS NOT. Empty here means
+# nothing is accounted for, so every position is an arrival and the failure
+# direction is loud. Absent means the comparand could not be read at all, and a
+# sweep against nothing must not report what it found as arrivals it
+# established.
 #
 # THE RECORD IS SKIPPED BY THE SWEEP THAT READS IT. Every row carries the token
 # it accounts for, so a record inside its own input set would justify each of
@@ -176,10 +175,10 @@ def provenance(doc, body, units, built):
 #
 # WHAT LEVELS THE RECORD IS NOT HERE, and that is a gap rather than a choice.
 # The design behind this class gives the record an explicit act that prints what
-# it is about to take in, the way the statement inventory's acceptance does, and
-# no row of the plan that builds this check delivers one. So the record moves by
-# a hand edit today, and every arrival finding prints the row that would account
-# for it, which is what keeps that edit from needing a second derivation.
+# it is about to take in, and no row of the plan that builds this check delivers
+# one. So the record moves by a hand edit today, and every arrival finding
+# prints the row that would account for it, which is what keeps that edit from
+# needing a second derivation.
 BASELINE_RECORD = 'ai-docs/fixtures/positional-references.baseline'
 
 PATH_LINE = re.compile(r'(?<![\w/])([A-Za-z0-9_][\w./-]*\.([A-Za-z0-9]{1,10})):(\d+(?:-\d+)?)(?![\w])')

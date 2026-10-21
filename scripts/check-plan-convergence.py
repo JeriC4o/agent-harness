@@ -225,14 +225,11 @@ def region(body, token):
 # ---------------------------------------------------------------------------
 # Statements.
 #
-# NOT THE STATEMENT INVENTORY'S SEGMENTER, and the two differences are the
-# reason rather than an oversight. A fenced block is DROPPED here, because a
-# template or a command is not something this check rules on, while the
-# inventory must compare it as a unit. And a semicolon does not cut a unit here,
-# because the provenance obligation is written as "in the same sentence" and a
-# clause after a semicolon is still that sentence -- cutting there would report
-# a figure whose own sentence named its kind. Two consumers with opposite
-# dispositions do not share one function; a third would be worth extracting for.
+# A fenced block is DROPPED, because a template or a command is not something
+# this check rules on. And a semicolon does not cut a unit, because the
+# provenance obligation is written as "in the same sentence" and a clause after
+# a semicolon is still that sentence -- cutting there would report a figure
+# whose own sentence named its kind.
 # ---------------------------------------------------------------------------
 # The heading each statement sits under, which is the entity half of an excuse
 # key. The segmenter is the only pass that knows it, so it records it here as it

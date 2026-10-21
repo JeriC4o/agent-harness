@@ -9,12 +9,14 @@ requirement, and which pages deliberately do not.
 **The limit, stated first because a reader who takes a clean verification for a proof has misread it.** An
 edit that contradicts a principle, or that adds a required element, is **caught and named — never
 prevented**. The mechanism makes such an edit impossible to make *silently*; it does not make it
-impossible to make. Three further bounds follow from that one and are stated where they bite: the
-comparison reports a change to a statement's TEXT and never a meaning, so a mandate a reader infers from
-a statement whose words did not move is not an arrival and is not reported; the record the comparison
-reads can itself be brought level in the same pass as the change it would have reported, as far as the
-edit-time refusal does not reach; and that refusal recognises an edit by its shape, so a writer it does
-not recognise reaches the page and is then caught by the comparison instead.
+impossible to make. One further bound follows from that one, and it is the widest: the edit-time refusal
+recognises an edit by its SHAPE, so a writer it does not recognise reaches the page, and what reads the
+change there is a human reading a diff. Two classes of change are from now on caught by the pull-request
+diff and by nothing mechanical: a mandate arriving on an examined page that the element derivation does
+not read, in words the coverage sweep does not recognise; and a change to prose that is not one of the
+principles' own numbered sentences, those sentences being the only prose any surviving comparison pins, so
+the explanatory paragraphs around them, and prose anywhere else on the examined surfaces, are pinned by
+nothing.
 
 ## The base principles
 
@@ -158,7 +160,12 @@ recurring interruption.
 ## The near misses
 
 These pages touch document composition, or could, and are deliberately outside the refusal. Each one
-stays inside the detection.
+stays inside the detection, in the width § Two surfaces states for it: every page named here is on one of
+the five examined surfaces. **What reads a page FOR a rule that makes an element required is narrower than
+that**, and two rows below sit partly outside it — the coverage sweep skips the principles page,
+the guard and every `test-*.sh` before it inspects anything, so the row naming `scripts/test-check-redline.sh`
+and its siblings is a corpus member and nothing more, and the enforcement row holds for `hooks/hooks.json`,
+which the sweep does read, but not for the guard or the seven `hooks/lib/test-*.sh` beside it.
 
 | Page | Why it is out |
 |---|---|
@@ -177,16 +184,16 @@ describes ship either way.
 
 | Surface | What it covers |
 |---|---|
-| The refusal | The seven pages above, and the comparison record the verification reads — nothing else. The record is guarded for a different reason from the pages: it defines no required element, so it is deliberately not in the protected-page table, and it is refused so that a pass editing instruction material cannot also level the record behind the change it would have reported |
+| The refusal | The seven pages above — nothing else |
 | The detection | The instruction material on five named surfaces — the project profile, the method pages, the scaffolding a consuming project receives, the text the enforcement layer writes into context as a session or a tool use begins, and the checks and suites where element lists live as data. Not everything an agent reads: a tracked file outside all five is outside the detection, which is what the three named exclusions and the report's own count of unaccounted files exist to say out loud |
 
 **Being outside the refusal is never being outside the detection — for every surface the detection
-examines.** A mandate landing on an unrefused page of those five, or in text that no page carries, is
-still caught and named; one landing on a surface that is deliberately out is not, which is why the three
-exclusions below are named with their reasons and their sizes. The report says which surfaces it
-examined and which it did not, because a surface that was not examined is a different outcome from one
-examined and found clean — and a decision to leave a surface freely editable must not quietly also remove
-it from what is checked.
+examines.** A mandate landing on an unrefused page of those five is still caught and named, as far as the
+element derivation reads the page that carries it and the coverage sweep recognises the words it arrives
+in; one landing on a surface that is deliberately out is not, which is why the three exclusions below are
+named with their reasons and their sizes. The report says which surfaces it examined and which it did not,
+because a surface that was not examined is a different outcome from one examined and found clean — and a
+decision to leave a surface freely editable must not quietly also remove it from what is checked.
 
 Three surfaces are deliberately out of the detection, and the report names each one with its reason
 rather than omitting it: the plan documents themselves, which are the artefacts under these rules and
@@ -194,9 +201,8 @@ which quote principle text by construction; the learning record, where an entry 
 a rule; and the repository's own mechanics — what configures the repository, what declares the plugin, and
 committed measurement data — where the ground is not that nobody reads them but that none of them states a
 rule a spec or a design is held to. Each exclusion carries a membership rule and not only a name, so the
-three together with the comparison record — accounted for by name because it is one file rather than a
-class — account for every tracked file that is on no examined surface, and the report counts what neither
-a surface nor an exclusion claims. **That count should be zero, and a non-zero one is the report
+three together account for every tracked file that is on no examined surface, and the report counts what
+neither a surface nor an exclusion claims. **That count should be zero, and a non-zero one is the report
 saying nothing at all about those files.** It is the figure that would have caught eight tracked files
 sitting outside both sets while every run read as clean.
 
@@ -214,7 +220,6 @@ halves, which is exactly what "not silently" means.
 | Adding a principle | The same route, because an addition can contradict a sentence already here |
 | Adding or removing a required element | Edit the page that mandates it and the record on this page; a one-sided edit is reported in whichever direction it went |
 | Any edit to a protected page | Allow the refusal when it fires. Allowing it lets the edit proceed, so installing or repairing this protection never requires switching it off |
-| Bringing the record level after a change you have read and accepted | Run the verification's own acceptance route, which prints the report it is about to take in before it rewrites the record, so nothing is accepted unread. No other command and no part of an ordinary gate run advances the record, and the acceptance run is itself put to the author — so a pass that edits instruction material cannot quietly level the record behind the change it would have reported |
 
 **A correction recorded in the learning record never travels this route automatically.** An entry whose
 remedy would change either document's composition, or change, weaken or remove a principle, is surfaced
