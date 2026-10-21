@@ -102,34 +102,21 @@ is the same commands.
    delivery gate already numbered 6; item 3's `(folded into 2)` is the precedent for a non-sequential
    entry here, and renumbering would break `AGENTS.md`'s own "invisible to gate 6" reference below. The
    same reasoning numbers the next one `5b`.
-5b. `bash scripts/check-plan-invariants.sh` — four legs over the base principles of a spec and a design:
+5b. `bash scripts/check-plan-invariants.sh` — three legs over the base principles of a spec and a design:
    each pinned sentence present and unchanged, with an ABSENCE reported distinctly from a WORDING
-   difference; the tree's whole statement inventory compared against the recorded one at
-   `ai-docs/fixtures/plan-invariants.inventory`, every statement that ARRIVED, DEPARTED, CHANGED or — in
-   a file taking the code spelling — MOVED reported with its own text, its surface and, on a change, what
-   it said before, and no region of an examined surface exempt, so a change can be missing from the
-   report only by not having happened. **The fourth answer is deliberately narrower than the other
-   three**: in a script a line's position is semantics, and moving one `exec` above three cannot-run
-   guards left the line multiset identical while making all three unreachable, whereas a moved paragraph
-   is a re-wrap and not a change — so prose keeps position-independence and only the code spelling is
-   compared in order; then the required-element set derived from three loci and cross-checked against the
+   difference; the required-element set derived from three loci and cross-checked against the
    enumeration on `docs/plan-invariants.md`, in both directions, so neither a widened template nor a
    widened enumeration moves on its own; and the live coverage of the edit-time refusal against that
-   page's protected-page table, also in both directions. **The second leg reads no sentence and rules on nothing** — whether a
-   reported change does harm is a reader's judgement, and once a reader has made it,
-   `check-plan-invariants.sh --accept` prints the report it is about to take in and then levels the
-   record. That is the only thing that advances the record, which is why the gate has a steady state
-   instead of reddening at the first legitimate edit and staying red. Exits
+   page's protected-page table, also in both directions. Exits
    `0 clean / 1 findings / 2 cannot run` — **a cannot-run is not a pass**, and an unreadable required
-   input, a template that moved, an empty extraction, a record that is absent, unreadable, empty or names
-   a blob this repository can no longer produce, an unreadable corpus file, and an untracked payload or
-   record all take that branch rather than reading as agreement. Its verdict line carries the principle,
-   element, surface, page, statement, unaccounted and finding counts, followed by a roster marking each
+   input, a template that moved, an empty extraction, an unreadable corpus file and an untracked payload
+   all take that branch rather than reading as agreement. Its verdict line carries the principle,
+   element, surface, page, unaccounted and finding counts, followed by a roster marking each
    surface examined-clean, examined-with-findings or not-examined and naming the three excluded by design
-   with their reason, so a run that silently compared fewer statements or examined fewer surfaces than
-   the corpus holds is distinguishable from a clean one: **read those counts and that roster, not only
-   the exit status.** `unaccounted` reads the other way from the five figures beside it — those should be
-   large and it should be zero, because a non-zero value names tracked files on no examined surface and
+   with their reason, so a run that silently examined fewer surfaces or fewer pages than the corpus holds
+   is distinguishable from a clean one: **read those counts and that roster, not only the exit status.**
+   `unaccounted` reads the other way from the four measurement figures beside it — those should be large
+   and it should be zero, because a non-zero value names tracked files on no examined surface and
    in no named exclusion, about which the report then says nothing at all. It needs `python3` as its
    scanning tool and says so when it is absent — the host `grep` is not a substitute, having been
    measured answering `0` to a pattern it refused on a complexity limit.

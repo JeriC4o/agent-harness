@@ -1,0 +1,18 @@
+# Redline log: Removing the statement-inventory comparison
+
+**Tracked in:** GH-130
+**Spec:** ai-docs/plans/2026-10-21-remove-statement-inventory.spec.md
+**Design:** ai-docs/plans/2026-10-21-remove-statement-inventory.design.md
+**Mode:** Hybrid — the work changes a shape already measured: `### The size pressure the removal relieves`
+states the comparison leg's span at 453 lines and `### The corpus survives the removal, which is what makes
+the shape cheap` counts 33 of 137 corpus pages as never reaching the shape test, while the single
+`## Open questions` item says of itself that it "changes neither the approach above, nor what the system
+must do, nor how the work breaks up" — a question the work answers rather than a hole in the base.
+
+Each row below marks an item of the frozen design that what shipped departed from. The code fix for the
+same finding proceeds in its own round; this log records only the divergence that survived it.
+
+| Key | Type | Artefact sentence diverged from | What shipped instead |
+|---|---|---|---|
+| R1.1 | modified | `ai-docs/plans/2026-10-21-remove-statement-inventory.design.md` § Two surfaces need re-authoring rather than trimming — "That page's near-miss section opens by saying each near miss stays inside the detection, which stays true in that narrower sense and is qualified rather than cut." | the preamble's qualification ships narrower than the design states it: the detection reads five of the seven near-miss rows for a rule that makes an element required, while the row naming the suites and the row naming the enforcement layer stay inside it only as corpus members, the per-page locus sweep skipping both. The skipping is three `continue` arms in the locus sweep of `scripts/check-plan-invariants-refusal.py` — the principles document, the guard, and every `test-*.sh` — all taken before `defines_element` is reached, so those pages are corpus members no shape test ever reads. The qualification narrowed WHAT the detection looks for and left EACH ONE universal, which is the wrong dimension; the approach is untouched, so this is a marker and a row rather than an amendment |
+| R2.1 | removed | `ai-docs/plans/2026-10-21-remove-statement-inventory.design.md` § Decomposition, row 4 — "Strip from the refusal's own suite the record's two firing directions, the acceptance route with its fast-path control, the acceptance residuals and the guarded-record agreement, and the two fixture spellings they used; re-author the header" | the row's directive went uncarried-out because it had no subject: `hooks/lib/test-plan-invariants-guard.sh`'s header is byte-identical to its base-commit form, nothing in it having named the record, the acceptance route, or a count either removal moved, so the implementing group left the header alone rather than touching it to satisfy the sentence. The file's whole diff starts 39 lines below the header's last line, at the `PROTECTED_PAGES` data; the departure is deliberate and correct and survives only in the gitignored working record, so the shipped tree needs no edit and only the frozen design's directive is stale. The type is `removed` rather than `modified` because relative to the frozen base the directive's SUBJECT is absent rather than altered — no re-authored header shipped in any form, which is a different shape from `R1.1`, where a directed act shipped narrower than directed. The header's own one count, the six residual forms asserted silent, reads six in the base commit and six now: the removal that moved a silent-form figure moved the GUARD's, and the banner it retired was the acceptance condition's two residuals in the suite body, 185 lines below the header. The approach is untouched, so this is a marker and a row rather than an amendment |

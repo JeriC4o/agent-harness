@@ -1,5 +1,5 @@
-# Leg 4 of check-plan-invariants.py: refusal agreement. The payload beside this
-# file owns the corpus, the other three legs and the report; this holds leg 4 and
+# Leg 3 of check-plan-invariants.py: refusal agreement. The payload beside this
+# file owns the corpus, the other two legs and the report; this holds leg 3 and
 # nothing else.
 #
 # THE COVERED SET IS READ FROM THE GUARD'S DATA **AND** FROM ITS REGISTRATION.
@@ -9,13 +9,11 @@
 #
 # WHY IT IS A SECOND FILE AT ALL. The payload crossed this repository's hard
 # 1000-line limit, whose two documented exemptions -- auto-generated code and
-# single large expressions -- fit no hand-written script, so one leg moves out;
-# the per-file route that does fit is the Thousand-line exemption row in
-# ai-docs/context.md, which the payload now holds. This span was measured the
-# cheapest of the three candidates: it is a pure SINK. Of the nine names it
-# defines, not one is read anywhere else in the payload -- context in, findings
-# appended, nothing exported -- where leg 3 exports two names and leg 2 four
-# over 381 lines.
+# single large expressions -- fit no hand-written script, so one leg moved out.
+# This span was measured the cheapest of the three candidates: it is a pure
+# SINK. Of the nine names it defines, not one is read anywhere else in the
+# payload -- context in, findings appended, nothing exported -- while every
+# other candidate exported names the payload reads back.
 #
 # WHAT A BROKEN SIBLING COSTS, and where that is guarded. A sibling that exists
 # but cannot be EXECUTED is the failure mode the design named when it chose one
@@ -32,8 +30,8 @@ import re
 
 
 def run(ctx):
-    """One entry, taking the eleven names this leg reads from the payload as a
-    mapping rather than as a parameter list. Ten of them come through `ctx` and
+    """One entry, taking the ten names this leg reads from the payload as a
+    mapping rather than as a parameter list. Nine of them come through `ctx` and
     `re` is imported above; a positional signature of that width is one
     transposed argument away from a silent defect, which is the class of mistake
     this whole check exists to make loud."""
@@ -44,7 +42,6 @@ def run(ctx):
     surface_of = ctx['surface_of']
     doc_body = ctx['doc_body']
     PRINCIPLES_DOC = ctx['PRINCIPLES_DOC']
-    RECORD = ctx['RECORD']
     PLAN_TOKENS = ctx['PLAN_TOKENS']
     CORPUS = ctx['CORPUS']
 
@@ -61,27 +58,6 @@ def run(ctx):
                     % GUARD)
         else:
             COVERED = set(x.strip() for x in m.group(1).split('\n') if x.strip())
-        # The guard's SECOND list, read separately and deliberately kept out of
-        # COVERED: the record defines no required element, so the protected-page
-        # comparison below would report it as a surplus interruption -- correctly.
-        # Its own agreement is this one, in both directions, following the
-        # derived-arms precedent: the path this check reads as the record must be
-        # the path the guard guards. One side alone is satisfiable by a guard that
-        # guards nothing, and the other by a guard that guards the wrong file.
-        m = re.search(r"(?ms)^GUARDED_RECORD='(.*?)'", _g)
-        if not m or not m.group(1).strip():
-            blocked('%s carries no readable GUARDED_RECORD assignment, so whether the record is guarded at all cannot be read'
-                    % GUARD)
-        else:
-            guarded_record = set(x.strip() for x in m.group(1).split('\n') if x.strip())
-            for p in sorted(guarded_record - {RECORD}):
-                finding('leg4-record-surplus',
-                        'the refusal guards %s as the comparison record, which is not the path this check reads (%s) -- the guard is protecting a file nothing compares against'
-                        % (p, RECORD), surface_of(GUARD))
-            for p in sorted({RECORD} - guarded_record):
-                finding('leg4-record-unguarded',
-                        'this check reads %s as the comparison record and the refusal does not guard it -- an edit could level the record in the same pass as the change it would have reported'
-                        % p, surface_of(GUARD))
 
     _reg = read(REGISTRY)
     if _reg is None:
@@ -91,7 +67,7 @@ def run(ctx):
             pat = r'"matcher":\s*"%s".*?(?=\{\s*"matcher"|\],\s*"PostToolUse"|\Z)' % re.escape(matcher)
             grp = re.search(pat, _reg, re.S)
             if grp is None or 'hooks/lib/plan-invariants-guard.sh' not in grp.group(0):
-                finding('leg4-registration',
+                finding('leg3-registration',
                         'the refusal is not registered on the %s matcher in %s, so its page list is not coverage at all'
                         % (matcher, REGISTRY), surface_of(REGISTRY))
 
@@ -137,20 +113,20 @@ def run(ctx):
                         % PRINCIPLES_DOC)
 
     for p in sorted(NEAR_MISSES & COVERED):
-        finding('leg4-near-miss',
+        finding('leg3-near-miss',
                 '%s is documented as a deliberate near miss in %s and the refusal covers it anyway -- the covered-versus-table comparison cannot see this, because both of those agree'
                 % (p, PRINCIPLES_DOC), surface_of(p))
     for p in sorted(NEAR_MISSES & TABLE):
-        finding('leg4-near-miss',
+        finding('leg3-near-miss',
                 '%s is in BOTH the protected-page table and the near-miss table in %s, so the page set contradicts itself'
                 % (p, PRINCIPLES_DOC), surface_of(p))
 
     for p in sorted(COVERED - TABLE):
-        finding('leg4-surplus',
+        finding('leg3-surplus',
                 'the refusal covers %s, which the protected-page table in %s does not name -- every surplus member is a recurring interruption'
                 % (p, PRINCIPLES_DOC), surface_of(p))
     for p in sorted(TABLE - COVERED):
-        finding('leg4-uncovered',
+        finding('leg3-uncovered',
                 'the protected-page table names %s, which the refusal does not cover -- an UNGUARDED ROUTE'
                 % p, surface_of(p))
 
@@ -212,10 +188,10 @@ def run(ctx):
             continue
         has = defines_element(path, body)
         if has and path not in TABLE:
-            finding('leg4-unguarded',
+            finding('leg3-unguarded',
                     '%s carries an element-defining locus and the refusal does not cover it -- an unguarded route'
                     % path, surface_of(path))
         if not has and path in TABLE:
-            finding('leg4-no-locus',
+            finding('leg3-no-locus',
                     '%s is in the protected-page table but carries no element-defining locus any more, so it is a surplus interruption'
                     % path, surface_of(path))
