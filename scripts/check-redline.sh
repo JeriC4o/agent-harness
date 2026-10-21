@@ -6,7 +6,6 @@
 # Run:  check-redline.sh pending     <plans-dir>
 #       check-redline.sh folded      <spec> <design>
 #       check-redline.sh suppression <file>
-#       check-redline.sh acintent    <spec> <design>
 #       check-redline.sh revision    <file>
 #       check-redline.sh paired      <design> <log>
 #       check-redline.sh specform    <spec>
@@ -32,12 +31,13 @@
 # the rule necessarily does. That is why it is a SPOT-CHECK the FOLD runs as its
 # own step -- `skills/redline-fold/SKILL.md` calls `revision <design>` directly
 # -- and NOT a leg inside `folded`, which checks the retained spec sections, the
-# residue headings, the marker and the log and never reads the phrase list. The
-# distinction is worth the sentence: a comment that promises a leg the code does
-# not have is the quietest kind of false green, and this one is the phrase list's
-# only caller outside its own suite. Likewise the assertion that every section
-# describes the shipped state is a judgement step in the fold's brief, not a leg
-# here. A fragment
+# residue headings, the marker, the log and the record of excused findings, and
+# never reads the phrase list. The distinction is worth the sentence: a comment
+# that promises a leg the code does not have is the quietest kind of false green,
+# and this one is the phrase list's only caller outside its own suite. Likewise
+# the fold's judgement step -- reading the CORRECTED ITEMS and vouching for them
+# -- lives in the fold's brief and is not a leg here, and its subject is the
+# items a log row was recorded against rather than every section. A fragment
 # search for superseded material is actively misleading, not merely weak: a
 # document that records its own corrections holds the superseded wording inside
 # a quotation, so an absence proved from a fragment is a false positive.
@@ -51,7 +51,7 @@
 # by the narrower pattern is a false green, so the wider one is part of the
 # check. The verb then asserts a per-line DISPOSITION rather than a count: of
 # the four the disjunction reaches in that file, two confer suppression and must
-# name the spec alone, one is the AC-verification re-run and is retained
+# name the spec alone, one is the use-case coverage check and is retained
 # verbatim, and one is a heading. It prints the enumerated count beside the
 # verdict, because an enumeration that silently narrowed its own input set is
 # the quietest false green there is.
@@ -71,7 +71,6 @@ die() { printf 'check-redline: %s\n' "$2" >&2; exit "$1"; }
 USAGE='usage: check-redline.sh pending     <plans-dir> [ref]
        check-redline.sh folded      <spec> <design>
        check-redline.sh suppression <file>
-       check-redline.sh acintent    <spec> <design>
        check-redline.sh revision    <file>
        check-redline.sh paired      <design> <log>
        check-redline.sh specform    <spec>'
@@ -97,6 +96,7 @@ A2=${3:-}
 # THE COUNT IS PART OF THE VERDICT, not decoration: an empty design and an empty
 # log pair vacuously, and `pairs=0` is the only thing that distinguishes "both
 # directions checked and agreed" from "there was nothing to check".
+# [do-paired]
 do_paired() { # <design> <log>
   local design=$1 log=$2 k pairs modeline='' modeblock='' rest='' mode='n/a'
   readable "$design" 'design'
@@ -159,10 +159,14 @@ do_paired() { # <design> <log>
         # THE GROUNDS MUST BE READ OFF THE DESIGN, not merely present. What is
         # assertable here is the CITATION, never which mode was recommended --
         # a check that judged the recommendation would be judging a judgement.
-        # A backticked token carrying a line number or a section heading is
-        # evidence pointing at the document; a preference carries neither.
+        # A backticked SECTION HEADING is evidence pointing at the document; a
+        # preference carries none. A line-addressed token used to satisfy this
+        # as well and no longer does: a position outlives nothing and the
+        # citation would be trusted without being re-derived, which is the
+        # anti-pattern the plan-convergence reference class reports. Grounds
+        # cite an entity.
         # The whole mode BLOCK is read rather than its first line, because the
-        # grounds wrap and the anchors land after the wrap in every real
+        # grounds wrap and the heading lands after the wrap in every real
         # example. Bound, stated as contract: this catches grounds that cite
         # NOTHING. It cannot tell a relevant citation from an irrelevant one,
         # and the reader the gate exists for -- the user confirming the
@@ -170,8 +174,8 @@ do_paired() { # <design> <log>
         modeblock=$(awk '/^\*\*Mode:\*\*/ { f = 1 }
                          f && /^[[:space:]]*$/ { exit }
                          f { print }' "$log")
-        printf '%s\n' "$modeblock" | grep -qE '`[^`]*(##|:[0-9]+)[^`]*`' \
-          || finding 'the mode grounds cite nothing from the design -- no backticked anchor and no section heading -- so there is no evidence to disagree with'
+        printf '%s\n' "$modeblock" | grep -qE '`[^`]*##[^`]*`' \
+          || finding 'the mode grounds cite no section of the design -- no backticked heading -- so there is no evidence to disagree with'
       fi
     fi
   fi
@@ -272,7 +276,7 @@ do_specform() { # <spec>
 }
 
 case $VERB in
-  pending|folded|suppression|acintent|revision|paired|specform) ;;
+  pending|folded|suppression|revision|paired|specform) ;;
   *) die 2 "$USAGE" ;;
 esac
 
@@ -314,27 +318,6 @@ the stale claim'
 SUPPRESSION_MARKERS='do not raise
 intentional
 suppress'
-
-# The purity half of `acintent` keys on a BACKTICKED token plus this bounded
-# list of bare command words, and that is its stated bound: a backtick is how
-# these documents spell an identifier, and the distinction the rule rests on is
-# that an identifier of the CHECK is chosen while the tests are written, while
-# the ARTEFACT under test is named in the spec and is not chosen later. Semantic
-# coverage -- does this check really establish that property -- stays the
-# reviewer's judgement and is not claimed here.
-ACINTENT_COMMANDS='bash
-sh
-git
-grep
-jq
-awk
-sed
-pytest
-shellcheck
-%TEST_CMD%
-%BUILD_CMD%
-%LINT_CMD%
-%FORMAT_CMD%'
 
 FINDINGS=0
 finding() { FINDINGS=$((FINDINGS + 1)); printf '  finding: %s\n' "$1"; }
@@ -394,7 +377,7 @@ do_pending() {
 
 # --- folded -----------------------------------------------------------------
 do_folded() {
-  local spec=$1 design=$2 sdir plans base h p log=''
+  local spec=$1 design=$2 sdir plans base h p log='' excuses=''
   readable "$spec" 'spec'
   readable "$design" 'design'
   sdir=$(dirname -- "$spec")
@@ -439,6 +422,21 @@ EOF
   done
   [ -z "$log" ] || finding "the redline log survives at ${log}, and the fold removes it"
 
+  # THE RECORD OF EXCUSED FINDINGS GOES WITH THE LOG, and it is asserted by the
+  # SAME literal-path construction rather than by a glob over the directory: a
+  # glob would also match a sibling plan's record, which this fold has no
+  # business removing and whose survival is correct. The plan's end of life ends
+  # the spot every row of it covers, so a surviving record means the same thing
+  # a surviving log does -- this pass did not finish. Reported SEPARATELY from
+  # the log, because the two do not always arrive together: a plan can waive a
+  # finding without ever diverging, so one finding naming both would leave the
+  # reader guessing which record actually survived.
+  for p in "${plans}/${base}.excuses.md" "${plans}/done/${base}.excuses.md"; do
+    [ -f "$p" ] || continue
+    excuses="${excuses}${excuses:+ }${p}"
+  done
+  [ -z "$excuses" ] || finding "the record of excused findings survives at ${excuses}, and the fold removes it with the log"
+
   printf 'check-redline: verb=folded verdict=%s findings=%s\n' "$(verdict_word)" "$FINDINGS"
   [ "$FINDINGS" -eq 0 ]
 }
@@ -482,61 +480,6 @@ EOF
   [ "$FINDINGS" -eq 0 ]
 }
 
-# --- acintent ---------------------------------------------------------------
-do_acintent() {
-  local spec=$1 design=$2 id line no body tok cmd ncrit=0 nintent=0
-  readable "$spec" 'spec'
-  readable "$design" 'design'
-  printf 'check-redline: verb=acintent spec=%s design=%s\n' "$spec" "$design"
-
-  awk '
-    /^## / { inside = ($0 ~ /^## Acceptance Criteria[[:space:]]*$/); next }
-    inside && /^[[:space:]]*\|/ {
-      n = split($0, f, "|"); if (n < 3) next
-      id = f[2]; gsub(/[[:space:]]/, "", id)
-      if (id ~ /^AC[0-9]+$/) print id
-    }' "$spec" > "${WORK}/ac-ids"
-  [ -s "${WORK}/ac-ids" ] \
-    || die 2 "${spec} carries no ## Acceptance Criteria table, so there are no criteria to cover"
-
-  while IFS= read -r id; do
-    [ -n "$id" ] || continue
-    ncrit=$((ncrit + 1))
-    grep -qF -- "${id} verified by:" "$design" \
-      || finding "${id} has no \`${id} verified by:\` intent line in the design"
-  done < "${WORK}/ac-ids"
-
-  grep -nE -- 'AC[0-9]+ verified by:' "$design" > "${WORK}/intents"
-  while IFS= read -r line; do
-    [ -n "$line" ] || continue
-    nintent=$((nintent + 1))
-    no=${line%%:*}
-    body=${line#*:}
-    for tok in $(printf '%s' "$body" | awk 'BEGIN { RS = "`" } NR % 2 == 0 { print }'); do
-      case $tok in
-        */*|*.sh|*.md|*.json|*.py|*.kt|*.java|*.ts|*'('*')'*)
-          finding "${design}:${no} names an identifier of the check rather than the intent -- [${tok}]" ;;
-      esac
-    done
-    while IFS= read -r cmd; do
-      case $cmd in
-        '%'*) if printf '%s' "$body" | grep -qF -- "$cmd"; then
-                finding "${design}:${no} names the command [${cmd}]"
-              fi ;;
-        *)    if printf '%s' "$body" | grep -qE -- "(^|[^A-Za-z0-9_-])${cmd}([^A-Za-z0-9_-]|\$)"; then
-                finding "${design}:${no} names the command [${cmd}]"
-              fi ;;
-      esac
-    done <<EOF
-$ACINTENT_COMMANDS
-EOF
-  done < "${WORK}/intents"
-
-  printf 'check-redline: verb=acintent verdict=%s criteria=%s intent_lines=%s findings=%s\n' \
-    "$(verdict_word)" "$ncrit" "$nintent" "$FINDINGS"
-  [ "$FINDINGS" -eq 0 ]
-}
-
 # --- revision ---------------------------------------------------------------
 do_revision() {
   local file=$1 phrase lines
@@ -558,7 +501,6 @@ case $VERB in
   pending)     do_pending "$A1" "$A2" ;;
   folded)      do_folded "$A1" "$A2" ;;
   suppression) do_suppression "$A1" ;;
-  acintent)    do_acintent "$A1" "$A2" ;;
   revision)    do_revision "$A1" ;;
   paired)      do_paired "$A1" "$A2" ;;
   specform)    do_specform "$A1" ;;

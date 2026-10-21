@@ -35,18 +35,18 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 
 ### 0. Design conformance (when designs exist in `done/`)
 
-- **AC-intent coverage (mandatory).** A completed design states each criterion's verification **intent** and names no command, so there is nothing here to re-run. For every `AC<N> verified by:` intent line in any `ai-docs/plans/done/*.design.md`, name a shipped check that covers it; an intent nothing covers → `major`. **This predicate is deliberately weaker than the in-task reviewer's, and the reason is a lifecycle fact rather than an oversight:** that gate asserts each covering check was shown able to come back NON-EMPTY, reading the per-criterion record's falsification column — and that record lives in the task's progress file, which no commit contains and which is deleted when the PR merges. A pass running after the merge has nothing stronger left to read, so handing this gate the stronger predicate would specify a read of a deleted file.
+- **Use-case coverage (mandatory).** A completed design names the cases each object it builds is used in and says NOTHING about tests, so there is nothing here to re-run and no identifier to resolve. For every case listed under `## Use cases` in any `ai-docs/plans/done/*.design.md`, name a shipped test that covers it; a case nothing covers → `major`. **The question is only whether a covering test was written:** one case may be covered by several tests, tests belonging to no case are legitimate functional coverage of a component and are invisible here, and the finding reads "no test covers this case" — never a count, never a test's name, never a result. Asking the design for any of those three is itself the defect the prohibition removes. **This predicate is deliberately weaker than the in-task reviewer's, and the reason is a lifecycle fact rather than an oversight:** that gate asserts each covering check was shown able to come back NON-EMPTY, reading the per-criterion record's falsification column — and that record lives in the task's progress file, which no commit contains and which is deleted when the PR merges. A pass running after the merge has nothing stronger left to read, so handing this gate the stronger predicate would specify a read of a deleted file.
 
 ### 1. Safety and correctness
 
 - **Force-unwrap audit:** every unchecked non-null assertion / `unwrap()` / bang-operator outside test code. Ask: is there a non-panicking form? An explicit guard naming the invariant is fine; a bare force-unwrap without justification → `major`.
 - **Swallowed result:** a fallible call whose error branch is dropped without handling or logging → `major`.
 - **Unstructured concurrency:** a task launched on a global/ambient scope → `major`. A scope that leaks past the function boundary that owns it → `major`.
-- **Transactionality:** a service method performing > 1 DAO call without a transaction boundary → `major`. A wrong propagation mode → `minor`. **Self-invocation:** an intra-class call to the component's OWN transactional method bypasses the framework proxy, so the annotation is silently ignored → `major`; the in-class path must go through an explicit transaction template (or the method must move to a separate component). A background task doing DB side effects without an error guard → `major`.
-- **N+1 queries:** new DB query inside `for` / `map` / `forEach` loop → `major` unless explicitly batched.
+- **Atomicity:** a method performing > 1 state-changing call without a transaction boundary → `major`. Wrong nesting behaviour → `minor`. **Self-invocation:** an intra-class call to the component's OWN transactional method never crosses the interceptor, so the declared boundary is silently absent while the construct still reads as present → `major`; the in-class path must go through an explicit transaction template (or the method must move to a separate component). A background task performing state changes without an error guard → `major`.
+- **A query per element inside a loop:** a new query issued once per iteration of any loop or per-element operation → `major` unless explicitly batched into one round trip.
 - **Metric gauge supplier doing IO:** a gauge whose value supplier reads DB/IO on the metrics scrape thread → `major`; cache the value off the scrape path via a scheduled refresh (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Metrics`). Counters/timers on an operation are fine — only IO-touching gauge SUPPLIERS are the anti-pattern.
 - **Event wiring:** brand-new event-publishing wiring where a direct call / poll / outbox row would serve → `major` (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Dependency injection / wiring`). A listener performing a side effect inside the publisher's transaction without a `try/catch` or its own transaction boundary, where it must stay insulated → `minor`.
-- **SQL safety:** string-concatenated SQL or raw variable interpolation into a query → `blocker`.
+- **Injection safety:** a value concatenated or interpolated into a sentence another interpreter parses — a query, a shell command, a template — where it could have been bound as a parameter or escaped through that interpreter's own API → `blocker`.
 - **Integer arithmetic:** overflow / underflow possible on plausible inputs without check → `minor`.
 - **Logic:** off-by-one, wrong comparison direction, always-true / always-false conditions → `major`.
 - **Error handling:** silenced exceptions (an empty catch block) → `major`. A dropped error in a result-shaped chain → `minor`.
@@ -63,7 +63,7 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 - Production source file with ≥50 lines of non-trivial logic lacking a corresponding test file → `major`.
 - Tests covering only happy path, no error / edge cases → `minor`.
 - Cosmetic tests (revert the production fix and RE-RUN; the test still passes, or the mutation produces zero failures) → `major`. The mutation is executed, not reasoned about — and a NOT-CAUGHT verdict is withheld until the mutation is shown to have applied and nothing but the guard under test could have blocked it (`${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` § Checklist → 3. Test coverage). A broken control reads as a missing test every time.
-- Integration tests for any new controller / endpoint → `minor` if missing.
+- An end-to-end test for any new entry point reachable from OUTSIDE the module → `minor` if missing.
 
 ### 4. Performance
 
@@ -79,7 +79,7 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 - **DB migration placement:** a new migration in a second tool's format, or filed away from its table's sibling migrations → `major` (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § DB migrations`).
 - **Magic numbers:** numeric literals carrying semantic meaning without a named-constant extraction → `nit` (`minor` for recurrence in a previously-flagged file).
 - **Logging — eager message construction:** string concatenation into a log call instead of the lazy/structured-argument form → `minor` (or `major` on a hot path).
-- **Wiring:** field injection instead of constructor injection → `major`. A specialised stereotype annotation used where its semantics (transactions, exception translation) are not needed → `nit`.
+- **Wiring:** a collaborator assigned into a field instead of declared at construction → `major`. A specialised declaration used where its extra behaviour (a transaction boundary, an error translation) is not needed → `nit`.
 
 ### 6. Documentation conformance (`${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`)
 
@@ -89,13 +89,18 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 
 **Asking for a comment to be ADDED is a SUGGESTION, never a defect.** It carries no severity, never enters the findings table as `⬜ Open`, applies only with the PR author's agreement (who may decline without giving a reason), and is voiced ONCE per PR — restating it in a later round, reworded or re-severitied, is FORBIDDEN. Absence of a comment is the documented default, so "there is no justification here" is not a finding, and an identical construct elsewhere in the same file carrying no comment settles the question in the author's favour. Deliberately asymmetric with the narration row below: DELETING narration stays `major`. **One CLOSED exception — the `Missing @throws` row below**, which `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md § @throws requirement` makes mandatory; that is the one place the documented default is a comment rather than none. It covers `@throws` only — not the `Missing @param` / `Missing @return` / `Section ordering` rows (each presupposes a doc-comment that already exists, so none of them is an add-a-comment request) and not the `@Suppress` justification in Checklist 5.
 
+**Adjust the comment-prefix set to the module's own languages and the tag set to the project's doc tool**
+(both in the project's `ai-docs/context.md`) — and note that a prefix the language never writes makes this
+report clean, which reads exactly like conformance. Confirm the pattern fires on one doc-comment you can
+see before trusting a silent result.
+
 ```bash
-grep -rnE '/\*\*|\* @(param|return|throws|sample|see)' <module-path>
+grep -rnE '(/\*\*|^[[:space:]]*(#|//|///|\*|"""))|@(param|return|throws|sample|see)' <module-path>
 ```
 
 Flag each of:
 
-- **Narration doc-comment / inline comment** — a doc-comment, `//` or `/* */` (in ANY language the module carries) that merely restates the signature, repeats the symbol name, or narrates WHAT the declaration is / does → `major` (strip it; `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments` — code is the single source of truth). Do NOT ask for a doc-comment to be added back. Classify narration-vs-why by READING authorial intent (semantic judgement, never lexical token-overlap): a genuine non-obvious WHY that happens to share words with the symbol is NOT a finding (no over-fire); cleverly-worded narration that avoids the symbol's tokens still IS one. **Read the OPENING sentence in isolation:** an opening sentence that restates the symbol name / type / signature / return is narration → `major` even when a genuine why follows — strip the opening sentence, not the whole comment. A doc-comment on a brand-new symbol gets extra suspicion (default-expect NONE; a precedent it was modeled on does not justify a copied doc-comment).
+- **Narration doc-comment / inline comment** — a doc-comment, `//` or `/* */` (in ANY language the module carries) that merely restates the signature, repeats the symbol name, or narrates WHAT the declaration is / does → `major` (strip it; `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments` — code is the single source of truth). Do NOT ask for a doc-comment to be added back. Classify narration-vs-why by READING authorial intent (semantic judgement, never lexical token-overlap): a genuine non-obvious WHY that happens to share words with the symbol is NOT a finding (no over-fire); cleverly-worded narration that avoids the symbol's tokens still IS one. **Read the OPENING sentence in isolation:** an opening sentence that restates the symbol name / type / signature / return is narration → `major` even when a genuine why follows — strip the opening sentence, not the whole comment. A doc-comment on a brand-new symbol gets extra suspicion (default-expect NONE; a precedent it was modeled on does not justify a copied doc-comment). A comment an instrument reads is a directive, NOT a comment — never flag one, and deleting one is `major`. The membership test — an instrument is anything that fails or changes behaviour when the comment goes — is on that same page and section, which is also where the id class this repository carries is defined.
 - **Unverified factual claim in a comment / provenance note** — a comment naming a framework/library/tool, asserting an annotation's presence, claiming an API field's absence/presence, or asserting storage-engine / concurrency behaviour ("this never waits", "this statement takes no lock", "the database cannot do X") that is NOT confirmable against the file's own imports / deps / cited source → `major` (false claims propagate as ground truth; `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments`). Absence claims get extra scrutiny — check the schema/DTO/proto, not neighbouring prose. For a DB/concurrency claim, judge the OBSERVABLE FAILURE MODE ("does it ever wait? does it ever enqueue?") — a claim can be true about locks and false about queueing. **An asserted INVARIANT is the same claim class** — "the branch order is load-bearing", "this must not change", "X is handled before Y" — verify it against the LANGUAGE SEMANTICS before letting it pass: branches of an exhaustive match over a closed type are pairwise disjoint, so a claimed ordering dependency between them is false by construction. An invariant you cannot confirm → `major`; a real one belongs in a test, not in prose. **Prose about a GUARD is the same claim class** — a paragraph explaining which guard catches which failure shape, or a file describing itself as "the full contract", is a claim at the same evidentiary level as a comment asserting an invariant, never evidence the guard works. Read what the guard's GATE STUBS: whatever is stubbed has never run under test, and it is usually what the prose is most confident about.
 - **Imperative summary line** (`Return`, `Create`, `Construct`) instead of third-person present indicative (`Returns`, `Creates`), on a doc-comment that is present → `nit`.
 - **Missing `@param`** on a function that ALREADY carries a doc-comment and takes ≥1 argument → `minor`. (A function with no doc-comment is not flagged.)
@@ -158,7 +163,7 @@ _Updated: YYYY-MM-DD_
 
 | # | Finding | Severity | Status |
 |---|---------|----------|--------|
-| 1 | `path/Foo.kt:N` — description | major | ⬜ Open |
+| 1 | `path/Foo:N` — description | major | ⬜ Open |
 
 ## Files touched
 

@@ -37,11 +37,12 @@ After the merge lands, `/pr-merged` cleans up the local branch and its progress 
 Before every commit, run the project build gate (`%BUILD_CMD%`, AGENTS.md § Build & Test) over the changed
 module so dependency-graph regressions surface locally rather than in CI.
 
-A module-scoped build compiles only that module — it does **not** catch every downstream regression. When
-the diff changes a **public API signature** or a **constructor dependency of an injected component**, also
-build/test-compile the modules that depend on the changed symbol: find them first
-(`grep -rn "<ChangedSymbol>" --include='*.<ext>' .`), then run their test compile. A DI-container test in
-another module can break at context load without ever naming the new type.
+A module-scoped gate covers only that module and does **not** catch every downstream regression. Two
+classes break a file the diff never touched: an altered **published interface**, which can invalidate an
+unchanged call site, a test double built against the old shape included; and a change to **what a
+component requires of its collaborators**, which fails where that component is ASSEMBLED, not where it is
+named. Run the gate over dependents too, found by searching the **CHANGED** name — not the new one, which
+no dependent uses yet (`grep -rn "<ChangedName>" --include='*.<ext>' .`).
 
 ## Explicit-file staging
 
@@ -316,8 +317,8 @@ Per AGENTS.md `## Workflow` AXIOM 2: after every push to a feature branch with a
 
 ## PR title + body shape
 
-- **PR title:** `<TICKET-KEY>: <conventional-commits header>` when the project uses ticket keys
-  (e.g. `PROJ-123: feat(api): add label endpoint`); a bare conventional-commits header otherwise.
+- **PR title:** `<TICKET-KEY>: <conventional-commits header>` when the project uses ticket keys; a bare
+  conventional-commits header otherwise.
 - **PR body:** summary paragraph(s) ONLY — what changed and why, ≤3 bullets. Markdown renders, so bullets
   and inline code are fine; the constraint is *content* (summary-only), not plain text. **NEVER** add
   `## Summary` / `## Test plan` section headers, test-count or stats lines ("N tests green", "all ACs
@@ -361,7 +362,7 @@ the agreed approach?** The two answers go different ways.
   section.
 - **Non-breaking → one marker on the diverged item, one row in the task's committed redline log, and the
   code fix lands in the same round.** The design is not rewritten mid-task; it is corrected once, after
-  the PR is approved, by `/redline-fold`, which authors the as-built document afresh. Who marks, what the
+  the PR is approved, by `/redline-fold`, which applies the log's rows. Who marks, what the
   marker carries and what a row holds:
   [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking](${CLAUDE_PLUGIN_ROOT}/agents/design.md#redline-marking).
 
@@ -475,7 +476,7 @@ Three reasons, not one: the fix-plan gate recomputes from the tree on every invo
 between them; the progress file survives a compaction and a session restart, which is exactly when a cap
 is lost; and an attempt count written beside the plan it counts against is auditable by the same read that
 checks the plan. The format constraint that follows from the gate's parser is stated where the count is
-written, in [`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Step 11 — the scouted-plan sequence](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md).
+written, in [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md).
 
 ## Why four path classes are excluded from the unplanned-file arm
 

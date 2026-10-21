@@ -120,6 +120,11 @@ setup_project(){
            "$PROJ/node_modules/x/docs" "$PROJ/vendor/scripts"
   : > "$PROJ/AGENTS.md"
   : > "$PROJ/.claude/skills/deploy/SKILL.md"
+  # The deployed-config search guard reads its gated file class from the
+  # project profile rather than carrying one. A fixture with no declaration
+  # would make that hook a silent no-op and its trigger row unfalsifiable.
+  printf '**Deployed-config globs:** `*.deployed.conf`\n' > "$PROJ/ai-docs/context.md"
+  : > "$PROJ/svc.deployed.conf"
 }
 setup_project
 
@@ -164,7 +169,7 @@ PreToolUse|Bash|1|commit_dirty_learnings|err|[auto-stage-learnings]
 PreToolUse|Bash|2|find_home|err|BLOCKED: broad find/bfs/grep -r over
 PreToolUse|Bash|3|coauthor_trailer|err|BLOCKED: git commit message contains a Co-Authored-By trailer.
 PreToolUse|Bash|4|three_dot_diff|err|BLOCKED: `git diff <base>...HEAD` on a branch with NO commits yet
-PreToolUse|Bash|5|properties_filter|err|BLOCKED: this content search can surface deployed-config files
+PreToolUse|Bash|5|deployed_config_filter|err|BLOCKED: this content search can surface deployed-config files
 PreToolUse|Bash|6|piped_gate|err|BLOCKED: a gate (build / test / lint / format / shellcheck / manifest parse) is
 PreToolUse|Bash|7|plan_inv_shell|jq|CONFIRM: this command writes to a protected plan-invariants page
 PreToolUse|Edit|Write|0|member_path|err|[propagation-rule-reminder] You are editing
@@ -205,8 +210,12 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
     three_dot_diff)
       git -C "$PROJ" checkout -q main
       jq -nc '{tool_input:{command:"git diff main...HEAD"}}' ;;
-    properties_filter)
-      jq -nc '{tool_input:{command:"grep -r --include=*.properties token src"}}' ;;
+    # The filter names the class the FIXTURE declares, and nothing else: no
+    # built-in list of this suite's or the guard's carries `.deployed.conf`, so
+    # a refusal here proves the guard read the project profile rather than a
+    # filename it ships with.
+    deployed_config_filter)
+      jq -nc '{tool_input:{command:"grep -r --include=*.deployed.conf token src"}}' ;;
     piped_gate)
       jq -nc '{tool_input:{command:"bash scripts/test-thing.sh | tail -3"}}' ;;
     member_path) jq -nc --arg p "$PROJ/AGENTS.md" '{tool_input:{file_path:$p}}' ;;
@@ -773,20 +782,14 @@ DENY_EXPECTED=$(jq -Sc . <<'DENYJSON'
   "Read(**/.env)",
   "Read(**/*.keys)",
   "Read(**/secrets.json)",
-  "Read(**/GoogleService-Info.plist)",
-  "Read(**/*Keys*.swift)",
   "Read(**/*Secrets*)",
   "Read(**/.DS_Store)",
   "Read(**/*.log)",
   "Read(.idea/**)",
-  "Read(.vscode/**)",
-  "Read(out/**)",
-  "Read(build/**)",
-  "Read(target/**)",
-  "Read(node_modules/**)" ]
+  "Read(.vscode/**)" ]
 DENYJSON
 )
-check "the template's deny list is exactly the committed 16 entries" \
+check "the template's deny list is exactly the committed 10 entries" \
   "$(jq -Sc '.permissions.deny' "$TPL")" "$DENY_EXPECTED"
 
 # Secondary, and REPORTED rather than asserted. The two files' deny lists were
@@ -1149,6 +1152,81 @@ if [ "$DEG_COLON" = "$BP_CMD" ]; then bad "the colon-leg degradation changed not
   check "and a lone colon deletion still passes either way" \
     "$(bp_verdict 'git push origin :feature-x' "$DEG_COLON")" "pass"
 fi
+
+
+printf '\n== the deployed-config search guard: the class is the project profile, not the guard ==\n'
+# The trigger row above proves the guard fires on the class the fixture
+# declares. These legs pin the three properties that row cannot see: the
+# recorded FALSE POSITIVE it was rewritten to kill, the sanctioned way past it,
+# and what an undeclared project gets. Without the silent legs the guard could
+# satisfy the trigger row by refusing every search.
+# THE INDEX IS THE SELECTOR. Every row of the trigger table, and every deep leg
+# in this file, reaches its hook by ordinal within the matcher group -- so a
+# hook removed or reordered in the Bash matcher re-points each row after it at
+# the wrong command while the suite stays green. These four pin the Bash arms
+# this file selects by ordinal to a token only that arm carries.
+check "Bash arm 0 is still the branch guard the BP_CMD legs degrade" \
+  "$(cmd_of PreToolUse Bash 0 | grep -c 'BLOCKED: git commit/push on')" "1"
+check "Bash arm 5 is still the deployed-config search guard" \
+  "$(cmd_of PreToolUse Bash 5 | grep -c 'deployed-config-guard\.sh')" "1"
+check "Bash arm 6 is still the result-masking guard the GATE_CMD legs degrade" \
+  "$(cmd_of PreToolUse Bash 6 | grep -c 'BLOCKED: a gate')" "1"
+check "Bash arm 7 is still the plan-invariants guard" \
+  "$(cmd_of PreToolUse Bash 7 | grep -c 'plan-invariants-guard\.sh')" "1"
+
+DC_IDX=5
+dc_run(){ # <project-dir> <command>
+  RUN_ENV="CLAUDE_PLUGIN_ROOT=\"$ROOT\" CLAUDE_PROJECT_DIR=\"$1\""
+  RUN_CWD="$1"
+  run_hook PreToolUse Bash "$DC_IDX" "$(jq -nc --arg c "$2" '{tool_input:{command:$c}}')"
+  RUN_CWD=""
+}
+dc_fires(){ # <label> <project-dir> <command>
+  dc_run "$2" "$3"
+  if grep -qF 'BLOCKED: this content search can surface deployed-config files' "$ERR"
+    then ok "$1"
+    else bad "$1 -- the guard stayed silent"
+  fi
+}
+dc_silent(){ # <label> <project-dir> <command>
+  dc_run "$2" "$3"
+  if [ -s "$ERR" ]
+    then bad "$1 -- the guard fired: $(first_line "$ERR")"
+    else ok "$1"
+  fi
+}
+
+# The measured defect: the OLD spelling matched the gated filename anywhere in
+# the command string, so a search whose PATTERN quoted the name was refused as
+# if it were a read. No file filter here and no operand of the class.
+dc_silent "a declared-class name inside the search PATTERN is not a read" \
+  "$PROJ" "grep -rn 'deployed.conf is gated' docs"
+dc_fires  "the same class as a file FILTER is a read" \
+  "$PROJ" "grep -rn token --include=*.deployed.conf ."
+dc_silent "an explicit glob exclusion of the class is the way past the gate" \
+  "$PROJ" "grep -rn token --exclude=*.deployed.conf ."
+dc_silent "and so is ripgrep's negated-glob spelling of the same exclusion" \
+  "$PROJ" "rg -n token -g '!*.deployed.conf' ."
+dc_silent "a filter naming another extension is silent" \
+  "$PROJ" "grep -rn token --include=*.md ."
+dc_fires  "an operand naming an EXISTING file of the class is a read" \
+  "$PROJ" "grep -n token svc.deployed.conf"
+dc_silent "the same operand spelling, no such file, is silent" \
+  "$PROJ" "grep -n token absent.deployed.conf"
+# The undeclared project gets silence, not an invented class. $MARKERLESS holds
+# no ai-docs/ at all, which is also the state of a project that never scaffolded
+# one.
+dc_silent "a project that declares no class gets no gate rather than a guessed one" \
+  "$MARKERLESS" "grep -rn token --include=*.deployed.conf ."
+# A freshly scaffolded project carries the template's placeholder on that row.
+# Read as a glob it would be a class matching nothing while the guard reported
+# having one, so it has to read as "not yet declared" instead.
+mkdir -p "${MARKERLESS}/ai-docs"
+printf '**Deployed-config globs:** `%%DEPLOYED_CONFIG_GLOBS%%`\n' > "${MARKERLESS}/ai-docs/context.md"
+dc_silent "an unfilled template placeholder is not a declaration" \
+  "$MARKERLESS" "grep -rn token --include=*.deployed.conf ."
+dc_silent "a command that is not a content search is silent whatever it names" \
+  "$PROJ" "cat svc.deployed.conf"
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

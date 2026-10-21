@@ -8,11 +8,15 @@ the relevant section.
 
 The per-project language profile — primary language, new-file rule, line length, formatter and linter
 commands, source/test roots, test-file mapping — lives in the consuming project's
-`ai-docs/context.md` § Language profile. Everything below this section is
-language-agnostic and needs no per-project edit.
+`ai-docs/context.md` § Language profile. **Every rule below this section is required to HOLD in any
+language, and one that cannot is a defect in this page rather than a rule to work around** — stated as an
+obligation on whoever edits here, because a page's description of its own contents rots while an
+imperative cannot. Where a rule needs a project's own spelling — a naming idiom, a doc tool's tags, a
+test-double library — it names the profile rather than carrying the spelling itself.
 
-Idiom rules that only make sense for one language (stdlib preferences, DI-framework conventions,
-migration-tool choice, metrics library) belong there too — not scattered through the sections below.
+Idiom rules that only make sense for one language (stdlib preferences, wiring-framework conventions,
+migration-tool choice, metrics library) belong in that profile too — not scattered through the sections
+below.
 
 ## Linter posture
 
@@ -21,7 +25,7 @@ migration-tool choice, metrics library) belong there too — not scattered throu
   on any remaining violation. Correct sequence: format, THEN lint as the verification. NEVER report "lint
   clean" on the basis of the formatter alone.
 - Never edit the formatter's config (`.editorconfig` and friends) to make a violation go away.
-- A suppression (`@Suppress` / `# noqa` / `//nolint`) MAY carry a justification comment naming the specific
+- A suppression MAY carry a justification comment naming the specific
   rule and reason — recommended when the reason is genuinely opaque, but NOT required, and its absence is
   never a defect (§ Comments: the default is no comment).
 
@@ -49,11 +53,14 @@ cache(1024) { ... }    // ❌ what does 1024 mean?
 
 ## Dependency injection / wiring
 
-- **Constructor injection.** Never field injection. Constructor params are immutable + testable.
-- **Prefer the least-magical stereotype** that carries the semantics you need; reserve specialised
-  annotations for cases where their behaviour (transaction management, exception translation) matters.
-- **Configuration binds to a typed object**, not to individually-injected scalar values — one binder class
-  per config group, so defaults are readable in one place.
+- **Declare a component's collaborators at construction**, never by later assignment into a field. What is
+  supplied at construction is immutable and substitutable in a test; what is assigned afterwards is
+  neither.
+- **Prefer the plainest declaration that carries the semantics you need**, and reserve a specialised one
+  for where its extra behaviour — a transaction boundary, an error translation — is actually required.
+  Which declarations the project has, and what they are called, belong in its `ai-docs/context.md`.
+- **Bind a configuration group in ONE declared place**, not as individually injected scalars, so that
+  group's defaults are readable together rather than gathered from their use sites.
 - **Prefer explicit mechanisms for NEW wiring** — a direct call, a poll/discovery task, or an outbox/queue
   row — over publishing a framework event. An in-transaction event listener does NOT implicitly insulate
   the enclosing transaction from the listener's side effect: without a `try/catch` (or a new transaction
@@ -87,38 +94,38 @@ warranted; it is not a mandate to comment every public symbol.
 - **A closed type** (sealed class / sealed interface / tagged union / enum-backed error) for a finite
   domain-error hierarchy.
 - **A result type** for fallible operations whose error set is finite and callers must handle.
-- **Argument / state guards** (`IllegalArgumentException` / `IllegalStateException` or the language's
-  equivalent) for invariant violations that indicate a programming error.
+- **Argument / state guards** (the language's equivalent) for invariant violations that indicate a
+  programming error.
 - **Never swallow exceptions.** No empty catch blocks. Either log + re-throw, or convert to a domain error.
 - **Never throw from inside a lazy/streaming builder** without a corresponding downstream handler.
 
 ## Tracing / logging
 
-- **Lazy message construction.** Prefer the lambda/structured-argument form (`logger.info { "event $arg" }`
-  or `logger.info("event {}", arg)`) over string concatenation — concatenation pre-evaluates even when the
-  level is disabled.
+- **Lazy message construction.** Prefer the lambda/structured-argument form over string concatenation —
+  concatenation pre-evaluates even when the level is disabled.
 - **Level vocabulary:** `debug` for development-grade detail; `info` for state transitions; `warn` for
   recoverable anomalies; `error` for genuine failures.
-- **Request-scoped context (MDC or equivalent)** for tracing. Use the project's existing field names
+- **Request-scoped context** for tracing. Use the project's existing field names
   verbatim (record them in `ai-docs/context.md`); don't invent variants.
 
 ## Metrics
 
-NEVER register a gauge whose value supplier performs an IO/DB read — the supplier runs on the scrape
-thread, where a timeout degrades the ENTIRE metrics payload. For any value needing a query (row counts,
-backlog sizes), cache it off the scrape path via a scheduled refresh. Counters/timers incremented on an
-operation are fine; only gauge SUPPLIERS that touch IO are the anti-pattern.
+NEVER put an IO or database read behind a value a monitoring collector PULLS synchronously — the read then
+runs on the collector's own thread, where a single timeout degrades the ENTIRE monitoring payload rather
+than the one value. For any value that needs a query (row counts, backlog sizes), refresh it off that path
+on a schedule and serve the cached figure. A counter or timer incremented by an operation is fine; only a
+pulled value that touches IO is the anti-pattern.
 
 ## DB migrations
 
-Pick ONE migration tool per repo and record it in `ai-docs/context.md`; never add a migration in a second
-tool's format because it is more familiar.
+Pick ONE schema / state-change tool per repo and record it in `ai-docs/context.md`; never file a change in
+a second tool's format because it is more familiar.
 
-**Local conventions — read the sibling migrations before writing.** Put an alteration in **that table's own
-migration file**, never aggregated into a shared cross-table file. Match the surrounding directory's
-changeset id format, its rollback posture (present or deliberately omitted), and its naming — these are
-conventions of the directory, not of the tool, so inspect the adjacent migrations rather than reasoning
-from the tool's documentation. Describe file path, migration id, and rollback plan in the design doc.
+**Local conventions — read the sibling migrations before writing.** Put an alteration in **that object's
+own migration file**, never aggregated into a shared cross-object file. Match the surrounding directory's
+id format, its rollback posture (present or deliberately omitted), and its naming — these are conventions
+of the directory, not of the tool, so inspect the adjacent migrations rather than reasoning from the
+tool's documentation. Describe file path, migration id, and rollback plan in the design doc.
 
 ## File size
 
@@ -132,8 +139,7 @@ Target **200–400 lines** per source file excluding test fixtures. Soft **500 /
 | 800–1000 | Hard-ish — must justify in the PR description |
 | > 1000 | Hard limit — refactor before merge unless explicitly exempt |
 
-Exemptions: auto-generated code, and single large `when` / `switch` expressions where splitting obscures
-control flow.
+Exemptions: auto-generated code, and single large expressions where splitting obscures control flow.
 
 **Don't flag cohesive small-to-medium files for being "monolithic"** — one-class-per-file is anti-idiomatic
 in languages where cohesive value objects naturally group.
@@ -142,22 +148,26 @@ in languages where cohesive value objects naturally group.
 
 - **Types:** `PascalCase`. **Functions / properties:** `camelCase` (or the language's idiom).
   **Constants:** `SCREAMING_SNAKE_CASE`. **Packages/modules:** the language's convention.
-- **Test classes:** `<UnderTest>Test`.
+- **Test units:** named by a mechanical mapping from the unit under test (`<UnderTest>Test` where the
+  language has classes), so a runner's filter and a reader both reach the test from the subject's name
+  alone. The project's own spelling is its test-file-mapping row in `ai-docs/context.md`.
 - **Test methods:** BDD `should …` names — `should <observable behaviour> [when <condition>]`. One
   meaningful user/system-as-user scenario per test; arrange/act/assert as blank-line blocks, not
   `// given` / `// when` / `// then` markers.
 
 ## Test fixture state
 
-**When a test bean/fixture factory captures mutable state in a closure, treat it as a leak until a reset
-exists.** Test containers and DI contexts are typically cached PER CLASS: database fixtures and mock
-auto-reset restore what the framework knows about, but nothing touches a plain mutable holder captured by a
-factory. That state survives across every test method in the class.
+**When a test fixture captures mutable state in a closure, treat it as a leak until a reset exists.** A
+test harness typically RECYCLES one context across the cases in a group: whatever it knows about — stored
+fixtures, recorded doubles — it restores, but nothing touches a plain mutable holder captured by a factory.
+That state survives every case in the group, **and it hides precisely because everything around it is
+being reset.** So enumerate what the harness restores, and treat anything captured outside that set as
+owing its own reset.
 
-- **Hoist it into its own injectable component** so a test can reach and reset it — a closure-captured
+- **Hoist it into its own addressable component** so a test can reach and reset it — a closure-captured
   value cannot be reached at all.
-- **Prefer resets that cannot drift** — clear *all* mocks, or reinitialise the whole holder — over a
-  hand-maintained enumeration that must be edited whenever a mock or key is added. A setup hook whose name
+- **Prefer resets that cannot drift** — reset *everything* the group recycles, or reinitialise the whole
+  holder — over a hand-maintained enumeration that must be edited whenever a double or key is added. A setup hook whose name
   advertises partial cleanup (`clearInvocationsOnly`) is a standing admission the enumeration is already
   incomplete.
 - **Diagnostic corollary.** When an integration test fails on a value that production code writes
@@ -183,7 +193,7 @@ narration — a `major` finding. **Delete it; do not "improve" the wording.** If
 explain WHAT, rename or extract instead. Applies to **prod AND test code** — test intent lives in the test
 name, never a `//`.
 
-```go
+```
 // ❌ narration — restates the field name; delete it
 // verbose, when true, dumps each request/response
 verbose bool `json:"verbose"`
@@ -220,6 +230,25 @@ share words with the symbol and still be a legitimate why, and cleverly-worded n
 symbol's tokens entirely. Judge by "could a future reader recover this from the code?" — not by lexical
 overlap. (This is why the rule is a reviewer / `self-review` judgement, not a mechanical gate.)
 
+**A comment an INSTRUMENT reads is a directive, not a comment, and the narration rule above never reaches
+it.** The test is membership rather than syntax: an instrument is anything that fails, or changes what it
+does, when the comment is removed. That is deliberately not a list of qualifying forms, because an example
+list cannot admit a form written after it — the familiar cases are instances of the rule and not its
+definition: a suppression a linter honours, an instruction a schema tool consumes, a pragma a build reads.
+Apply the test by removing the comment in your head and asking what breaks.
+
+**Deleting a directive is a `major` finding, not a cleanup.** The polarity is the opposite of narration's,
+on purpose: narration is removed on sight, while a directive removed on sight breaks whatever was reading
+it and leaves the code it sat on looking tidier for having lost it. A cleanup round is where that goes
+wrong, because the bar for removing a comment line drops exactly when the mandate is framed as subtraction.
+
+**One directive class is this repository's own.** A statement in a durable document that leans on a source
+entity carries an id, and the same id appears in a comment on that entity, so the pair resolves in both
+directions. Delete that comment and the statement claims an id that resolves to nothing — which defeats the
+one property the id is there for, that a vanished entity takes its comment with it and says so. The form,
+the comparison and where the guarantee stops:
+[`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`](${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md).
+
 Don't reference the current task / fix / callers ("used by X", "added for the Y flow"). Those belong in the
 PR description and rot as the codebase evolves.
 
@@ -231,7 +260,7 @@ stale comment is strictly safer than a kept stale one.
 **Verify a factual claim in a comment against the source before writing it.** A comment (or provenance
 note) that names a framework / library / tool, asserts an annotation is present, or claims an API field's
 presence/absence is a FACTUAL claim — confirm it against the authoritative source (imports / dependency
-manifest / config class / proto / DTO / API schema), NOT memory or a neighbouring pre-existing comment (a
+manifest / config class / proto / API schema), NOT memory or a neighbouring pre-existing comment (a
 wrong term self-perpetuates repo-wide). Absence claims ("there is no `X` field", "the API doesn't expose
 `X`") are the easiest to state confidently and get wrong — verify against the schema model, not secondary
 prose (a SKILL.md or another comment can itself be wrong). Same discipline for a framework/tool name in a
@@ -244,8 +273,8 @@ modules to satisfy a contract, prefer lifting it into a shared module over per-s
 each individual copy is small.
 
 The "minimal surface / no new module" argument is locally true but globally loses to maintenance burden
-once duplicated code lives in 3+ places: any future change has to land in lockstep across every copy, drift
-goes undetected by the compiler, and review noise scales with the duplication factor.
+once duplicated code lives in 3+ places: any future change has to land in lockstep across every copy and
+review noise scales with the duplication factor.
 
 | Call-site count | Action |
 |---|---|
@@ -268,5 +297,5 @@ _(none yet)_
 
 ## Cross-link
 
-The test-conventions block lives in `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions`. Doc-convention detail lives in
+The test-conventions block lives in `${CLAUDE_PLUGIN_ROOT}/docs/test-conventions.md § Test Conventions`, which the session-start page keeps a pointer to rather than the rules themselves. Doc-convention detail lives in
 `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`. Both are propagation-linked.

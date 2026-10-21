@@ -78,7 +78,8 @@ is the same commands.
    `skills/report-defect/scripts/test-file-report.sh`,
    `skills/task/scripts/test-check-fix-plan.sh`,
    `scripts/test-check-plan-invariants.sh`, `scripts/test-check-propagation-arms.sh`,
-   `scripts/test-check-redline.sh`, `scripts/test-hook-behaviour.sh`,
+   `scripts/test-check-redline.sh`, `scripts/test-check-plan-convergence.sh`,
+   `scripts/test-hook-behaviour.sh`,
    `scripts/test-run-checks.sh`.
    **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed
    file COUNT beside the syntax verdict and reddens a separate `untracked-shell` member on any `*.sh` the
@@ -190,8 +191,11 @@ in a branch name and a spec header, where a bare `#` does not belong. It maps on
 ## Language profile
 
 See [`ai-docs/context.md`](ai-docs/context.md) § Language profile. In short: Markdown instruction files
-plus POSIX shell, with four non-shell payload files in three other languages — two `awk`, one `jq` and
-one `python3`; no compiled sources.
+plus POSIX shell, with eight non-shell payload files in three other languages — two `awk`, one `jq` and
+five `python3`; no compiled sources. Each is a SIBLING a `.sh` entry point loads from its own directory,
+never an entry point itself, so every caller still invokes a shell script. **The count in this sentence
+moves whenever a payload sibling is added**, and nothing derives it — the sibling list it summarises is on
+the profile page, and the two have already fallen out of step once.
 
 ## Project-specific conventions
 
@@ -217,3 +221,32 @@ one `python3`; no compiled sources.
 - **Any PR touching plugin-loaded content bumps `.claude-plugin/plugin.json`'s patch version.** The
   install cache is keyed by version, so an unbumped fix silently never reaches an installed copy. See
   [`README.md` § Releasing](README.md#releasing).
+- **Renaming a `## ` heading in `templates/project/ai-docs/context.md` updates the heading exclusion in
+  `scripts/check-candidate.sh` in the same act.** That gate derives a promotion candidate's deny
+  vocabulary from the project's own `ai-docs/context.md`, which starts life as a copy of that template,
+  and subtracts a hand-written list of generic section names. Nothing derives either list from the other.
+  Today most arms are inert, because a later stage of the same pipeline admits only single-word tokens —
+  the live ones are `%`, `Overview`, `Registry` and `Layout`. The hazard is forward: rename a heading to
+  a **single word** and it silently becomes a deny term, refusing any candidate that contains that common
+  word, with no visible cause. This is recorded here rather than beside the Propagation Rule's sync
+  groups for the same reason as the learning-log mirror above — the gate is a method file and
+  `templates/` does not exist in a consuming project, so no method page may name the other side. The
+  script carries the full rationale, including why the list is stated rather than derived.
+
+## Register
+
+**Dry, technical, direct. No apologies, no disclaimers, no safety warnings, no paranoia about rules, no
+lectures.** Confident, to the point, and without surplus politeness.
+
+- **Cut entirely:** apologies, self-criticism, preambles, closing pleasantries, restatements of what is
+  about to be done, and any paragraph whose subject is the agent's own process. A correction is made, not
+  narrated — fix it in the same sentence and move on.
+- **Cut:** hedges about rules, permissions and procedure. Do not announce that a rule exists, that a gate
+  binds, that something is someone else's to authorise, or that care is being taken. Where a rule actually
+  blocks an action, say what is blocked and what unblocks it, in one line. Nothing else.
+- **On a doubtful request:** do it, or name the error in one line. No lecture, no options table, no risk
+  inventory. If it is restated, it is the user's call — do it and stop commenting.
+- **Lead with the answer or the result.** State findings as facts, not as discoveries.
+
+A concession that immediately rebuilds a narrower version of the thing conceded is not a concession, and
+is the shape that provoked this rule.

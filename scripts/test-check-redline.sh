@@ -79,13 +79,17 @@ The working logic, as built.
 |---|---|---|
 | 1 | Wire the gate | one file |
 
-## Test Design
+## Use cases
 
-| AC | Verified by (intent) |
-|---|---|
-| AC1 | AC1 verified by: that the refusal fires while an unprocessed log is present, and does not fire when none is. |
-| AC2 | AC2 verified by: that the retained sections are compared against the previous commit rather than a captured copy. |
-| AC3 | AC3 verified by: that a criterion nothing covers still fails, with a covered criterion as the control. |
+- `the refusal` — run by the closing command before it deletes anything; run by the merge cleanup as its
+  last read of the log
+- `the retention check` — run by the closing command over the sections the fold keeps; run by a reviewer
+  reading a completed plan
+
+THIS FIXTURE IS THE MODEL OF A CORRECTLY FOLDED DESIGN for the whole suite, so it carries what such a
+document is allowed to carry and nothing else. It held a test-design section with one verification line
+per criterion until a design stopped saying anything about tests; a fixture left on that shape teaches
+the forbidden form to every reader of this suite.
 '
 
 mktree() { # -> a repository with a committed spec, design and redline log
@@ -187,6 +191,45 @@ run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
 check "a log left in done/ is found too, from a spec in the active directory" "$RC" "1"
 has   "  and names it" "$OUT" "done/t.redline.md"
 
+# THE RECORD OF EXCUSED FINDINGS, which the fold removes WITH the log. The
+# fixture carries none, which is why every leg above is clean on it: most plans
+# waive nothing and an absent record is the ordinary state. These legs plant one.
+#
+# THE SIBLING CONTROL IS THE LEG THAT MATTERS. A glob over the plans directory
+# would satisfy every firing leg here and ALSO redden on another plan's record,
+# which this fold has no business removing -- so the firing legs alone cannot
+# tell the literal-path construction from a glob, and the silent one can.
+mkexcuses() { # <tree> <relative directory> <spec base>
+  { printf '| Class | Spot | Subject | Grounds |\n'
+    printf '|---|---|---|---|\n'
+    printf '| isolation | `%s.design.md` § Approach | the figure 24 | a restated disposition, not a fact two places could disagree about |\n' "$3"
+  } > "${1}/${2}/${3}.excuses.md"
+}
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "a surviving record of excused findings is a finding on its own" "$RC" "1"
+has   "  and names where it survives" "$OUT" "the record of excused findings survives at"
+has   "  by path" "$OUT" "ai-docs/plans/t.excuses.md"
+hasnt "  and does not report the log, which is gone" "$OUT" "the redline log survives"
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans/done t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "a record left in done/ is found too, from a spec in the active directory" "$RC" "1"
+has   "  and names it" "$OUT" "done/t.excuses.md"
+
+T=$(mktree); mkexcuses "$T" ai-docs/plans t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "both surviving -> findings" "$RC" "1"
+has   "  the log on its own finding" "$OUT" "the redline log survives at"
+has   "  and the record on a separate one, so the reader knows which step was skipped" \
+      "$OUT" "the record of excused findings survives at"
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans u
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "control: ANOTHER plan's record of excused findings is not this fold's business" "$RC" "0"
+has   "  verdict" "$OUT" "verdict=clean"
+
 # The spec collapsed in done/, which is where the fold actually finds it.
 T=$(mktree)
 git -C "$T" mv ai-docs/plans/t.spec.md ai-docs/plans/done/t.spec.md
@@ -257,16 +300,19 @@ has   "  verdict" "$OUT" "verdict=clean enumerated=2 findings=0"
 check "  and BOTH lines are dispositioned suppression, not merely counted" \
       "$(printf '%s\n' "$OUT" | grep -c ' suppression$')" "2"
 
-# The retention half of the criterion: a verification re-run over completed
-# DESIGNS is not suppression and must survive the narrowing untouched.
+# The retention half of the criterion: a coverage check over completed DESIGNS
+# is not suppression and must survive the narrowing untouched. The fixture
+# reproduces the live brief's wording, which changed when a design stopped
+# saying anything about tests -- a fixture left on the superseded sentence
+# asserts the disposition of a line the brief no longer contains.
 cat > "${S}/verification.md" <<'EOF'
 # Reviewer brief
 
-- **AC-verification re-run (mandatory).** Re-run every `AC<N> verified by:` line
-  from any `ai-docs/plans/done/*.design.md` against the shipped artefact.
+- **Use-case coverage (mandatory).** For every case listed under `## Use cases`
+  in any `ai-docs/plans/done/*.design.md`, name a shipped test that covers it.
 EOF
 run suppression "${S}/verification.md"
-check "control: the AC-verification re-run over completed designs stays clean" "$RC" "0"
+check "control: the use-case coverage check over completed designs stays clean" "$RC" "0"
 has   "  and is dispositioned as not conferring suppression" "$OUT" "not-suppression"
 
 cat > "${S}/heading.md" <<'EOF'
@@ -285,62 +331,6 @@ has "the live reviewer brief enumerates four instructions" "$OUT" "enumerated=4"
 run suppression "${S}/nope.md"
 check "a missing file is exit 2" "$RC" "2"
 has   "  and names it" "$OUT" "no such file"
-
-printf '\n== acintent: coverage, purity, and the rename that must change nothing ==\n'
-T=$(mktree)
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "control: every criterion covered by an intent line is clean" "$RC" "0"
-has   "  verdict" "$OUT" "verdict=clean"
-has   "  and the counts are reported" "$OUT" "criteria=3 intent_lines=3"
-
-T=$(mktree)
-sed -i.bak '/AC3 verified by:/d' "${T}/ai-docs/plans/t.design.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "a criterion with no covering intent line still fails" "$RC" "1"
-has   "  and names the criterion" "$OUT" "AC3 has no"
-
-T=$(mktree)
-printf '| AC1 | AC1 verified by: `bash scripts/test-check-redline.sh` filtered to the refusal leg. |\n' \
-  >> "${T}/ai-docs/plans/t.design.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "an intent line naming a script path is a finding" "$RC" "1"
-has   "  and quotes the token" "$OUT" "scripts/test-check-redline.sh"
-has   "  naming it as an identifier of the check" "$OUT" "names an identifier of the check"
-
-T=$(mktree)
-printf '| AC1 | AC1 verified by: the case `should refuse a present log()` in the suite. |\n' \
-  >> "${T}/ai-docs/plans/t.design.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "an intent line naming a test identifier is a finding" "$RC" "1"
-has   "  and quotes it" "$OUT" "names an identifier of the check"
-
-T=$(mktree)
-printf '| AC1 | AC1 verified by: running grep over the shipped brief. |\n' \
-  >> "${T}/ai-docs/plans/t.design.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "an intent line naming a bare command is a finding too" "$RC" "1"
-has   "  and names the command" "$OUT" "names the command [grep]"
-
-# AC22's own two-sided demonstration: RENAMING a shipped test changes nothing,
-# because no intent line names one. Asserted on the same tree before and after.
-T=$(mktree)
-printf 'should refuse a present log\n' > "${T}/suite.txt"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "before the rename, clean" "$RC" "0"
-sed -i.bak 's/should refuse a present log/should refuse while a log is unprocessed/' "${T}/suite.txt"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "after renaming a shipped test, still clean -- nothing named it" "$RC" "0"
-has   "  verdict" "$OUT" "verdict=clean"
-
-T=$(mktree)
-printf '# Spec\n\n## Scope\n\nNo criteria table here.\n' > "${T}/ai-docs/plans/t.spec.md"
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "a spec with no criteria table is exit 2, not a vacuous pass" "$RC" "2"
-has   "  and says why" "$OUT" "no ## Acceptance Criteria table"
-
-run acintent "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/gone.design.md"
-check "an unreadable design is exit 2" "$RC" "2"
-has   "  and names it" "$OUT" "no such design"
 
 printf '\n== revision: a design subject and a verdict subject, both ways ==\n'
 R=$(mktemp -d)
@@ -491,7 +481,7 @@ mkmode() { # <row keys> <mode line, or empty for none>
   mkpair "$1" "$1" "${2:--}"
 }
 
-mkmode 'S8.1' '**Mode:** R&D — the base took four unplanned extensions (`:351`)'
+mkmode 'S8.1' '**Mode:** R&D — `## Open questions` names four unplanned extensions'
 run paired "${W}/d.md" "${W}/l.md"
 check "an implementation-step row with a mode naming its grounds is clean" "$RC" "0"
 has   "  and the mode is reported, so a reader need not open the log" "$OUT" "mode=R&D"
@@ -509,18 +499,20 @@ has   "  because the grounds are what the choice is disagreed with on" "$OUT" "g
 # THE GROUNDS MUST BE READ OFF THE DESIGN, not merely present. The criterion is
 # that the recommendation is checked on its EVIDENCE and never on which mode was
 # recommended -- so what is assertable is that the grounds CITE the design: a
-# backticked anchor carrying a line number, or a backticked section heading.
-# A preference carries neither. The whole mode BLOCK is read, not its first
-# line, because the grounds wrap and the anchors land after the wrap in every
-# real example.
-mkmode 'S8.1' '**Mode:** R&D — `## Open questions` at `:870` opens "None blocking"'
+# backticked SECTION HEADING. A preference carries none, and neither does a
+# line-addressed token any more -- a position outlives nothing, so grounds cite
+# an entity. The leg below asserts that direction rather than leaving it to the
+# pattern. The whole mode BLOCK is read, not its first line, because the grounds
+# wrap and the heading lands after the wrap in every real example.
+mkmode 'S8.1' '**Mode:** R&D — `## Open questions` opens "None blocking"'
 run paired "${W}/d.md" "${W}/l.md"
-check "grounds citing a design anchor are clean" "$RC" "0"
+check "grounds citing a design section are clean" "$RC" "0"
 has   "  mode" "$OUT" "mode=R&D"
 
 mkmode 'S8.1' '**Mode:** Hybrid — the base is carried as measured (`:351`)'
 run paired "${W}/d.md" "${W}/l.md"
-check "a line-number citation alone satisfies it" "$RC" "0"
+check "a line-number citation alone no longer satisfies it" "$RC" "1"
+has   "  and the message asks for a section rather than naming the position" "$OUT" "no backticked heading"
 
 mkmode 'S8.1' '**Mode:** R&D — because I prefer it'
 run paired "${W}/d.md" "${W}/l.md"

@@ -1,9 +1,9 @@
 ---
 name: redline-fold
-description: "The closing pass of a task that accumulated redline corrections: once the PR is approved, author the as-built design afresh, collapse the spec to its record of deliberate absence, remove the redline log, and surface one commit — on that PR if it is still open, or on a fold-only PR if the merge already happened."
+description: "The closing pass of a task that accumulated redline corrections: once the PR is approved, apply the correction log's rows to the design items that diverged, collapse the spec to its record of deliberate absence, remove the redline log and the plan's record of excused findings, and surface one commit — on that PR if it is still open, or on a fold-only PR if the merge already happened."
 when_to_use: "Activate on the user's word that the PR is APPROVED, in either of two régimes. EARLY: the PR is still open and you are standing on its branch — the fold's commit joins that PR. LATE: the merge already happened and a log survived it — cut a fresh branch off the default one and the fold gets its own PR. Not on 'pushed': an unapproved PR is before both régimes. The approval cannot be measured in a repository whose review surface reports none, so the user's invocation IS the approval; an agent that merely believes a PR was approved has nothing to read."
 argument-hint: "[spec base name, when the branch carries more than one plan]"
-allowed-tools: Read, Edit, Write, Glob, Grep, Bash(git branch:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git show:*), Bash(git rm:*), Bash(git mv:*), Bash(git diff:*), Bash(git checkout:*), Bash(git switch:*), Bash(git ls-tree:*), Bash(gh pr view:*), Bash(ls:*), Bash(scripts/check-redline.sh:*)
+allowed-tools: Read, Edit, Write, Glob, Grep, Bash(git branch:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git show:*), Bash(git rm:*), Bash(git mv:*), Bash(git diff:*), Bash(git checkout:*), Bash(git switch:*), Bash(git ls-tree:*), Bash(gh pr view:*), Bash(ls:*), Bash(scripts/check-redline.sh:*), Bash(scripts/check-plan-convergence.sh:*)
 ---
 
 > Near-stateless: no `.progress.md` discipline applies; re-entry consists of re-invoking the skill.
@@ -12,7 +12,7 @@ Current branch: !`git branch --show-current`
 
 The closing half of the redline mechanism. During the task a divergence between the frozen design and
 what shipped was recorded twice over — a pointer marker on the diverged item, a row in a committed log —
-and nothing rewrote the design. **This pass is where the design becomes true again**, once, after the
+and nothing rewrote the design. **This pass is where the diverged items become true again**, once, after the
 human review has had its say, as a separate commit — on the task's own PR while it is open, or on a
 fold-only PR once it has merged.
 
@@ -41,7 +41,7 @@ régime this is, so establish that first.
 
 **Why the late régime exists rather than being a repair for carelessness.** A human who approves a PR usually merges it in the same action, so the early window is the one most often missed — not through neglect but because nothing holds it open. The material this pass consumes is committed for exactly that reason: a log in the gitignored progress file would not survive a merge, and a committed one does. So the late régime loses nothing except time.
 
-**What it does cost, stated so the early régime stays preferred.** Between the merge and the late fold, the default branch carries a design whose markers point into a log and a spec that was never collapsed. Anyone reading the plan in that window reads the pre-fold state. One thing is better in the late régime and only one: the shipped state is final, so "re-author against what shipped" has no ambiguity left in it.
+**What it does cost, stated so the early régime stays preferred.** Between the merge and the late fold, the default branch carries a design whose markers point into a log and a spec that was never collapsed. Anyone reading the plan in that window reads the pre-fold state. One thing is better in the late régime and only one: the shipped state is final, so there is no ambiguity left about what the rows are applied against.
 
 **The gate works in both régimes, and in the late one the ORDER matters.** `folded` resolves the pre-fold
 text as `git show "HEAD:./<basename>"` relative to the spec's own directory, so it reads whatever path the
@@ -64,11 +64,15 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
 
 2. **The empty branch, and it is a real branch rather than a degenerate one.** No log, or a log carrying
    no rows: **stop here** and record which branch was taken. The frozen plan already describes what
-   shipped, so there is nothing to author, and a rewrite that changes nothing still risks dropping a
+   shipped, so there is nothing to correct, and a rewrite that changes nothing still risks dropping a
    sentence nobody re-read. If a log with no rows is present, remove it (step 5) — a surviving log is the
-   signal that this pass never ran, and leaving an empty one would raise that signal falsely.
+   signal that this pass never ran, and leaving an empty one would raise that signal falsely. **A record
+   of excused findings is removed on this branch too**, if the plan has one: a plan can waive a finding
+   without ever diverging, so the two records do not always arrive together, and the gate reports either
+   one surviving on its own finding. Stopping here without removing it would leave a survivor the gate
+   would red on and this branch would never reach.
 
-3. **Spawn the `design` subagent to author the as-built design.** The orchestrator never writes a
+3. **Spawn the `design` subagent to apply the log's rows.** The orchestrator never writes a
    `*.design.md`; this pass is a spawn, not an edit.
 
    ```
@@ -77,19 +81,21 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
      Design: ai-docs/plans/<spec-base>.design.md
      Spec:   ai-docs/plans/<spec-base>.spec.md
      Log:    ai-docs/plans/<spec-base>.redline.md
-     Author the as-built design afresh, section by section. Strip the spent
-     process headings, every marker and any record of superseded material;
-     re-author everything else against the shipped state. Verify each write on
+     Apply every row of the log to the item it names, section by section. Strip
+     the spent process headings, every marker and any record of superseded
+     material; leave the rest of the frozen document alone. Verify each write on
      disk before the next one.
    ")
    ```
 
-   **Afresh, and section by section, are different instructions and both bind.** "Afresh" constrains what
-   the content is derived FROM — the shipped state, never the previous text, because an in-place edit
-   leaves every sentence the editor did not touch and what it did not touch is what nobody re-read.
-   "Section by section" constrains how the bytes are DELIVERED: a full-file rewrite of a document this
-   size is the highest-risk moment for a transport drop, and the harness does not retry on a socket
-   close. An implementer reading only the first reaches for one call.
+   **The pass no longer authors the document afresh, and "section by section" survives that narrowing on
+   its own terms.** What the rows reach is the diverged items; everything else the frozen document says
+   stays as it says it, because an untouched sentence is now either caught mechanically — a number whose
+   provenance is gone, an identity that no longer pairs in either direction — or it is prose stating
+   neither, which is accepted as unnoticed. "Section by section" never depended on the re-authoring: it
+   constrains how the bytes are DELIVERED, and a full-file rewrite of a document this size is the
+   highest-risk moment for a transport drop, which the harness does not retry on. So write the corrections
+   section by section and never in one call.
 
 4. **Spawn `spec-writer` to collapse the spec.** Its surviving payload is its record of *deliberate
    absence* — `## Out of scope`, `## Deferred`, `## Key decisions`, **byte-identical** to their pre-fold
@@ -105,16 +111,22 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    ")
    ```
 
-5. **Remove the log from the tree** — `git rm` it. Nothing downstream reads it: the post-merge reading
-   list names the spec and the design and no third class, and the commit history preserves the record.
-   That removal is what makes a surviving log mean *this pass never ran*.
+5. **Remove the log from the tree, and the plan's record of excused findings with it** — `git rm` both:
+   `<spec-base>.redline.md` and `<spec-base>.excuses.md`, the second only if the plan has one, since most
+   waive nothing. Nothing downstream reads either: the post-merge reading list names the spec and the
+   design and no third class, and the commit history preserves both records. That removal is what makes a
+   survivor mean *this pass never ran*. **The record goes because the plan's end of life ends the spot
+   every row of it covers** — a waiver is scoped to one plan and nothing inherits it. Nothing else deletes
+   it: the merge-time cleanup removes the working record by its exact name and reaches neither of these.
 
-6. **Assert positively that every section describes the shipped state.** This is a **judgement** and is
-   named as one. It cannot be done by searching for superseded wording: a document that records its own
-   corrections holds that wording inside a quotation, so an absence proved from a fragment is a false
-   positive rather than a weak result. Read each section against what shipped.
+6. **Read the corrected ITEMS and vouch for them** — the items a row was recorded against, never every
+   section. This is a **judgement** and is named as one. It cannot be done by searching for superseded
+   wording: a document that records its own corrections holds that wording inside a quotation, so an
+   absence proved from a fragment is a false positive rather than a weak result. Read each corrected item
+   against what shipped. **Over everything else this pass asserts nothing by reading** — a stale sentence
+   carrying neither a number nor an identity is accepted as unnoticed rather than hunted.
 
-7. **Then the gate, and the spot-check beside it.** Two calls, each its own:
+7. **Then the gates, and the spot-check beside them.** Three calls, each its own:
 
    ```bash
    ${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh folded ai-docs/plans/<spec-base>.spec.md ai-docs/plans/<spec-base>.design.md
@@ -124,19 +136,38 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    ${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh revision ai-docs/plans/<spec-base>.design.md
    ```
 
+   ```bash
+   ${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh ai-docs/plans/<spec-base>.spec.md ai-docs/plans/<spec-base>.design.md
+   ```
+
    `folded` compares the three retained spec sections byte-for-byte against the previous commit, asserts
-   the design carries none of the residue patterns, and asserts the log is gone. The comparand is version
-   control deliberately — it predates the rewrite and therefore cannot BE the rewrite, which a copy
-   captured by this same pass could not promise. `revision` is the **spot-check** under step 6's
-   judgement, never a substitute for it: it matches a bounded list of the phrases that introduce an
-   account of a past revision, so it catches the named shapes and not every paraphrase.
+   the design carries none of the residue patterns, and asserts the log and the record of excused
+   findings are both gone, each on its own finding. The comparand is version control deliberately — it
+   predates the rewrite and therefore cannot BE the rewrite, which a copy captured by this same pass
+   could not promise. `revision` is the **spot-check** under step 6's judgement, never a substitute for
+   it: it matches a bounded list of the phrases that introduce an account of a past revision, so it
+   catches the named shapes and not every paraphrase.
 
-   **Proceed on a clean 0 and on nothing else.** On findings, fix and re-run. On cannot-run — which is
-   **not** a pass — say so and stop: there is no comparand, so nothing was checked.
+   **On both `check-redline.sh` calls, proceed on a clean 0 and on nothing else.** On findings, fix and
+   re-run. On cannot-run — which is **not** a pass — say so and stop: there is no comparand, so nothing
+   was checked.
 
-8. **Surface the commit; do not commit unasked.** One commit carrying the re-authored design, the
-   collapsed spec and the log's removal — on the task's own PR in the early régime, and on a fold-only PR
-   opened off the default branch in the late one. **In the late régime, check whether the task's own
+   **The convergence check is what this pass owes over the items no row was recorded against, and it
+   owes nothing further there.** Read three of its classes and only three: **provenance**, a number
+   whose sentence no longer names its origin; **reference**, a position that outlives its task; and
+   **pairing**, an identity that no longer resolves in either direction. Those are what rots unnoticed
+   in a document nobody re-read, and they are why no obligation here asks a reader to assert that the
+   whole document describes what shipped. **Those three REPORT rather than hold**, so this call is read
+   rather than passed: fix what it names in the folded document, and carry anything it names elsewhere
+   into the commit message instead of fixing it here — the two tree-wide classes can name a position or
+   an identity no plan's author put there. A cannot-run is still not a pass. **The three holding classes
+   are not this pass's business** — completeness, isolation and arithmetic read the plan AS A PLAN, and
+   by this point the spec is collapsed, so their counts read low for a reason that has nothing to do
+   with the fold. Expect that and read it as the collapse rather than as a defect.
+
+8. **Surface the commit; do not commit unasked.** One commit carrying the corrected design, the
+   collapsed spec and the removal of both records — on the task's own PR in the early régime, and on a
+   fold-only PR opened off the default branch in the late one. **In the late régime, check whether the task's own
    Step 12 move to `ai-docs/plans/done/` ever happened** and carry it in the same commit if it did not: a
    merge that outran the fold outran everything after it too, and the trio sitting in the active directory
    while every completed plan sits beside it in `done/` is the same omission wearing a different file

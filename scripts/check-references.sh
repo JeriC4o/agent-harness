@@ -40,6 +40,14 @@
 # live run: two Learning Log entries cited "AGENTS.md § Tooling" against a
 # project whose AGENTS.md has no § Tooling at all.
 #
+# ONE OF THOSE SIX IS NOW A HEADING AND NOTHING ELSE. § Test Conventions keeps
+# its heading on docs/agents-method.md as a pointer; its rules were extracted to
+# docs/test-conventions.md, which is where a reference to them points. The
+# heading stays because L5 recognises a section name only by reading that page's own
+# level-two headings -- a name whose heading left the page is read as prose and
+# skipped in silence, so an extraction that took the heading with it would narrow
+# this check without reddening it.
+#
 # L5 only fires on a name it RECOGNISES as a method section. An unrecognised
 # name is prose ("a Patterns block in any skill / agent / AGENTS.md section"),
 # not a reference -- so a typo'd section name is invisible to this check. That

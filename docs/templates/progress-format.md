@@ -49,10 +49,21 @@ _Updated: YYYY-MM-DD_
 - [ ] 2. <Pending subtask>
 - ...
 
-## Files touched
+<!-- A `/task` RECORD CARRIES NO `## Files touched` SECTION, deliberately. The set of files a task
+changed is held authoritatively by version control, and `base_commit` above is what addresses it: both
+consumers read `git diff --name-only <base_commit>` instead. A hand-maintained copy was required here
+and written by nobody — no step of that flow instructed it and this page carried no lifecycle entry for
+it — and it drifted: on the task that removed it, the list named 18 paths while version control named
+27. Both consumers were EXCLUSIVE readers of it (the resume path reads only those files, the commit step
+stages only those files), so a list short by nine paths silently narrowed both. If a per-file note is
+ever wanted, it goes in `## Decisions log` against the subtask that made the change, where something
+already writes.
 
-- `path/to/file` — <one-line description of the change>
-- ...
+A `/project-review` record DOES carry one, and that is not an oversight: `review-findings` emits the
+section in its own output template and the skill's own step instructs the update, so there the field has
+a writer. The defect was never the section — it was a required field with no writer and two exclusive
+readers. **One narrower inconsistency stays open there and is named rather than fixed here:** that
+flow's own row in the table below does not list the field its skill mandates. -->
 
 ## Decisions log
 
@@ -63,6 +74,22 @@ _Updated: YYYY-MM-DD_
 ## Key discoveries (don't re-investigate)
 
 <anything non-obvious learned while reading the code — facts that would force a re-read on a fresh spawn>
+
+## Design-review notes
+
+<!-- Written by the orchestrator at Step 7's CLOSE, the moment a GO verdict is in hand and BEFORE Step 8
+opens. The verdict is a subagent RESPONSE and nothing else persists it, so this section is the only
+durable copy: the response text is gone at the next compaction, and BOTH parties that enforce the
+fold-in read it afterwards — Step 8's opening action, which after a compaction-resumed entry has no
+other source, and the `self-review` agent, which is spawned fresh and never saw the response at all.
+One row per `note` / `minor` row of the verdict's Issues table and per bullet of its Recommendations
+section. A verdict that carried neither is recorded as `(none)` rather than by omitting the section,
+because an absent section cannot be told apart from an unrecorded one. The last column is filled by
+the pass that folds the note in, so a blank there is an unfolded note. -->
+
+| # | Severity | The note, verbatim | Folded into the design as |
+|---|---|---|---|
+| 1 | note | <the verdict's own words, not a paraphrase> | <the design item it became, or `withdrawn — <reason>`> |
 
 ## Self-Review (Round 1)
 
@@ -92,8 +119,13 @@ _Updated: YYYY-MM-DD_
 
 | Surface | Required | Optional |
 |---|---|---|
-| `/task` | Branch, base_commit, Last build, current_step, last_passed_gate, entry_args, Issue, Spec, Design, Next action, Subtasks, Files touched, Decisions log, **PR** (from Step 12 onward — absent before the PR exists), **Fix Plan (Round N)** (one per Step 11 round carrying an open finding), **Criterion checks (Round N)** (written as the tests are written) | parent_skill |
+| `/task` | Branch, base_commit, Last build, current_step, last_passed_gate, entry_args, Issue, Spec, Design, Next action, Subtasks, Decisions log, **PR** (from Step 12 onward — absent before the PR exists), **Fix Plan (Round N)** (one per Step 11 round carrying an open finding), **Criterion checks (Round N)** (written as the tests are written), **Design-review notes** (from Step 7's close — `(none)` when the GO verdict carried no note, never omitted) | parent_skill |
 | `/project-review` | Branch, base_commit, Last build, current_step, last_passed_gate, Next action, Subtasks, AC Status table | parent_skill, entry_args |
+
+**Three of those are REWRITTEN AT EVERY BOUNDARY, not once:** `current_step`, `last_passed_gate` and
+`## Next action`, plus a `## Subtasks` box ticked whenever one closes. A skill's per-step instruction
+names only the step-specific value for `current_step`; the other three are owed at every one of them,
+and an instruction that enumerates fewer is naming its own variable, not closing the set.
 | post-push fix round (CI fix / reviewer nit on an open PR) | All `/task` fields PLUS a per-round `## Fix cycle round M` section, and **PR** | — |
 | `/bugfix` | current_step, last_passed_gate, parent_skill (when invoked from `/task`), entry_args, Actual behaviour, Expected behaviour, Confirmed by user, Decisions log | — |
 
@@ -134,9 +166,37 @@ Written when the file is owned by a nested skill (`/bugfix` called from `/task` 
 
 `/task`-specific. Written at Step 1; never edited. Spec / Design paths may flip from `ai-docs/plans/<name>.{spec,design}.md` to `ai-docs/plans/done/<name>.{spec,design}.md` at Step 12 — the field is updated then.
 
+### `Next action`
+
+Rewritten at **every** boundary the owning skill writes progress at, to the move actually next — not to
+the step name, which `current_step` already carries. It is the one thing in this file that cannot be
+derived from anywhere else: version control holds what changed, `current_step` holds where the flow is,
+and only this holds what the author of the last write intended to do next. A compaction-recovered
+orchestrator jumps straight to it, so a stale paragraph here does not read as stale — it reads as an
+instruction.
+
+### `Subtasks`
+
+The box is ticked at the boundary that closes the subtask, in the same write as `current_step`. The list
+itself comes from the design's decomposition and is not re-derived afterwards: a renumbering mid-task
+makes every earlier `Decisions log` bullet prefixed `subtask N` point at a different row. When the
+design is re-authored and the decomposition changes, the old list is kept beside the new one as a record
+of what was done rather than edited in place.
+
 ### `Decisions log`
 
 Append-only. Each step boundary appends ≥0 lines (one line per non-trivial decision, prefixed with the step name).
+
+### `Design-review notes`
+
+Written **once**, by the orchestrator, at Step 7's close on a GO verdict — before Step 8 opens, because
+the Step 7 → Step 8 boundary is this flow's most frequent compaction point and the verdict exists only
+as the response text that a compaction discards. If no progress file exists yet, this write CREATES it;
+Step 8 then fills the remaining header fields rather than creating it a second time. The note column is
+immutable once written — a note is never reworded to match what was done, which would make the record
+agree with the design by construction. Only the last column is filled later, by whichever pass folds
+the note in. Read by Step 8's opening action and by `self-review` § Design conformance; neither has any
+other source.
 
 ### `Self-Review (Round N)` sections
 
@@ -165,7 +225,10 @@ One per review round carrying at least one `⬜ Open` finding. The heading, the 
 ## Anchors and measurements in this file go stale while it is being written
 
 This file's sections cite `file:line` anchors and record measurements, and the files they point at are the
-ones the task is editing. Two rules, both learned by paying for them twice in one task.
+ones the task is editing. **The scope is those sections and nothing past them.** The committed redline log
+documented below carries no position to re-derive — its quoting field names an entity — and the duty
+covering what that log does carry is stated in `${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking,
+so no single rule spans both records. Two rules, both learned by paying for them twice in one task.
 
 **A pass that touches an EXISTING row re-derives every `file:line` and every measurement in it**, not only
 the fields it came to change. A row is a claim about a tree that later rounds are free to edit, so a figure
@@ -198,14 +261,14 @@ the drift this mechanism exists to reduce, so the derivation is visible in a sin
 |---|---|---|
 | `Key` | `R<round>.<finding #>` for a divergence a review round found, `S<step>.<ordinal>` for one implementation found | the round and number from the plan row; or, where no plan row exists, the step and the order of discovery |
 | `Type` | `added` \| `modified` \| `removed`, relative to the frozen base | the `redline:` disposition's type token |
-| `Artefact sentence diverged from` | the quoted sentence plus its backticked `file:line` | the plan row's `Arm A` cell, **verbatim** |
+| `Artefact sentence diverged from` | the quoted sentence plus the entity it sits in — the named file and a heading or numbered item inside it, which is a declared identity and so needs no id comment (`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`) | the plan row's `Arm A` cell, **transformed and not copied** — that cell carries a position because the fix-plan gate requires one of it, so the promotion resolves the position to the entity holding the sentence, and only the sentence travels verbatim |
 | `What shipped instead` | what the shipped artefact does instead | the disposition's reason text, **verbatim** |
 
 ```markdown
 | Key | Type | Artefact sentence diverged from | What shipped instead |
 |---|---|---|---|
-| R2.4 | modified | `<design-path>:120` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
-| S8.1 | added | `<design-path>:348` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
+| R2.4 | modified | `<design-path>` § `<heading or numbered item>` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
+| S8.1 | added | `<design-path>` § `<heading or numbered item>` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
 ```
 
 **The head above the table prescribes FIELDS, not layout** — the writer may arrange and expand them, and
@@ -254,29 +317,66 @@ rested on rather than as a preference.
   not matched by the ignore rules and not deleted by the merge-time progress-file cleanup; nothing else
   removes it.
 
+## The record of excused findings (committed)
+
+`ai-docs/plans/<spec-base>.excuses.md` — named by the same construction as the redline log above and
+committed for the same lifecycle reason. **The suffix is not matched by the ignore rules**, which is
+confirmed rather than assumed: `git check-ignore -v` on both reports the working record ignored and this
+one not. Each row waives **one** finding of the plan-convergence check, for **this plan and no other**.
+
+| Column | Holds | Why that and not something else |
+|---|---|---|
+| `Class` | the class the check's own finding line names | one fault in two classes is two findings |
+| `Spot` | **an entity** — the document plus the heading or numbered item the finding sits under, or the file a tree-wide finding is in | a position here is the anti-pattern the check's own reference class reports, and it moves when the passage is edited — the case a waiver must survive |
+| `Subject` | the figure, object, requirement, id, position token or repeated span the finding is about | it makes the key specific without quoting the passage, so rewording the sentence keeps the waiver |
+| `Grounds` | why the finding does no harm **here**, in terms a later reader can check | a reason nobody can check is indistinguishable from suppression |
+
+```markdown
+| Class | Spot | Subject | Grounds |
+|---|---|---|---|
+| isolation | <design-path> § <heading or numbered item> | <the figure, object, id or span> | <why it does no harm here> |
+```
+
+- **Granted by an act that shows the finding first**, and by nothing else: the check's
+  `--excuse '<class>|<spot>|<subject>' --grounds '<why>'` runs every class with waiving suspended, prints
+  the finding carrying that key, and only then appends the row. **No ordinary run writes here**, and a key
+  matching no finding of the run is refused — an excuse for a finding nobody can see excuses nothing.
+- **A waived finding stays visible**, reported as excused with its grounds, and the waived count prints
+  beside the verdict **split by whether its class holds the plan**: one mixed figure cannot say whether ten
+  waivers let a plan proceed over ten holds or merely quieted ten reports.
+- **Editing the passage does not revoke a waiver**, and the same fault returning at that spot comes back
+  waived. **The one bound:** where the subject *is* a passage — a repeated span — rewriting it does change
+  the key, which is correct, because the two sites then no longer say the same thing.
+- **Removing a row is an act of the same kind as granting one**, done by hand, which is why this is a table
+  a reader can find a row in. **Lifecycle:** created by the task's first grant act, moved to
+  `ai-docs/plans/done/` with the plan trio, and **removed by the fold together with the redline log** by
+  nobody's explicit act, because the plan's end of life ends the spot every row covers.
+
 ## Criterion checks (Round N)
 
-Where the CONCRETE check set lives, which the design no longer carries. The design states each
-criterion's verification **intent** and names no test method, path or command, because those are chosen
-while the tests are written — after the design is agreed — so a design that promised them would diverge
-from the shipped tree by construction. This section is written as the tests are written.
+Where the CONCRETE check set lives, and the ONLY place in the task that holds one. **The design says
+nothing about tests at all** — not a test method, not a path, not a command, not an intent, not a count
+and not a result — because every one of those is chosen while the tests are written, after the document
+is agreed, so a design promising any of them diverges from the shipped tree by construction. This
+section is written as the tests are written, and it takes its subject from the SPEC's criteria, which
+are spec-side and untouched by that prohibition.
 
 | Column | Holds |
 |---|---|
 | `AC` | the criterion id |
-| `Intent` | the design's intent line, copied |
+| `Criterion` | the spec's acceptance criterion, copied — the design is not a source here and carries no verification line to copy |
 | `Covering check` | the concrete command, test identifier or path, chosen while the tests were written |
 | `Shown non-empty by` | the input that made that check fire, and the result |
 
 ```markdown
-| AC | Intent | Covering check | Shown non-empty by |
+| AC | Criterion | Covering check | Shown non-empty by |
 |---|---|---|---|
-| AC1 | <the design's intent line, copied> | <command / test identifier / path> | <the input that made it fire, and the result> |
+| AC1 | <the spec's criterion, copied> | <command / test identifier / path> | <the input that made it fire, and the result> |
 ```
 
 - **`Shown non-empty by` blank is a REFUSAL, not a default.** This column is where the
   falsify-before-trusting duty now lives, and the predicate is never "a check exists that covers this
-  intent": it is that the covering check **has been shown able to come back NON-EMPTY** — run once as
+  criterion": it is that the covering check **has been shown able to come back NON-EMPTY** — run once as
   written, and once against input engineered to make it fire. The gap between the two is this
   repository's best-documented defect class: three natural spellings of one syntax check all report
   success on a file that does not parse, one of them with no output at all. Each would satisfy "a check

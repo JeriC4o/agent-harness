@@ -72,12 +72,12 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   which items are settled and skips them.
 - **Why it exists.** The design is frozen at the design-review GO verdict and is NOT rewritten during the
   work. A divergence that does not break the agreed approach is marked and logged instead of reopening
-  the planning chain, and one closing fold after the PR is approved authors the corrected design afresh.
+  the planning chain, and one closing fold after the PR is approved applies the log's rows to the items that diverged.
 - **Identity.** The spec base name. Its head carries four required fields — `**Tracked in:**`,
   `**Spec:**`, `**Design:**`, `**Mode:**` — of which `Mode` is the one with a consumer: `R&D` or
   `Hybrid`, chosen once per task at the first divergence found while writing the code, with grounds that
   must cite the design.
-- **Code.** `scripts/check-redline.sh` — seven verbs (`pending`, `folded`, `suppression`, `acintent`,
+- **Code.** `scripts/check-redline.sh` — six verbs (`pending`, `folded`, `suppression`,
   `revision`, `paired`, `specform`) on the `0 clean / 1 findings / 2 cannot run` convention. `paired` is the pairing
   half for every key form and the marking pass's own exit check; `check-fix-plan.sh`'s `A7` and `A8` are
   the in-round halves. `skills/redline-fold/SKILL.md` is the closing fold; `/pr-merged` refuses on an
@@ -90,13 +90,13 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 ## Plan invariants
 
 - **What it is.** The base principles of what a spec and a design are, the record of the elements each
-  one is required to be composed of, and the set of pages that define or enforce one. Eight numbered
-  sentences each carrying its own one-clause reason; fourteen elements keyed by document and token
-  together; seven protected pages with a reason each, and seven documented near misses with why each one
-  is out.
+  one is required to be composed of, and the set of pages that define or enforce one. A numbered
+  sentence per principle, each carrying its own one-clause reason; thirteen elements keyed by document
+  and token together; seven protected pages with a reason each, and seven documented near misses with
+  why each one is out.
 - **Why it exists.** Measured damage: a self-improvement pass made a required element out of something
   that cannot be known at the time the document is authored, which bought invented content at authoring
-  time and an end-of-task review loop that could not converge. Seven of the eight principles are
+  time and an end-of-task review loop that could not converge. All but two of the principles are
   prohibitions, so a hunt for a principle's opposite is structurally blind to an ADDITION — and an
   addition is how the measured damage arrived. That is why the verification COMPARES a recorded statement
   inventory instead of reading sentences and ruling on them: arrived, departed and textually changed are
@@ -152,7 +152,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `agents/<name>.md` | The 10 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
 | `hooks/hooks.json` | **22** hook entries in 12 matcher groups, running **19** distinct guards — three are registered twice: two of them on two EVENTS each, and the plan-invariants refusal on two MATCHERS of one event, which is why "how many hooks" has three defensible answers and this row gives all three. Re-derive from the manifest with `jq` over `.hooks[][].hooks[]` (length, and the length of its unique `.command` set) rather than trusting this line; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
-| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `check-plan-invariants.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
+| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `check-plan-invariants.sh`, `check-plan-convergence.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
@@ -162,7 +162,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 | Concern | Choice |
 |---|---|
-| Language | Markdown instruction files + POSIX shell, plus five non-shell payload files in three other languages: `awk`, `jq` and `python3` |
+| Language | Markdown instruction files + POSIX shell, plus eight non-shell payload files in three other languages: `awk`, `jq` and `python3` |
 | Build | none |
 | Test | `bash scripts/run-checks.sh` — the whole structural list in one call; see `AGENTS.md § Build & Test` |
 | CI | none yet |
@@ -171,12 +171,27 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 | Field | Value |
 |---|---|
-| Primary language(s) | Markdown, POSIX shell (`bash`). Five tracked payload files are in three other languages — `hooks/lib/loop-window.awk`, `hooks/lib/loop-window-prefix.awk`, `scripts/bin-of.jq`, `scripts/check-plan-invariants.py` and `scripts/check-plan-invariants-refusal.py` |
+| Primary language(s) | Markdown, POSIX shell (`bash`). Eight tracked payload files are in three other languages — `hooks/lib/loop-window.awk`, `hooks/lib/loop-window-prefix.awk`, `scripts/bin-of.jq`, `scripts/check-plan-invariants.py`, `scripts/check-plan-invariants-refusal.py`, `scripts/check-plan-convergence.py`, `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py` |
 | New-file rule | Method content is Markdown; executable helpers are `.sh` under `skills/<skill>/scripts/`. A payload in another language is a SIBLING loaded by a `.sh` entry point from its own directory, never an entry point itself, so every caller still invokes a shell script and the interpreter is preflighted with its reason in one place |
 | Max line length | soft 110 for prose; no hard limit |
 | Formatter | none |
-| Linter (the gate) | `shellcheck` for `.sh`; `jq -e .` for JSON manifests. **Neither the `shell-syntax` member nor `untracked-shell` globs anything but `*.sh`, so no gate in the pre-commit list parses a payload sibling by walking the tree** — each is asserted by the suite that owns its entry point instead: `scripts/check-plan-invariants.py` is `ast.parse`d by a leg of `scripts/test-check-plan-invariants.sh`, which the single entry point runs, and both files are additionally asserted tracked by the check itself, because a file read for its data while untracked makes the local run green and every other clone a cannot-run |
+| Linter (the gate) | `shellcheck` for `.sh`; `jq -e .` for JSON manifests. **Neither the `shell-syntax` member nor `untracked-shell` globs anything but `*.sh`, so no gate in the pre-commit list parses a payload sibling by walking the tree** — each is asserted by the suite that owns its entry point instead: `scripts/check-plan-invariants.py` is `ast.parse`d by a leg of `scripts/test-check-plan-invariants.sh`, and `scripts/check-plan-convergence.py` with both of its siblings — `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py` — by a leg of `scripts/test-check-plan-convergence.sh` that enumerates all three, each run by its single entry point, and the invariants payloads are additionally asserted tracked by the check itself, because a file read for its data while untracked makes the local run green and every other clone a cannot-run |
 | Source root / test root | n/a — no compiled sources |
+| Required external interpreters | `python3` and `perl`, beside the `awk` and `jq` the payload files above need. `python3` runs all five `.py` payloads above — `scripts/check-plan-invariants.py` with the refusal sibling it loads, and `scripts/check-plan-convergence.py` with the holding and reporting siblings it loads — and is the scanning tool of both plan-document checks, each of which preflights it by name and names every payload it could not find. `perl` executes nowhere in the tree's shipped code and is still a hard dependency of the mandatory check list: five of its members build their mutant fixtures with it — the loop-index and loop-verdict verifications under `hooks/lib/`, and the bin-of, loop-grid and loop-metrics suites under `scripts/` — so on a host without it those positive controls cannot run, and a could-not-run is not a pass. `scripts/run-checks.sh` demands it in the same preflight roster as the tools it invokes itself, which is what makes that failure loud and early rather than mid-suite. **A word-list mention is not an invocation:** `hooks/lib/plan-invariants-guard.sh` and its own verification carry the name as DATA, inside the vocabulary that recognises a command writing a file in place, and neither runs it |
+| Thousand-line exemption | `scripts/check-plan-invariants.py` is the one file in this repository **exempt from `docs/code-style.md` § File size**: `wc -l` reported 1,001 lines before this branch's two id comments landed and reports 1,003 now, against a hard limit of one thousand. The only seam that removes the overage moves the `PINNED` list — the check's own second copy of the base-principle sentences, eleven lines of data by `wc -l` over that assignment — into a fourth payload file, which by that subtraction lands the payload at about 992, eight lines under the limit; the payload's own header already argues against that file, on the ground that the data left after the second leg stopped measuring a sentence against a vocabulary does not earn one. This row records that the three lines are tolerated rather than paid for that way, and names the seam if it is ever revisited. The convergence payload took the other route: it crossed the same limit at 1,447 lines and was split into three files instead. The core file that split left measures 805 lines, inside the 800–1000 band `docs/code-style.md` calls **hard-ish** and routes to a justification in the pull-request description: what that file keeps is what both sibling groups read — the plan pair, the segmentation, the numeral readers, the excuse route and the report — so a further cut would have to cross machinery both siblings call rather than follow a seam the check already states as data, and the five lines above 800 are tolerated on that ground. This row is the durable record of that justification, and the pull request carries the same one when it opens. |
+
+## Deployed configuration
+
+**Deployed-config globs:** `.env` `.env.*`
+
+The file class whose CONTENTS are ASK-gated by
+[`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Permissions](../docs/agents-method.md#permissions). The
+search guard `hooks/lib/deployed-config-guard.sh` reads the line above at search time, so the gated class
+is this project's own spelling rather than one stack's filenames carried inside a method file. One glob
+per backticked token, all on that one line; a project with no such class writes `none`, which silences the
+guard. **This project holds no deployed configuration in the tree** — the two globs are the class the
+method surface itself names, they are gitignored here, and the declaration exists so the guard has a class
+to read rather than one to invent.
 
 ## Build & test commands
 
@@ -238,8 +253,8 @@ meanings.
   exposure is reachable by ordinary ordering, not only by a pass covering its tracks.
 
   **The verification is a CHANGE detector against an accepted record, not a presence assertion — so a
-  clean verdict means less than it looks.** The eight principles do get a presence assertion, a pinned
-  copy inside the verification reported as an absence when one vanishes. Nothing else does. Measured:
+  clean verdict means less than it looks.** The numbered principles do get a presence assertion, a
+  pinned copy inside the verification reported as an absence when one vanishes. Nothing else does. Measured:
   deleting the principles page's own statement of its limit reports 7 departures with their text and moves
   the statement total down by exactly those **7**, so it cannot STOP being stated unseen — the DELTA is the
   measured fact and the absolutes are not, because they move with every later change; but had that

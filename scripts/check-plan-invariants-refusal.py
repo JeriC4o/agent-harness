@@ -8,11 +8,14 @@
 # what makes a removed registration a finding rather than a silence.
 #
 # WHY IT IS A SECOND FILE AT ALL. The payload crossed this repository's hard
-# 1000-line limit and no documented exemption fits a hand-written script, so one
-# leg moves out. This span was measured the cheapest of the three candidates: it
-# is a pure SINK. Of the nine names it defines, not one is read anywhere else in
-# the payload -- context in, findings appended, nothing exported -- where leg 3
-# exports two names and leg 2 four over 381 lines.
+# 1000-line limit, whose two documented exemptions -- auto-generated code and
+# single large expressions -- fit no hand-written script, so one leg moves out;
+# the per-file route that does fit is the Thousand-line exemption row in
+# ai-docs/context.md, which the payload now holds. This span was measured the
+# cheapest of the three candidates: it is a pure SINK. Of the nine names it
+# defines, not one is read anywhere else in the payload -- context in, findings
+# appended, nothing exported -- where leg 3 exports two names and leg 2 four
+# over 381 lines.
 #
 # WHAT A BROKEN SIBLING COSTS, and where that is guarded. A sibling that exists
 # but cannot be EXECUTED is the failure mode the design named when it chose one
@@ -164,15 +167,20 @@ def run(ctx):
     # verdict on its own is deliberately NOT enough. That is the one distinction
     # that separates a rule REQUIRING an element from a rule about the COVERAGE of
     # an element already required: measured on the live tree, the post-merge
-    # repository pass assigns a severity to an intent nothing covers and says
+    # repository pass assigns a severity to a use case no test covers and says
     # nothing about any element being absent, while the design reviewer's contract
-    # spells `missing` and `present?` beside its own severities. Dropping the
+    # spells `missing` and `present?` beside its own severities. (That pass's
+    # predicate was rewritten when a design stopped saying anything about tests;
+    # the measurement survives the rewrite because what it turns on is unchanged
+    # -- the pass scores COVERAGE of a section the template already mandates.) Dropping the
     # requirement reports the first page as an unguarded route, which it is not.
+    # [presence-shape]
     PRESENCE_SHAPE = re.compile(
         r'(?:missing|absent|present\b|presence|must exist|exists?\b|retained|retains|byte-identical|surviv\w+|binding)',
         re.I)
 
 
+    # [defines-element]
     def defines_element(path, body):
         for block in re.findall(r'(?ms)^```markdown\n(.*?)^```', body):
             for t in re.findall(r'(?m)^(##\s+\S.*?)\s*$', block):

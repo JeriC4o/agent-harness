@@ -93,10 +93,12 @@ command -v python3 >/dev/null 2>&1 \
   || { printf 'check-plan-invariants: cannot run -- python3 is the scanning tool, and the host grep is not a substitute: it has been measured answering 0 to a pattern it refused on a complexity limit\n' >&2; exit 2; }
 
 # THE PAYLOAD IS TWO SIBLINGS BESIDE THIS FILE rather than a heredoc: the single
-# file measured 1010 lines against this repository's hard 1000-line limit, which
-# ships no exemption for a script, and the first sibling went back over that
-# limit once both of Round 2's corrections were in it. The second holds leg 4 and
-# nothing else.
+# file measured 1010 lines against this repository's hard 1000-line limit, whose
+# two documented exemptions -- auto-generated code and single large expressions
+# -- fit no hand-written script. What fits is the per-file route, and the first
+# sibling took it: the Thousand-line exemption row in ai-docs/context.md. That
+# sibling went back over the limit once both of Round 2's corrections were in
+# it. The second holds leg 4 and nothing else.
 #
 # THE FAILURE MODE THAT ARGUED FOR ONE FILE IS GUARDED RATHER THAN ABSENT. A
 # sibling that exists but cannot be loaded reports as findings rather than as a

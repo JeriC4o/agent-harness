@@ -14,8 +14,8 @@ Agent(subagent_type="Explore", prompt="
 
   Template to fill:
   [ACTUAL]
-  Caller -(method())-> ServiceA -(query())-> DaoB
-  DaoB -(N records)-> ServiceA
+  Caller -(method())-> ServiceA -(query())-> StoreB
+  StoreB -(N records)-> ServiceA
   ServiceA: applies logic X, but expected logic Y
   ServiceA -(wrong result)-> Caller
 

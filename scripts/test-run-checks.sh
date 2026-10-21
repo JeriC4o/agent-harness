@@ -221,7 +221,7 @@ printf '\n== cannot run is not a pass ==\n'
 # genuinely absent. The control leg below is what makes the jq leg mean
 # anything: without it, rc 2 could be the thin PATH breaking something else.
 BIN="$T/thin-bin"; mkdir -p "$BIN"
-for b in bash git sed grep sort uniq comm mktemp rm cat dirname xargs tr wc env awk head; do
+for b in bash git sed grep sort uniq comm mktemp rm cat dirname xargs tr wc env awk head perl; do
   p=$(command -v "$b") && case "$p" in /*) ln -s "$p" "$BIN/$b" ;; esac
 done
 make_tree "$FAKE"
@@ -246,6 +246,18 @@ nocomm=$(env -i PATH="$BIN" HOME="$HOME" bash "$RUNNER" --root "$FAKE" 2>&1); no
 check "comm absent -> 2, not a green inventory" "$nocomm_rc" "2"
 has "  and it names what is missing" "$nocomm" "comm"
 hasnt "  and no member reported a verdict" "$nocomm" "ok   gate-inventory"
+
+# `perl` is the one required tool the runner does not itself invoke: five
+# MEMBERS build their mutant fixtures with it, so on a host without it those
+# positive controls cannot run and a could-not-run is not a pass. Without this
+# leg that entry is a comment rather than a declaration -- and the containment
+# leg below cannot cover it by construction, since it derives from call sites in
+# the runner and perl has none there.
+comm_path=$(command -v comm) && ln -s "$comm_path" "$BIN/comm"
+rm -f "$BIN/perl"
+noperl=$(env -i PATH="$BIN" HOME="$HOME" bash "$RUNNER" --root "$FAKE" 2>&1); noperl_rc=$?
+check "perl absent -> 2, not a pass" "$noperl_rc" "2"
+has "  and it names what is missing" "$noperl" "perl"
 
 printf '\n== the required-tool list covers every tool the body invokes ==\n'
 # The mktemp defect was a LIST drifting from the code beside it, so the check is

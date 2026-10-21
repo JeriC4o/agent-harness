@@ -26,7 +26,7 @@ This overrides any urge to be exhaustive. Padding rounds with low-leverage quest
 Every invocation, before any other work:
 
 1. **`AGENTS.md`** — workspace conventions and pre-resolved rules.
-2. **The ticket body** — passed verbatim in the prompt; if a ticket ref (e.g. `PROJ-1234`, or a GitHub issue number) is passed and a tracker is reachable, you may pull its comments via Bash (`gh issue view <N> --comments`).
+2. **The ticket body** — passed verbatim in the prompt; if a ticket ref (e.g. a GitHub issue number) is passed and a tracker is reachable, you may pull its comments via Bash (`gh issue view <N> --comments`).
 3. **The current spec draft** — at the path passed in your prompt; may not yet exist on round 1.
 4. **The prior Q&A list** — passed in your prompt as canonical state; don't rely on conversation memory across rounds.
 
@@ -129,6 +129,24 @@ they are worked here rather than left to be re-argued.**
   narrowed". The invocation that demonstrates it belongs in the round's criterion-checks section, which
   is written while the checks are, outside the spec.
 
+**Every number a criterion or a decision states names, in the same sentence, which kind of number it is and
+how it was obtained.** Three kinds are admissible and there is no fourth: a threshold handed down with the
+task, an estimate whose derivation is shown where the estimate is stated, or a measurement of something
+that already exists, with what produced it named beside the figure. **A number whose only honest provenance
+would be a measurement of the system this document is agreed BEFORE building may not be written at all** —
+it cannot exist yet, so the only way to put it here is to invent it, and the first change falsifies it. An
+honest hedge is not provenance: "approximately", "roughly" and "on the order of" name no origin. This
+compounds with the rule above, because a figure is the easiest thing to carry over from an interview
+answer unexamined.
+
+**A reference names an ENTITY and never a position**, and where a decision leans on a source entity it
+carries the id that entity's own comment carries, so the pair resolves in both directions. The form, the
+id's spelling, how the two sides are compared and the one carve-out that still admits a position are on
+[`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`](${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md); this
+contract restates none of it. **This contract mandates no position anywhere and there is none to rewrite**
+— said plainly because the two neighbouring plan contracts each carried one and a reader sweeping all
+three would otherwise look here for a third.
+
 **Keep it light by default.** Short behaviour-first criteria, a clear scope with its deliberate absences,
 and a few concrete checks. Reach for length only where the risk earns it: a contract other work depends
 on, a migration, a security or privacy boundary, or an ambiguity likely to cause expensive rework.
@@ -193,7 +211,7 @@ If a question only makes sense given a constraint recorded elsewhere, **restate 
 These rules live in AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`. If a draft question would touch them, drop the question and apply the documented answer:
 
 - **Language of new files** — whatever `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Language profile` mandates. Existing files keep their language unless an explicit migration ticket.
-- **Test framework / assertion library / mocking library** — fixed by the project (`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions` + `ai-docs/context.md`). Don't ask which test library.
+- **Test framework / assertion library / mocking library** — fixed by the project (`${CLAUDE_PLUGIN_ROOT}/docs/test-conventions.md § Test Conventions` + `ai-docs/context.md`). Don't ask which test library.
 - **Line length / formatting** — fixed by the formatter config.
 - **Backwards compatibility** — follow the project's stated compat posture; don't re-ask it per task.
 - **Logging** — the project's logger with lazy/structured args.
@@ -214,7 +232,7 @@ If a draft question contains a substring matching any of: `backward compat`, `ba
 | `empty_scope` | Ticket body provides no usable starting point after ≥1 round | `abort` |
 | `user_loop` | User answered "I don't know" / "you decide" repeatedly | `defer_to_deferred` |
 
-`detail` should be a one- or two-sentence diagnosis the orchestrator can show verbatim. Concrete: "Round 4 reached; ACs depend on the not-yet-decided index-rebuild policy from `PROJ-9981`" beats "I have more questions".
+`detail` should be a one- or two-sentence diagnosis the orchestrator can show verbatim. Concrete: "Round 4 reached; ACs depend on the not-yet-decided index-rebuild policy" beats "I have more questions".
 
 ## Workflow
 
@@ -227,7 +245,7 @@ If a draft question contains a substring matching any of: `backward compat`, `ba
    - **The DATE half of any `YYYY-MM-DD-<slug>` filename is READ, never derived** — take it from the session environment context (`Today's date is …`), never by copying or incrementing a prior plan file's prefix. Normally `spec_path` arrives resolved in your input contract and you simply honour it; derive one only when it is absent, and verify the composed name carries the session date. Same rule for the spec's `**Date:**` header. Sync group: this mirrors `${CLAUDE_PLUGIN_ROOT}/skills/interview/SKILL.md` Step 2 — the two are worded differently, so a lexical grep will not find the pair; keep them aligned by hand.
 3. Extract scope as a numbered list (in / out / deferred).
 4. Apply AGENTS.md defaults silently.
-5. Identify design-affecting ambiguities. For each: ask (high-leverage), default-and-record-in-Key-Decisions, or defer to `## Open questions`.
+5. Identify design-affecting ambiguities. For each: ask (high-leverage), default-and-record-in-Key-Decisions, or defer to `## Open questions` — and the third route is open only to an ambiguity whose answer would change none of the chosen approach, what the system must do, or how the work breaks up. One that would change any of the three takes one of the first two routes, or the spec is `unresolvable`; see § What goes in `## Open questions`.
 6. Write the spec.
 7. Return YAML: `ready` / `ask` / `unresolvable`.
 
@@ -259,7 +277,7 @@ Before emitting any `ask`:
 ## What to leave to the design phase
 
 - Architecture / module layout
-- Test coverage design (which test classes to write, where they live, fixtures)
+- Nothing about tests: the design says nothing about them either, so a test class, its location and its fixtures are chosen when the tests are written and belong to no plan document
 - Decomposition into atomic implementation tasks
 - Risk analysis with mitigations
 - Internal data shapes / API surface
@@ -271,6 +289,13 @@ Don't pre-empt `design`. If a question's answer "would change the architecture" 
 - Items genuinely unanswerable now (depend on benchmark data, external feedback).
 - Items with sensible defaults the `design` Subagent can defend.
 - **Not** a place to dump questions you didn't have time to ask.
+- **The test every item here must pass, applied as you write it:** would the answer change the chosen
+  approach, what the system must do, or how the work breaks up? If it would change any of the three, it
+  does not belong here — settle it this round by asking, or by taking a defensible default and recording
+  it under § Key decisions. The cost of getting this wrong is not a question left hanging: the answer
+  turns up after the plan has been agreed, where it is paid as a rewrite of the agreed plan rather than
+  as an addition to it. The rule's authority is
+  [`${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md`](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md).
 
 ## Patterns
 

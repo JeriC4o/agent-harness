@@ -64,12 +64,12 @@ Find the single point of failure.
 
 1. Read only files involved in the trace.
 2. Find the line where the contract is violated.
-3. State: `"Root cause: ClassName.method() in path/Foo.kt line N — does X instead of Y"`.
+3. State: `"Root cause: ClassName.method() in path/Foo line N — does X instead of Y"`.
 4. Append to the trace:
 
    ```markdown
    ## Root Cause
-   `ClassName.method()` in `path/Foo.kt` line N — does X instead of Y
+   `ClassName.method()` in `path/Foo` line N — does X instead of Y
    Confirmed by user: ⏳ PENDING
    ```
 
@@ -91,7 +91,7 @@ Find the single point of failure.
 
 **Test must:**
 
-- Follow `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Test Conventions` and the project's fixture/mocking conventions in `ai-docs/context.md`.
+- Follow `${CLAUDE_PLUGIN_ROOT}/docs/test-conventions.md § Test Conventions` and the project's fixture/mocking conventions in `ai-docs/context.md`.
 - Verify an invariant (comment out the fix → test fails).
 - Be named as a behaviour description: `should return error when input is empty`.
 

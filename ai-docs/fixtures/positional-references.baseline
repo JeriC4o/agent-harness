@@ -1,0 +1,419 @@
+# Positional references that predate the prohibition, one row per accounted
+# position: shape, path and the token itself, tab-separated. The reference class
+# of check-plan-convergence.sh compares the tracked tree against this record and
+# reports every arrival; what is recorded here is absorbed and reported about
+# nothing. A comment line and a blank line are ignored.
+#
+# A row is added by hand from the arrival finding, which prints the row that
+# would account for it. Removing a row is what re-opens a position for
+# reporting.
+command-slice	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	sed -n '353p' <spec>
+command-slice	hooks/lib/test-plan-invariants-guard.sh	sed -n '1,20p' agents/design.md
+command-slice	hooks/lib/test-plan-invariants-guard.sh	sed -n '1,5p' ${RECORD}
+command-slice	hooks/lib/test-plan-invariants-guard.sh	sed -n 1p agents/design.md
+command-slice	skills/ai-audit/reference.md	awk 'FNR==1{f=0} /^---$/{f=!f; next} f && /^name:/{print $2}' ${CLAUDE_PLUGIN_ROOT}/agents/*.md
+command-slice	skills/ai-audit/reference.md	awk 'FNR==1{f=0} /^---$/{f=!f; next} f && /^name:/{print $2}' ${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md
+path-line	agents/review-findings.md	convention.md:5-16
+path-line	agents/self-review.md	doc-convention.md:14
+path-line	agents/self-review.md	doc-convention.md:25
+path-line	agents/self-review.md	doc-convention.md:5-16
+path-line	ai-docs/context.md	hooks/lib/loop-index.sh:101-103
+path-line	ai-docs/learnings.md	agents/inspector.md:64
+path-line	ai-docs/learnings.md	agents/inspector.md:68
+path-line	ai-docs/learnings.md	docs/claude-tools-hierarchy.md:110
+path-line	ai-docs/learnings.md	hooks/lib/loop-index.sh:85-86
+path-line	ai-docs/learnings.md	scripts/session-events.sh:121-126
+path-line	ai-docs/learnings.md	scripts/session-events.sh:267-273
+path-line	ai-docs/learnings.md	scripts/session-events.sh:313-314
+path-line	ai-docs/learnings.md	scripts/session-events.sh:328
+path-line	ai-docs/learnings.md	SKILL.md:118
+path-line	ai-docs/learnings.md	skills/improve/SKILL.md:118
+path-line	ai-docs/learnings.md	skills/task/SKILL.md:157
+path-line	ai-docs/learnings/JeriC4o-chore-improve-round-2026-10-09.md	ai-docs/learnings.md:1563
+path-line	ai-docs/learnings/JeriC4o-chore-improve-round-2026-10-09.md	rules/ast-index.md:137
+path-line	ai-docs/learnings/JeriC4o-GH-102-ai-audit-consistency.md	docs/propagation.md:38
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	ai-docs/context.md:14
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/check-candidate.sh:138
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/check-candidate.sh:147
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/check-candidate.sh:157-158
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/check-candidate.sh:239
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/check-candidate.sh:245
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/check-candidate.sh:260
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/foo.sh:14
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/session-events.sh:14
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/test-promotion.sh:125
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/test-promotion.sh:2
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	scripts/test-promotion.sh:5
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	skills/improve/SKILL.md:111
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	skills/improve/SKILL.md:118
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.spec.md	skills/harness-init/scripts/scaffold.sh:3
+path-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.spec.md	skills/harness-init/SKILL.md:88
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	AGENTS.md:127
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	AGENTS.md:53
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	AGENTS.md:54
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	ai-docs/context.md:70
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	ai-docs/context.md:86
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	ai-docs/context.md:87
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	ai-docs/context.md:89
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	ai-docs/learnings/JeriC4o-GH-29-harness-feedback-channel.md:45
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	ai-docs/learnings/JeriC4o-GH-29-harness-feedback-channel.md:57
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	check-references.sh:121
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	check-references.sh:8
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	README.md:16
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	README.md:257
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	README.md:258
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	README.md:266
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	README.md:287
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	scripts/check-references.sh:121
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	scripts/check-references.sh:8
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	scripts/test-check-references.sh:40
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	test-install-smoke.sh:40
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.spec.md	AGENTS.md:127
+path-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.spec.md	scripts/test-install-smoke.sh:59
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	AGENTS.md:21
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	AGENTS.md:76
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	ai-docs/context.md:87
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	check-references.sh:8
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	check-release.sh:20
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	docs/instruction-file-validation.md:37
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	loop-index.sh:226
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	README.md:285
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	README.md:315
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	scripts/check-release.sh:20
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.spec.md	README.md:280
+path-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.spec.md	skills/bugfix/SKILL.md:157
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	agents/inspector.md:125
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	agents/inspector.md:66
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	docs/agents-method.md:145
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	docs/claude-tools-hierarchy.md:101
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	docs/claude-tools-hierarchy.md:110
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	hooks/lib/loop-index.sh:87
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	hooks/lib/loop-index.sh:91
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	hooks/lib/test-loop-verdict.sh:157
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	hooks/lib/test-loop-verdict.sh:232-246
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/backlog-metrics.sh:57
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/loop-metrics.sh:236
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/loop-metrics.sh:261-267
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/loop-metrics.sh:313
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/loop-metrics.sh:314
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/loop-metrics.sh:343
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/loop-metrics.sh:345-351
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/session-events.sh:88
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/test-check-readme-update.sh:51
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/test-loop-metrics.sh:310-317
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/test-loop-metrics.sh:311
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	scripts/test-loop-metrics.sh:39
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	skills/inspect/SKILL.md:79-82
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	test-loop-metrics.sh:242-249
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	test-loop-metrics.sh:300-330
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.design.md	test-loop-verdict.sh:56-68
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	agents/inspector.md:66
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	docs/claude-tools-hierarchy.md:101
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-index.sh:14-17
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-index.sh:149
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-index.sh:196-200
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-index.sh:27-33
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-index.sh:71-86
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-index.sh:76-78
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-index.sh:84
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-verdict.sh:107-121
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-verdict.sh:113-122
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-verdict.sh:122
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/loop-verdict.sh:48
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	hooks/lib/test-loop-index.sh:29
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	scripts/loop-metrics.sh:231-275
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	scripts/loop-metrics.sh:232-241
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	scripts/loop-metrics.sh:273-274
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	scripts/loop-metrics.sh:313-320
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	scripts/loop-metrics.sh:357
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	scripts/loop-metrics.sh:357-358
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	scripts/loop-metrics.sh:375
+path-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	skills/inspect/SKILL.md:79-80
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	docs/claude-tools-hierarchy.md:110
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	hooks/lib/loop-index.sh:123-185
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	hooks/lib/loop-index.sh:160
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	hooks/lib/loop-window.awk:59
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	hooks/lib/test-loop-index.sh:17-21
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	hooks/lib/test-loop-index.sh:690-691
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-agent-mark.sh:66-69
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:123-185
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:145-150
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:146
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:151
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:160
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:205-211
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:217
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:220-228
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:224
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:8-12
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-index.sh:91-92
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-metrics.sh:167
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-result.sh:56
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-verdict.sh:57
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-verdict.sh:81
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-verdict.sh:97
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-window-prefix.awk:75
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	loop-window.awk:39
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	README.md:280
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	scripts/loop-metrics.sh:167
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	scripts/test-hook-behaviour.sh:140
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	scripts/test-install-smoke.sh:85
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	test-ledger-write.sh:60
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	test-loop-agent-mark.sh:121
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	test-loop-index.sh:144-147
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	test-loop-index.sh:342-350
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	test-loop-index.sh:5-9
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	docs/claude-tools-hierarchy.md:101
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	docs/claude-tools-hierarchy.md:46
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	docs/claude-tools-hierarchy.md:53
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	hooks/lib/loop-index.sh:123
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	hooks/lib/loop-index.sh:183
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	hooks/lib/loop-index.sh:217
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	hooks/lib/loop-index.sh:64
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	hooks/lib/loop-index.sh:91-92
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	hooks/lib/loop-verdict.sh:61
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	hooks/lib/test-loop-index.sh:342-350
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	loop-verdict.sh:58
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	loop-verdict.sh:61
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	scripts/loop-metrics.sh:167
+path-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.spec.md	scripts/loop-metrics.sh:393-396
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/design.md:106
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/fix-apply.md:52
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/fix-scout.md:53
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/fix-scout.md:73
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/fix-scout.md:82
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/fix-scout.md:88
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/review-findings.md:72
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/self-review.md:30
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	agents/self-review.md:85
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	ai-docs/context.md:73
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	ai-docs/plans/t.spec.md:4
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:144
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:159-174
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:169-176
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:188
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:197
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:217
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:233
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:265
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:299
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:350
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:355
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:374
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:401
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:406
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:451
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:455
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:49
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:510
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:58-59
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:61
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:685
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:71
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:76
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	check-fix-plan.sh:94
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	context-reset/SKILL.md:83
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	design.md:106
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	design.md:26
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	design.md:996
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/agent-docs-index.md:91-95
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/propagation.md:13
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/propagation.md:26
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/propagation.md:32
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/propagation.md:33
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/templates/progress-format.md:143
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/templates/progress-format.md:78
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/templates/progress-format.md:79
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/workflow.md:215
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/workflow.md:357
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	docs/workflow.md:9999
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	fix-scout.md:53
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	fix-scout.md:73
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	hooks/lib/ledger-write.sh:30
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	hooks/lib/loop-index.sh:70-74
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	hooks/lib/loop-index.sh:75
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	hooks/lib/loop-verdict.sh:124
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	hooks/lib/loop-verdict.sh:127
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	hooks/lib/loop-verdict.sh:78
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	loop-agent-mark.sh:35
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	loop-result.sh:31
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	progress-format.md:123
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	progress-format.md:130
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	progress-format.md:143
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	progress-format.md:7
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	progress-format.md:79
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	reference.md:206
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	reference.md:234
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	reference.md:242
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	scaffold.sh:85-94
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	scripts/run-checks.sh:153
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	scripts/test-run-checks.sh:299-314
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	SKILL.md:199
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/context-reset/SKILL.md:30
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/context-reset/SKILL.md:83
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/report-defect/SKILL.md:82
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/reference.md:216
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/reference.md:234
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/reference.md:242
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/check-fix-plan.sh:197
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/check-fix-plan.sh:350
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/check-fix-plan.sh:401
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/check-fix-plan.sh:71
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/test-check-fix-plan.sh:131
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/test-check-fix-plan.sh:175
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/test-check-fix-plan.sh:364-386
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/test-check-fix-plan.sh:528-530
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/scripts/test-check-fix-plan.sh:538
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/SKILL.md:127
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/SKILL.md:128
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/SKILL.md:135
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/SKILL.md:173-174
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/SKILL.md:196
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/SKILL.md:199
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	skills/task/SKILL.md:9999
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	spec.md:40
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	test-check-fix-plan.sh:131
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	test-check-fix-plan.sh:211
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	test-check-fix-plan.sh:36
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	test-check-fix-plan.sh:541
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	test-file-report.sh:270-274
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	test-scaffold.sh:88-94
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	agents/fix-scout.md:53
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	check-fix-plan.sh:702
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	docs/templates/progress-format.md:79
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	hooks/lib/ledger-write.sh:30
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	hooks/lib/ledger-write.sh:77
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	skills/task/scripts/check-fix-plan.sh:297-304
+path-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	skills/task/SKILL.md:128
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/design-review.md:32
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/design-review.md:36
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/design-review.md:40
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/design-review.md:78
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/design-review.md:87
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/design-review.md:89
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/fix-apply.md:37
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/fix-scout.md:75
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/review-findings.md:25
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/review-findings.md:38
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/self-review.md:159
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/self-review.md:52
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	agents/self-review.md:53
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	cleanup-progress.sh:43
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	docs/agents-method.md:118
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	docs/agents-method.md:124
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	docs/templates/progress-format.md:152
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	docs/templates/progress-format.md:153
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	docs/templates/progress-format.md:257
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	docs/workflow.md:381
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	docs/workflow.md:442
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/check-redline.sh:145
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/check-redline.sh:160-167
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/check-redline.sh:17-26
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/check-redline.sh:207-216
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/check-redline.sh:301
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/check-redline.sh:59-65
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/check-references.sh:100
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/check-references.sh:179
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	scripts/run-checks.sh:153-164
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/ai-audit/reference.md:332
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/pr-merged/scripts/cleanup-progress.sh:43
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/pr-merged/scripts/cleanup-progress.sh:46
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/pr-merged/SKILL.md:17
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/pr-merged/SKILL.md:19
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/pr-merged/SKILL.md:4
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/reference.md:266-267
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/reference.md:292
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/reference.md:303
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/reference.md:306
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/reference.md:80
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/reference.md:84
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/reference.md:97-99
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/scripts/check-fix-plan.sh:118
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/scripts/check-fix-plan.sh:490-491
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/scripts/check-fix-plan.sh:559-567
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/scripts/check-fix-plan.sh:629
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/SKILL.md:104
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/SKILL.md:110
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/SKILL.md:114
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/SKILL.md:133
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/SKILL.md:175-176
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/SKILL.md:177
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/SKILL.md:227
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.design.md	skills/task/SKILL.md:233
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	agents/review-findings.md:25
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	docs/agents-method.md:124
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	docs/agents-method.md:187
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	docs/propagation.md:24
+path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	docs/workflow.md:86
+path-line	scripts/test-check-redline.sh	ai-docs/plans/t.design.md:9
+path-line	scripts/test-check-redline.sh	x.md:1
+path-line	scripts/test-promotion.sh	ai-docs/context.md:14
+path-line	scripts/test-promotion.sh	scripts/session-events.sh:14
+path-line	skills/project-review/SKILL.md	doc-convention.md:14
+path-line	skills/report-defect/scripts/test-file-report.sh	scripts/session-events.sh:117
+path-line	skills/report-defect/scripts/test-file-report.sh	scripts/session-events.sh:14
+path-line	skills/report-defect/scripts/test-file-report.sh	scripts/trace-tokens.sh:14
+path-line	skills/task/scripts/check-fix-plan.sh	cleanup-progress.sh:43
+path-line	skills/task/scripts/check-fix-plan.sh	hooks/lib/loop-index.sh:70-74
+path-line	skills/task/scripts/check-fix-plan.sh	hooks/lib/loop-verdict.sh:124
+path-line	skills/task/scripts/check-fix-plan.sh	loop-verdict.sh:127
+path-line	skills/task/scripts/test-check-fix-plan.sh	ai-docs/plans/done/t.design.md:4
+path-line	skills/task/scripts/test-check-fix-plan.sh	ai-docs/plans/t.spec.md:4
+path-line	skills/task/scripts/test-check-fix-plan.sh	check-fix-plan.sh:110-111
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/gone-untracked.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/gone.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/gone.md:3
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/kept/notes.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/new.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/other.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/other.md:5
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/quoted.md:10
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/quoted.md:6
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/quoted.md:7
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/renamed.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/round1-untracked.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/round2-new.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/scratch/notes.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/table.md:5
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/workflow.md:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/workflow.md:10
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/workflow.md:215
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/workflow.md:9999
+path-line	skills/task/scripts/test-check-fix-plan.sh	docs/wrapped.md:11
+prose-line	ai-docs/learnings.md	line 316
+prose-line	ai-docs/learnings.md	line 70
+prose-line	ai-docs/learnings.md	lines 70–114
+prose-line	ai-docs/learnings/JeriC4o-chore-improve-round-2026-10-09.md	lines 788
+prose-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	line 1
+prose-line	ai-docs/plans/done/2026-09-24-harness-feedback-channel.design.md	Line 87
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	line 2
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	line 21
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	line 24
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	line 53
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	line 54
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	lines 164–172
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	lines 239–246
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.design.md	lines 46–51
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.spec.md	line 13–28
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.spec.md	line 164
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.spec.md	line 164–168
+prose-line	ai-docs/plans/done/2026-09-25-documented-update-procedure.spec.md	line 228
+prose-line	ai-docs/plans/done/2026-09-30-hook-path-resolution.design.md	line 1
+prose-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	lines 248-263
+prose-line	ai-docs/plans/done/2026-09-30-payload-agent-id.spec.md	lines 56-61
+prose-line	ai-docs/plans/done/2026-10-05-tier1-window-and-dismissal.design.md	lines 3356
+prose-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	lines 127
+prose-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.design.md	lines 31
+prose-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	Line 128
+prose-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	line 192
+prose-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	line 211
+prose-line	hooks/lib/loop-verdict.sh	line 2
+prose-line	scripts/test-check-redline.sh	line 5
+prose-line	scripts/test-loop-grid.sh	lines 11
+prose-line	scripts/test-promotion.sh	line 12
+prose-line	scripts/test-promotion.sh	line 14
+prose-line	skills/task/scripts/test-check-fix-plan.sh	line 10
+prose-line	skills/task/scripts/test-check-fix-plan.sh	lines 3-9
+prose-line	skills/task/scripts/test-check-fix-plan.sh	lines 8-14
+path-line	scripts/test-check-plan-convergence.sh	docs/plan-invariants.md:120
+prose-line	scripts/test-check-plan-convergence.sh	line 42

@@ -99,7 +99,7 @@ promotion candidate.
 
 **Trigger.** A pattern qualifies when its rule survives having every project-specific noun removed and
 still says something. "A gate whose failure mode is empty output reports success when it matched nothing"
-survives; "the DiffSet merge drops rows" does not. Most patterns do not qualify — that ratio is expected,
+survives; "the Widget merge drops rows" does not. Most patterns do not qualify — that ratio is expected,
 not a sign you are being too strict.
 
 For each qualifying pattern:

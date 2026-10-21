@@ -18,7 +18,7 @@ Static reference content extracted from `SKILL.md`. Loaded on demand when `/ai-a
 
 - Skills/agents named in `${CLAUDE_PLUGIN_ROOT}/docs/propagation.md` sync-group rows must exist. **The table is in that extracted reference page — not in `AGENTS.md`, and no longer in `agents-method.md`, which keeps only the AXIOM** — looking for it in the profile finds nothing and the check silently passes.
 - Agent names referenced in skills must match a file under `${CLAUDE_PLUGIN_ROOT}/agents/`.
-- `ai-docs/plans/done/` references in Subagent checklists must still resolve.
+- **A reference in a Subagent checklist that names an ENTITY resolves to an entity that exists, and this check reports how many such references it resolved.** The count is part of the result: a clause that examined nothing reads exactly like a clause that found nothing. A reference naming only the completed-plans directory asserts that a directory exists, which cannot fail — which is why this bullet reads the ENTITY a reference names and not the directory it sits in. **It claims no coverage of the positions already stored in that directory, deliberately.** A position resolves to whatever now sits there, in the worst case to something of the same kind and the same shape stating the opposite of what the citation promised; whether the prohibition reaches backwards into the completed plans is not decided here. **There is no mechanical backstop for the count** — this is a checklist letter a reader runs, so a pass that forgets to print how many it resolved reads clean and nothing catches it.
 
 ## Checklist D — Frontmatter conformance (skills)
 
@@ -48,7 +48,7 @@ Per the official Claude Code docs:
 
 - Every sync group listed in `${CLAUDE_PLUGIN_ROOT}/docs/propagation.md` still has all listed members present and cross-referenced — and, **for a group of three or more members** (the size at which `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` Procedure 5 requires the anchor-plus-back-reference shape), that **every non-anchor member appears as a KEY on that back-reference row**. A two-member group names its partner directly and has no back-reference row by design — do not flag it. Checking only that a back-reference row exists tests shape, not coverage, and passes on a group whose row omits half its members — which is exactly how a member goes unreachable while the table looks complete.
 - Behaviors described in AGENTS.md and replicated in Subagent checklists agree (e.g., file-size hard/soft limits in `review-findings.md` match AGENTS.md / `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`).
-- Exemptions in AGENTS.md (e.g., trait-impl doc-convention exemption, Java carve-out) appear in every enforcement file.
+- Exemptions in AGENTS.md appear in every enforcement file.
 
 ## Checklist H — Documentation conformance pointers
 
@@ -100,7 +100,7 @@ A field added to the entry format without parallel coverage in all five targets 
 
 **Declared-schema fields (no `/improve`-time mutation).** Some fields (currently: `Kind:`) are *declared* and *parsed* but **never** mutated. For each such field verify BOTH legs — a declared enum whose values are never checked is not enforced.
 
-**Leg 1 — value conformance across every entry in the union (`ai-docs/learnings.md` + `ai-docs/learnings/*.md`):** `grep -Hn '^\*\*Kind:\*\*' ai-docs/learnings.md ai-docs/learnings/*.md | grep -vE '\*\*Kind:\*\*[[:space:]]+(correction|validation)[[:space:]]*$'`. Both operands and the `-H` are load-bearing: an off-schema `Kind:` in a per-branch file is exactly as invisible to `/improve` as one in the archive, and with a single readable operand grep drops the `filename:` prefix. This command string is held character-identical with the copy in `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` Step 1 — change one and change the other. The `## Format` template block at the top of the archive is an EXPECTED hit (enum declaration, not an entry value); every OTHER hit is `major` — it removes the entry from both `/improve` passes while looking well-formed. Report the line number only — Boundary rule 1 forbids fixing `Kind:` in place. **Falsify the sweep before trusting a clean result:** the shorter `:\s*(correction|validation)\s*$` form is broken (its `:` binds inside `**Kind:**`, so nothing matches and the inverted grep flags every entry) — run it once against a known-good entry and confirm silence.
+**Leg 1 — value conformance across every entry in the union (`ai-docs/learnings.md` + `ai-docs/learnings/*.md`):** `grep -Hn '^\*\*Kind:\*\*' ai-docs/learnings.md ai-docs/learnings/*.md | grep -vE '\*\*Kind:\*\*[[:space:]]+(correction|validation)[[:space:]]*$'`. Both operands and the `-H` are load-bearing: an off-schema `Kind:` in a per-branch file is exactly as invisible to `/improve` as one in the archive, and with a single readable operand grep drops the `filename:` prefix. This command string is held character-identical with the copy in `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` Step 1 — change one and change the other. The `## Format` template block at the top of the archive is an EXPECTED hit (enum declaration, not an entry value); every OTHER hit is `major` — it removes the entry from both `/improve` passes while looking well-formed. Report the ENTRY — its date, its category and its short description, which is the identity the entry's own heading declares — and never a line number. The reason is the same reason the report exists: Boundary rule 1 forbids fixing `Kind:` in place, so the report cannot be a fix and must identify the entry it is about. That report travels the same applying step as every other finding here, including the route that writes into the committed learning record, which outlives the pass and which nobody re-derives — so a position would be stored where no reader re-derives it. Use a position freely while acting on the file in front of you; never let one travel into the entry. **Falsify the sweep before trusting a clean result:** the shorter `:\s*(correction|validation)\s*$` form is broken (its `:` binds inside `**Kind:**`, so nothing matches and the inverted grep flags every entry) — run it once against a known-good entry and confirm silence.
 
 **Leg 2 — documentation coverage in:**
 
@@ -227,69 +227,13 @@ Severity `major` — the clash makes ambiguous which name resolves at dispatch t
 
 ## Checklist P — Frontmatter/config improvement recommendations
 
-Where Checklist D/E verify frontmatter *conformance* (is it well-formed?), Checklist P recommends frontmatter *improvement* (is it minimal-yet-complete?). It is the only checklist that emits **forward-looking** advice rather than compliance findings.
-
-**Schema source.** Reuse the Step 2.1 `claude-code-guide` fetch — do NOT spawn a second `claude-code-guide` Subagent. Diff each `${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md`, `${CLAUDE_PLUGIN_ROOT}/agents/*.md`, and each `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` hook config against the FULL documented Claude Code field set returned by that fetch.
-
-**Routing.** Findings flow through the existing Step 2.5 `minor` / `nit` approval flow. A field-config that is *actively misleading* (e.g. `disable-model-invocation` asymmetry that lets a user-only skill be model-invoked) is `major`; everything else is `minor` or `nit`.
-
-**The six legal values.** Per field, per surface, emit exactly one of them — the set is CLOSED **for per-field rows**, so an outcome some rule mandates for such a row while the set omits it is a defect in this list, never a judgement call at runtime. A finding about THIS LIST rather than about a surface's field is the documented exception and takes no value at all; the exhaustiveness clause under the model-posture rule is the one that does. Four of the six are **recommendation verbs**:
-
-| Verb | When |
-|---|---|
-| **add** | A documented field is absent AND concretely useful for this surface (see the per-field gates below). |
-| **drop** | A field is present but equals its documented default, OR is redundant for this surface. |
-| **normalize** | Field value uses an inconsistent style vs siblings (e.g. mixed separators across `allowed-tools` entries). |
-| **resolve-asymmetry** | A sibling pair disagrees (one of a pair carries a field the other lacks with no role reason). |
-
-The remaining two are **not** recommendation verbs, which is why the heading above counts values rather than verbs; the Run output table's Value column carries all six:
-
-| Value | When |
-|---|---|
-| **not-applicable** | This surface inherits the documented default intentionally; nothing to change, and the verdict is recorded rather than acted on. |
-| **posture-question** | A rule's flag stands, but the remedy is a decision for the surface's owner and not for the audit — so the row states the question and names the options instead of prescribing one. `drop` is specifically NOT the value here: it would have the audit resolve what it is reporting. |
-
-### Minimal-frontmatter philosophy (AC7)
-
-Optimise for the **MINIMAL correct frontmatter**, not maximal field coverage. A fuller frontmatter is NOT a better frontmatter. Minimal valid SUBAGENT frontmatter = `name` + `description` only (`model` / `tools` are optional and default to inherit). Skill frontmatter follows the same convention.
-
-### Do-NOT-fill-spuriously gates (AC4)
-
-Each **add** recommendation is gated on concrete usefulness — never recommend a field just because the schema documents it:
-
-| Field | Recommend **add** only if... |
-|---|---|
-| `argument-hint` | the skill actually takes arguments. |
-| `when_to_use` | the skill is model-invocable (`disable-model-invocation` ≠ `true`). |
-| `allowed-tools` | the skill runs gated tools. A pure launcher (e.g. `improve`, which only spawns a Subagent) correctly needs NO `allowed-tools` — do not recommend adding one. |
-
-### Default-valued fields → REMOVAL (AC5)
-
-A field whose value equals its documented default adds nothing → flag for **drop** (REMOVAL). `not-applicable` ("this surface inherits the default intentionally") is a valid per-field verdict that adds nothing and needs no change — record it as such; do NOT recommend adding a field merely to make the verdict explicit.
-
-### `model` / `effort` rule — two-way model-posture taxonomy (AC6)
-
-The model-posture taxonomy is an **auditable two-way rule**. Flag deviations in BOTH directions.
-
-| Surface class | Members | Expected `model:` | Deviation flagged |
-|---|---|---|---|
-| **Non-code reasoning** (SHOULD pin `model: opus`) | skills: `ai-audit`, `improve`, `improve-global`, `inspect`; agents: `design`, `design-review`, `learnings-escalation-audit`, `self-improve`, `spec-writer`, `fix-scout`, `inspector` | `model: opus` present | omits `model:` → flag |
-| **Code-working / script-driven** (SHOULD inherit — omit `model:`) | skills: `task`, `project-review`, `bugfix`, `interview`, `context-reset`, `pr-merged`, `harness-init`, `report-defect`; agents: `self-review`, `review-findings`, `fix-apply` | no `model:` line | pins `model:` → flag |
-
-**The two membership lists are EXHAUSTIVE, and a surface the table does not name is the hole this clause closes.** A two-way rule that says nothing about a surface cannot flag it in either direction, which is how five surfaces sat outside it. Derive the surfaces rather than trusting the lists — `ls ${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md ${CLAUDE_PLUGIN_ROOT}/agents/*.md` compared against the two rows above, **in both directions** — and treat a surface in neither row as a `major` finding in its own right, reported BEFORE anything about its `model:` line: which posture it should carry is the owner's decision, not the audit's. **That finding is reported in PROSE, outside the per-surface table, and takes none of the six values** — it is a defect in THIS LIST rather than in the surface's frontmatter, the remedy edits this page, and the table's `Field` column is one an unlisted surface cannot fill. `posture-question` in particular does not fit: its first clause is "a rule's flag stands", and the whole point here is that a rule silent about a surface cannot flag it at all.
-
-> **SKILL-honored vs SUBAGENT-may-be-ignored (GH #44385).** A SKILL `model: opus` pin is **reliably honored** by the harness. A SUBAGENT (`${CLAUDE_PLUGIN_ROOT}/agents/*.md`) `model:` pin **may be ignored** — the agent can inherit the spawner's session model regardless of its frontmatter. So for agents the frontmatter pin is **intent-level** only; reliable opus comes from the opus-pinned spawning skill (the agent inherits) OR an explicit `model=` at the `Agent()` spawn site. Checklist P treats a **Non-code-reasoning** agent's `model: opus` pin as correct-intent and does NOT recommend dropping it, but records that the practical guarantee lives at the spawner. **The shield is scoped to that row and does not reach the Code-working / script-driven one**, where a pin contradicts the posture the row expects: there the row's flag stands, and it is reported under the `posture-question` value — drop the pin, or reclassify the surface — never as a `drop` recommendation the audit resolves by itself. Leaving the shield unscoped would void the agent half of that row and recreate the "rule silent on a surface" hole the exhaustiveness clause above exists to close. `fix-apply` is the live instance: it edits files and pins `model: opus`.
-
-### Run output — per-surface recommendation table (AC3)
-
-The run output is a per-surface recommendation table — **one row per skill / agent / hook**:
-
-| Surface | Type | Value | Field | Recommendation | Severity |
-|---|---|---|---|---|---|
-| `<name>` | skill / agent / hook | add / drop / normalize / resolve-asymmetry / not-applicable / posture-question | `<field>` | one-line rationale | minor / nit / major |
-
-The table is emitted at audit runtime (Step 2.5 output) — it is NOT stored in the repo.
-
+The recipe lives on its own page:
+[`${CLAUDE_PLUGIN_ROOT}/docs/frontmatter-recommendations.md`](${CLAUDE_PLUGIN_ROOT}/docs/frontmatter-recommendations.md)
+— the schema source and the instruction not to spawn a second fetch, the six legal values with the four
+that are recommendation verbs, the per-field gates on an **add**, the two-way model-posture taxonomy with
+its exhaustiveness clause, and the shape of the table the run emits. The heading stays here so the letter
+keeps its place in the sequence and this page's inbound references keep resolving. Letter P's scope is
+unchanged, which is why the footer's letter range is unchanged with it.
 ## Step 2.6 sub-step 4 — Cross-reference re-verification (anchor-aware)
 
 For every relative link the audit touched, confirm the target file exists AND the anchor (if present) matches a heading slug. Anchor-aware check rather than naive `realpath -m`:
@@ -328,8 +272,9 @@ For each recorded `%*_CMD%` value, take the first token and resolve it (`command
 check for a `./`-relative path). Missing → `major`.
 
 This check is **executed, never read**. A command table naming a binary nobody has looks perfectly correct
-on the page, and every later "the gate passed" claim inherits the defect. Same reasoning as
-`design-review`'s rule that a gate the design pins must be run twice before it is trusted.
+on the page, and every later "the gate passed" claim inherits the defect. The reasoning is the general
+one, and the example it used to cite is gone: `design-review` no longer has a rule about running a gate
+the design pins, because a design pins no command.
 
 ## Checklist S — Registry coherence (project surface)
 

@@ -71,7 +71,7 @@ The `## Format` template block at the top of the archive is an EXPECTED hit (it 
 
 **Use the known-bad fixture as your positive control.** The archive carries one genuine off-schema entry — the 2026-08-07 subagent-socket-drop entry, tagged `confirmed-approach`. Across the union a correct sweep returns **exactly two** hits and nothing else: that entry plus the `## Format` line, both in `ai-docs/learnings.md`. If your sweep does NOT surface it, the sweep is broken, not the log clean: a known-bad fixture proves the pattern matches, where a known-good one only proves it stays quiet. A third hit is a real finding — never add a line-anchor exclusion filter to suppress it.
 
-Boundary rule 1 permits in-place edits to `Escalated?` and `Superseded by:` ONLY, so a wrong `Kind:` can NEVER be repaired in place — report the line number and let the user append a correcting entry.
+Boundary rule 1 permits in-place edits to `Escalated?` and `Superseded by:` ONLY, so a wrong `Kind:` can NEVER be repaired in place — **report the ENTRY by its date, its category and its short description, which is the identity its own heading declares, and never a line number**, then let the user append a correcting entry. The reason is the same reason the report exists: the report cannot be a fix, so it must identify the entry it is about. And it travels the applying step that writes into the committed learning record, which outlives this pass and which nobody re-derives — so a position stored there resolves later to whatever has moved into its place. Use a position freely while acting on the file in front of you; never let one travel into the entry. Held in agreement with the same instruction in [`${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/reference.md`](${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/reference.md) Checklist L — change one and change the other.
 
 ### Step 2: Verify each escalation target
 
@@ -101,7 +101,7 @@ Record each entry's status:
 - ⚠️ **Mismatch** — claimed target exists but rule absent.
 - ❌ **Broken** — claimed target file/Skill/Subagent does not exist at all.
 - ❓ **Ambiguous** — keyword too generic to verify mechanically; needs human read.
-- ❌ **Off-schema Kind** — `Kind:` carries a value outside `correction | validation`; the entry is invisible to both `/improve` passes. Never auto-fixed (Boundary rule 1 permits only `Escalated?` / `Superseded by:` in-place edits) — report the line number; the user appends a correcting entry.
+- ❌ **Off-schema Kind** — `Kind:` carries a value outside `correction | validation`; the entry is invisible to both `/improve` passes. Never auto-fixed (Boundary rule 1 permits only `Escalated?` / `Superseded by:` in-place edits) — report the entry by its date, category and short description, never a line number; the user appends a correcting entry.
 - ⚠️ **Contradiction** — target verified (rule IS present), but another instruction file mandates the OPPOSITE (see Step 2c). Surfaced, never auto-fixed — reconciliation routes through `/improve`.
 - 🌱 **Stale-validation** — `Kind: validation` entry whose `Escalated?` is `no`, age > 30 days, AND targeted surface has had ≥1 instruction-file commit since the validation date (see Step 2b).
 

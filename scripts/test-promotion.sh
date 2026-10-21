@@ -25,9 +25,9 @@ mkproject() { # <name> -> prints dir
   cat > "$d/ai-docs/context.md" <<'CTX'
 # ctx
 # System Entities
-## DiffSet
+## Sprocket
 - **What it is.** A thing.
-## ReviewRequest
+## Grommet
 - **What it is.** Another thing.
 CTX
   printf '%s' "$d"
@@ -66,8 +66,8 @@ refuse() { # <slug> <body> <label>
 }
 refuse repo-name  "The widgetron build caches aggressively, so always clean first." "the repo name"   "widgetron"
 refuse ticket-key "Seen in WIDG-4471 where the gate never ran."                     "a ticket key"    "WIDG-4471"
-refuse file-path  "The bug was in server/core/src/main/Foo.kt line 12."              "a file path"     "server/core"
-refuse entity     "A DiffSet must never be mutated after finalisation."             "a domain entity" "DiffSet"
+refuse file-path  "The bug was in gizmo/panel/Lever line 12."                        "a file path"     "gizmo/panel"
+refuse entity     "A Sprocket must never be mutated after finalisation."            "a domain entity" "Sprocket"
 refuse url        "See https://internal.example.com/wiki/page for the details."      "an internal URL" "internal.example.com"
 
 printf '\n== gate: terms match as WORDS, not substrings ==\n'
@@ -118,7 +118,7 @@ printf '\n== gate: t2 -- the rule-mode refusal trailer is byte-identical ==\n'
 # invisible. The assertion pins the gate's own half only: skills/improve/SKILL.md
 # describes the same action in different words rather than quoting it, so no
 # assertion here can see that file drift.
-candidate "$P" trailer "The bug was in server/core/src/main/Foo.kt line 12."
+candidate "$P" trailer "The bug was in gizmo/panel/Lever line 12."
 out=$(bash "$CHECK" "$P/ai-docs/learnings/.promote/trailer.md" --project-dir "$P" 2>&1); rc=$?
 check "t2  a rule-mode refusal -> 1" "$rc" "1"
 case "$out" in
@@ -197,18 +197,18 @@ row() { # <label> <surface> <evidence> <want rc> <must name> <must not name>
 path_table() {
   row "r1  scripts/session-events.sh:14 (AC5 row 1)" 'scripts/session-events.sh:14' 'The run ended at zero.'          "0" '' ''
   row "r2  myproject/scripts/deploy-prod.sh (AC5 row 2)" 'scripts/session-events.sh' 'Also in myproject/scripts/deploy-prod.sh here.' "1" 'myproject/scripts/deploy-prod.sh' ''
-  row "r3  server/core/Merge.kt (AC5 row 3)"         'scripts/session-events.sh' 'Also in server/core/Merge.kt here.' "1" 'server/core/Merge.kt' ''
+  row "r3  gizmo/panel/Flange (AC5 row 3)"           'scripts/session-events.sh' 'Also in gizmo/panel/Flange here.' "1" 'gizmo/panel/Flange' ''
   row "r4  .claude-plugin/plugin.json"               '.claude-plugin/plugin.json' 'The manifest was not read.'        "0" '' ''
   row "r5  hooks/lib/harness-managed.sh"             'hooks/lib/harness-managed.sh' 'The helper returned nothing.'    "0" '' ''
   row "r6  ../../etc/passwd"                         'scripts/session-events.sh' 'It then read ../../etc/passwd too.' "1" 'parent traversal' ''
   row "r7  trailing sentence punctuation"            'scripts/session-events.sh' 'The fault is in scripts/session-events.sh.' "0" '' ''
-  row "r8  /Users/someone/acmecorp/src/Foo.kt"       'scripts/session-events.sh' 'It read /Users/someone/acmecorp/src/Foo.kt first.' "1" 'absolute path' ''
+  row "r8  /Users/someone/acmecorp/src/Foo"          'scripts/session-events.sh' 'It read /Users/someone/acmecorp/src/Foo first.' "1" 'absolute path' ''
   row "r9  nine prose slash pairs"                   'scripts/session-events.sh' 'read/write and/or client/server GET/POST input/output he/she N/A 24/7 TCP/IP' "0" '' ''
   row "r10 skills/inspect/SKILL.md"                  'skills/inspect/SKILL.md' 'The skill never loaded.'              "0" '' ''
   row "r11 skills/report-defect/SKILL.md"            'skills/report-defect/SKILL.md' 'The skill never loaded.'        "0" '' ''
   row "r12 2026/09/24 is a date"                     'scripts/session-events.sh' 'First seen on 2026/09/24 in a run.' "0" '' ''
   row "r13 ai-docs/context.md:14 warns"              'scripts/session-events.sh' 'It also read ai-docs/context.md:14 there.' "0" 'ambiguity warning' ''
-  row "r14 Surface names a project path"             'myproject/src/Foo.kt' 'The run ended at zero.'                  "1" 'Surface names no path' ''
+  row "r14 Surface names a project path"             'myproject/src/Foo' 'The run ended at zero.'                     "1" 'Surface names no path' ''
   row "r15 Surface names prose"                      'read/write' 'The run ended at zero.'                            "1" 'Surface names no path' 'file path'
   row "r16 three-term prose runs"                    'scripts/session-events.sh' 'read/write/execute input/output/error client/server/proxy he/she/they' "1" 'file path' ''
   row "r17 services/billing"                         'scripts/session-events.sh' 'The services/billing step ran late.' "0" '' ''
@@ -221,10 +221,10 @@ path_table() {
   row "r20 scripts/deploy-prod.sh, absent under the root" 'scripts/session-events.sh' 'Also in scripts/deploy-prod.sh here.' "1" 'scripts/deploy-prod.sh' ''
   # r21 and its control differ by one punctuation character, so the pair reads on
   # the token regex's left anchor and on nothing else. The fixture project's
-  # vocabulary holds none of src/main/billing/Invoice, or the vocabulary leg
+  # vocabulary holds none of parts/inner/panel/Bracket, or the vocabulary leg
   # would refuse the token whatever the anchor did.
-  row "r21 parenthesised non-harness path"           'scripts/session-events.sh' 'Also in (src/main/billing/Invoice.kt) here.' "0" '' 'src/main/billing/Invoice.kt'
-  row "r21 control: unparenthesised"                 'scripts/session-events.sh' 'Also in src/main/billing/Invoice.kt here.' "1" 'src/main/billing/Invoice.kt' ''
+  row "r21 parenthesised non-harness path"           'scripts/session-events.sh' 'Also in (parts/inner/panel/Bracket) here.' "0" '' 'parts/inner/panel/Bracket'
+  row "r21 control: unparenthesised"                 'scripts/session-events.sh' 'Also in parts/inner/panel/Bracket here.' "1" 'parts/inner/panel/Bracket' ''
   row "t1  report-mode refusal trailer"              'scripts/session-events.sh' 'Also in scripts/deploy-prod.sh here.' "1" 'let the user decide' 'Rewrite the lesson'
   row "positive control: Surface names a harness path" 'scripts/session-events.sh' 'The run ended at zero.'           "0" '' 'structure'
 }
@@ -259,7 +259,7 @@ ident "the project dir name" "The reportville checkout is where it happened." "r
 ident "the registry name"    "The orderflow checkout is where it happened."   "orderflow"
 ident "the ticket prefix"    "Filed under the ORD prefix by the reporter."    "ORD"
 ident "a KEY-123 token"      "Filed as ZZQ-4471 by the reporter."             "ZZQ-4471"
-ident "a context.md entity"  "A DiffSet was mutated after finalisation."      "DiffSet"
+ident "a context.md entity"  "A Sprocket was mutated after finalisation."     "Sprocket"
 printf 'projectcodename\n' > "$R/ai-docs/learnings/.promote/deny-extra.txt"
 ident "a deny-extra.txt term" "The projectcodename pipeline stalled."         "projectcodename"
 rm -f "$R/ai-docs/learnings/.promote/deny-extra.txt"
@@ -309,10 +309,10 @@ ln -sfn "$BASE/root/inner" "$BASE/link-proj"
 rootcase "a project symlinked into the root -> 2" "$BASE/root" "$BASE/link-proj" "$BASE/link-proj/ai-docs/feedback/root.md" "2" "equals or contains"
 
 printf '\n== gate: the report-mode project-dir derivation, both guards ==\n'
-report "$R/ai-docs/feedback/g1.md" 'scripts/session-events.sh' 'A DiffSet was mutated after finalisation.'
+report "$R/ai-docs/feedback/g1.md" 'scripts/session-events.sh' 'A Sprocket was mutated after finalisation.'
 out=$(CLAUDE_PLUGIN_ROOT="$FIXROOT" bash "$CHECK" "$R/ai-docs/feedback/g1.md" --mode report 2>&1); rc=$?
 check "guard 1: the derivation finds the project without --project-dir" "$rc" "1"
-case "$out" in *DiffSet*) ok "  names the entity it would otherwise have exported" ;; *) bad "  names the entity it would otherwise have exported: $out" ;; esac
+case "$out" in *Sprocket*) ok "  names the entity it would otherwise have exported" ;; *) bad "  names the entity it would otherwise have exported: $out" ;; esac
 report "$R/ai-docs/feedback/sub/g2.md" 'scripts/session-events.sh' 'The run ended at zero.'
 out=$(CLAUDE_PLUGIN_ROOT="$FIXROOT" bash "$CHECK" "$R/ai-docs/feedback/sub/g2.md" --mode report 2>&1); rc=$?
 check "guard 2: a report outside ai-docs/feedback/ -> 2, not 1 and not 0" "$rc" "2"

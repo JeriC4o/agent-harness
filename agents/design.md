@@ -23,9 +23,10 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 2. **Investigate code** — find affected files, understand current behaviour. Use the Grep tool with a path filter for cross-module searches (`${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md`).
 3. **Formulate the approach** — consider alternatives, choose one with justification
 4. **Decompose** — break into atomic tasks with dependencies
-5. **Assess risks** — DB migrations, API backward compatibility, performance, transactionality, N+1 queries
+5. **Assess risks** — a state or schema change, compatibility of a published interface, performance, atomicity, per-element work inside a loop, shutdown and cancellation safety
 6. **Self-check** — run through the quality checklist
 7. **Produce the artifact** — strictly in the format below
+8. **Run the exit check** — § Rules; hand back on nothing else
 
 ### Iteration (feedback from design-review Subagent)
 
@@ -35,6 +36,7 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 4. **Notes** — address optionally
 5. **Do NOT rewrite the whole plan** — change only what's needed
 6. **Produce updated artifact** — full Design Document (not a diff)
+7. **Run the exit check** — § Rules; an amended artifact owes it exactly as a first one does
 
 ## Redline marking
 
@@ -48,7 +50,9 @@ measured against it, so a correction is a marker plus a log row. Nothing here ha
 is in: the marking pass runs after implementation has begun, and neither implementation nor the
 review-and-fix cycle can be reached without a GO. **One window sits between the two and is the only
 post-GO rewrite there is:** a GO verdict carrying notes is closed by folding them in, which `/task` Step 8
-and `agents/self-review.md` both require to happen BEFORE the implementation diff starts. Nothing has been
+and `agents/self-review.md` both require to happen BEFORE the implementation diff starts — **both read
+those notes out of the task's working record, where Step 7 transcribes them, not out of the review
+response, so when you are spawned to fold one in that record is where it is.** Nothing has been
 measured against the base yet, so there is nothing to mark; once the diff starts, that window is shut and
 every correction is a marker plus a row.
 
@@ -99,18 +103,24 @@ pass promotes it into the committed log. Nothing is written twice:
 | `Key` | `R<round>.<finding #>` — the round from the plan section's heading, the number from the row's `#` cell |
 | `Key`, no plan row | `S<step>.<ordinal>` — the step from the workflow, the ordinal from the order of discovery |
 | `Type` | the disposition's type token: `added`, `modified` or `removed`, relative to the frozen base |
-| `Artefact sentence diverged from` | the plan row's `Arm A` cell, **verbatim** |
+| `Artefact sentence diverged from` | the plan row's `Arm A` cell, **transformed and not copied** — that cell carries a position because the fix-plan gate requires one of it, and this log carries none, so the promotion resolves the position to the entity holding the sentence: the named file and a heading or numbered item inside it, with only the sentence travelling verbatim |
 | `What shipped instead` | the disposition's reason text, which **opens** the cell verbatim — a floor, not a cap: the pass may extend it with shipped facts a one-line reason could not hold, such as a second site corrected in the same pass |
 
 **With no plan row — a divergence found during implementation — this pass authors the row itself**, from
-the same two facts: the design sentence quoted verbatim, and what shipped. The derivation above exists so
+the same two facts: the design sentence quoted verbatim with the entity it sits in, and what shipped. The
+derivation above exists so
 that one divergence is not recorded twice, and where no plan row was ever written there is no second
 record to drift from.
 
-**A pass that touches an EXISTING row re-derives every `file:line` and every MEASUREMENT in it**, not only
-the fields it came to change. A row cites lines and measures sizes that later rounds are free to edit, so a
-figure correct when it was written is a claim about a tree that no longer exists — and this is the one
-record in the family that is committed, so a stale figure ships.
+**A pass that touches an EXISTING row re-derives every MEASUREMENT in it**, not only the fields it came to
+change. A row measures sizes that later rounds are free to edit, so a figure correct when it was written is
+a claim about a tree that no longer exists — and this is the one record in the family that is committed, so
+a stale figure ships. **There is no position in a row to re-derive**, because the quoting field names an
+entity instead. The duty covering positions belongs to the round's own gitignored working record alone,
+where it is stated on
+[`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)
+§ Anchors and measurements in this file go stale while it is being written; no single rule spans both
+records.
 
 The log is `ai-docs/plans/<spec-base>.redline.md`. It is **committed**, because the fold that consumes it
 runs after a human review and the progress file cannot survive that far. Its row format is defined in
@@ -182,10 +192,10 @@ evidence rather than with a preference:
 
 | Signal, quoted from the design | Points to |
 |---|---|
-| A non-empty `## Open questions` — the base says of itself that it is incomplete | R&D, and the strongest single signal there is |
+| A non-empty `## Open questions` — every gap it may carry is one this contract's own open-gap rule admits, so the section records a question the WORK answers rather than a hole in the base | R&D, and the strongest single signal there is |
 | A risk phrased as unknown until implementation, or a measurement deferred to a named later task | R&D |
 | Work that creates a mechanism that does not exist yet | R&D |
-| Decisions carried as measured rather than assumed, anchors pinned to real `grep -n` output, a probe already run against the live tree | Hybrid — that base was built against facts and is unlikely to need widening |
+| Decisions carried as measured rather than assumed, and every claim about existing behaviour tied to the entity it is true of | Hybrid — that base was built against facts and is unlikely to need widening |
 | Work that changes something whose shape is already known and measured | Hybrid |
 
 A recommendation that needs a paragraph to justify has already failed: this gate exists to cost the user
@@ -199,55 +209,49 @@ what explains to a later reader why the log holds the number of rows it holds.
 
 The closing pass, invoked by `/redline-fold` once the PR is approved, producing the as-built design as a
 separate commit. It runs only when the log carries at least one row; with none, the frozen plan already
-describes what shipped and there is nothing to author.
+describes what shipped and there is nothing to correct.
 
-**Two WINDOWS, and which one applies is read rather than assumed.** EARLY: the PR is still open, and the
+**Two WINDOWS, and you are told which rather than deciding it.** EARLY: the PR is still open and the
 commit joins it. LATE: the merge already happened and a log survived it, so the pass runs on a fresh
-branch off the default one and gets its own PR. The word is *window* and not *régime* on purpose: this
-file already uses *régime* for the pre-GO / post-GO freeze axis, and the correction MODE is a third axis
-again. One name over three axes makes every sweep ambiguous, which this mechanism's own spec refused on
-exactly that ground. **The late window is the common case, not the exception**
-— a human who approves a PR usually merges it in the same action, and nothing holds the early window
-open. It costs nothing but time, and for a reason this contract already relies on: the log is committed
-precisely so it survives the merge, where a gitignored record would not. What it does cost is the interval
-itself — until the late pass runs, the default branch carries a design whose markers point into a log and
-a spec that was never collapsed, so early stays preferred. One thing is better late and only one: the
-shipped state is final, so "re-author against what shipped" has no ambiguity left in it. **In the late
-window the gate runs BEFORE the `done/` move**, because it resolves the pre-fold text relative to the
-spec's directory at HEAD and the merge commit holds the trio in the active one.
+branch off the default one. Which one it is, why the late one exists rather than being a repair for
+carelessness, what the interval costs, and the gate's ordering inside it are the invoking skill's and are
+stated in full on
+[`${CLAUDE_PLUGIN_ROOT}/skills/redline-fold/SKILL.md`](${CLAUDE_PLUGIN_ROOT}/skills/redline-fold/SKILL.md),
+which establishes the window before spawning you. *Window* and not *régime* on purpose: this file already
+uses *régime* for the pre-GO / post-GO freeze axis and the correction MODE is a third axis again, and one
+name over three axes makes every sweep ambiguous.
 
-**It AUTHORS the design afresh. It does not edit the frozen one.** An in-place edit leaves every sentence
-the editor did not touch, and what it did not touch is exactly what nobody re-read — stale by omission,
-and invisible to any check that looks only at what changed. A freshly authored document cannot inherit a
-stale sentence through a gap. The output path is unchanged: `ai-docs/plans/done/` holds one design per
-task, so "afresh" means re-authored in place of the old content, never a second file.
+**It KEEPS the frozen design and applies the log's rows to the items that diverged.** It does not author
+the document afresh, and the reason the re-authoring existed is answered rather than dropped: an untouched
+sentence is now either caught mechanically — a number whose provenance is gone, an identity that no longer
+pairs in either direction — or it is prose stating neither, which is accepted as unnoticed. The output
+path is unchanged: `ai-docs/plans/done/` holds one design per task, so the corrected document replaces the
+old content in place, never as a second file.
 
-**"Afresh" is not "only what is needed."** The strip set is closed and short: `## Handoff plan`,
-`## Open questions`, every marker, amendment residue, and any record of superseded material. The first
-three are patterns a check can search for; the last two are not, and are the judgement step below.
-Everything else the design carries — the approach, the decomposition, the risks, the rejected
-alternatives, the test design — is **re-authored against the shipped state**, because a reader of the
-completed plan needs to know what was built and what was deliberately not chosen. Dropping a section is
-not a cheaper fold; it is a different and worse document, and the post-merge review still reads the
-verification intents from the design that survives.
+**The strip set is unchanged, closed and short:** `## Handoff plan`, `## Open questions`, every marker,
+amendment residue, and any record of superseded material. The first three are patterns a check can search
+for; the last two are not, and are the judgement step below. **Nothing else is dropped and nothing else is
+re-derived** — the approach, the decomposition, the risks, the rejected alternatives and the use cases
+stay as the frozen document states them except where a row says otherwise, because the post-merge review
+reads them from the design that survives.
 
-**Write it SECTION BY SECTION, never in one call.** § Patterns records the hazard directly: a full-file
-rewrite of a large design is the highest-risk moment for a transport drop, with two observed attempts
-dying before the write landed. The fold's input is a document of exactly that size class, so one
-full-file write is the shape most likely to lose the whole pass. The two instructions are not in tension
-— "afresh" constrains what the content is derived FROM (the shipped state, not the previous text),
-"section by section" constrains how the bytes are DELIVERED. An implementer reading only the first reaches
-for one call, which is why both are stated together.
+**Write it SECTION BY SECTION, never in one call — and that instruction survives on its own terms**,
+having never depended on the re-authoring. § Patterns records the hazard: a full-file rewrite of a large
+design is the highest-risk moment for a transport drop, with two observed attempts dying before the write
+landed. The fold's input is a document of that size class whatever its content is derived from. Only the
+derived-from half changed; "section by section" constrains how the bytes are DELIVERED and is untouched.
 
 Then, in this order:
 
 1. **Verify on disk** — mtime plus a search for an expected new string. The harness does not retry on a
    socket close, so an unverified write is an unknown one.
-2. **Assert POSITIVELY that every section describes the shipped state.** This is a judgement step and is
-   named as one. It cannot be done by searching for superseded wording: a document that records its own
-   corrections holds that wording inside a quotation, so an absence proved from a fragment is a false
-   positive rather than a weak result. The bounded scan for the phrases that introduce a revision account
-   is a **spot-check** beside the judgement, never a substitute for it.
+2. **Read the corrected ITEMS and vouch for them** — the items a row was recorded against, never every
+   section. This is a judgement step and is named as one. It cannot be done by searching for superseded
+   wording: a document that records its own corrections holds that wording inside a quotation, so an
+   absence proved from a fragment is a false positive rather than a weak result. The bounded scan for the
+   phrases that introduce a revision account is a **spot-check** beside it, never a substitute. **Over
+   everything else no reader asserts anything** — a stale sentence carrying neither a number nor an
+   identity is accepted as unnoticed.
 3. **Run the residue check AFTER that verification**, so a partial write is caught as a residue failure
    rather than passing as a fold.
 
@@ -257,26 +261,28 @@ to their pre-fold text — because the design has no section that can carry it: 
 built, never the boundary of what was deliberately not built. That write belongs to the spec's owner, not
 to this subagent and not to the orchestrator.
 
-**The log is removed from the tree.** Nothing downstream reads it — the post-merge reading list names the
-spec and the design and no third class — and the commit history preserves the record. A surviving log is
-therefore the unambiguous mechanical signal that the fold never ran, which is what lets the merge-time
-workflow refuse on one.
+**The log is removed from the tree, and the plan's record of excused findings goes with it** — the plan's
+end of life ends the spot every row of that record covers. Nothing downstream reads either, the post-merge
+reading list naming the spec and the design and no third class, and the commit history preserves both. A
+surviving log is therefore the unambiguous mechanical signal that the fold never ran, which is what lets
+the merge-time workflow refuse on one. **The two do not always arrive together** — a plan may waive a
+finding without ever diverging — so each is removed on its own account.
 
 **The whole output is gated**, by `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh folded <spec> <design>`:
 the three retained spec sections byte-compared against the previous commit, the design asserted free of
-all three residue patterns, and the log asserted gone. The comparand is version control deliberately — it
-predates the rewrite and therefore cannot BE the rewrite, which a copy captured by this same pass could
-not promise. Its three outcomes are this repository's: clean, findings, and cannot-run, where cannot-run
-is not a pass.
+all three residue patterns, and the log and the record of excused findings each asserted gone on its own
+finding. The comparand is version control deliberately — it predates the rewrite and therefore cannot BE
+the rewrite, which a copy captured by this same pass could not promise. Its three outcomes are this
+repository's: clean, findings, and cannot-run, where cannot-run is not a pass.
 
 ## Quality checklist
 
 - **Completeness:** all files listed? Tasks are atomic?
-- **Correctness:** the project's DI/wiring conventions (constructor injection, stereotype semantics, test doubles)? Concurrency scope correct?
+- **Correctness:** the project's wiring conventions (collaborators declared at construction, what a specialised declaration buys, test doubles)? Concurrency scope correct?
 - **Migrations:** if DB schema changes — is a migration described (file path, migration id, rollback)? It must use the project's single migration tool and match the conventions of the sibling migrations (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § DB migrations`).
 - **Event wiring:** prefer an explicit call / poll / outbox row for NEW wiring over a framework event; an in-transaction listener does not insulate the enclosing transaction from its side effect (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Dependency injection / wiring`).
-- **Tests:** for every non-trivial logic — a test plan? (base class, entry point, the project's shared fixtures per `ai-docs/context.md`)
-- **Risks:** breaking API changes? N+1 in new queries? Transactions where needed? Cancellation / shutdown safety?
+- **Use cases:** every object the task builds carries its list — what it is used for, by whom or by what, and what it does in each case? **Nothing about tests belongs in that answer** (§ Rules), so a blank here is a missing use case and never a missing test plan.
+- **Risks:** a breaking change to a published interface? per-element work inside a loop? atomicity where it is needed? cancellation / shutdown safety?
 - **Economy:** YAGNI — no unnecessary abstractions?
 
 ## Artifact format
@@ -294,10 +300,10 @@ is not a pass.
 
 ## Decomposition
 
-| # | Task | Files | Depends on |
-|---|------|-------|------------|
-| 1 | ... | `<module>/<path>/Foo.<ext>` | — |
-| 2 | ... | `<module>/<path>/Bar.<ext>` | 1 |
+| # | Task | Files | Delivers | Depends on |
+|---|------|-------|----------|------------|
+| 1 | ... | `<module>/<path>/Foo.<ext>` | AC1, AC2 | — |
+| 2 | ... | `<module>/<path>/Bar.<ext>` | AC3 | 1 |
 
 ## Handoff plan
 
@@ -317,14 +323,19 @@ Example, `M = 1` (single group):
 
 - [risk]: [mitigation]
 
-## Test Design
+## Use cases
 
-For each non-trivial task:
-- Base class / test config: the project's test-context setup or fixture
-- Entry point: service method, controller, dao
-- Scenarios: happy path, error cases, edge cases
-- Fixtures: which `TestXxx` classes
-- AC<N> verified by: <the verification INTENT — what must be observed, about which artefact, and with which control; never a test method, a file path or a command. E.g. "that the step refuses while the required record is absent, and does not refuse once it is present">
+**One list, per object the task builds. Nothing else.** For each object: what it is used for, by whom or
+by what, and what it does in each case.
+
+- `<object>` — <use case>; <use case>; <use case>
+
+**This section says NOTHING about tests.** No test design, no base class, no fixtures, no entry points, no
+scenario taxonomy, no per-criterion verification line, no suite, no control, no figure. A design document
+is finished before any test exists, so every sentence it could write about a test is a promise about
+something that is not there — and the whole class of them was removed rather than narrowed, because the
+narrowed versions kept regrowing. The uses an object has are knowable while the design is written; how
+it will be tested is not, and is not this document's business.
 
 ## Open questions
 
@@ -334,31 +345,37 @@ For each non-trivial task:
 ## Rules
 
 - Decomposition is **part** of design, not a separate phase.
+- **This document's own exit check, and it is a refusal.** Before handing back, run
+  `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>` and hand back on
+  nothing but a verdict carrying no unexcused finding of the three classes that HOLD a plan —
+  completeness, isolation, arithmetic. On anything else, say which of the two non-clean outcomes it was,
+  findings or cannot-run, and which findings it named. **The other three report and do not hold:**
+  provenance, reference and pairing travel in the hand-back for the reviewer to weigh and never block it,
+  their input being the whole tracked tree, so one of them can name something nobody here wrote. A holding
+  finding is fixed, or excused by the act that records the grounds beside the plan; nothing else lets the
+  document through. **Read the counts and the per-class roster rather than the exit status** — a class
+  reporting zero over a document with content examined nothing. One obligation falls out of it and is
+  stated here because it is the author's: **every criterion the spec states is delivered by some
+  decomposition row**, which is what that column is for.
 - Each task in decomposition = one logically complete step.
 - Don't write code — only the plan. Code is written by `/task` Step 8.
 - If scope > 7 tasks in decomposition — propose splitting into multiple tickets.
 - If unsure about the codebase — investigate via a path-filtered search + Read; don't guess.
-- **Never pin a command as an exit gate without having RUN it.** Every command THIS DESIGN PINS — the measurements it records under § Approach, the probes it quotes, anything it puts forward as a gate — must have been executed while writing the design, once as written, and once against input that must trip it. A `--help` check is not enough: a flag can exist in a *sibling* tool and be rejected by the one you are calling, so the gate could never emit the EMPTY output it demanded. Assume nothing about a CLI's flags from a sibling tool's surface, and treat a gate whose failure mode is empty output (`0 tests`, `No files matched`, an empty diff) as unproven until it has been shown able to come back non-empty. `design-review` rejects an unexecuted gate as `major`.
-  - **Its object is the design's OWN pinned gates, and no longer a per-criterion command.** The Test Design section states intent and names no command (§ Rules → AC-verification line), so there is no per-criterion command here left to falsify. The duty itself is unchanged and binds in full where that command is now recorded: the `Shown non-empty by` column of the round's `## Criterion checks (Round N)` section ([`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)), where a blank is a refusal rather than a default. Re-pointed, never dropped: "a check exists that covers this intent" says nothing about whether that check can come back non-empty, which is the whole of what this rule is for.
+- **Nothing in this document is proven by running it, because nothing here is run.** A design is written before the thing exists, so it pins no command, quotes no probe, and puts nothing forward as a gate. Where the approach rests on how something existing behaves, say what it does and name the entity it is true of — that is a claim a reader can check, and it needs no execution to write down. The duty that used to live here, that a pinned gate must be shown able to come back non-empty, binds in full where such a command is actually recorded: the round's own working record during implementation. It was re-pointed there, not dropped.
 - **A pre-approval correction is a REWRITE, and the document carries no account of what an earlier draft said.** While the design is being authored or reviewed, the way to correct it is to rework the affected sections (§ Workflow → Iteration): nothing has shipped for a base to diverge from, so there is nothing to mark. The document therefore carries no revision account at any stage — no narration of what a previous round found or argued, no quoted superseded wording, no sentence whose subject is an earlier draft rather than the system. Every such passage is read in full by every later whole-repository review and none of it describes the system. A correction's reasoning belongs in the review round's own findings table, which is where a reviewer can already see it and which no later review reads.
 - **Handoff-grouping requirement.** The `/task` workflow's Step 8 binds a `/context-reset` handoff at the start of **every** design-defined group, including the first and including single-subtask designs. The design must pre-compute boundaries in a `## Handoff plan` section. Four mandatory sub-points (every M ≥ 1):
   - **(a) When grouping is required** — `every M ≥ 1`.
-  - **(b) Maximum group size** — `3 consecutive subtasks`. Non-terminal groups MUST be exactly 3.
+  - **(b) Maximum group size** — `3 consecutive subtasks`. Non-terminal groups MUST be exactly 3. **The NUMBER of groups is unbounded**, and follows from `M` and this sub-point rather than being chosen: a cap of three groups stood in the handoff skill and was removed as unsupported, not least because it was arithmetically incompatible with this very sub-point — three non-terminal groups of 3 plus a terminal group of at most 3 put the largest admissible task at 12 subtasks, so any larger decomposition could satisfy one of the two rules only by breaking the other. Size is governed by the propose-a-split duty above, which the user answers.
   - **(c) Handoff destination** — `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. Named in prose at every boundary, including the entry into the first group.
   - **(d) Terminal-group sizing** — `1..3`. Sizes outside this range = design defect.
 
   Severity rubric (enforced by `design-review`): missing `## Handoff plan` for any M ≥ 1 = `major`; non-terminal group ≠ 3 = `major`; terminal group outside `1..3` = `major`; cosmetic issues (wording, ordering) = `minor`.
-- **AC-verification line is mandatory, and it states the verification INTENT — never an identifier.** Every AC in the spec carries an `AC<N> verified by: …` line in the design's Test Design section, saying what must be OBSERVED, about which artefact, and with which control. It may not name a test method, a file path or a command.
-  - **The distinction is which side of the test the name sits on, and the rule is unusable without it.** The identifiers of the CHECK — its method name, its file's path, the command that runs it — are all chosen while the tests are written, which is after the design is agreed; a design that promises them promises names that do not yet exist, and diverges by construction rather than occasionally, worse as the criterion count grows. The ARTEFACT UNDER TEST is named in the spec and is not chosen later, so naming it is not a violation. Allowed: "that the step refuses while the required record is absent, and does not refuse once it is present" — an observable property plus its control. Forbidden: the same thing written as a filtered invocation of a named suite.
-  - **A recorded measurement is not a pinned gate.** Commands quoted under § Approach as things that were run while designing are historical facts about what was observed, and a later rename cannot falsify them. What this forbids is pinning a command as a criterion's exit gate.
-  - The concrete command, identifier and path covering each intent — and the input shown to make each one fire — are recorded OUTSIDE the design, in the round's `## Criterion checks (Round N)` section. They therefore sit outside the frozen base and cannot falsify it.
-
-## Patterns
-
-Validated approaches the design subagent should keep applying (carrot signals; soft verbs).
-
-- **Default to** citing a `file:line` or an empirical result (a `javap` of the resolved jar, a JDK probe, an in-tree usage) for any load-bearing mechanism / semantics / interop claim — build-rule semantics, a macro's effect, a library's behaviour, Kotlin/Java interop — BEFORE pinning it as a design contract. Relay an unverified claim as "claims X (verify)", not as established fact.
+- **A design says NOTHING about tests. No exceptions, and no narrower version.** Not a test design, not a suite, not a fixture, not an entry point, not a scenario list, not a control, not a per-criterion verification line, not an assertion count, not a passed/failed total, not a before-and-after reading. Nowhere in the document, in no section, for no reason. The furthest this document goes is `## Use cases`: one list per object the task builds, saying what each is used for. Everything a design could state about a test is a promise about something that does not exist when the design is written, which is the one thing a required element may never be; and a figure taken from a suite is falsified by the next change that adds a test, buying a correction round per change and catching nothing. **The prohibition is the whole class rather than its worst members**, because the narrowed versions were tried and each one regrew — first as a per-criterion command, then as an intent line, then as a suite total.
+- **Default to** citing a named ENTITY — a method, a class or a variable inside a named file, carrying the id its comment carries — or an empirical result (a probe of the resolved dependency, a run against the installed toolchain, an in-tree usage) for any load-bearing mechanism / semantics / interop claim — build-rule semantics, a macro's effect, a library's behaviour, interop across two languages — BEFORE pinning it as a design contract. Relay an unverified claim as "claims X (verify)", not as established fact.
   - **Corollary — tagging is NOT sufficient when the claim is load-bearing.** `[inferred]` / `[unverified]` / `[out of scope]` discharges the citation duty, never the verification duty. If a conclusion, headline, or AC rests SOLELY on a tagged claim, either verify it against source or state the conclusion conditionally — "honestly tagged" is not a third option. A scope boundary limits what must be INVESTIGATED; it never licenses a verdict about behaviour on the far side of it.
-- **Default to** grepping for the in-repo idiom before proposing any concurrency / locking primitive, and to stating the property as an observable failure mode ("does it ever wait? does it ever enqueue?") rather than as whether a lock is nominally acquired. A "PostgreSQL cannot do X" / "this never waits" sentence needs a `file:line`, an in-repo precedent, or an empirical check before it enters the design.
+- **Default to** grepping for the in-repo idiom before proposing any concurrency / locking primitive, and to stating the property as an observable failure mode ("does it ever wait? does it ever enqueue?") rather than as whether a lock is nominally acquired. A "this store cannot do X" / "this never waits" sentence needs a named entity with its id, an in-repo precedent, or an empirical check before it enters the design.
+- **Every number this document states names, in the same sentence, which kind of number it is and how it was obtained.** Three kinds are admissible and there is no fourth: a threshold the task handed down, an estimate whose derivation is shown where the estimate is stated, or a measurement of something that already exists, with the command that produced it beside the figure. **A number whose only honest provenance would be a measurement of the thing this document describes may not be written at all** — it cannot exist while the document is being written, so the only way to produce it is to invent it, and the next change falsifies it. An estimate that chooses between approaches is admissible precisely BECAUSE its derivation travels with it: a reader can redo the arithmetic without opening anything. An honest hedge is not provenance — "approximately", "roughly" and "on the order of" name no origin.
+- **A gap you leave open must be one whose answer would change none of three things: the approach this document chose, the requirements it is built against, or how it breaks the work up.** Apply that to every line of the open-questions section as you write it, and close the ones that fail — decide, take a defensible default, or ask. A gap that fails the test and is left anyway is not a note: its answer lands after the GO, and the only route that can absorb it then is the full design-and-review cycle, which is the expensive one.
+- **A reference names an ENTITY and never a position, and a statement that leans on a source entity carries the id that entity's own comment carries**, so the pair resolves in both directions. The form, the id's spelling, how the two sides are compared and the one carve-out that still admits a position are on [`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`](${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md); this contract restates none of it and points there instead.
 - **Prefer** measuring a ticket's asserted data facts and its named proxy metric against a REAL corpus before any design or test encodes them. A ticket's description of a data format is a claim, not a fact, and a named proxy is a hypothesis, not a specification — run the smallest query that could falsify each one first. Tests written from an unverified premise lock the premise in, and a green suite then argues FOR the wrong design. State what the HEALTHY case should look like before running a new detector, so a negative result can be reported as a result rather than read as an unfinished detector.
 - **Prefer** small targeted `Edit` calls to specific sections over a full-file `Write` when amending an existing large doc (a ~50KB `*.design.md` rewrite is the highest-risk moment for a transport drop — observed attempts of 51s and 291s both died before the write landed). Short per-call generations hold the streaming connection open for less time and almost always complete. This keeps the AGENTS.md AXIOM intact — the design subagent still owns the write, via `Edit` rather than a full-file `Write`. After any amendment run, verify on disk (mtime + `grep` for the expected new string); the harness does not auto-retry on socket close.

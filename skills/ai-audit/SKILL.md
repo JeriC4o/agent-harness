@@ -128,13 +128,20 @@ Do NOT read `.claude/settings.local.json` unless user explicitly authorises.
 
 ### Step 2.3: Run the checklist
 
-For each violation: record file path, line number, the rule it conflicts with, the proposed fix.
+For each violation: record the file, the ENTITY inside it the violation sits on — a heading, a numbered
+item, or a named method, class or variable — the rule it conflicts with, and the proposed fix. **Not a line
+number.** A finding recorded here travels two routes out of one step: Step 2.5 presents it and applies the
+approved fix against the tree in front of you, where a position would be re-derived anyway, and the same
+step writes an entry into the committed learning record, which outlives this pass and which nobody
+re-derives. A position is admissible on the first route and merely stored on the second, and this
+instruction cannot tell them apart — so it names the entity, which is correct on both. Use a position
+freely while acting on the file in front of you; never let one travel into the entry.
 
 | Letter | Purpose |
 |---|---|
 | A | Cross-reference integrity — every relative link + named Skill/Subagent resolves |
 | B | Conflicting / duplicated rules — no contradictions; verbatim duplicates consolidated |
-| C | Dead references — every sync-group member exists; `ai-docs/plans/done/` references resolve |
+| C | Dead references — every sync-group member exists; every reference naming an ENTITY resolves to an entity that exists, with the number resolved reported, and no coverage claimed over the positions already stored in the completed-plans directory |
 | D | Frontmatter conformance (skills) — `name` / `description` / `allowed-tools` shape per official docs |
 | E | Frontmatter conformance (agents) — YAML block present; `name` == basename; `description` is one line |
 | F | Hooks (`${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`) — event names, matchers, exit codes, env-var quoting |
@@ -218,4 +225,4 @@ If `ai-docs/learnings.md` or anything under `ai-docs/learnings/` was modified or
 
 ---
 
-**Reference:** [`reference.md`](reference.md) — detail body for every checklist letter (A–U), Step 2.6 sub-step 4 anchor-aware cross-reference recipe, Checklist M sub-checks, Checklist N forward / reverse coherence rules, Checklist O embedded-name clash recipe, Checklist P frontmatter/config improvement recipe, Checklists Q–U project-surface checks.
+**Reference:** [`reference.md`](reference.md) — detail body for every checklist letter (A–U), Step 2.6 sub-step 4 anchor-aware cross-reference recipe, Checklist M sub-checks, Checklist N forward / reverse coherence rules, Checklist O embedded-name clash recipe, Checklist P's pointer to the frontmatter/config improvement recipe, which lives on its own page, Checklists Q–U project-surface checks.

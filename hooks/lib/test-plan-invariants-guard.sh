@@ -22,6 +22,13 @@
 # fact rather than a claim. Every one of them under-fires, which is the property
 # that matters: there is no shape on which the house style meets a refusal it
 # would want switched off.
+#
+# THE SEGMENTATION SWEEP READS ITS CHARACTERS OUT OF THE GUARD rather than out
+# of a list retyped here, so a character added to the guard's segmentation list
+# without an assertion beside it fails instead of passing in silence. Both
+# lengths are read for the same reason: an extraction that came back one
+# character long would shrink that sweep to a single assertion and nothing
+# would fail.
 set -ufo pipefail
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
@@ -291,6 +298,86 @@ sh_asks   "an os.rename onto a protected page fires" \
 sh_asks   "a shutil.move onto a protected page fires" \
           "python3 -c \"import shutil; shutil.move('/private/tmp/a','agents/design.md')\""
 
+printf '\n== PAIRED: a separator inside a quoted span, every character and both quote spellings ==\n'
+# The characters come from the guard's own assignment, not from a list retyped
+# here. Each in-place write below was silent before the neutralisation existed:
+# the padding replaces both quote characters with spaces and the translation
+# feeding the segment loop cuts on all eight, so the in-place writer and the
+# resolved path landed in different segments, each missing the other. Each one
+# is paired with a READ of the same page in the same spelling, because a repair
+# that bought its confirmations by firing on reads would cost more than the hole.
+SEPS=$(sed -n "s/^SEGMENT_SEPARATORS='\(.*\)'\$/\1/p" "$GUARD")
+TRREPL=$(sed -n 's/.*tr "$SEGMENT_SEPARATORS" .\(.*\).).*/\1/p' "$GUARD")
+check "the segmentation characters were read out of the guard" \
+  "$( [ -n "$SEPS" ] && echo yes || echo no )" "yes"
+# Both presences are asserted before the lengths are compared, because two empty
+# extractions agree at zero and that agreement would read exactly like the real
+# one while the sweep below ran no assertion at all.
+check "and so was the translation's replacement it has to agree with" \
+  "$( [ -n "$TRREPL" ] && echo yes || echo no )" "yes"
+check "the list and the translation's replacement agree in length" \
+  "${#SEPS}" "$(( ${#TRREPL} / 2 ))"
+# `sep` and `esc`, not the obvious short names: `asks` assigns `d` and the loop
+# body calls it between building the write shape and building the paired read,
+# so a loop variable named `d` is empty by the time the read is spelled. Measured
+# -- the read half of every pair ran against a delimiter-free command and passed
+# for the wrong reason, which the label printing an empty [] is what exposed.
+k=1
+while [ "$k" -le "${#SEPS}" ]; do
+  sep=$(printf '%s' "$SEPS" | cut -c"$k")
+  # A literal backtick inside a double-quoted span is spelled escaped, which is
+  # how a shell carries one there; unescaped it opens a command substitution and
+  # the shape stops being a command anybody would run.
+  case "$sep" in '`') esc="\\${sep}" ;; *) esc="$sep" ;; esac
+  sh_asks   "an in-place write whose script is delimited by [${sep}] fires" \
+            "sed -i '' 's${sep}a${sep}b${sep}g' agents/design.md"
+  sh_asks   "  and so does the double-quoted spelling of it, [${esc}]" \
+            "sed -i '' \"s${esc}a${esc}b${esc}g\" agents/design.md"
+  sh_silent "  while a READ of the same page delimited by [${sep}] is silent" \
+            "sed -n 's${sep}a${sep}b${sep}p' agents/design.md"
+  sh_silent "  and so is the double-quoted read, [${esc}]" \
+            "sed -n \"s${esc}a${esc}b${esc}p\" agents/design.md"
+  k=$((k+1))
+done
+
+printf '\n== PAIRED: a separator a BACKSLASH escapes, outside any quoted span ==\n'
+# The cousin of the loop above, and the seventh residual form until the walk
+# learned the escape: the separator is data to the shell here too, but it sits
+# in no quoted span, so a walk reading quote state alone never reached it. Swept
+# over the same characters, read out of the guard rather than retyped, and every
+# write PAIRED with a READ in the identical spelling -- a repair that bought its
+# confirmations by firing on reads would cost more than the hole.
+#
+# THE ORDER INSIDE THE GUARD IS WHAT MAKES THIS CLOSE. Measured with the walk
+# after the padding instead: seven of these eight fired and the statement
+# separator alone stayed silent, because the padding had already put a space
+# between the backslash and the character it escaped.
+k=1
+while [ "$k" -le "${#SEPS}" ]; do
+  sep=$(printf '%s' "$SEPS" | cut -c"$k")
+  sh_asks   "an in-place write whose script delimiter is an escaped [${sep}] fires" \
+            "sed -i '' s\\${sep}a\\${sep}b\\${sep}g agents/design.md"
+  sh_silent "  while a READ of the same page in that spelling is silent" \
+            "sed -n s\\${sep}a\\${sep}b\\${sep}p agents/design.md"
+  k=$((k+1))
+done
+
+printf '\n== PAIRED: the same blindness in the other spellings the house style reaches for ==\n'
+sh_asks   "an alternate script flag carries it"               "sed -i '' -e 's|a|b|g' agents/design.md"
+sh_silent "  while the read spelling of that is silent"       "sed -n -e 's|a|b|p' agents/design.md"
+sh_asks   "a brace-delimited address block carries it"        "sed -i '' '1{s/a/b/;}' agents/design.md"
+sh_silent "  while a brace-delimited read is silent"          "sed -n '1,5{p;}' agents/design.md"
+sh_asks   "an interpreter spelling of the same edit fires"    "perl -pi -e 's|a|b|' agents/design.md"
+sh_silent "  while the interpreter's read spelling is silent" "perl -ne 's|a|b|' agents/design.md"
+sh_asks   "backticked text replaced inside a double-quoted script fires" \
+          "sed -i '' \"s/\\\`old\\\`/\\\`new\\\`/g\" agents/design.md"
+sh_silent "  while a grep over backticked text is silent"     "grep -n \"a\\\`b\\\`c\" agents/design.md"
+sh_asks   "reached through a leading cd it still fires"       "cd agents && sed -i '' 's|a|b|g' design.md"
+sh_silent "  while the same cd with a read is silent"         "cd agents && grep -n 'a|b' design.md"
+sh_asks   "and it fires on the guarded record, which the same arm reads" \
+          "sed -i '' 's|a|b|g' ${RECORD}"
+sh_silent "  while a read of the record in that spelling is silent" "grep -n 'a|b' ${RECORD}"
+
 printf '\n== the basename collision the resolution exists to get right ==\n'
 # SKILL.md names two protected pages and eleven unprotected ones; reference.md
 # one of four. A basename arm would over-fire on all of the rest.
@@ -351,6 +438,31 @@ else
   check "  the mutant still fires on the directly spelled path, so it is running" "${d:-silent}" "ask"
   n=$(fire "$(sh_payload 'cd agents && printf x >> design.md')" "$PROJ" "$MUT_R" | wc -c | tr -d ' ')
   check "  and without the resolution, cd <dir> && <write> walks straight past it" "$n" "0"
+fi
+
+printf '\n== POSITIVE CONTROL: drop the neutralisation, the quoted separator escapes again ==\n'
+MUT_Q="${WORK}/no-separator-neutralisation.sh"
+sed 's@^\[ -n "$neutralised" \].*@: @' "$GUARD" > "$MUT_Q"
+chmod +x "$MUT_Q"
+if cmp -s "$GUARD" "$MUT_Q"; then
+  bad "the neutralisation mutation did not apply, so this control measures nothing"
+else
+  ok "the mutation applied"
+  # The slash-delimited spelling is the non-vacuity witness: an empty result is
+  # also what a mutant that died before reading its input produces, and that
+  # reading would satisfy both silences below while measuring nothing.
+  d=$(decision "$(fire "$(sh_payload "sed -i '' 's/a/b/g' agents/design.md")" "$PROJ" "$MUT_Q")")
+  check "  the mutant still fires on the slash-delimited spelling, so it is running" "${d:-silent}" "ask"
+  n=$(fire "$(sh_payload "sed -i '' 's|a|b|g' agents/design.md")" "$PROJ" "$MUT_Q" | wc -c | tr -d ' ')
+  check "  and without it the single-quoted separator walks straight past" "$n" "0"
+  n=$(fire "$(sh_payload "sed -i '' \"s|a|b|g\" agents/design.md")" "$PROJ" "$MUT_Q" | wc -c | tr -d ' ')
+  check "  and so does the double-quoted spelling" "$n" "0"
+  # The paired read was silent under the mutant too, which is what makes the
+  # pair a discriminator rather than two readings of one state.
+  n=$(fire "$(sh_payload "sed -i '' s\\|a\\|b\\|g agents/design.md")" "$PROJ" "$MUT_Q" | wc -c | tr -d ' ')
+  check "  and so does the backslash-escaped spelling, which the same walk closes" "$n" "0"
+  n=$(fire "$(sh_payload "sed -n 's|a|b|p' agents/design.md")" "$PROJ" "$MUT_Q" | wc -c | tr -d ' ')
+  check "  while the paired read was already silent, so the pair is what discriminates" "$n" "0"
 fi
 
 printf '\n== an unmanaged project is a no-op, and the guard is what makes it one ==\n'
