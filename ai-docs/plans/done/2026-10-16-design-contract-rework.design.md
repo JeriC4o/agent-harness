@@ -1,7 +1,7 @@
 # Design: Design contract rework — what a plan document must carry, and what checks it
 
 **Ticket:** GH-128 **Date:** 2026-10-18 **Spec:**
-ai-docs/plans/2026-10-16-design-contract-rework.spec.md
+ai-docs/plans/done/2026-10-16-design-contract-rework.spec.md
 
 ## Approach
 
@@ -9,9 +9,11 @@ The spec asks for five rules and four mechanisms. The rules say what a plan docu
 number names its own provenance, a reference names an entity rather than a position, an open
 question carries a price, the closing pass stops re-authoring, and a comment an instrument reads is
 never swept. The mechanisms are a convergence check carrying six deterministic classes, three of
-which hold a plan while the other three report, a route to excuse one finding, a judgement class
-held to a stated standard, and a bidirectional pairing between a statement and the source entity it
-leans on. **[REDLINE S8.5]**
+which hold a plan while the other three report, a route to excuse one finding, a judgement half held
+to a stated standard and covering self-contradiction and artefact-contradiction, and a bidirectional
+pairing between a statement and the source entity it leans on. The judgement classes are named here
+rather than counted, for the reason § Decision 6 states about a heading: a count beside the thing it
+counts is a sentence the next class falsifies.
 
 The shape of the solution is the one this repository already runs for the base principles: **each
 rule is stated once on the surface that owns it, restated in its own words only where a party must
@@ -59,14 +61,20 @@ this plan builds.
   refusal therefore fires on nearly every subtask here, which makes its authorisation route a
   planning input rather than a footnote; it is settled under *The refusal reaches almost
   everything here* below.
-- **The verification payload has one line of room.** `wc -l scripts/check-plan-invariants.py`
-reports 999
-  lines; `docs/code-style.md` refuses a source file above one thousand and already calls the band from
-  eight hundred to a thousand hard-ish, requiring a justification in the pull request. The payload's own
-  header spells its ceiling as a hard thousand-line limit and records that an earlier leg was moved to a
-  sibling for exactly that reason, so the repository's own reading of the figure is the stricter
-  one. Either
-  way the new classes cannot be legs of it; they need their own wrapper and payload. **[REDLINE R1.2]**
+- **The verification payload was one line from the limit when this plan was built.** `wc -l
+  scripts/check-plan-invariants.py` reports 999 lines; `docs/code-style.md` refuses a source file
+  above one thousand and already calls the band from eight hundred to a thousand hard-ish, requiring
+  a justification in the pull request. The payload's own header spells its ceiling as a hard
+  thousand-line limit and records that an earlier leg was moved to a sibling for exactly that
+  reason, so the repository's own reading of the figure is the stricter one. Either way the new
+  classes cannot be legs of it; they need their own wrapper and payload. **That last line is spent
+  rather than kept, and the overage is carried by a recorded exemption in the project profile
+  instead of by a split.** The profile is where this repository keeps a size exemption, so that is
+  where the overage and its justification are stated, and no figure for either is restated here — a
+  line count of a file this plan edits is the one kind of number § Decision 6 refuses outright. The
+  profile also names the single seam that would remove the overage, moving the check's own second
+  copy of the base-principle sentences into a payload file of their own, and records why that file
+  is not earned.
 - **The gate runner already exempts a check that takes a path argument**, and says why: a member
   is
 invoked
@@ -104,9 +112,12 @@ both a
   admits committed measurement data by rule.** The corpus loop in
   `scripts/check-plan-invariants.py` skips the record path before any exclusion is consulted, and
   the repository-mechanics exclusion's stated membership rule covers "committed measurement data"
-  while its path test names one fixtures subdirectory. So a second committed record needs the path
-  test widened and no prose rewritten — and widening it cannot absorb the comparison record, which
-  never reaches that test.
+  while its path test names one fixtures subdirectory. So a further committed record needs the path
+  test extended and no prose rewritten — and no extension of it can absorb the comparison record,
+  which never reaches that test. **How it is extended is settled under § Decision 4 and is not a
+  free choice:** because the comparison record is skipped ahead of every exclusion rule, a prefix
+  over the fixtures root would leave two mechanisms claiming one file, so each further record is
+  taken by name instead.
 - **The principles page's heading states a count, and three surfaces outside the page restate
   it.** The verification payload splits the page's body on that heading's exact text and names it
   again in each of two cannot-run messages, and the project profile states the count in two
@@ -114,12 +125,12 @@ both a
   shows that **no markdown link anchors that heading**, so renaming it breaks no inbound
   reference.
 - **Sizes, measured in one `wc -c` call** over the files this plan touches. Two are already inside
-  the 35,000-character early-warning band that `docs/agents-method.md` defines below the
-  40,000-character cap: `agents/self-review.md` at 35,267 and `skills/task/SKILL.md` at 35,427.
-  Three more have almost no headroom, and the audit skill's reference sibling has the least of any
-  file here: that sibling at 34,790, `docs/claude-tools-hierarchy.md` at 34,966 and
-  `docs/workflow.md` at 34,930, each read against the band figure above. The rest have room:
-  `agents/design.md` 30,811,
+  the 35,000-character early-warning band `docs/agents-method.md` sets below its 40,000-character
+  cap, both measured by that call: `agents/self-review.md` at 35,267 and `skills/task/SKILL.md` at
+  35,427. Three more have almost no headroom, and the audit skill's reference sibling has the least
+  of any file here, each figure measured the same way and read against the band: that sibling at
+  34,790, `docs/claude-tools-hierarchy.md` at 34,966 and `docs/workflow.md` at 34,930. The rest have
+  room, measured in the same call: `agents/design.md` 30,811,
   `docs/plan-invariants.md` 19,478, `docs/templates/progress-format.md` 31,051,
   `skills/task/reference.md` 21,951, `agents/design-review.md` 14,354, `agents/review-findings.md`
   18,309, `docs/code-style.md` 16,827, `skills/ai-audit/SKILL.md` 14,333,
@@ -130,12 +141,12 @@ both a
   next one** — `awk '/^### Project-defined Hooks/{f=1;print;next} /^## /{f=0} f'
   docs/claude-tools-hierarchy.md | wc -c` and the same form for the other two, so the figure is
   addressed by the heading and not by where it falls. That page's project-defined-hooks inventory
-  is 28,520 bytes, which is four-fifths of the page, so moving the list leaves a short index
-  behind. The validated-approaches section of `agents/self-review.md` is
-  3,837 bytes and carries soft verbs rather than obligations. The review-fixes step of
-  `skills/task/SKILL.md` is 9,095 bytes, while that round's procedure already lives on its own
+  measures 28,520 bytes by that slice, which is four-fifths of the page, so moving the list leaves a
+  short index behind. The validated-approaches section of `agents/self-review.md` measures 3,837
+  bytes the same way and carries soft verbs rather than obligations. The review-fixes step of
+  `skills/task/SKILL.md` measures 9,095 bytes, while that round's procedure already lives on its own
   page. The largest section of the audit skill's reference sibling — its frontmatter-and-config
-  improvement recommendations — is 7,523 bytes, and it carries recommendations rather than
+  improvement recommendations — measures 7,523 bytes, and it carries recommendations rather than
   obligations, which is what makes it the candidate on the file with the least room. Each figure
   is a measurement of existing text; which block actually moves is settled per edit by the rule
   under *Size is planned work* below.
@@ -154,8 +165,25 @@ both a
 ### Decision 1 — one new deterministic check, with its own wrapper
 
 Six deterministic classes and the excuse route land in a new check,
-`scripts/check-plan-convergence.sh` with a payload beside it, rather than as verbs of the existing
-plan-document gate or legs of the existing verification. **[REDLINE R1.1]**
+`scripts/check-plan-convergence.sh` with its payload beside it, rather than as verbs of the existing
+plan-document gate or legs of the existing verification.
+
+**The payload is three files rather than one, and the split follows the same rule that keeps these
+classes out of the existing verification.** `docs/code-style.md` refuses a source file above one
+thousand lines, and a single payload carrying all six classes crosses it — so the three classes that
+hold a plan sit in `scripts/check-plan-convergence-holding.py`, the three that report in
+`scripts/check-plan-convergence-reporting.py`, and what both sibling groups read stays in
+`scripts/check-plan-convergence.py`: the plan pair, the segmentation, the numeral readers, the
+excuse route, the report, and the relation patterns the arithmetic and provenance classes both read.
+The core loads the two siblings through a guarded loader, on the verification payload's own
+precedent for the same move. **The seam is the one the check already states as data** — which
+classes hold a plan and which only report — rather than a cut chosen to balance two file sizes: the
+caller refuses on the holding verdict, so the classes behind that verdict are the group with a
+reason to travel together, and the two groups were measured after the split to have no edge between
+them, every helper in a sibling being called only from that sibling. The core's own size and the
+ground for it are recorded in the project profile, which is where this repository keeps a size
+justification; no line count for any of the three is restated here, a count of a file this plan
+builds being the one kind of number § Decision 6 refuses outright.
 
 Three grounds, each measured above: the verification payload is at the hard line limit, so it has no
 room; the plan-document gate is a protected page, so every edit to it costs an authorisation and it
@@ -237,13 +265,22 @@ has begun. A marking in the cell is read from the cell, needs nothing from the f
 cannot move when the file comes into existence. The second half runs the other way and catches an
 object built inside a file that already exists: it is named by its own bullet or by nothing, and a
 bullet whose leading item resolves to no named file is reported. An object's place is a
-decomposition row that names it; its reason is a mention inside the approach; its cases are its
-use-case bullet's clauses. Its stated behaviour is read from the same clauses, because the design
-contract's own bullet shape requires each clause to say what the object does in that case — so a
-bullet with no clause states neither, and the finding names both. A clause that names a case while
-saying nothing about what the object does in it is a judgement, and it belongs to the judgement
-class rather than here. Stating that boundary is what keeps the holding classes deterministic, which
-is what pays for the single judgement one. **[REDLINE S8.4]**
+decomposition row that names it; its cases are its use-case bullet's clauses. Its stated behaviour
+is read from the same clauses, because the design contract's own bullet shape requires each clause
+to say what the object does in that case — so a bullet with no clause states neither, and the
+finding names both. A clause that names a case while saying nothing about what the object does in it
+is a judgement, and it belongs to the judgement class rather than here. Stating that boundary is
+what keeps the holding classes deterministic, which is what pays for the judgement half.
+
+**Its REASON is the one locus read wider than the words it serves, and the widening is disclosed in
+the class's own header rather than left to be discovered.** The class asks whether the document
+mentions the object anywhere other than the row that schedules it and the bullet that lists its
+uses — not whether the mention sits inside the approach, and not whether what it says there is a
+reason. The condition that forces the wider reading is this check's own isolation rule: reading one
+named section means locating it, and the payload may hold no section name as a literal. The only
+other route is the required-element record's row ORDER, which would make the locus silently wrong
+the first time a row moved. So the reading loses one case and names it: an object mentioned outside
+the approach and nowhere inside it.
 
 **How a requirement reaches an object.** The decomposition carries a cell naming the criteria each
 row delivers, and the class compares the union of those cells against the spec's criteria in both
@@ -315,19 +352,28 @@ so copying them here would put one fact in two places under two meanings, which 
 class's own subject. **And one of the three cannot be written without deciding a question that is
 the author's:** whether the prohibition reaches backwards into the completed plans is open and
 unanswered, and an exclusion for them would answer it in one direction inside a document the author
-reads as a plan rather than as a decision. **Nothing here answers it, and it stands** — it is
-carried in § Open questions, where it passes the admissibility test, because the baseline is built
-from whatever the tree holds either way and no row sweeps those documents under either answer.
+reads as a plan rather than as a decision. **Nothing here answers it, and it stands as the author's
+to answer** — the question could be left open because the baseline is built from whatever the tree
+holds either way and no row sweeps those documents under either answer, so neither the approach, the
+requirements nor the way the work breaks up moves on the answer.
 
 Sweeping the positions that predate the rule is outside this task by the spec's own boundary. A
 class that reported them all on its first run would ship a gate that is red on arrival, which the
 spec refuses in the same words it refuses accepting a size band. So the class compares the tree
 against a **baseline record** of the positions that predate it, committed at
-`ai-docs/fixtures/positional-references.baseline`, and reports every arrival. The record is levelled
-only by an explicit act that prints what it is about to take in, copied from the statement
-inventory's acceptance route — the one comparable act in the tree — and the author runs it. The
-baseline is what makes "the rule binds from here" a mechanical statement rather than a promise, and
-it leaves the sweep exactly where the spec put it: the author's to schedule. **[REDLINE R1.3]**
+`ai-docs/fixtures/positional-references.baseline`, and reports every arrival. The baseline is what
+makes "the rule binds from here" a mechanical statement rather than a promise, and it leaves the
+sweep exactly where the spec put it: the author's to schedule.
+
+**The record carries no levelling act of its own, and this is the shape that shipped rather than a
+question left open.** The wrapper takes the tree root and an excuse with its grounds, and its usage
+string names nothing further — so the baseline is levelled by editing it in place, like any other
+committed file, and nothing prints a report before the new content is taken in. The acceptance
+route the statement inventory owns is untouched and keeps that property for the record it covers;
+what this class gets instead is the ordinary one, a tracked edit that reaches the author as a diff
+and a review comment. The consequence is stated rather than left to be inferred: a levelling here
+is weighed as a change to a file, not as an act that shows its own report first, and what that costs
+is named in § Risks.
 
 **This class reports and does not hold a plan, and the reason is the input set rather than the
 class's weight.** Its requirement says a position is reported, never that it holds; and its input is
@@ -385,8 +431,8 @@ that is deliberate.** A position anywhere in the tracked tree is the reference c
 reports rather than holds and starts green against the baseline, so what predates the rule is
 absorbed there and an arrival is reported there — and **nothing in this amendment answers whether
 the prohibition reaches backwards into the completed plans. That question is the author's and it
-stands**, carried in § Open questions. Converting the archive to give this clause something to
-verify is exactly the act that would answer it, which is why the clause is made honest instead. **No
+stands.** Converting the archive to give this clause something to verify is exactly the act that
+would answer it, which is why the clause is made honest instead. **No
 new sync-group row is owed for either edit**, measured against the propagation table: those two
 files are already a declared group, and its trigger names three things — the letter table, the
 reference sibling's checklist detail bodies, and the footer's letter range. **Two of the three
@@ -415,11 +461,15 @@ acts on the file in front of it, and never travels into the entry. Leaving eithe
 mandate for the old form on the one surface whose own job is to catch an anti-pattern, inside a
 change that edits that surface — the self-contradiction the paragraph above refuses.
 
-### Decision 4 — the judgement class gets its own reader, and the orchestrator produces both halves
+### Decision 4 — the judgement classes get their own reader, and the orchestrator produces both halves
 
-The spec leaves open who runs the semantic class. It goes to a reader of its own,
+The spec leaves open who runs the semantic classes. They go to a reader of their own,
 `agents/plan-convergence.md`, spawned by the design-review step, rather than into the review
-contract.
+contract. That reader covers **self-contradiction** — two statements of the pair that cannot both
+hold, about one object, one mechanism, one quantity or one sequence, with both sites named — and
+**artefact-contradiction**, a statement about something that already exists which the thing itself
+does not bear out, where the statement and the artefact are both named and what the artefact
+actually does is quoted.
 
 Three grounds, and the first is a contradiction rather than a cost. The review contract's output is
 a ruling — GO, ITERATE or STOP — while this class must report and rule on nothing; housing a
@@ -450,11 +500,19 @@ mechanism's own output, where the reader of a verdict can see it, and it is why 
 no surface of its own.
 
 **Its location is chosen for two measured reasons.** It sits beside the committed measurement data,
-so the one widened exclusion path test that accounts for the baseline record accounts for it too and
-the verification's unaccounted figure stays at zero without a second change. And because the
+which is the class of file the verification's exclusion already admits by rule. And because the
 references gate walks every markdown file it finds on disk, a planted fault may not be a broken link
 or an unresolvable anchor — a document planting one would redden that gate instead of this reader,
-so the planted faults are confined to the classes the reader rules on. **[REDLINE S8.2]**
+so the planted faults are confined to the classes the reader rules on.
+
+**Sitting beside the baseline record does not make it free, and the price is a second named entry
+rather than one widened prefix.** The verification's exclusion names each committed record under the
+fixtures root individually instead of reaching them by a prefix on the root, because the statement
+inventory itself is skipped before any exclusion rule runs and a prefix would leave two mechanisms
+claiming one file. So the planted-fault document is owed its own name there exactly as the baseline
+record is, and the payload states that standing cost in its own words at the exclusion: every
+further record under that root is owed a name of its own. With both entries in place the
+verification reports no unaccounted file.
 
 ### Decision 5 — where each rule is stated once, and the comment admission's single home
 
@@ -503,7 +561,8 @@ on the two writer contracts as the author's test and on the review contract as a
 statement is satisfied by the other's presence: the author's half is a test applied while writing,
 the reviewer's is a verdict.
 
-Three consequences are planned rather than discovered, each measured above: **[REDLINE R1.6]**
+The consequences are planned rather than discovered, and this list states no count of itself — for
+exactly the reason its first item gives:
 
 - **The page's heading states a count and must stop.** It is renamed to a form that states none.
   The verification payload carries that heading's exact text three times — once as the body split
@@ -513,18 +572,19 @@ Three consequences are planned rather than discovered, each measured above: **[R
 - **The commentary that counts the principles and classes them moves with them.** It names how
   many are prohibitions and which single one is a test and an obligation; the new principle is a
   second non-prohibition, so that sentence is rewritten rather than incremented.
-- **The project profile states the count twice** and is an examined surface, so both statements
-  move
-in the
-  same change or the tree ships a false sentence and a red comparison.
+- **The project profile states the count twice** and is an examined surface, so both statements move
+  in the same change or the tree ships a false sentence and a red comparison.
+- **The correction mode's recommendation signals are re-based on this rule in the same change.** The
+  closing-pass contract recommends a correction mode from signals it reads off the design under
+  review, and a non-empty open-questions section is the strongest single one of them. Under this
+  principle every gap such a section may carry is a gap the rule admits, so what that signal records
+  is a question the WORK answers rather than a hole in the base. The signal keeps its weight and
+  changes its ground, and the re-basing lands in the same change as the principle it follows from.
 
 The route back is already in the tree: a gap that turns out to have changed the approach, the
 requirements or the decomposition re-enters the full design-and-review cycle, which is exactly how a
 divergence that breaks the agreed approach is already handled. So the principle names a price an
 existing route already charges, and nothing new is wired for it.
-
-**This document's own open-questions section is held to the new rule as it is written**, which is
-why the section below carries only questions whose answers change none of those three.
 
 ### Decision 7 — the closing pass keeps the frozen plan
 
@@ -562,7 +622,7 @@ second filename, which is the smallest possible change to a protected page and l
 assertion untouched — verified by reading the verb: not one of them presumes the document was
 re-authored.
 
-### Decision 8 — the edit-time guard is blind to a separator inside a quoted span
+### Decision 8 — the edit-time guard is blind to a separator the shell would not treat as one
 
 This work is independent of everything else here and its file set is disjoint from every other
 subtask's.
@@ -570,16 +630,16 @@ subtask's.
 **The two outcomes, measured on the live guard with synthetic payloads naming an absolute path to a
 protected page.** An in-place substitution whose script uses a slash as its delimiter reaches the
 confirmation with its full text. The identical command with one of the segmentation characters as
-the delimiter is silent, exit 0.
+the delimiter is silent, measured at exit 0 in the same probe.
 
-**The mechanism, established from the code and addressed by entity.** The shell arm's `padded`
-assignment [padded] in `hooks/lib/plan-invariants-guard.sh` replaces both quote characters with
-spaces before anything else reads the command. The
+**The mechanism, established from the code and addressed by entity, as it stood before the repair.**
+The shell arm's `padded` assignment [padded] in `hooks/lib/plan-invariants-guard.sh` replaces both
+quote characters with spaces before the segment loop reads the command. The
 segment loop is then fed through a translation that turns each of eight characters — the two
 statement separators, the pipe, the two bracket pairs and the backtick — into a newline, and reads
-each resulting line as its own pipeline segment with its own command word. By the time segmentation
-runs, nothing records which characters sat inside a quoted span, so a substitution delimiter that
-happens to be one of the eight cuts the command into pieces. The arm's two conditions then hold in
+each resulting line as its own pipeline segment with its own command word. With nothing having
+recorded which characters sat inside a quoted span by the time segmentation ran, a substitution
+delimiter that happened to be one of the eight cut the command into pieces. The arm's two conditions then hold in
 different segments, each missing the other, and every entity named here is in
 `hooks/lib/plan-invariants-guard.sh`: the segment carrying the in-place writer sets the
 in-place flag but offers `path_shaped` [path-shaped] no operand it will accept — one candidate is
@@ -589,10 +649,15 @@ protected path has a fragment of the substitution script as its command word, wh
 `WRITER_WORDS` [writer-words] nor `INPLACE_CMDS` [inplace-cmds], so `has_write_construct`
 [has-write-construct] sees nothing beside the path.
 
-**The defect's boundary is one sentence — a separator character inside a quoted span — and it covers
-all eight characters and both quote spellings.** The silent set is derivable from the code rather
-than taken from a sample, and it is exactly the eight characters the segment loop's translation
-names — **but the derivation has two branches, not one, and the second is why it is worth stating
+**The defect's boundary is two shapes rather than one, and together they cover all eight
+segmentation characters in both quote spellings and in the escaped spelling.** The first is a
+separator character inside a quoted span. The second is a separator a backslash escapes outside any
+quoted span: the shell declines to treat it as a separator and the guard treated it as one, so the
+command was cut in the same way and the arm went silent for the same reason. The silent set is
+derivable from the code rather than taken from a sample, and it is exactly the eight characters the
+segment loop's translation names — which the guard now spells once as data, because three steps read
+that set and a character present in one and absent from another reopens the hole — **but the
+derivation has two branches, not one, and the second is why it is worth stating
 this way.** A delimiter outside that set normally leaves the command in one piece, so the in-place
 writer and the resolved path sit in the same segment and the arm fires. The redirect character is
 the exception that fires for a different reason: the `padded` assignment rewrites it into the
@@ -606,28 +671,37 @@ script flag, for an interpreter spelling of the same edit, for a brace-delimited
 against the guarded record as well as the protected pages, both lists being read by the same arm.
 Closing only the pipe would ship a demonstration that passes while the double-quoted spelling of the
 identical command stays silent, which is precisely what the demonstration obligation exists to
-prevent. **[REDLINE R1.10]**
+prevent.
 
-**This is a seventh silent form against a header that enumerates six.** The guard's own header opens
-its enumeration with the count and lists them: a glob, a command substitution producing the path, a
-target list read from a file, an unlisted writer, an interpreter script's variable-indirected
-writer, and a directory change that is not a leading prefix. A separator inside a quoted span is
-none of the six. Closing the hole makes that sentence true rather than changing what it claims — a
-stated count falsified by the very thing it counts, found in the enforcement code of the mechanism
-this task reworks. **[REDLINE S8.1]**
+**The ORDER of the repair is what closes the escaped shape, and that is a measured fact rather than
+a preference.** The walk that carries quote and escape state across the command runs BEFORE the
+padding. Measured with the walk placed after the padding instead: all but one of the eight escaped
+forms closed and the statement separator stayed silent, because by then the padding had put a space
+between the backslash and the character it escaped.
 
-**The repair direction is measured, and one direction is ruled out.** Neutralise the separator
-characters that sit inside a quoted span before segmentation runs, leaving the span's own quoting
-intact and the eight characters meaningful everywhere else. Shrinking the separator set is not the
+**Neither shape is among the silences the guard's header keeps deliberately.** That header
+enumerates the silent forms of the write arm and groups them by what makes each one silent: those
+that never spell the protected path as a literal token, so no resolution rule reaches them; the
+writer whose construct is not listed; and the ones that follow from operand rules kept deliberately
+narrow. The acceptance condition carries its own silences beside them, under-firing for reasons of
+its own. A separator inside a quoted span belongs to none of those groups, and neither does an
+escaped one — both were silences nothing had decided to keep, in the enforcement code of the very
+mechanism this task reworks, which is what makes closing them this plan's work rather than a note
+left for later. Once both are closed the header's enumeration and what it enumerates agree.
+
+**The repair direction is measured, and one direction is ruled out.** Neutralise a separator that
+the shell would not treat as one — inside a quoted span, or escaped by a backslash outside any
+quoted span — before segmentation runs, leaving the span's own quoting intact and the eight
+characters meaningful everywhere the shell would honour them. Shrinking the separator set is not the
 repair: those characters are what makes a compound command segment at all, and the silences the
 guard deliberately keeps — a read beside a write, a directory change that is not a leading prefix —
-are read off that same segmentation. A quote-agnostic mutant carrying this one change was measured
+are read off that same segmentation. A quote-agnostic mutant carrying this change was measured
 against a corpus of command shapes with zero disagreements: every spelling of the hole fires, every
-pre-existing confirmation still fires, every deliberate silence still holds, all six enumerated
-residuals stay silent, and the acceptance condition is undisturbed. The implementing subtask may
-reach the property another way; what is pinned is the property, the ruled-out direction, and the
-shape set the repair answers to. The live guard was never touched during that probing — every probe
-ran on a copy, confirmed by hashing the file against its committed blob.
+pre-existing confirmation still fires, every deliberate silence still holds, every residual form the
+header enumerates stays silent, and the acceptance condition is undisturbed. What is pinned is the
+property, the ruled-out direction, and the shape set the repair answers to. The live guard was never
+touched during that probing — every probe ran on a copy, confirmed by hashing the file against its
+committed blob.
 
 **What editing the guard fires, checked rather than claimed.** The guard refuses nothing on itself:
 its own path is in neither of its two lists and its basename contains no guarded basename, so its
@@ -659,13 +733,15 @@ permission
   mode auto-approves an ask without surfacing it. So no part of this plan may rest on an author seeing a
   refusal.
 
-**The route, therefore:** every group whose subtasks edit a protected page opens by putting those
-edits to the author in words — naming the pages and what changes on each — and proceeds on the
-author's answer, the way the Group A acceptance act was authorised. The same applies to the two
-records this plan levels: the statement inventory and the new baseline. Neither is advanced by an
-ordinary run, each prints the report it is about to take in, and each acceptance is put to the
-author with that report. A plan that assumed the prompt would arrive would be claiming more than the
-mechanism delivers under this configuration.
+**The route, therefore:** work that edits a protected page opens by putting those edits to the
+author in words — naming the pages and what changes on each — and proceeds on the author's answer.
+**The two records this plan levels take the same route by two different mechanisms.** The statement
+inventory has an acceptance act that prints the report it is about to take in, so its acceptance
+reaches the author with that report attached. The new baseline has no such act: it is levelled by an
+ordinary tracked edit, so what reaches the author is the diff and the words that accompany it. Both
+are put to the author; only one shows its own report first, and the asymmetry is stated here rather
+than left to be discovered at the moment of levelling. A plan that assumed the refusal prompt would
+arrive instead would be claiming more than the mechanism delivers under this configuration.
 
 ### Keeping the protected set the same size
 
@@ -717,17 +793,23 @@ of them
   decided by the rule the earlier extraction pass established — obligations stay on the page a round
   loads, procedure and rationale move — and the file is re-measured after the move.
 
-**Two crossings are certain rather than conditional, and both are planned work.** The
-tool-and-subagent inventory page is one of those the ground above measures with almost no headroom,
-and the new reader contract obliges it a row, so that subtask moves the page's
-project-defined-hooks inventory to `docs/hook-inventory.md`, which exists to hold that inventory so
-the tool-and-subagent page a round loads stays an index. The audit skill's reference sibling is
-measured there with almost none either and takes two added instructions, so its largest section
-moves to `docs/frontmatter-recommendations.md`, which exists to hold recommendations away from the
-sibling a round opens for obligations. Neither is written as a condition on a measurement, because
-a conditional
+**Two extractions are unconditional planned work, and the ground for them is the rule rather than a
+forecast about a measurement.** The tool-and-subagent inventory page is one of those the ground
+above measures with almost no headroom, and the new reader contract obliges it a row, so that
+subtask moves the page's project-defined-hooks inventory to `docs/hook-inventory.md`, which exists
+to hold that inventory so the tool-and-subagent page a round loads stays an index. The audit skill's
+reference sibling is measured there with almost none either and takes two added instructions, so its
+largest section moves to `docs/frontmatter-recommendations.md`, which exists to hold recommendations
+away from the sibling a round opens for obligations.
+
+**Neither is written as a condition on a measurement, and the reason is not that the crossing can be
+forecast — it is that a forecast is the wrong thing to hang an extraction on.** A conditional
 extraction turns the row's own measurement obligation into a branch, and a tie within tens of bytes
-either way is exactly the state in which a branch becomes a coin toss. **[REDLINE S8.3]**
+either way is exactly the state in which a branch becomes a coin toss. So each extraction is owed
+whether or not its file is still at the band when the row runs, the page it creates is owed for its
+own reason — an index that stays an index, obligations kept apart from recommendations — and the
+measurement immediately before and after the edit is owed either way. What a measurement decides
+here is which block leaves a file, never whether one does.
 
 ### Rejected alternatives
 
@@ -751,9 +833,9 @@ either way is exactly the state in which a branch becomes a coin toss. **[REDLIN
 | 2 | **The comment admission.** The membership rule on the policy page — a comment an instrument reads is a directive, and an instrument is whatever fails or changes behaviour when the comment goes — with deleting one named as a finding rather than a cleanup. The per-change comment sweep's example list becomes a pointer, which shrinks that file; the whole-branch review contract, the whole-branch review skill and the handoff instruction take the same pointer | `docs/code-style.md`, `agents/self-review.md`, `agents/review-findings.md`, `skills/project-review/SKILL.md`, `skills/context-reset/SKILL.md` | AC8, AC9 | 1 |
 | 3 | **The plan-document contracts and the audit surfaces take the two obligations and lose their positional mandates.** Both writer contracts and the review contract state the provenance obligation in their own words and the reference-and-id obligation as a pointer to the page from row 1; the three sentences that currently mandate citing a position for a load-bearing claim are rewritten to mandate naming an entity with its id. **The audit surfaces take three changes.** The archived-reference clause becomes the entity-resolution check on the letter table and in its own narrowing on the reference sibling, reporting how many such references it resolved and claiming no coverage of the archive as it stands. And **both** recording instructions stop mandating a line number: the skill's run-the-checklist step names the rule and the entity it conflicts with, and the sibling's learning-record field-coherence clause names the entry — the entity its own reason already points at, since the append-only rule forbids fixing the field in place. Both reports travel the step that writes a finding into the committed learning record, where nobody re-derives a position. **The reference sibling takes two of those edits into a file the ground above measures with almost no headroom**, so the extraction is planned work and not a contingency: its largest section — the frontmatter-and-config improvement recommendations, recommendations rather than obligations — moves to its own page in the same change, and the file is measured immediately before and after regardless | `agents/design.md`, `agents/spec-writer.md`, `agents/design-review.md`, `skills/ai-audit/SKILL.md`, `skills/ai-audit/reference.md`, `docs/frontmatter-recommendations.md` *(new)* | AC1, AC2, AC3, AC4, AC5, AC6, AC35 | 1 |
 | 4 | **The committed correction log moves to entity-plus-id; the ephemeral record keeps its positions.** The log's row field that quotes a diverged sentence carries the entity and its id instead of a position, and the duty to re-derive every position in a touched row splits: the ephemeral sections keep it verbatim, the committed log loses it because there is no position left to re-derive. No single rule spans both records afterwards. **The copy relation between the two records is the hidden half and is severed here rather than described away:** that field is specified today as a verbatim copy of the fix plan's own cell, and the fix-plan gate refuses a cell quoting no position — so the promotion into the committed log becomes a TRANSFORMATION, stated in both places that specify the field. Measured, so the file list is bounded: the arm that pairs a marker with a row keys on the row's first cell alone and never reads this field, so neither gate changes, and the ephemeral cell keeps its position and its gate untouched | `docs/templates/progress-format.md`, `agents/design.md` | AC10, AC11 | 1, 3 |
-| 5 | **The check's wrapper, its payload, and the two plan-pair-local classes.** Three outcomes with a could-not-run that is not a pass; the examined counts beside the verdict, including the not-evaluable count; the provenance class and the arithmetic class; section names derived from the required-element record at run time rather than held as literals; a derived section absent from the document under examination yields an empty region and a zero count, never a finding about the section. The runner's path-argument exemption takes the new check, and the profile's gate inventory is reconciled with what the runner derives from the index — **but the check's name must not enter the profile's structural-checks span in the `bash scripts/<name>.sh` spelling**, because that span is parsed and a check named there while exempt from membership reddens the inventory member in one direction; measured precedent, the existing path-argument gate is named nowhere in that span | `scripts/check-plan-convergence.sh` *(new)*, `scripts/check-plan-convergence.py` *(new)*, `AGENTS.md`, `scripts/run-checks.sh` | AC1, AC2, AC3, AC14 | 3 |
-| 6 | **The completeness and isolation classes.** Objects read from the decomposition's file cells and the use-case bullets; place, reason, cases and behaviour answered structurally with the judgement boundary stated; a criterion no row reaches and a section reference resolving to nothing in the same report; repeated numbers and repeated spans of at least the borrowed minimum length, naming both sites. The decomposition template gains the cell naming which criteria a row delivers | `scripts/check-plan-convergence.py`, `agents/design.md` | AC12, AC13 | 5 |
-| 7 | **The reference and pairing classes, with the baseline that makes them start green.** Positional references across the tracked tree against a committed baseline record; the ids a plan claims against the ids marked in source, both directions, by equality, with the pair count printed and ambiguity reported; the mark required inside a file the claiming statement names. The baseline is created and staged, and the comparison payload's exclusion path test is widened so the new record is accounted for and the verdict's unaccounted figure stays at zero | `scripts/check-plan-convergence.py`, `ai-docs/fixtures/positional-references.baseline` *(new)*, `scripts/check-plan-invariants.py` | AC4, AC5, AC6, AC7 | 1, 5 |
+| 5 | **The check's wrapper, its payload, and the two plan-pair-local classes.** Three outcomes with a could-not-run that is not a pass; the examined counts beside the verdict, including the not-evaluable count; the provenance class and the arithmetic class; section names derived from the required-element record at run time rather than held as literals; a derived section absent from the document under examination yields an empty region and a zero count, never a finding about the section. The runner's path-argument exemption takes the new check, and the profile's gate inventory is reconciled with what the runner derives from the index — **but the check's name must not enter the profile's structural-checks span in the `bash scripts/<name>.sh` spelling**, because that span is parsed and a check named there while exempt from membership reddens the inventory member in one direction; measured precedent, the existing path-argument gate is named nowhere in that span | `scripts/check-plan-convergence.sh` *(new)*, `scripts/check-plan-convergence.py` *(new)*, `scripts/check-plan-convergence-holding.py` *(new)*, `scripts/check-plan-convergence-reporting.py` *(new)*, `AGENTS.md`, `scripts/run-checks.sh` | AC1, AC2, AC3, AC14 | 3 |
+| 6 | **The completeness and isolation classes.** Objects read from the decomposition's file cells and the use-case bullets; place, reason, cases and behaviour answered structurally with the judgement boundary stated; a criterion no row reaches and a section reference resolving to nothing in the same report; repeated numbers and repeated spans of at least the borrowed minimum length, naming both sites. The decomposition template gains the cell naming which criteria a row delivers | `scripts/check-plan-convergence-holding.py`, `scripts/check-plan-convergence.py`, `agents/design.md` | AC12, AC13 | 5 |
+| 7 | **The reference and pairing classes, with the baseline that makes them start green.** Positional references across the tracked tree against a committed baseline record; the ids a plan claims against the ids marked in source, both directions, by equality, with the pair count printed and ambiguity reported; the mark required inside a file the claiming statement names. The baseline is created and staged, and the comparison payload's exclusion takes the new record by name, beside the other committed record under that root, so the verdict reports no unaccounted file | `scripts/check-plan-convergence-reporting.py`, `scripts/check-plan-convergence.py`, `ai-docs/fixtures/positional-references.baseline` *(new)*, `scripts/check-plan-invariants.py` | AC4, AC5, AC6, AC7 | 1, 5 |
 | 8 | **The excuse route.** A committed per-plan record at `ai-docs/plans/<spec-base>.excuses.md`, beside the plan and named by the same construction the correction log uses, with a suffix the ignore rules do not swallow — confirmed with `git check-ignore -v`, which reports the round record's suffix ignored and this one not; a grant act that prints the finding before excusing it and no ordinary run that excuses anything; an excused finding reported as excused with the excused count beside the verdict; the excuse keyed by class, by the entity-named spot and by the finding's subject, so editing the passage does not revoke it and the same fault at that spot comes back excused. Removing one by hand is an act of the same kind, and the record names the spot plainly enough to find | `ai-docs/plans/<spec-base>.excuses.md` *(new)*, `scripts/check-plan-convergence.sh`, `scripts/check-plan-convergence.py`, `docs/templates/progress-format.md` | AC15, AC16, AC17, AC18 | 5, 6, 7 |
 | 9 | **The refusal wiring, on the two parties that can hold a plan, and only for the classes that hold.** The design's author runs the check as its own exit check and hands back on nothing but a verdict carrying no unexcused finding of the three holding classes — completeness, isolation, arithmetic — which is the shipped shape for the spec's form gate; a reporting class's findings travel in the hand-back rather than blocking it. The reviewer may not issue GO while such a finding stands unexcused, and reads the reporting classes' findings as input to its own judgement; its checklist gains the convergence classes with the severity lines written so the element derivation yields only pairs the record already carries | `agents/design.md`, `agents/design-review.md` | AC15, AC19 | 5, 6, 7, 8 |
 | 10 | **The judgement reader and the pass that produces both halves.** A reader contract whose output is a report and never a verdict, pointing at the outcome page's five obligations rather than restating them; three readings with the agreement printed beside the report and the healthy figure stated before the first; a committed document at `ai-docs/fixtures/plan-convergence-planted.md` holding one planted fault per class, read on every run, with each class printed as having reported its own planted fault or not, and planting nothing that would redden the references gate instead. The design-review step runs the deterministic check and spawns the reader, so no judgement result stands alone. The tool-and-subagent inventory takes its row, and its project-defined-hooks inventory moves to its own page in the same change | `agents/plan-convergence.md` *(new)*, `ai-docs/fixtures/plan-convergence-planted.md` *(new)*, `skills/task/SKILL.md`, `skills/task/reference.md`, `docs/claude-tools-hierarchy.md`, `docs/hook-inventory.md` *(new)* | AC19, AC20, AC21, AC22, AC23 | 9 |
@@ -769,55 +851,13 @@ than skipped:** the design contract asks for a split proposal above seven subtas
 recorded decision is that all of this is one task with nothing carved out into separate tickets. The
 proposal is therefore named here and the decision stands.
 
-## Handoff plan
-
-Six groups. Every group — including the first — is entered through a `/context-reset` handoff per
-`${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`, and every group whose rows edit a protected
-page opens by putting those edits to the author in words, because no refusal prompt reaches them in
-this configuration.
-
-- **Group A:** subtasks 1–3 — the rules, stated once each, before anything enforces them.
-- **Handoff after Group A:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. Parent `/task` resumes in Group B with
-  fresh context.
-- **Group B:** subtasks 4–6 — the record's references, then the check's wrapper and the three
-  classes whose input is the plan pair alone.
-- **Handoff after Group B:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`.
-- **Group C:** subtasks 7–9 — the two tree-wide classes with their baseline, the excuse route, and
-the two
-  parties that can hold a plan.
-- **Handoff after Group C:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`.
-- **Group D:** subtasks 10–12 — the judgement reader and the closing pass.
-- **Handoff after Group D:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`.
-- **Group E:** subtasks 13–15 — the new principle, the price on three surfaces, and the closing
-  act.
-- **Handoff after Group E:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`.
-- **Group F:** subtask 16 — terminal group, one subtask, within the 1..3 range.
-
-**The dependency graph, and the one concurrency this design licenses.** A–E are strictly serial, and
-the files they share across group boundaries are these eight, derived from the file cells of the
-table above rather than listed by hand: `agents/design.md` (A, B, C, D, E),
-`agents/design-review.md` (A, C, E), `agents/spec-writer.md` (A, E),
-`scripts/check-plan-invariants.py` (C, D, E), `docs/plan-invariants.md` (D, E),
-`docs/templates/progress-format.md` (B, C), `scripts/check-plan-convergence.py` (B, C) and
-`scripts/check-plan-convergence.sh` (B, C). Concurrency over a shared file is never licensed.
-`skills/redline-fold/SKILL.md` is shared by two rows inside Group D and crosses no boundary, which
-is why it is not in that list. **Group F is independent and its file set is disjoint from every
-other group's**, so it may run concurrently with A, B, C or D — but it must be complete before
-subtask 15, whose acceptance act levels the record over the whole tree and whose version bump covers
-all shipped content. So F is concurrent with A–D and never with E.
-
 ## Risks
 
 - **An edit to a protected page proceeds without the author having seen anything.** Measured: the
-refusal
-  fires correctly and this session's permission mode swallows it. Mitigation: the group-opening
-  authorisation in the handoff plan, in words, naming the pages. There is no mechanical backstop, and
-  pretending otherwise is the claim the spec forbids.
+  refusal fires correctly and this session's permission mode swallows it. Mitigation: the
+  authorisation route under *The refusal reaches almost everything here*, put to the author in
+  words and naming the pages, before the work that edits them begins. There is no mechanical
+  backstop, and pretending otherwise is the claim the spec forbids.
 - **A new page or script acquires an element-defining locus by accident and the protected set has
   to grow.** The live test fires on a backticked element token beside a presence, absence or
   retention word — a shape a careful sentence can hit with no change of meaning, which has already
@@ -840,13 +880,13 @@ tree
   and compares them against the profile's in both directions, so a new check is reported until both
   sides
   agree. That is the mechanism working; the member names what is missing.
-- **The baseline record is accepted unread.** The acceptance route's property — it prints the
-  report
-it is
-  about to take in — is conditional on a record existing to compare against: with the record absent, the
-  preflights that would refuse are skipped by design, so a first run would absorb everything while
-  printing nothing. Mitigation: the baseline is created once, deliberately, and never accepted while
-  absent; the same rule already binds the statement inventory.
+- **The baseline record is levelled unread.** It has no levelling act of its own, so nothing prints
+  a report before new content is taken in, and a wholesale rewrite of it looks on the surface like
+  a careful one. Mitigation, and it is weaker than the statement inventory's by construction: the
+  record is created once, deliberately, and every later change to it reaches a reader as a tracked
+  diff whose size is the signal — a levelling that absorbs everything is a large diff and a
+  levelling that absorbs one arrival is a small one. There is no mechanical refusal here, and
+  claiming one would be the same overstatement the spec forbids about the edit-time prompt.
 - **The judgement reader's agreement figure comes back low.** Three readings of one document may
 disagree,
   and the standard deliberately sets no threshold. Mitigation: the healthy figure is stated before the
@@ -920,13 +960,28 @@ refuses the
   the items no correction was
   recorded against, to report a number that no longer holds and an identity that no longer pairs; run by
   the author with its excuse verb, to excuse one finding after seeing it.
-- `scripts/check-plan-convergence.py` — loaded by the wrapper above and by nothing else; holds the
-  six classes, the counts each prints, and the derivation that reads section names from the
-  element record rather than carrying them.
+- `scripts/check-plan-convergence.py` — loaded by the wrapper above and by nothing else; holds what
+  both sibling groups read, which is the plan pair, the segmentation, the numeral readers, the
+  excuse route, the report and the relation patterns the arithmetic and provenance classes share,
+  and loads the two siblings through a guarded loader; holds the derivation that reads section names
+  from the element record rather than carrying them, because both groups need those regions; read by
+  whoever adds a class, as the file that decides which sibling the class belongs in and installs
+  every name a class body expects.
+- `scripts/check-plan-convergence-holding.py` — loaded by the core and by nothing else; holds the
+  three classes whose unexcused finding stops a plan being treated as agreed — arithmetic,
+  completeness and isolation — and nothing besides them, every helper in it being called only from
+  it; read by whoever asks why a hand-back was refused, since the holding verdict is computed from
+  exactly these three.
+- `scripts/check-plan-convergence-reporting.py` — loaded by the core and by nothing else; holds the
+  three classes that report without holding — provenance, reference and pairing — which are also
+  the three the closing pass runs over an item no correction was recorded against; read by whoever
+  asks why a finding travelled in a hand-back instead of blocking it, and by whoever asks which
+  classes read the tracked tree rather than the plan pair.
 - `ai-docs/fixtures/positional-references.baseline` — read by the reference class as the comparand
-  that tells an arriving position from one that predates the rule; rewritten only by the author's
-  explicit acceptance, which prints the report first; read by a later sweep's author as the list
-  of what is left to remove.
+  that tells an arriving position from one that predates the rule; rewritten by the author editing
+  it in place, there being no levelling act of its own that prints a report first, so a levelling
+  reaches a reader as an ordinary tracked diff; read by a later sweep's author as the list of what
+  is left to remove.
 - `agents/plan-convergence.md` — read by the reader the design-review step spawns, as its whole
 contract;
   read by the orchestrator to know what it gets back and in what shape; read by the reviewer beside the
@@ -959,28 +1014,3 @@ could
   read
   by a maintainer asking which silent forms are deliberate, which is why its header enumerates them.
 
-## Open questions
-
-Each item below changes none of the approach, the requirements or how the work breaks up —
-which is the test the new principle states, applied to this document as it was written.
-
-- **Whether the arithmetic class has any external precedent to borrow from.** The research behind
-  the ticket reports none. If it is genuinely novel its planted-fault demonstration carries more
-  weight than the other classes', since nothing outside corroborates its shape — which changes how
-  carefully that one input is built, not what is built or in which order.
-- **Which block leaves each file that is already inside the early-warning band.** Candidates are
-measured
-  and the rule that chooses between them is stated; the choice is made against the measurement at the
-  moment of the edit, because the file will have moved by then.
-- **Whether the id's slug reads better as one word or as a dotted pair.** The behaviour is fixed —
-one id,
-  one entity, equality over whole ids, ambiguity reported — and the spelling inside the shape filter is
-  cosmetic in both directions of the check.
-- **Whether the positional prohibition reaches backwards into the completed plans.** The author's
-  to answer; nothing in the instruction surface answers it and nothing in this document does
-  either. It passes the test on all three counts: the approach is the baseline plus a class that
-  reports rather than holds under either answer; the requirements place the sweep of what predates
-  the rule outside this task under either answer; and no row sweeps those documents either way,
-  since the baseline is built from whatever the tree holds when it is created. What the answer
-  would change is whether an exclusion rule is written later — a change to one script, after this
-  plan closes.
