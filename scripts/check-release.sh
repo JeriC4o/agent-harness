@@ -3,7 +3,8 @@
 # Did this branch change what ships, without bumping the version?
 #
 # Run: bash scripts/check-release.sh [base-ref]      (default: origin/main)
-# Exit: 0 fine, 1 a bump is required and missing, 2 usage/environment error.
+# Exit: 0 fine, 1 a bump is required and missing, 2 usage/environment error or
+#       the base could not be shown to match its remote -- which is NOT a pass.
 #
 # The install smoke test proves the plugin LOADS; it installs into a clean
 # sandbox, so by construction it can never catch the other delivery failure:
@@ -12,11 +13,18 @@
 #
 # Shipped paths are the ones a consumer receives. README.md and ai-docs/ are
 # this repo's own profile -- they do not travel, so they need no bump.
+#
+# A STALE BASE IS WRONG IN BOTH DIRECTIONS: changes already on the default
+# branch read as this branch's own, and a bump already there reads as this
+# branch's bump. So a remote-tracking base must match its remote's tip
+# (ref-current.sh) before anything is compared; a commit id or local branch is
+# read as given with no remote contact.
 
 set -uo pipefail
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(cd -- "${HERE}/.." && pwd)
+# [release-base]
 BASE="${1:-origin/main}"
 MANIFEST=".claude-plugin/plugin.json"
 SHIPPED='^(skills/|agents/|rules/|hooks/|docs/|scripts/|templates/|\.claude-plugin/)'
@@ -25,6 +33,15 @@ cd "$ROOT" || exit 2
 git rev-parse --git-dir >/dev/null 2>&1 || { printf 'check-release: not a git repo\n' >&2; exit 2; }
 git rev-parse --verify --quiet "$BASE" >/dev/null || {
   printf 'check-release: base ref %s does not exist (fetch first?)\n' "$BASE" >&2; exit 2; }
+[ -x "${HERE}/ref-current.sh" ] || {
+  printf 'check-release: %s/ref-current.sh is missing or not executable, so base %s cannot be shown current\n' \
+    "$HERE" "$BASE" >&2; exit 2; }
+why=$("${HERE}/ref-current.sh" "$ROOT" "$BASE")
+st=$?
+# Never pass the helper's status through: a 1 here would read as a missing bump.
+[ "$st" -eq 0 ] || {
+  printf 'check-release: %s\n' "${why:-ref-current.sh returned status ${st} and no reason, so base ${BASE} cannot be shown current}" >&2
+  exit 2; }
 
 # Working-tree form, NOT ${BASE}...HEAD. The three-dot form is commit-to-commit
 # and returns EMPTY before anything is committed -- so running this gate at the

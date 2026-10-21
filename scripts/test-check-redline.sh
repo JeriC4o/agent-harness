@@ -606,6 +606,155 @@ check "cannot-run: an unresolvable ref is exit 2" "$RC" "2"
 has   "  and names the ref it could not resolve" "$OUT" "no-such-ref"
 rm -rf "$PR"
 
+printf '\n== pending against a REMOTE-TRACKING ref: a resolved ref is not yet a current one ==\n'
+# A bare repository stands in for the remote, so no leg touches the network.
+RW=$(mktemp -d)
+g() { git -C "$1" -c user.email=t@t -c user.name=t "${@:2}"; }
+git init -q --bare -b main "${RW}/b.git"
+git init -q -b main "${RW}/c"
+mkdir -p "${RW}/c/ai-docs/plans"
+printf 'x\n' > "${RW}/c/ai-docs/plans/keep.md"
+g "${RW}/c" add -A; g "${RW}/c" commit -qm base
+g "${RW}/c" remote add origin "${RW}/b.git"
+g "${RW}/c" push -q -u origin main 2>/dev/null
+git clone -q "${RW}/b.git" "${RW}/d" 2>/dev/null
+CP="${RW}/c/ai-docs/plans"
+snap() { git -C "${RW}/c" for-each-ref; (cd "${RW}/c/.git" && find . | sort); }
+
+printf '| Key |\n' > "${CP}/t.redline.md"
+g "${RW}/c" add -A; g "${RW}/c" commit -qm withlog; g "${RW}/c" push -q 2>/dev/null
+WITHLOG=$(git -C "${RW}/c" rev-parse HEAD)
+g "${RW}/d" pull -q 2>/dev/null
+g "${RW}/d" rm -q ai-docs/plans/t.redline.md; g "${RW}/d" commit -qm folded; g "${RW}/d" push -q 2>/dev/null
+
+BEFORE=$(snap)
+run pending "$CP" origin/main
+check "stale ref whose tree carries a log, remote folded: exit 2, not a finding" "$RC" "2"
+hasnt "  and no verdict is claimed" "$OUT" "verdict="
+has   "  names the ref" "$OUT" "origin/main"
+has   "  names the remote" "$OUT" "remote origin"
+has   "  names the fetch that fixes it" "$OUT" "git fetch origin"
+check "  and no ref or .git entry moved" "$(snap)" "$BEFORE"
+
+g "${RW}/c" fetch -q
+FOLDED=$(git -C "${RW}/c" rev-parse origin/main)
+run pending "$CP" origin/main
+check "current ref whose tree is folded: clean 0, as before" "$RC" "0"
+has   "  naming the ref" "$OUT" "verdict=clean ref=origin/main"
+
+printf '| Key |\n' > "${RW}/d/ai-docs/plans/u.redline.md"
+g "${RW}/d" add -A; g "${RW}/d" commit -qm newlog; g "${RW}/d" push -q 2>/dev/null
+run pending "$CP" origin/main
+check "stale clean ref while the remote carries a log: exit 2, not clean" "$RC" "2"
+has   "  and names the fetch" "$OUT" "git fetch origin"
+
+g "${RW}/c" fetch -q
+run pending "$CP" origin/main
+check "current ref whose tree carries a log: finding 1, as before" "$RC" "1"
+has   "  naming the log" "$OUT" "u.redline.md"
+
+git -C "${RW}/c" remote set-head origin main
+run pending "$CP" origin
+check "the bare remote name, current: finding 1" "$RC" "1"
+STALE_SAVED=$(git -C "${RW}/c" rev-parse origin/main)
+git -C "${RW}/c" update-ref refs/remotes/origin/main "$FOLDED"
+run pending "$CP" origin
+check "the bare remote name resolves to the tracking ref and gets the leg: stale is exit 2" "$RC" "2"
+has   "  naming the fetch" "$OUT" "git fetch origin"
+git -C "${RW}/c" update-ref refs/remotes/origin/main "$STALE_SAVED"
+
+g "${RW}/c" push -q origin "${WITHLOG}:refs/heads/a/refs/heads/main" 2>/dev/null
+run pending "$CP" origin/main
+check "a remote branch tail-matching refs/heads/main and sorting first does not stand in for it" "$RC" "1"
+hasnt "  and the current ref is not called stale" "$OUT" "git fetch"
+git -C "${RW}/b.git" update-ref -d refs/heads/a/refs/heads/main
+g "${RW}/d" fetch -q
+DP="${RW}/d/ai-docs/plans"
+g "${RW}/c" pull -q 2>/dev/null
+g "${RW}/c" rm -q ai-docs/plans/u.redline.md; g "${RW}/c" commit -qm refold; g "${RW}/c" push -q 2>/dev/null
+run pending "$DP" origin/HEAD
+check "origin/HEAD is checked against the branch it points to" "$RC" "2"
+has   "  and names the ref as passed" "$OUT" "origin/HEAD"
+g "${RW}/c" fetch -q
+
+AHEAD=$(g "${RW}/c" commit-tree -p HEAD -m ahead "$(git -C "${RW}/c" rev-parse 'HEAD^{tree}')")
+SAVED=$(git -C "${RW}/c" rev-parse origin/main)
+git -C "${RW}/c" update-ref refs/remotes/origin/main "$AHEAD"
+run pending "$CP" origin/main
+check "a tracking ref AHEAD of its remote is exit 2 too" "$RC" "2"
+has   "  naming the fetch" "$OUT" "git fetch origin"
+git -C "${RW}/c" update-ref refs/remotes/origin/main "$SAVED"
+
+git -C "${RW}/c" update-ref refs/remotes/zz/main "$SAVED"
+run pending "$CP" zz/main
+check "a tracking ref no configured remote maps is exit 2" "$RC" "2"
+has   "  names the ref" "$OUT" "zz/main"
+has   "  says no configured remote maps it" "$OUT" "no configured remote maps"
+has   "  remedy: configure the remote" "$OUT" "configure the remote"
+has   "  or pass a commit id" "$OUT" "pass a commit id"
+hasnt "  and names no fetch, there being no remote" "$OUT" "git fetch"
+git -C "${RW}/c" update-ref -d refs/remotes/zz/main
+
+git -C "${RW}/c" branch -q local-folded "$FOLDED"
+git -C "${RW}/c" remote set-url origin "${RW}/no-such-remote.git"
+BEFORE=$(snap)
+run pending "$CP" origin/main
+check "an unreachable remote is exit 2, with no fallback to the local copy" "$RC" "2"
+hasnt "  no verdict read from the local copy" "$OUT" "verdict="
+has   "  says the remote could not be reached" "$OUT" "could not be reached"
+has   "  names the ref" "$OUT" "origin/main"
+has   "  names the remote and the fetch" "$OUT" "git fetch origin"
+check "  and no ref or .git entry moved" "$(snap)" "$BEFORE"
+
+run pending "$CP" "$WITHLOG"
+check "remote unreachable: a commit id is read as given" "$RC" "1"
+has   "  with the old result" "$OUT" "t.redline.md"
+run pending "$CP" local-folded
+check "remote unreachable: a local branch is read as given" "$RC" "0"
+has   "  with the old result" "$OUT" "verdict=clean ref=local-folded"
+run pending "$CP"
+check "remote unreachable: the worktree form reads the worktree as before" "$RC" "0"
+has   "  verdict" "$OUT" "verdict=clean logs=none"
+g "${RW}/c" remote set-url origin "${RW}/b.git"
+
+git -C "${RW}/b.git" update-ref -d refs/heads/main
+run pending "$CP" origin/main
+check "a branch the remote no longer has is exit 2" "$RC" "2"
+has   "  says so" "$OUT" "no longer has"
+has   "  and names the fetch" "$OUT" "git fetch origin"
+g "${RW}/c" push -q origin main 2>/dev/null
+
+git -C "${RW}/c" config remote.s.url "${RW}/b.git"
+git -C "${RW}/c" config remote.s.fetch refs/heads/main:refs/remotes/s/main
+git -C "${RW}/c" update-ref refs/remotes/s/main "$FOLDED"
+run pending "$CP" s/main
+check "an explicit (single-branch) refspec, stale: exit 2" "$RC" "2"
+has   "  names the remote it maps to" "$OUT" "remote s "
+has   "  and the fetch" "$OUT" "git fetch s"
+git -C "${RW}/c" remote remove s
+
+git -C "${RW}/c" remote add a/b "${RW}/b.git"
+git -C "${RW}/c" update-ref refs/remotes/a/b/main "$FOLDED"
+run pending "$CP" a/b/main
+check "a remote whose name contains /, stale: exit 2" "$RC" "2"
+has   "  names the whole remote name" "$OUT" "remote a/b "
+has   "  and the fetch" "$OUT" "git fetch a/b"
+git -C "${RW}/c" remote remove a/b
+
+HX="${RW}/hx"; mkdir -p "$HX"
+cp "$CHECK" "${HX}/check-redline.sh"
+"${HX}/check-redline.sh" pending "$CP" origin/main > "${RW}/out" 2>&1; RC=$?; OUT=$(cat "${RW}/out")
+check "a missing helper is exit 2, never a pass" "$RC" "2"
+has   "  and names the helper" "$OUT" "ref-current.sh is missing or not executable"
+cp "${HERE}/ref-current.sh" "${HX}/ref-current.sh"; chmod -x "${HX}/ref-current.sh"
+"${HX}/check-redline.sh" pending "$CP" origin/main > "${RW}/out" 2>&1; RC=$?; OUT=$(cat "${RW}/out")
+check "a non-executable helper is exit 2" "$RC" "2"
+printf '#!/bin/sh\nexit 1\n' > "${HX}/ref-current.sh"; chmod +x "${HX}/ref-current.sh"
+"${HX}/check-redline.sh" pending "$CP" origin/main > "${RW}/out" 2>&1; RC=$?; OUT=$(cat "${RW}/out")
+check "a helper status of 1 is mapped to exit 2, not passed through as findings" "$RC" "2"
+has   "  and the status is named when the helper gave no reason" "$OUT" "returned status 1"
+rm -rf "$RW"
+
 printf '\n== specform: a criterion may not name its own instrument ==\n'
 # AC26 says an instrument-naming criterion is REFUSED, not merely discouraged, and
 # the contract's own worked case argues that a refusal living only in prose is not
