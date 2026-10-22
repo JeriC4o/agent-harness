@@ -35,6 +35,9 @@
 import os
 import re
 
+ENTERED = set()
+SKIPPED = {}
+
 
 def run(ctx):
     """The three reporting classes, and the record one of them compares against.
@@ -47,7 +50,7 @@ def run(ctx):
     global finding, blocked, norm, read_rel, spot_of
     global masked, figures, clause_at
     global EQUATION, TOTAL_WORD, TOTAL_PHRASE, TICK_SPAN
-    global HEADING_LINE, FENCE, QUOTE_MARK, ROOT
+    global HEADING_LINE, FENCE, QUOTE_MARK, PROJECT_ROOT
     finding = ctx['finding']
     blocked = ctx['blocked']
     norm = ctx['norm']
@@ -63,15 +66,21 @@ def run(ctx):
     HEADING_LINE = ctx['HEADING_LINE']
     FENCE = ctx['FENCE']
     QUOTE_MARK = ctx['QUOTE_MARK']
-    ROOT = ctx['ROOT']
+    PROJECT_ROOT = ctx['PROJECT_ROOT']
 
     paths = ctx['tracked_paths']
     record = recorded_positions(paths)
     if record is None:
         return
+    ENTERED.add('provenance')
     for doc, body, units in ctx['documents']:
         provenance(doc, body, units, ctx['built'])
-    reference(paths, record)
+    if record is NO_RECORD:
+        SKIPPED['reference'] = 'the project keeps no baseline record at %s' % BASELINE_RECORD
+    else:
+        ENTERED.add('reference')
+        reference(paths, record)
+    ENTERED.add('pairing')
     pairing([(doc, units) for doc, _b, units in ctx['documents']], paths)
 
 
@@ -163,11 +172,14 @@ def provenance(doc, body, units, built):
 # the token itself -- so swapping one anchor for another is an arrival rather
 # than a wash, which a per-file count could not have seen.
 #
-# AN EMPTY RECORD IS LEGITIMATE WHERE AN ABSENT ONE IS NOT. Empty here means
-# nothing is accounted for, so every position is an arrival and the failure
-# direction is loud. Absent means the comparand could not be read at all, and a
-# sweep against nothing must not report what it found as arrivals it
-# established.
+# AN EMPTY RECORD IS LEGITIMATE, AN ABSENT ONE SKIPS THE CLASS, AND A BROKEN ONE
+# IS A CANNOT-RUN. Empty means nothing is accounted for, so every position is an
+# arrival and the failure direction is loud. Absent from the project's working
+# tree means the project never kept one: reading that as empty would report
+# every position the project holds, so the class is not examined and the roster
+# says why. Present but unstaged or unreadable means the comparand is broken
+# rather than missing, and a sweep against nothing must not report what it found
+# as arrivals it established.
 #
 # THE RECORD IS SKIPPED BY THE SWEEP THAT READS IT. Every row carries the token
 # it accounts for, so a record inside its own input set would justify each of
@@ -180,6 +192,7 @@ def provenance(doc, body, units, built):
 # prints the row that would account for it, which is what keeps that edit from
 # needing a second derivation.
 BASELINE_RECORD = 'ai-docs/fixtures/positional-references.baseline'
+NO_RECORD = object()
 
 PATH_LINE = re.compile(r'(?<![\w/])([A-Za-z0-9_][\w./-]*\.([A-Za-z0-9]{1,10})):(\d+(?:-\d+)?)(?![\w])')
 PROSE_LINE = re.compile(r'(?<![\w-])lines?[ \t]+\d+(?:[ \t]*[-–—][ \t]*\d+)?', re.I)
@@ -237,12 +250,12 @@ def positions_in(body, exts):
 
 
 def recorded_positions(paths):
-    """The rows of the baseline record, or None when it could not be read.
-
-    Untracked is a cannot-run for the reason the element record's own check
+    """Untracked is a cannot-run for the reason the element record's own check
     gives: a record read here and absent from every other clone makes this run
     green and every other one a cannot-run.
     """
+    if not os.path.exists(os.path.join(PROJECT_ROOT, BASELINE_RECORD)):
+        return NO_RECORD
     if BASELINE_RECORD not in set(paths):
         blocked('%s is the comparand for every position this class reports and is not in the index, so this run compares against a file no other clone has -- stage it'
                 % BASELINE_RECORD)
@@ -267,7 +280,7 @@ def reference(paths, record):
         if path == BASELINE_RECORD:
             continue
         try:
-            with open(os.path.join(ROOT, path), encoding='utf-8') as fh:
+            with open(os.path.join(PROJECT_ROOT, path), encoding='utf-8') as fh:
                 body = fh.read()
         except UnicodeDecodeError:
             # A file that is not text carries no reference anyone reads, so it is

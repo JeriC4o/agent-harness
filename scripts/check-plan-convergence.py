@@ -1,7 +1,8 @@
 # The logic half of check-plan-convergence.sh: the plan pair, what every class
 # reads, the excuse route and the report. Invoked as
-# `python3 check-plan-convergence.py <root> <spec> <design>` by the wrapper
-# beside it, which owns the flags, the preflights and the exit convention.
+# `python3 check-plan-convergence.py <method-root> <method-indexed> <project-root>
+# <spec> <design> [<excuse-key> <grounds>]` by the wrapper beside it, which owns
+# the flags, the preflights, the root resolution and the exit convention.
 #
 # There are three payload files: this one, check-plan-convergence-holding.py
 # with the three classes that HOLD a plan, and
@@ -31,13 +32,15 @@ import re
 import subprocess
 import sys
 
-ROOT = sys.argv[1]
-SPEC = sys.argv[2]
-DESIGN = sys.argv[3]
+METHOD_ROOT = sys.argv[1]
+METHOD_INDEXED = sys.argv[2] == '1'
+PROJECT_ROOT = sys.argv[3]
+SPEC = sys.argv[4]
+DESIGN = sys.argv[5]
 # Empty on an ordinary run. Non-empty only on the grant act, which is the one
 # route that writes the excuse record -- see THE GRANT ACT below.
-GRANT_KEY = sys.argv[4] if len(sys.argv) > 4 else ''
-GRANT_GROUNDS = sys.argv[5] if len(sys.argv) > 5 else ''
+GRANT_KEY = sys.argv[6] if len(sys.argv) > 6 else ''
+GRANT_GROUNDS = sys.argv[7] if len(sys.argv) > 7 else ''
 
 findings = []
 excused = []
@@ -128,11 +131,7 @@ def blocked(text):
 
 
 def read_rel(rel):
-    try:
-        with open(os.path.join(ROOT, rel), encoding='utf-8') as fh:
-            return fh.read()
-    except (OSError, UnicodeDecodeError):
-        return None
+    return read_path(os.path.join(PROJECT_ROOT, rel))
 
 
 def read_path(path):
@@ -147,14 +146,40 @@ def norm(text):
     return re.sub(r'\s+', ' ', text).strip()
 
 
-def tracked():
+def tracked(root):
     try:
-        out = subprocess.run(['git', '-C', ROOT, 'ls-files', '-z'],
+        out = subprocess.run(['git', '-C', root, 'ls-files', '-z'],
                              capture_output=True, check=True).stdout
     except (OSError, subprocess.CalledProcessError) as exc:
-        blocked('the tracked file list could not be read from %s (%s)' % (ROOT, exc))
+        blocked('the tracked file list could not be read from %s (%s)' % (root, exc))
         return []
     return [p for p in out.decode('utf-8', 'replace').split('\0') if p]
+
+
+TRACKED_PATHS = tracked(PROJECT_ROOT)
+if not METHOD_INDEXED:
+    METHOD_TRACKED = None
+elif METHOD_ROOT == PROJECT_ROOT:
+    METHOD_TRACKED = set(TRACKED_PATHS)
+else:
+    METHOD_TRACKED = set(tracked(METHOD_ROOT))
+
+
+def read_method(rel, unreadable):
+    """An untracked method input is read here and absent from every other clone,
+    which makes the local run green and every other one a cannot-run -- the same
+    shape as a gate whose input set narrows without saying so. Where the method
+    root has no index of its own there is nothing to consult, and presence is the
+    whole requirement."""
+    path = os.path.join(METHOD_ROOT, rel)
+    if METHOD_TRACKED is not None and os.path.exists(path) and rel not in METHOD_TRACKED:
+        blocked('%s is a method input this run reads and is not in the index, so this run reads a file no other clone has -- stage it'
+                % rel)
+        return None
+    body = read_path(path)
+    if body is None:
+        blocked('%s could not be read, %s' % (rel, unreadable))
+    return body
 
 
 # ---------------------------------------------------------------------------
@@ -163,20 +188,9 @@ def tracked():
 RECORD_DOC = 'docs/plan-invariants.md'
 RECORD_HEADING = '## The required elements of a spec and of a design'
 
-TRACKED_PATHS = tracked()
-
-# An untracked record would be read here and absent from every other clone,
-# which makes the local run green and every other one a cannot-run -- the same
-# shape as a gate whose input set narrows without saying so.
-if RECORD_DOC not in set(TRACKED_PATHS):
-    blocked('%s is read as the source of the section names and is not in the index, so this run reads a file no other clone has -- stage it'
-            % RECORD_DOC)
-
 RECORDED = {'spec': [], 'design': []}
-_record_body = read_rel(RECORD_DOC)
-if _record_body is None:
-    blocked('%s could not be read, so no section name could be derived and nothing located' % RECORD_DOC)
-else:
+_record_body = read_method(RECORD_DOC, 'so no section name could be derived and nothing located')
+if _record_body is not None:
     _parts = _record_body.split(RECORD_HEADING, 1)
     if len(_parts) < 2:
         blocked('%s carries no required-element record under the heading this check reads, so the derivation has no source'
@@ -518,7 +532,7 @@ def read_excuses(paths):
     # while a path given on the command line does not: under a temporary
     # directory behind a symlink the two disagree, the relative path comes out
     # full of parent steps, and a staged record read as untracked.
-    rel = os.path.relpath(os.path.realpath(EXCUSE_PATH), os.path.realpath(ROOT))
+    rel = os.path.relpath(os.path.realpath(EXCUSE_PATH), os.path.realpath(PROJECT_ROOT))
     if rel not in set(paths):
         blocked('%s exists and is not in the index, so this run is quieter than every other clone of this repository -- stage it'
                 % EXCUSE_PATH)
@@ -673,12 +687,13 @@ if not cannot:
     # make loud -- the same reason the verification's own sibling takes one.
     CONTEXT = {
         'finding': finding, 'blocked': blocked, 'norm': norm, 'read_rel': read_rel,
+        'read_method': read_method,
         'region': region, 'statements': statements, 'spot_of': spot_of,
         'masked': masked, 'figures': figures, 'value_of': value_of,
         'clause_at': clause_at, 'CLAUSE_SPLIT': CLAUSE_SPLIT,
         'EQUATION': EQUATION, 'TOTAL_WORD': TOTAL_WORD, 'TOTAL_PHRASE': TOTAL_PHRASE,
         'HEADING_LINE': HEADING_LINE, 'FENCE': FENCE, 'QUOTE_MARK': QUOTE_MARK,
-        'TICK_SPAN': TICK_SPAN, 'ROOT': ROOT, 'built': BUILT,
+        'TICK_SPAN': TICK_SPAN, 'PROJECT_ROOT': PROJECT_ROOT, 'built': BUILT,
         'documents': [(_k, _b, all_units[_k]) for _k, _b, _t in DOCUMENTS],
         'bodies': dict((_k, _b) for _k, _b, _t in DOCUMENTS),
         'tokens': dict((_k, _t) for _k, _b, _t in DOCUMENTS),
@@ -740,6 +755,8 @@ def roster():
     distinguishable from a clean one. A zero where a non-zero is expected is a
     report about the run and never a clean verdict."""
     minimum = tally(HOLDING_CLASSES, 'MINIMUM', None)
+    entered = tally(HOLDING_CLASSES, 'ENTERED', set()) | tally(REPORTING_CLASSES, 'ENTERED', set())
+    skipped = tally(REPORTING_CLASSES, 'SKIPPED', {})
     for cls, examined in (('provenance', '%d numbers in %d documents'
                            % (tally(REPORTING_CLASSES, 'NUMBERS'), len(DOCUMENTS))),
                           ('arithmetic', '%d relations, %d of them not evaluable'
@@ -762,7 +779,12 @@ def roster():
                               tally(REPORTING_CLASSES, 'PAIRS')))):
         mine = [line for got, line in findings if got == cls]
         waived = [line for got, line in excused if got == cls]
-        state = 'examined-with-findings (%d)' % len(mine) if mine else 'examined-clean'
+        if cls in skipped:
+            state = 'not-examined (%s)' % skipped[cls]
+        elif cls not in entered:
+            state = 'not-examined (the run stopped before it)'
+        else:
+            state = 'examined-with-findings (%d)' % len(mine) if mine else 'examined-clean'
         if waived:
             state += ', %d excused' % len(waived)
         print('  class %-13s %s -- %s%s'

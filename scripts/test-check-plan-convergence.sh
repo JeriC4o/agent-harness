@@ -29,7 +29,7 @@ check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want [$3], got [$2])"; 
 
 command -v python3 >/dev/null 2>&1 || { printf 'cannot run: python3 absent\n' >&2; exit 2; }
 
-T=$(mktemp -d); trap 'rm -rf "$T"' EXIT INT TERM
+T=$(mktemp -d); X=$(mktemp -d); trap 'rm -rf "$T" "$X"' EXIT INT TERM
 mkdir -p "$T/docs" "$T/scripts" "$T/plans" "$T/skills/task/scripts"
 cp "${ROOT}/docs/plan-invariants.md" "$T/docs/plan-invariants.md"
 # The real file, not a stub: the minimum fragment length is BORROWED from it,
@@ -65,7 +65,7 @@ SPEC_FIRST_NAME=${SPEC_FIRST#\#\# }
   && ok "the fixtures' section names were derived from the record" \
   || bad "the fixtures' section names were derived from the record"
 
-run() { bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1; }
+run() { bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1; }
 
 write_pair() { # <spec body> <design body>
   printf '# Spec\n\n%s\n\n%s\n' "$SPEC_FIRST" "$1" > "$T/plans/a.spec.md"
@@ -105,11 +105,11 @@ has "and says so" "$out" 'check-plan-convergence: clean'
 write_pair 'The window is 40 rounds wide.' 'Nothing.'
 out=$(run); rc=$?
 check "a pair with a finding -> rc 1" "$rc" "1"
-bash "$SUB" --root "$T" "$T/plans/missing.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
+bash "$SUB" "$T/plans/missing.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
 check "an absent document -> rc 2, which is not a pass" "$?" "2"
-out=$(bash "$SUB" --root "$T" "$T/plans/missing.spec.md" "$T/plans/a.design.md" 2>&1)
+out=$(bash "$SUB" "$T/plans/missing.spec.md" "$T/plans/a.design.md" 2>&1)
 has "and names it as a cannot-run" "$out" 'cannot run'
-bash "$SUB" --root "$T" "$T/plans/a.spec.md" >/dev/null 2>&1
+bash "$SUB" "$T/plans/a.spec.md" >/dev/null 2>&1
 check "one path only -> rc 2 usage" "$?" "2"
 # ONE LEG PER PAYLOAD, and each asserts that the message NAMES the file that
 # went missing: a cannot-run reporting that something is absent without saying
@@ -120,9 +120,9 @@ for payload in check-plan-convergence.py \
                check-plan-convergence-holding.py \
                check-plan-convergence-reporting.py; do
   mv "$T/scripts/${payload}" "$T/scripts/hidden.py"
-  bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
+  bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
   check "an absent ${payload} -> rc 2, never rc 1" "$?" "2"
-  out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1)
+  out=$(bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1)
   has "  and the message names which payload is missing" "$out" "$payload"
   mv "$T/scripts/hidden.py" "$T/scripts/${payload}"
 done
@@ -307,7 +307,7 @@ write_pair 'Nothing.' "$DESIGN_SECOND
 out=$(run)
 hasnt "two different cells at one site each are silent" "$out" 'states the same span'
 mv "$T/skills/task/scripts/check-fix-plan.sh" "$T/skills/task/scripts/gone.sh"
-out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
+out=$(bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
 check "an unreadable source for the borrowed length -> rc 2" "$rc" "2"
 has "and says it is borrowed rather than chosen here" "$out" 'borrowed from it rather than chosen here'
 mv "$T/skills/task/scripts/gone.sh" "$T/skills/task/scripts/check-fix-plan.sh"
@@ -361,9 +361,11 @@ swept ''
 out=$(run)
 has "the swept file count is printed, so a narrowed input set is visible" "$out" 'swept='
 mv "$BASE" "$T/ai-docs/fixtures/moved"
-out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
-check "an absent record -> rc 2, never a clean sweep" "$rc" "2"
-has "and says a sweep with no comparand establishes nothing" "$out" 'must not report what it found'
+out=$(run); rc=$?
+check "a record absent from the working tree skips one class rather than the run" "$rc" "0"
+has "and the roster says the class was not examined, and why" "$out" \
+  'not-examined (the project keeps no baseline record at ai-docs/fixtures/positional-references.baseline)'
+hasnt "and no other class reads as skipped" "$out" 'the run stopped before it'
 mv "$T/ai-docs/fixtures/moved" "$BASE"
 git -C "$T" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
 git -C "$T" rm -q --cached ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
@@ -372,7 +374,7 @@ git -C "$T" rm -q --cached ai-docs/fixtures/positional-references.baseline >/dev
 # leg then measured a tracked record while its label said otherwise.
 git -C "$T" ls-files --error-unmatch ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1 \
   && bad "the record was removed from the index" || ok "the record was removed from the index"
-out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
+out=$(bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
 check "a record outside the index -> rc 2" "$rc" "2"
 has "and says the run compares against a file no other clone has" "$out" 'no other clone has'
 git -C "$T" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
@@ -443,7 +445,7 @@ EX="$T/plans/a.excuses.md"
 rm -f "$EX"
 PKEY="provenance|spec § ${SPEC_FIRST_NAME}|40"
 AKEY="arithmetic|spec § ${SPEC_FIRST_NAME}|20 + 20 = 41"
-grant() { bash "$SUB" --root "$T" --excuse "$1" --grounds "$2" \
+grant() { bash "$SUB" --excuse "$1" --grounds "$2" \
   "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1; }
 
 write_pair 'The window is 40 rounds wide. The band is 20 + 20 = 41 wide.' 'Nothing.'
@@ -451,9 +453,9 @@ out=$(run)
 has "every finding line carries the key that would excuse it" "$out" "[excuse: ${PKEY}]"
 has "and nothing is excused before an act grants one" "$out" 'excused-holding=0 excused-reporting=0'
 
-bash "$SUB" --root "$T" --excuse "$PKEY" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
+bash "$SUB" --excuse "$PKEY" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
 check "--excuse without --grounds -> rc 2" "$?" "2"
-bash "$SUB" --root "$T" --grounds 'why' "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
+bash "$SUB" --grounds 'why' "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
 check "--grounds without --excuse -> rc 2" "$?" "2"
 [ -e "$EX" ] && bad "a refused act wrote no record" || ok "a refused act wrote no record"
 
@@ -504,7 +506,7 @@ out=$(run)
 has "the same fault returning at that spot comes back waived" "$out" 'excused provenance'
 cp "$T/plans/a.spec.md" "$T/plans/b.spec.md"
 cp "$T/plans/a.design.md" "$T/plans/b.design.md"
-out=$(bash "$SUB" --root "$T" "$T/plans/b.spec.md" "$T/plans/b.design.md" 2>&1)
+out=$(bash "$SUB" "$T/plans/b.spec.md" "$T/plans/b.design.md" 2>&1)
 hasnt "an unrelated plan inherits nothing -- the record does not travel" "$out" 'excused provenance'
 has "and it objects again from scratch" "$out" 'spec states [40] in a clause naming neither'
 
@@ -528,7 +530,7 @@ git -C "$T" checkout -- plans/a.excuses.md 2>/dev/null || sed -i.bak '/| arithme
 rm -f "$EX.bak"
 git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
 cp "$T/plans/a.spec.md" "$T/plans/c.md"
-out=$(bash "$SUB" --root "$T" "$T/plans/c.md" "$T/plans/a.design.md" 2>&1); rc=$?
+out=$(bash "$SUB" "$T/plans/c.md" "$T/plans/a.design.md" 2>&1); rc=$?
 check "a spec not named by the record's own construction -> rc 2" "$rc" "2"
 has "and says the record beside it cannot be named" "$out" 'cannot be named'
 rm -f "$T/plans/c.md" "$T/plans/b.spec.md" "$T/plans/b.design.md"
@@ -546,20 +548,130 @@ git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.excuses.md" \
 printf '\n== the derivation cannot run on a record it cannot read ==\n'
 write_pair 'Nothing.' 'Nothing.'
 mv "$T/docs/plan-invariants.md" "$T/docs/moved.md"
-out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
+out=$(bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
 check "an unreadable record -> rc 2" "$rc" "2"
 has "and says the derivation had no source" "$out" 'cannot run'
 mv "$T/docs/moved.md" "$T/docs/plan-invariants.md"
 sed -i.bak 's/^## The required elements of a spec and of a design$/## Something else entirely/' \
   "$T/docs/plan-invariants.md"
-out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
+out=$(bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
 check "a record whose heading moved -> rc 2, never a clean sweep" "$rc" "2"
 mv "$T/docs/plan-invariants.md.bak" "$T/docs/plan-invariants.md"
 git -C "$T" rm -q --cached docs/plan-invariants.md >/dev/null 2>&1
-out=$(bash "$SUB" --root "$T" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
+out=$(bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1); rc=$?
 check "a record outside the index -> rc 2" "$rc" "2"
 has "and says the run reads a file no other clone has" "$out" 'not in the index'
 git -C "$T" add docs/plan-invariants.md >/dev/null 2>&1
+
+printf '\n== a copy outside any work tree, run against a project that is one ==\n'
+# THE PLUGIN CACHE IS A PLAIN COPY WITH NO REPOSITORY, and every leg above runs
+# with the method root and the project root in one git tree, where the defect
+# this section guards -- every installed run a cannot-run -- cannot occur.
+P="$X/plugin"
+J="$X/project"
+mkdir -p "$P/scripts" "$P/docs" "$P/skills/task/scripts" "$J/plans" "$J/docs" "$J/scripts" "$J/ai-docs/fixtures"
+cp "$CHECK" "${HERE}/check-plan-convergence.py" \
+   "${HERE}/check-plan-convergence-holding.py" \
+   "${HERE}/check-plan-convergence-reporting.py" "$P/scripts/"
+cp "${ROOT}/docs/plan-invariants.md" "$P/docs/"
+cp "${ROOT}/skills/task/scripts/check-fix-plan.sh" "$P/skills/task/scripts/"
+XSUB="$P/scripts/check-plan-convergence.sh"
+git -C "$P" rev-parse >/dev/null 2>&1 \
+  && bad "the copy is outside any git work tree" || ok "the copy is outside any git work tree"
+git -C "$J" init -q
+printf '# Spec\n\n%s\n\nNothing.\n' "$SPEC_FIRST" > "$J/plans/a.spec.md"
+printf '# Design\n\n%s\n\nThe guard in `scripts/marked.sh` refuses an empty set [project-mark].\n' \
+  "$DESIGN_FIRST" > "$J/plans/a.design.md"
+printf '# the refusal this claim leans on [project-mark]\n' > "$J/scripts/marked.sh"
+git -C "$J" add -A >/dev/null 2>&1
+xrun() { bash "$XSUB" "$J/plans/a.spec.md" "$J/plans/a.design.md" 2>&1; }
+
+out=$(xrun); rc=$?
+check "an out-of-tree copy reaches the class sweep -> rc 0, not a cannot-run" "$rc" "0"
+hasnt "  and prints no cannot-run verdict" "$out" 'CANNOT RUN'
+has "  and prints the per-class roster" "$out" 'class arithmetic'
+hasnt "  and no class reads as cut short" "$out" 'the run stopped before it'
+has "the pairing class resolves the plan's path against the project" "$out" 'pairs=1'
+has "a project with no baseline record leaves the reference class not examined, and says why" "$out" \
+  'not-examined (the project keeps no baseline record at ai-docs/fixtures/positional-references.baseline)'
+
+# A spec in no work tree has no roster to read; taking the caller's directory instead is the rejected alternative.
+mkdir -p "$X/loose"
+cp "$J/plans/a.spec.md" "$J/plans/a.design.md" "$X/loose/"
+out=$(bash "$XSUB" "$X/loose/a.spec.md" "$X/loose/a.design.md" 2>&1); rc=$?
+check "a spec outside any work tree -> rc 2" "$rc" "2"
+has "  and names its directory" "$out" 'loose is not in a git work tree'
+
+XBASE="$J/ai-docs/fixtures/positional-references.baseline"
+printf '# Nothing accounted for.\n' > "$XBASE"
+printf 'The rule is stated at `docs/elsewhere.md:12`, which carries it.\n' > "$J/docs/note.md"
+git -C "$J" add -A >/dev/null 2>&1
+out=$(xrun); rc=$?
+check "the reference class sweeps the project's tracked files -> rc 1" "$rc" "1"
+has "  and reports the position in the project's file" "$out" 'path-line	docs/note.md	docs/elsewhere.md:12'
+git -C "$J" rm -q --cached ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
+out=$(xrun); rc=$?
+check "a baseline present and unstaged in the project -> rc 2" "$rc" "2"
+has "  and names the record" "$out" 'positional-references.baseline is the comparand'
+git -C "$J" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
+chmod 000 "$XBASE"
+# Asserted, not assumed: a privileged user reads a mode-000 file, and the leg
+# would then measure a readable record under this label.
+[ -r "$XBASE" ] && bad "the baseline was made unreadable" || ok "the baseline was made unreadable"
+out=$(xrun); rc=$?
+check "a baseline present and unreadable -> rc 2" "$rc" "2"
+has "  and names the record" "$out" 'positional-references.baseline'
+chmod 644 "$XBASE"
+
+: > "$J/docs/note.md"
+printf '# Spec\n\n%s\n\nThe window is 40 rounds wide.\n' "$SPEC_FIRST" > "$J/plans/a.spec.md"
+git -C "$J" add -A >/dev/null 2>&1
+bash "$XSUB" --excuse "$PKEY" --grounds 'A worked example, not a measurement.' \
+  "$J/plans/a.spec.md" "$J/plans/a.design.md" >/dev/null 2>&1
+out=$(xrun); rc=$?
+check "an excuse record unstaged in the project -> rc 2" "$rc" "2"
+has "  and names it" "$out" 'a.excuses.md exists and is not in the index'
+git -C "$J" add plans/a.excuses.md >/dev/null 2>&1
+out=$(xrun); rc=$?
+check "the same record staged is honoured from the copy -> rc 0" "$rc" "0"
+has "  and the finding reads as excused" "$out" 'excused provenance'
+
+mv "$P/docs/plan-invariants.md" "$P/docs/moved.md"
+out=$(xrun); rc=$?
+check "the copy missing its required-element record -> rc 2" "$rc" "2"
+has "  and names the record" "$out" 'docs/plan-invariants.md could not be read'
+# The roster is the only thing that keeps a class the run never reached from reading as examined-clean.
+has "  and a class the run never reached reads as not examined" "$out" 'not-examined (the run stopped before it)'
+mv "$P/docs/moved.md" "$P/docs/plan-invariants.md"
+
+# A plugin directory inside an unrelated repository: that index never lists the
+# plugin's files, so guarding on it would refuse every run -- a versioned home
+# directory holding the plugin cache is the real case.
+H="$X/home"
+mkdir -p "$H"
+git -C "$H" init -q
+cp -R "$P" "$H/plugin"
+out=$(bash "$H/plugin/scripts/check-plan-convergence.sh" "$J/plans/a.spec.md" "$J/plans/a.design.md" 2>&1); rc=$?
+check "a copy inside an unrelated repository with nothing staged -> rc 0" "$rc" "0"
+hasnt "  and prints no cannot-run verdict" "$out" 'CANNOT RUN'
+
+printf 'Stated at `docs/plugin-only.md:7`.\n' > "$P/docs/planted.md"
+# The plugin gets a baseline of its own so that a sweep of the wrong tree runs
+# the reference class and reports the planted position, rather than skipping.
+mkdir -p "$P/ai-docs/fixtures"
+printf '# Nothing accounted for.\n' > "$P/ai-docs/fixtures/positional-references.baseline"
+git -C "$P" init -q
+git -C "$P" add -A >/dev/null 2>&1
+out=$(xrun); rc=$?
+check "a copy that is its own work tree with every method input staged -> rc 0" "$rc" "0"
+hasnt "  and the plugin's own tracked files are not swept" "$out" 'plugin-only.md'
+for input in docs/plan-invariants.md skills/task/scripts/check-fix-plan.sh; do
+  git -C "$P" rm -q --cached "$input" >/dev/null 2>&1
+  out=$(xrun); rc=$?
+  check "that copy with ${input} unstaged -> rc 2" "$rc" "2"
+  has "  and names it" "$out" "${input} is a method input this run reads and is not in the index"
+  git -C "$P" add "$input" >/dev/null 2>&1
+done
 
 printf '\n== every payload parses, which no shell test can see ==\n'
 # All three, enumerated from the list built beside the sandbox copy: an
