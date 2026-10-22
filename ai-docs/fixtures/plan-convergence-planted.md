@@ -4,7 +4,8 @@ This document is read on every run of the `plan-convergence` reader, beside the 
 spawned on, and it is the reader's own positive control. It holds **one deliberately planted fault
 per class the reader covers**, and the reader prints, per class, whether that fault came back. A
 class whose planted fault is not reported is printed as **uncovered** rather than counted as
-covered.
+covered. Beside the faults it holds **one second excerpt in its own section**, a negative control the
+reader reads like the pair and reports on one line.
 
 **It is committed, and it is not a plan.** Nothing authors it as part of a task and no plan points
 at it as its own spec or design; it is frozen measurement data, like every other file beside it. A
@@ -54,3 +55,19 @@ that only looks at how the run ended.
 **The second fault is deliberately a claim about something that ALREADY EXISTS**, because that is
 the half a reader can check and the half a plan gets wrong without noticing: nothing inside the
 document disagrees with it, and only opening the artefact does.
+
+## A second excerpt — requirements and approach
+
+This section is apart from both halves above and from the table, and shares no object with either
+planted fault. It carries no coverage word.
+
+- **Requirements, scope:** the archive command's printed output is unchanged — every line it prints
+  today, it prints the same way afterwards.
+- **Requirements, criterion:** when the archive command cannot open its destination, it names the
+  destination it could not open, and that run is not a pass.
+
+**Approach.** Today an unopenable destination prints the single line `archive: failed`. The work
+replaces that line with `archive: cannot open <destination>`, and the exit status stays non-zero.
+
+**Approach, risks.** The replaced line is one of the lines the scope sentence keeps unchanged. The
+criterion's naming of the destination needs it, and the old line names nothing.

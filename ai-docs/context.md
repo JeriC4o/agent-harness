@@ -150,7 +150,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
-| `ai-docs/fixtures/` | Frozen real-world inputs a gate replays, committed and never refreshed as routine maintenance — `loop-corpus/` holds the loop ledger's replayed call rows, `plan-convergence-planted.md` the planted plan pair the convergence reader reads on every run, and `positional-references.baseline` the recorded positions the convergence check reports arrivals against |
+| `ai-docs/fixtures/` | Frozen real-world inputs a gate replays, committed and never refreshed as routine maintenance — `loop-corpus/` holds the loop ledger's replayed call rows, `plan-convergence-planted.md` the planted plan pair the convergence reader reads on every run — one fault per class plus one spec-broader-than-design case it must not report — and `positional-references.baseline` the recorded positions the convergence check reports arrivals against |
 
 ## Tech stack
 

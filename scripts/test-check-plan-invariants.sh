@@ -174,7 +174,7 @@ printf '\n== the clean case, and the figures a narrowed run cannot fake ==\n'
 fresh; run
 check "an unmutated copy of the tree -> rc 0" "$RC" "0"
 has "  the verdict says clean rather than silent" "$OUT" "check-plan-invariants: clean"
-has "  every principle counted"                   "$OUT" "principles=9"
+has "  every principle counted"                   "$OUT" "principles=10"
 BASE_PAGES=$(figure pages)
 BASE_ELEM=$(figure elements)
 gt "  the corpus is the method surface, not a handful of files" "$BASE_PAGES" "100"
@@ -213,7 +213,7 @@ mutant 'if norm(got) != norm(want):' 'if False and norm(got) != norm(want):'
 runm
 check "  with the wording arm taken away the mutant has nothing left to report -> rc 0" "$RC" "0"
 has "  while still reaching a verdict of its own" "$OUT" "check-plan-invariants: clean"
-has "  over the whole corpus, so the silence is not a narrowed run" "$OUT" "principles=9"
+has "  over the whole corpus, so the silence is not a narrowed run" "$OUT" "principles=10"
 hasnt "  and it reports no wording finding" "$OUT" "finding leg1-wording: principle 5"
 
 fresh
@@ -229,7 +229,7 @@ tweak docs/plan-invariants.md '\*Because every sentence a design could write[^*]
 run
 check "a principle stripped of its one-clause reason -> rc 1" "$RC" "1"
 has "  it is not counted as present"      "$OUT" "finding leg1-reason: principle 3"
-has "  and the verdict's own count drops" "$OUT" "principles=8"
+has "  and the verdict's own count drops" "$OUT" "principles=9"
 
 # EVERY GAP IN THESE TWO PATTERNS IS `\s+`, including the ones that are a single
 # space on today's page. The page hard-wraps and the comparison collapses

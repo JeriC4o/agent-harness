@@ -85,7 +85,7 @@ Agent(subagent_type="general-purpose", prompt="
 
 ### Step 7: Design review
 
-**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the `plan-convergence` reader (`${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **The ordering is what satisfies the judgement class's obligation never to be the only check standing** — so neither half is optional and neither is run after the review. Both results go into the review spawn. Spawn prompt, the three figures its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
+**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the `plan-convergence` reader (`${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **The ordering is what satisfies the judgement class's obligation never to be the only check standing** — so neither half is optional and neither is run after the review. Both results go into the review spawn. Spawn prompt, what its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
 
 ```
 Agent(subagent_type="general-purpose", prompt="
@@ -97,8 +97,8 @@ Agent(subagent_type="general-purpose", prompt="
 
 Verdict: GO / ITERATE / STOP.
 
-- **GO** → **transcribe the verdict's `note` / `minor` rows and recommendation bullets, verbatim, into the progress file's `## Design-review notes` section FIRST** (creating the file if absent; `(none)` when there are none), then proceed to Step 8. The verdict is a response and nothing else persists it, while both parties enforcing the fold-in read it after it is gone — [why, and the record's shape](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#design-review-notes). Spec-amending notes need Step 6 → Step 7 re-run, not a fold-in — see *Spec Amendment recipe*.
-- **ITERATE** → back to Step 6 (max 3 rounds). **A round whose findings are only about the DOCUMENT's accuracy — stale counts, moved anchors, a representative written in a shape the code never receives — is not a reason to spend a round**, and repeated ones are a size signal rather than a rigour signal: fix them as text and split rather than iterate (`${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` § Rules). At the cap with a genuine DESIGN blocker still open the verdict stays ITERATE and the exhausted cap is surfaced to the user — a burned cap ends the loop, not the gate, and fixes applied after it still get one verification pass.
+- **GO** → **transcribe the verdict's `note` / `minor` rows and recommendation bullets, verbatim, into the progress file's `## Design-review notes` section FIRST** (creating the file if absent; `(none)` when there are none), then proceed to Step 8. The verdict is a response and nothing else persists it, while both parties enforcing the fold-in read it after it is gone — [why, and the record's shape](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#design-review-notes). A GO carries no spec-amending note: a genuine conflict is `major` and arrives on an ITERATE.
+- **ITERATE** → back to Step 6 (max 3 rounds); a genuine-conflict row first takes the *Spec Amendment recipe*'s remedy question, and Step 6 follows the user's pick. **A round whose findings are only about the DOCUMENT's accuracy — stale counts, moved anchors, a representative written in a shape the code never receives — is not a reason to spend a round**, and repeated ones are a size signal rather than a rigour signal: fix them as text and split rather than iterate (`${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` § Rules). At the cap with a genuine DESIGN blocker still open the verdict stays ITERATE and the exhausted cap is surfaced to the user — a burned cap ends the loop, not the gate, and fixes applied after it still get one verification pass.
 - **STOP** → fundamental flaw with the approach. Surface verdict + `Issues` table; do not start Step 8.
 
 ### Design Amendment (re-entrant — triggered from Step 8 or Step 11)
@@ -111,7 +111,7 @@ If a self-review or reviewer-comment fix requires editing `ai-docs/plans/*.spec.
 
 **After the amendment, ONE question decides the route — does it change the AGREED APPROACH?** Yes re-runs Step 6 → Step 7 and resets the log; no takes neither — no review round and no log row, because a changed requirement is not a divergence — and the closing fold authors the design from the amended spec. Answering it by reflex is the back door this change exists to close, so the recipe states both branches rather than defaulting.
 
-Full recipe (spawn-prompts, and why no interview state file is involved): [reference.md § Spec Amendment recipe (re-entrant — triggered from Step 7 GO-with-notes resolution)](reference.md#spec-amendment-recipe-re-entrant--triggered-from-step-7-go-with-notes-resolution).
+Full recipe (spawn-prompts, and why no interview state file is involved): [reference.md § Spec Amendment recipe](reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict).
 
 > The amendment TRIGGER is mechanical and mandatory **once the route is the amendment** (above) — "one line", "AC text unchanged", and "docs-only" are not mitigating inputs, and the soft verb below governs only the review's DEPTH, never whether the recipe fires. **What decides the ROUTE is a different question and sits upstream of this sentence: does the divergence break the agreed approach?** A non-breaking one takes the marker-plus-log-row remedy and never reaches this trigger; a breaking one reaches it, and then nothing mitigates it.
 
@@ -168,7 +168,7 @@ Agent(subagent_type="general-purpose", prompt="
 > **AXIOM — A finding is routed by its SUBJECT, not by the remedy chosen for it. Classify BEFORE choosing a fix.**
 > Two independent arms; check **A first**.
 >
-> **Arm A — the finding's subject.** Ask one question: **would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue?** If yes, the amendment trigger fires **even when the fix lands entirely in code**.
+> **Arm A — the finding's subject.** Ask one question: **would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue?** If yes, the amendment trigger fires **even when the fix lands entirely in code**. A spec sentence merely broader than what shipped stays true; only a genuine conflict under the base principles counts.
 >
 > **Arm B — the fix's target.** The proposed fix would edit a `*.spec.md` / `*.design.md` under `ai-docs/plans/` (active or `done/`).
 >
