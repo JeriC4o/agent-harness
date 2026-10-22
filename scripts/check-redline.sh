@@ -3,7 +3,7 @@
 # Is the task's redline log processed, and did the closing fold leave documents
 # that describe what shipped?
 #
-# Run:  check-redline.sh pending     <plans-dir>
+# Run:  check-redline.sh pending     <plans-dir> [ref]
 #       check-redline.sh folded      <spec> <design>
 #       check-redline.sh suppression <file>
 #       check-redline.sh revision    <file>
@@ -78,6 +78,8 @@ USAGE='usage: check-redline.sh pending     <plans-dir> [ref]
 for tool in git grep awk sed tr diff comm sort dirname basename mktemp; do
   command -v "$tool" >/dev/null 2>&1 || die 2 "${tool} is not on PATH, so this gate cannot run"
 done
+
+HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 
 VERB=${1:-}
 A1=${2:-}
@@ -339,8 +341,15 @@ section_of() { # <heading line> <file> -> the heading and its body, verbatim
 # What a post-merge caller must ask is whether the DEFAULT branch still carries an
 # unprocessed log, because that is where a fold lands in either window. With no ref
 # the worktree is read, which is the right question before a merge.
+#
+# A REF THAT RESOLVES IS NOT YET A REF THAT MAY BE READ. A remote-tracking ref is
+# the last fetch's copy, so a caller that skipped or failed its fetch would read
+# the old default branch, find no log, and turn the skipped fetch into a pass.
+# ref-current.sh asks the remote; anything but its clean 0 is this gate's
+# cannot-run, never its status passed through, because a 1 here means findings.
+# [do-pending]
 do_pending() {
-  local dir=$1 ref=${2:-} p found='' listing
+  local dir=$1 ref=${2:-} p found='' listing why st
   [ -n "$dir" ] || die 2 "$USAGE"
   [ -d "$dir" ] || die 2 "no such plans directory: ${dir}"
   [ -r "$dir" ] || die 2 "plans directory is not readable: ${dir}"
@@ -349,6 +358,12 @@ do_pending() {
   if [ -n "$ref" ]; then
     git -C "$dir" rev-parse --verify --quiet "${ref}^{tree}" >/dev/null \
       || die 2 "cannot resolve ref ${ref}, so there is no tree to read"
+    [ -x "${HERE}/ref-current.sh" ] \
+      || die 2 "${HERE}/ref-current.sh is missing or not executable, so ${ref} cannot be shown current"
+    why=$("${HERE}/ref-current.sh" "$dir" "$ref")
+    st=$?
+    [ "$st" -eq 0 ] \
+      || die 2 "${why:-ref-current.sh returned status ${st} and no reason, so ${ref} cannot be shown current}"
     listing=$(git -C "$dir" ls-tree -r --name-only "$ref")
     found=$(printf '%s\n' "$listing" | grep -E '(^|/)[^/]*\.redline\.md$' | tr '\n' ' ')
     found=${found% }
