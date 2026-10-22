@@ -161,16 +161,18 @@ broader spec sentence is not, so it stays as written.
   (AC5). The boundary narrows what counts as a conflict and never whether conflicts are sought.
 - **A notes list apart from the findings.** A breadth observation the reader wants to mention goes under
   its own heading in the report. A note is not a finding, does not change the outcome word and does not
-  enter the agreement figure (AC4).
+  enter the agreement figure (AC4). The heading and its line shape are stated once, in the boundary
+  section: the notes go after `unchecked`, under the heading `notes — breadth, not findings`, one line
+  each.
 - **A planted breadth case beside the planted faults**, read from the same control document on every run.
   It is a negative control: it must not be reported. It is not a class and carries no coverage word. The
   report carries one line saying whether it was flagged and in how many of the three readings; flagged in
   any reading means flagged. A flagged case is a failure of the run, so `clean` additionally requires it
   unflagged and a flagged run is `findings` at minimum, the finding being that the boundary failed. Its
   result is never listed among the pair's findings (AC9).
-- **The report template and the "never do" list** gain the breadth-control line and the notes heading, and
-  a report without the breadth-control line is incomplete in the same way one without the coverage line
-  is. **[REDLINE R2.1]**
+- **The report template and the "never do" list** gain the breadth-control line, and a report without it
+  is incomplete in the same way one without the coverage line is. The notes heading is not repeated in
+  either; it lives in the boundary section alone.
 
 `skills/task/reference.md` § Step 7 — the two convergence halves (detail) names what in the reader's
 report is part of the result; it gains the breadth-control line beside the agreement figure, the coverage
@@ -182,17 +184,19 @@ its report must carry".
 
 ### The planted control
 
-`ai-docs/fixtures/plan-convergence-planted.md` gains a section of its own for the breadth case, apart from
-the two halves holding the faults and apart from the per-class table, so it shares no object with either
-planted fault. Its requirements-half sentence is general: a run that cannot read one of its inputs says
-so, and that run is not a pass. Its approach-half sentence is specific about the same behaviour and adds
-nothing the first rules out: when the control document cannot be read, the outcome word is `cannot-run`
-and the report names the control document as the input it could not read. A short explanation states why
-this is breadth and not a contradiction, with a pointer to the principle written as a plain path rather
-than a markdown link. The document's opening paragraph is widened to say it holds one planted non-fault
-beside the planted faults. The three shapes the document already forbids — a broken link or anchor, a
-position inside a file, a bracketed lowercase slug outside a backtick span — stay absent. The fixtures row
-in `ai-docs/context.md` that describes this document gains the breadth case. **[REDLINE R1.1]**
+`ai-docs/fixtures/plan-convergence-planted.md` gains a section of its own for the breadth case, headed
+"A second excerpt — requirements and approach", apart from the two halves holding the faults and apart
+from the per-class table, so it shares no object with either planted fault. It is planted in the second
+case's shape: a requirements scope sentence literally rules the change out — the archive command's
+printed output is unchanged — while a requirements criterion requires it — an unopenable destination is
+named, and that run is not a pass; the approach replaces today's `archive: failed` line with one naming
+the destination, and the approach's risks state the departure, saying the criterion needs it. The
+section carries no explanation of the expected answer and no pointer to the principle, so the reader is
+measured on the boundary rather than told the result. The document's opening paragraph is widened to say
+it holds one second excerpt in its own section, a negative control the reader reads like the pair and
+reports on one line. The three shapes the document already forbids — a broken link or anchor, a position
+inside a file, a bracketed lowercase slug outside a backtick span — stay absent. The fixtures row in
+`ai-docs/context.md` that describes this document gains the breadth case.
 
 ### Sync groups
 
@@ -226,17 +230,6 @@ Each group a change fires, and what its other members need:
 | 4 | Subject trigger: the breadth clause on Arm A at every site that states it, spec sentences only | `skills/task/SKILL.md`, `docs/workflow.md`, `skills/bugfix/SKILL.md`, `skills/project-review/SKILL.md`, `agents/self-review.md`, `agents/fix-scout.md`, `docs/scouted-fix-round.md` | AC6 | 1 |
 | 5 | Reader: the boundary section, the notes list, the planted breadth case as a negative control with its line and its effect on the outcome word, the report template and never-do list; the Step 7 detail naming the breadth-control line as part of the result, with the count dropped from its paragraph's opening and from the skill's Step 7 sentence that links to it | `agents/plan-convergence.md`, `skills/task/reference.md`, `skills/task/SKILL.md` | AC4, AC5, AC9 | 1 |
 | 6 | Control and delivery: the breadth case's own section in the planted control and its opening paragraph; the fixtures row in the profile; the plugin patch version bump | `ai-docs/fixtures/plan-convergence-planted.md`, `ai-docs/context.md`, `.claude-plugin/plugin.json` | AC9 | 5 |
-
-## Handoff plan
-
-- **Before Group A:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md` to enter the first group with fresh context.
-- **Group A:** subtasks 1–3 — the principle and its pinned copy, design review, and the recipe.
-- **Handoff after Group A:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. Parent /task resumes in Group B with fresh
-  context.
-- **Group B:** subtasks 4–6 — terminal group (three subtasks, within the allowed range): the subject
-  trigger at every site, the reader contract, and the planted control with the version bump.
 
 ## Risks
 
@@ -321,7 +314,3 @@ Each group a change fires, and what its other members need:
   the planted breadth case was flagged.
 - `ai-docs/fixtures/plan-convergence-planted.md` — read by the reader on every run as the negative control
   it must not report, beside the two planted faults it must report.
-
-## Open questions
-
-- None.
