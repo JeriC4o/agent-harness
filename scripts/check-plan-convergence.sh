@@ -3,9 +3,11 @@
 # Does a plan pair converge -- does every number name its own origin, and does
 # every relation the documents state actually hold?
 #
-# Run:  check-plan-convergence.sh [--root <dir>] <spec> <design>
+# Run:  check-plan-convergence.sh <spec> <design>
 #       check-plan-convergence.sh --excuse '<class>|<spot>|<subject>' --grounds '<why>' <spec> <design>
 # Exit: 0 clean, 1 findings, 2 cannot run -- which is NOT a pass.
+# Core: check-plan-convergence.py <method root> <method-indexed 0|1> <project root>
+#       <spec> <design> <excuse key> <grounds> -- the first three are resolved here.
 #
 # Tests: scripts/test-check-plan-convergence.sh
 #
@@ -58,8 +60,8 @@
 set -uo pipefail
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
-ROOT=$(cd -- "${HERE}/.." && pwd -P)
-USAGE='usage: check-plan-convergence.sh [--root <dir>] [--excuse <key> --grounds <why>] <spec> <design>'
+METHOD_ROOT=$(cd -- "${HERE}/.." && pwd -P)
+USAGE='usage: check-plan-convergence.sh [--excuse <key> --grounds <why>] <spec> <design>'
 
 SPEC=''
 DESIGN=''
@@ -67,8 +69,6 @@ EXCUSE=''
 GROUNDS=''
 while [ $# -gt 0 ]; do
   case "$1" in
-    --root) [ -d "${2:-}" ] || { printf 'check-plan-convergence: no such directory: %s\n' "${2:-}" >&2; exit 2; }
-            ROOT=$(cd -- "$2" && pwd -P); shift 2 ;;
     --excuse)  EXCUSE=${2:-}; shift 2 ;;
     --grounds) GROUNDS=${2:-}; shift 2 ;;
     -h|--help) sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -101,7 +101,7 @@ for f in "$SPEC" "$DESIGN"; do
 done
 
 command -v git >/dev/null 2>&1 \
-  || { printf 'check-plan-convergence: cannot run -- git is needed to establish that the record the section names are derived from is in the index\n' >&2; exit 2; }
+  || { printf 'check-plan-convergence: cannot run -- git is needed, because the project roster is a git index\n' >&2; exit 2; }
 command -v python3 >/dev/null 2>&1 \
   || { printf 'check-plan-convergence: cannot run -- python3 is the scanning tool, and the host grep is not a substitute: it has been measured answering 0 to a pattern it refused on a complexity limit\n' >&2; exit 2; }
 
@@ -136,7 +136,28 @@ REPORTING_PAYLOAD="${HERE}/check-plan-convergence-reporting.py"
 [ -r "$REPORTING_PAYLOAD" ] \
   || { printf 'check-plan-convergence: cannot run -- the payload sibling %s is unreadable\n' "$REPORTING_PAYLOAD" >&2; exit 2; }
 
+# TWO ROOTS, because an installed copy sits in a plugin cache that is no
+# repository. The method inputs ship with this file and are read from its
+# parent; the project data -- the roster, the baseline, the excuse record beside
+# the spec -- belongs to the work tree holding the spec. One root serving both
+# made every installed run a cannot-run before any class examined anything.
+SPEC_DIR=$(cd -- "$(dirname -- "$SPEC")" && pwd -P)
+PROJECT_TOP=$(git -C "$SPEC_DIR" rev-parse --show-toplevel 2>/dev/null)
+[ -n "$PROJECT_TOP" ] \
+  || { printf 'check-plan-convergence: cannot run -- %s is not in a git work tree git will read, %s\n' \
+         "$SPEC_DIR" 'and the project roster is a git index' >&2; exit 2; }
+PROJECT_ROOT=$(cd -- "$PROJECT_TOP" && pwd -P)
+# Indexed only when the method root IS a top level: a plugin directory inside an
+# unrelated repository has an index that never lists the plugin's files, and
+# guarding on it would refuse every run there.
+METHOD_INDEXED=0
+METHOD_TOP=$(git -C "$METHOD_ROOT" rev-parse --show-toplevel 2>/dev/null)
+if [ -n "$METHOD_TOP" ] && [ "$(cd -- "$METHOD_TOP" && pwd -P)" = "$METHOD_ROOT" ]; then
+  METHOD_INDEXED=1
+fi
+
 # `-B`: a gate must not leave a build artefact in the tree it just swept.
 # Without it the first run writes scripts/__pycache__/, which nothing tracks,
 # nothing ignores, and both tree-walking gates would eventually trip over.
-exec python3 -B "$PAYLOAD" "$ROOT" "$SPEC" "$DESIGN" "$EXCUSE" "$GROUNDS"
+exec python3 -B "$PAYLOAD" "$METHOD_ROOT" "$METHOD_INDEXED" "$PROJECT_ROOT" \
+  "$SPEC" "$DESIGN" "$EXCUSE" "$GROUNDS"

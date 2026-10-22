@@ -416,4 +416,6 @@ prose-line	skills/task/scripts/test-check-fix-plan.sh	line 10
 prose-line	skills/task/scripts/test-check-fix-plan.sh	lines 3-9
 prose-line	skills/task/scripts/test-check-fix-plan.sh	lines 8-14
 path-line	scripts/test-check-plan-convergence.sh	docs/plan-invariants.md:120
+path-line	scripts/test-check-plan-convergence.sh	docs/elsewhere.md:12
+path-line	scripts/test-check-plan-convergence.sh	docs/plugin-only.md:7
 prose-line	scripts/test-check-plan-convergence.sh	line 42

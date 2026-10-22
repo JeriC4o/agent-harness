@@ -36,6 +36,7 @@ import re
 # The borrowed fragment length, exposed for the report beside this group's
 # findings: a zero where a non-zero is expected is a report about the run.
 MINIMUM = None
+ENTERED = set()
 
 
 def run(ctx):
@@ -47,14 +48,14 @@ def run(ctx):
     between the two groups for that reason.
     """
     global MINIMUM
-    global finding, blocked, norm, read_rel, region, statements, spot_of
+    global finding, blocked, norm, read_method, region, statements, spot_of
     global masked, figures, value_of
     global CLAUSE_SPLIT, EQUATION, TOTAL_WORD, TOTAL_PHRASE
     global HEADING_LINE, FENCE, QUOTE_MARK
     finding = ctx['finding']
     blocked = ctx['blocked']
     norm = ctx['norm']
-    read_rel = ctx['read_rel']
+    read_method = ctx['read_method']
     region = ctx['region']
     statements = ctx['statements']
     spot_of = ctx['spot_of']
@@ -73,12 +74,14 @@ def run(ctx):
     if MINIMUM is None:
         return
     documents = ctx['documents']
+    ENTERED.update(('arithmetic', 'isolation'))
     for doc, body, units in documents:
         arithmetic(doc, body, units)
         isolation(doc, units, MINIMUM)
     # The pair, never one document: the class compares a spec against a design,
     # and one of the two missing is a cannot-run the core has already reported.
     if len(documents) == 2:
+        ENTERED.add('completeness')
         bodies = ctx['bodies']
         tokens = ctx['tokens']
         units_of = dict((doc, units) for doc, _b, units in documents)
@@ -441,10 +444,9 @@ REPEATS = 0
 
 
 def fragment_minimum():
-    body = read_rel(FRAGMENT_SOURCE)
+    body = read_method(FRAGMENT_SOURCE,
+                       'and the minimum fragment length is borrowed from it rather than chosen here')
     if body is None:
-        blocked('%s could not be read, and the minimum fragment length is borrowed from it rather than chosen here'
-                % FRAGMENT_SOURCE)
         return None
     m = re.search(r'(?m)^\s*%s=(\d+)' % FRAGMENT_NAME, body)
     if m is None:
