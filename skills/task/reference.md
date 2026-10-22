@@ -84,13 +84,13 @@ Activation sequence (bare-ticket → matching deferred spec):
 > Deviating from the design without either triggering Design Amendment or — for a divergence that does not break the agreed approach — recording a redline marker and its log row — FORBIDDEN.
 > Editing `*.design.md` inline instead of spawning the `design` subagent — FORBIDDEN. The orchestrator's role is (1) surface to user, (2) spawn `design`, (3) spawn `design-review`. The `Write` to `*.design.md` belongs to the `design` subagent regardless of how trivial the amendment looks.
 
-## Spec Amendment recipe (re-entrant — triggered from Step 7 GO-with-notes resolution)
+## Spec Amendment recipe (re-entrant — triggered from a Step 7 verdict)
 
-If a Step 7 design-review GO verdict surfaces a `note` / `minor` / recommendation whose resolution requires a change to the **spec** (wording, AC, or technical-constraints edit) — not just an in-place design fold-in:
+Entered from any Step 7 verdict carrying a genuine-conflict row, or from a Step 11 finding that fires Arm A. A GO carries no spec-amending note: a genuine conflict is `major`, so at Step 7 it arrives on an ITERATE.
 
-1. **Classify each note** at Step 7 close: **design-internal** (route through `design` subagent for in-place fold-in; no loop) vs **spec-amending** (note implies a spec wording / AC / constraint change).
+1. **Classify each note and row** at Step 7 close by [the tenth base principle](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles): **breadth** — the spec general or silent where the design is specific — is neither kind and is dropped; **design-internal** (route through `design` subagent for in-place fold-in; no loop) includes a departure another spec sentence requires, which the design states among its risks; **spec-amending** is a genuine conflict only.
 2. **Stop before Step 8.** Do not begin implementation against the pre-amendment spec — FORBIDDEN.
-3. **Surface to user via `AskUserQuestion`** — state the requirement change itself in plain product terms (what is expected of the system now, versus before), not as a spec edit: **no** spec or design citation, **no** acceptance-criterion id ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)). Wait for explicit approval.
+3. **Surface to user via `AskUserQuestion`** — state the requirement change itself in plain product terms (what is expected of the system now, versus before), not as a spec edit: **no** spec or design citation, **no** acceptance-criterion id ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)). Wait for explicit approval — **for a Step 7 genuine-conflict row the question is instead which remedy the user wants**, in the same plain terms, the design complying first: the design complying returns to Step 6 as an ordinary ITERATE does and leaves this recipe; the requirement changing continues to step 4.
 4. **On user approval — re-invoke the `spec-writer` subagent to apply the amendment** — do NOT `Edit` `*.spec.md` inline. Per AGENTS.md AXIOM "the orchestrator NEVER writes to `*.spec.md` / `*.design.md`":
    - **Pass the amendment in the spawn prompt, as a `prior_qa` entry or as `extra_context`. There is no interview state file to update** — it is the orchestrator's bookkeeping for the multi-round interview loop, it is deleted at that skill's terminal exit, and on the deferred-spec activation route (⚡ Second step 6) creating one is forbidden outright. A late amendment is a single invocation with no loop, and `spec-writer` never reads that file anyway: it reads `AGENTS.md`, the ticket body and the current draft from paths in its prompt, and takes the history as a prompt field — its own contract names `prior_qa` **or** `extra_context` as the channel for exactly this kind of re-invocation.
    - Spawn `spec-writer` with that prompt. The spec-writer owns the `Write` to `*.spec.md`.
@@ -98,7 +98,9 @@ If a Step 7 design-review GO verdict surfaces a `note` / `minor` / recommendatio
    - **Yes** — scope, intent or the approach itself moved. Re-enter Step 6 (`design`) stating that the spec was amended, then Step 7 against the new pair (counts against the 3-round cap); on GO proceed. The rebuilt design is the **new frozen base** and the redline log **resets**.
    - **No** — a criterion restated, an over-promise withdrawn, a wording clarified. **No design re-derivation, no design-review round, and no log row either**: a changed requirement is not a divergence, so nothing of it is recorded in the log and the log does **not** reset. The closing fold authors the design from the amended spec.
 
-> Editing `*.spec.md` inline instead of re-invoking `spec-writer` — FORBIDDEN. The orchestrator's role is (1) carry the amendment into the spawn prompt, (2) re-spawn `spec-writer`, (3) answer step 5's question and take only the branch it names.
+   **On an ITERATE entry the verdict's own loop resumes, whatever step 5 answers.** Once the spec is amended, re-enter Step 6 against it — the `design` subagent revises the design for the verdict's other rows and for the amended requirement — then Step 7, counting against the 3-round cap; the "No" branch leaves no GO, and Step 8 needs one. Before the GO freeze there is neither a frozen base to re-derive nor a log to reset, so step 5's answer is moot here, and the Step 6 → Step 7 return is the ITERATE loop itself, which the question never governed.
+
+> Editing `*.spec.md` inline instead of re-invoking `spec-writer` — FORBIDDEN. The orchestrator's role is (1) carry the amendment into the spawn prompt, (2) re-spawn `spec-writer`, (3) answer step 5's question and take only the branch it names, then, on an ITERATE entry, resume the verdict's loop.
 **Review DEPTH for an amendment — a preference, not a route.** The route is decided upstream by whether
 the divergence breaks the agreed approach; this governs only how hard the resulting review looks.
 **Default to** keeping the full review loop for an amendment that changes a VERIFICATION GATE rather than
@@ -154,10 +156,12 @@ Agent(subagent_type="general-purpose", prompt="
 ")
 ```
 
-**Three figures in its report are part of the result and not decoration.** The agreement across its
+**These parts of its report are the result and not decoration.** The agreement across its
 three readings, with the healthy figure it states before the first; the coverage line, naming each
-of its two classes covered or uncovered against the planted faults it reads on every run; and the
-outcome word, where `cannot-run` is not a pass. A report arriving without them is incomplete —
+of its two classes covered or uncovered against the planted faults it reads on every run; the
+breadth-control line, saying whether the planted spec-broader-than-design case was flagged and in how
+many readings, a flagged case keeping the outcome off `clean`; and the outcome word, where
+`cannot-run` is not a pass. A report arriving without them is incomplete —
 re-spawn it rather than reading the finding list alone, because a finding list with no agreement
 figure cannot be told from a stable one.
 

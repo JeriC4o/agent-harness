@@ -45,6 +45,22 @@ clean.** Where a statement names a file, a script, a hook, a page or a command, 
 cannot — the thing is outside this repository, or the statement names no artefact precisely enough
 to open — say so against that statement instead of dropping it.
 
+## A spec broader than its design is not a self-contradiction
+
+**Across the spec/design pair, the self-contradiction class applies
+[the tenth base principle](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles).** A
+spec sentence that is general or silent where the design is specific is breadth, and a design departing
+from one spec sentence because another sentence of the same spec requires it is a departure the spec
+itself requires; neither is ever a self-contradiction. A genuine conflict about one object — the design
+doing what the spec explicitly rules out, or dropping a behaviour a criterion requires, with no other spec
+sentence requiring it — still is one, and is reported naming both sites. The boundary narrows what counts
+as a conflict; it never narrows whether conflicts are sought.
+
+**A breadth observation you want to mention is a note, listed under its own heading.** A note is not a
+finding: it does not change the outcome word and does not enter the agreement figure. In the report it
+goes after `unchecked`, under the heading `notes — breadth, not findings`, one line each:
+`[<document> § <heading>]: <the spec sentence>; the design is more specific at <document> § <heading>`.
+
 ## Three readings, and what the agreement figure is for
 
 **Print this before the first reading, in the report's own text:** a healthy figure is every finding
@@ -72,6 +88,12 @@ back:
 The control's own faults are never mixed into the pair's findings — they are a separate list under
 its own heading, because the plan under examination does not own them.
 
+**The same document carries one planted breadth case, a negative control: its section headed "A second
+excerpt".** Read it with the classes and the boundary above, exactly as you read the pair. It is not a
+class and carries no coverage word. Report on one line whether you reported a self-contradiction in it and
+in how many of the three readings; reported in any reading means flagged. A flagged case is a failure of
+this run — the boundary above did not hold — and its result is never listed among the pair's findings.
+
 ## The report
 
 Lead with the outcome word, then the figures, then the findings. The two lists are separate.
@@ -81,6 +103,7 @@ plan-convergence: <findings | clean | cannot-run>
   healthy agreement: every finding in all three readings
   agreement: <F> findings, <N> in all three, <N> in two, <N> in one
   coverage: self-contradiction <covered|uncovered>, artefact-contradiction <covered|uncovered>
+  breadth control: <not flagged | flagged in <N> of 3 readings>
 
 findings — the pair
   <class> [<document> § <heading>]: <what was found>; the other site: <document> § <heading>
@@ -96,9 +119,10 @@ findings — the planted control
 - **`cannot-run` is not a pass**, and it is the honest outcome whenever either plan document or the
   control document could not be read, or the three readings could not be completed. Say which input
   was missing. An empty finding list under a `cannot-run` says nothing about the plan.
-- **`clean` means every reading found nothing AND both classes came back covered.** A run with an
-  uncovered class is `findings` at minimum, the finding being that the class did not demonstrate
-  itself.
+- **`clean` means every reading found nothing AND both classes came back covered AND the breadth
+  control came back unflagged.** A run with an uncovered class is `findings` at minimum, the finding
+  being that the class did not demonstrate itself; a run with a flagged breadth control is `findings`
+  at minimum, the finding being that the boundary failed. Notes never change the outcome word.
 - **A spot is an entity, never a position.** The document plus the heading the statement sits under;
   for an artefact, the path plus the entity inside it. A position is stale the moment anyone edits
   the file, and this report is read after at least one more pass has written to the plan — the rule
@@ -110,5 +134,5 @@ findings — the planted control
 - Edit either plan document, the control, or any artefact. You read and report.
 - Rule on harm, severity, or what should change.
 - Report a deterministic class's subject a second time.
-- Return a finding list without the agreement figures and the coverage line — the figures are part
-  of the result, and a report without them is the shape the standard exists to refuse.
+- Return a finding list without the agreement figures, the coverage line and the breadth-control line
+  — they are part of the result, and a report without them is the shape the standard exists to refuse.

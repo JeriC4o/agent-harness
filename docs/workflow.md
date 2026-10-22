@@ -350,7 +350,8 @@ The trigger has **two independent arms**, and the second is the one that is easy
 
 - **Arm A — subject.** The finding asserts that something a `*.spec.md` / `*.design.md` states is false,
   stale, or unsupported. Test: *would closing this finding leave a sentence in the artefact untrue?*
-  Fires **regardless of where the fix lands**.
+  A spec sentence merely broader than what shipped stays true; only a genuine conflict (base
+  principles) counts. Fires **regardless of where the fix lands**.
 - **Arm B — target.** The fix diff touches `ai-docs/plans/**/*.{spec,design}.md`.
 
 Either arm is a Spec/Design Amendment trigger — NOT an ordinary code-fix.
@@ -426,9 +427,8 @@ itself, and if no effect shows, the extension does not happen at all. Tracked in
 as issue #98. The amendment routing in this section fires at all four sites either way — the plan changes
 *who* detects an amendment in the main flow, not *whether* the trigger applies anywhere.
 
-Recipe: stop the step, surface to user for approval, re-invoke `spec-writer` to update the spec, re-run
-`/task` Step 6 (design) → Step 7 (design-review) on the amended (spec, design) pair (max 3 rounds), then
-resume the triggering step from the GO verdict.
+Recipe: stop, get user approval, have `spec-writer` amend the spec, re-run `/task` Steps 6 → 7 on the
+amended pair (max 3 rounds), then resume from the GO.
 
 Detection: mechanical at the top of every fix round — `git diff` includes a `*.spec.md` path → the trigger
 fires regardless of how small the doc edit appears.

@@ -59,15 +59,39 @@ nothing.
    design-and-review cycle rather than being patched in place. *Because the gap is paid for either way,
    and the cheaper-looking price — note it and carry on — is the one that falls due as a rewrite of an
    agreed plan at the moment the work is most committed to it.*
+10. **A spec broader than its design is not a contradiction, and only a genuine conflict changes the spec.**
+    A genuine conflict is a design that does what the spec explicitly rules out, or drops a behaviour an
+    acceptance criterion requires, with no other sentence of the same spec requiring it; a spec that is
+    general or silent where the design is specific is breadth, and a departure another sentence of the spec
+    requires is stated once, among the design's risks, and is not a spec finding either. *Because a spec
+    narrowed to match its design states the design's detail a second time, costs an approval and a fresh
+    planning round, and is deleted when the closing fold collapses the spec, so the narrowing is paid for
+    and then discarded.*
 
-**All but two are prohibitions; the remaining two are tests, and each hands a reader a question rather
+**All but three are prohibitions; the remaining three are tests, and each hands a reader a question rather
 than a boundary.** The prohibitions say what may not happen. The eighth asks of a proposed element: can
 its content be known when the document is written? If not, it is out — and the reason is not taste. An
 element whose content arrives later forces the author to invent it, and the end-of-task review then
 corrects the document against a tree that keeps moving, so the correction reopens every round. The ninth
 asks the same kind of question of a gap: would answering it change the approach, the requirements or the
 decomposition? If it would, the gap is not one this plan may leave open, because the answer arrives after
-the plan is agreed and lands as a rewrite rather than as a note.
+the plan is agreed and lands as a rewrite rather than as a note. The tenth asks of a spec sentence the
+design is more specific than: does the design do what the spec rules out, or drop what a criterion
+requires?
+
+**The tenth test in full.** A spec sentence is read for its intent within the whole spec, and a design
+measured against it falls into one of three cases, of which only the third is a finding against the pair.
+**Breadth** — the spec is general or silent where the design is specific — is no finding at any severity.
+**A departure the spec itself requires** — the design departs from a literal reading of one sentence
+because another sentence of the same spec, a criterion, a constraint or a key decision, requires what the
+design does — is no spec finding; the design states it once, among its risks, and that statement is the
+single record. A spec-internal tension the design resolves by following the spec's more specific sentence
+is this case too. **A genuine conflict** is the one the tenth sentence defines, and its remedy is either
+the design complying, routed as a design-side fix, or the requirement changing, which is a spec amendment
+the user approves; a reviewer presumes neither. The test reads spec sentences only, so a design sentence
+the implementation contradicts routes exactly as it did before. It is the fifth principle applied at the
+spec/design boundary: a deliberate departure has one record, in the design, and the spec is not rewritten
+to repeat it.
 
 **The obligation half asks a second question of every number, and its answer is provenance rather than
 silence.** Which kind of number is this, and how was it obtained? A threshold the task handed down, an
