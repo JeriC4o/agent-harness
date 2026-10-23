@@ -59,8 +59,12 @@ table:
     one-line fix in one file reset only the rows covering that file.
   - **Rule** names the rule text the row checks, as `path#heading` references. The item's own subsection of
     the reviewer contract is always listed, and any rule page the item applies is added, such as the
-    code-style reference or the project's own profile. A reference resolves against the installed plugin
-    first and then the project. **[REDLINE S8.4]**
+    code-style reference or the project's own profile. A reference follows the repository's existing path
+    convention: one spelled `${CLAUDE_PLUGIN_ROOT}/<path>#slug` resolves against the plugin root, and a
+    bare repo-relative `<path>#slug` resolves against the project working tree — the same split method
+    files already use, citing method paths in the `${CLAUDE_PLUGIN_ROOT}/` form and project data
+    repo-relative. A consuming project's reference to its own `AGENTS.md` or `ai-docs/` therefore hashes
+    the project's copy, so an edit to its profile gives `rule-changed`.
   - **Digest** is two fixed-length hash prefixes joined by a dot: the scope's content hash from
     `scripts/tree-digest.sh`, then the hash of the resolved rule sections. Two halves let a mismatch name its
     trigger.
@@ -95,22 +99,30 @@ It has two verbs:
   reads the latest round's ledger and recomputes every row from the tree. It reads that round's findings
   table for statuses that begin `⚠️ Objected`, and it lists every path in the current change that no
   recorded scope names. It prints one line per row, `carry` or `sweep <trigger>`, then one `new-file <path>`
-  line per uncovered path, then a verdict line naming the totals and whether the whole list was reset. **[REDLINE S8.3]**
+  line per uncovered path, then a verdict line naming the totals and whether the whole list was reset.
+  The `diff` scope token does not count as naming a path for `new-file` detection, so a path covered only
+  by a `diff` row is still listed as `new-file`; a `diff` row instead resets through `scope-changed` when
+  the change's path set moves.
   - A row is carried only when both digest halves match and none of its findings is objected.
-  - The `objections` row always prints `sweep objected`.
+  - The `objections` row always prints `sweep objected`, in every round, an amendment round included.
   - A scope half that differs gives `scope-changed`, and a rule half that differs gives `rule-changed`.
   - A row that does not parse, or whose digest is not in the two-prefix shape, gives `record-invalid`. The
     `objections` row, whose Digest cell is `—`, is exempt from the shape rule and still prints `sweep objected`.
-  - A ledger that is absent sweeps every item as `record-invalid`. **[REDLINE S8.2]**
-  - A plan digest that differs from the recorded one sweeps every row as `amendment`, whatever the rows say. **[REDLINE S8.5]**
+  - A ledger that is absent sweeps every item as `record-invalid`. The item set then comes from the
+    numbered `### N.` headings of `agents/self-review.md` under the plugin root, located from the script's
+    own directory or `CLAUDE_PLUGIN_ROOT`.
+  - A plan digest that differs from the recorded one sweeps every other row as `amendment`, whatever the
+    rows say; the `objections` row still prints `sweep objected`.
   - An edited record whose digest no longer matches the tree is swept like any other mismatch.
   - Its exit statuses follow the repository's convention: success for a computed plan, the cannot-run
     status otherwise. On a cannot-run the reviewer sweeps everything and says so.
-- **`seal <findings-file>`** runs after the reviewer has written the round's ledger with the Digest cells
-  blank. It fills each blank cell with the digest recomputed from the tree as it stands at sealing time,
-  leaving the `objections` row's `—` as written. It refuses a malformed row or a trigger outside the closed set, and it writes nothing else. Sealing from the
-  tree, rather than accepting a digest the reviewer typed, means a carried claim can never be a bare
-  assertion. **[REDLINE S8.1]**
+- **`seal <findings-file> [--plan <path>]…`** runs after the reviewer has written the round's ledger with
+  the Digest cells and the `**Plan digest:**` field blank. It fills each blank cell with the digest
+  recomputed from the tree as it stands at sealing time, leaving the `objections` row's `—` as written. It
+  also fills the blank `**Plan digest:**` from the given plan paths, with redline markers stripped as for
+  `plan`, or writes `none` when no plan path is passed. It refuses a malformed row or a trigger outside the
+  closed set, and it writes nothing else. Sealing from the tree, rather than accepting a digest the
+  reviewer typed, means a carried claim can never be a bare assertion.
 
 **The full-reset trigger is the plan digest, and only the task workflow passes plan documents.** The
 reasoning:
@@ -370,7 +382,9 @@ documentation also gives a Bash `Exit code 1` as its `PostToolUseFailure` exampl
      `ok: true`.
    - **The final segment is a gate, not inside a pipeline, and not preceded by `||`:**
      - when it is the only segment or follows a `;`, the exit status is that gate's own, and is attributed
-       to it in both directions, whatever gates ran earlier; **[REDLINE R1.6]**
+       to it in both directions, whatever gates ran earlier — unless it is backgrounded by a lone `&`,
+       which records `ok: null` even as the only segment, because the exit status the shell reports is
+       the launch status and not the gate's own;
      - when it follows an `&&` run, a zero exit records `ok: true`, because it ran and passed. A non-zero
        exit is attributed to it when no earlier segment of that run is a gate: the prefix segments — a `cd`,
        a fetch, any other command — are taken as succeeded, so a prefix's own failure would be attributed
@@ -471,11 +485,14 @@ The inspect skill's `allowed-tools` line gains the script.
 - **A new Check-Scope group in `docs/propagation.md`.** The anchor row is `docs/check-scope.md`, and its
   members are `skills/task/SKILL.md` Steps 8, 9, 11 and 12, `skills/task/reference.md` § Step 9 and
   `skills/task/reference.md` § Step 12, the bugfix
-  skill's Steps 6 and 6.5, the whole-branch review's Steps 3 to 5, `docs/workflow.md` § Post-push,
-  `docs/scouted-fix-round.md`, `agents/fix-scout.md` and `agents/fix-apply.md`. One mechanism is described
+  skill's Steps 6, 6.5 and 6.7 (the standalone-only final full run), `skills/bugfix/reference.md`'s
+  `**parent_skill:**` field, which takes `/task | post-push` and decides Step 6.7, the whole-branch
+  review's Steps 3 to 5, `docs/workflow.md` § Post-push, `docs/scouted-fix-round.md`,
+  `agents/fix-scout.md`, `agents/fix-apply.md`, and `agents/self-review.md`, whose narrowed scoped re-run
+  and failing-final-run input describe the same mechanism. One mechanism is described
   in their separate vocabularies, which is the case the procedure's fourth point says a sweep cannot cover.
   Every member lies in a path class the propagation reminder already has an arm for, so the arm-derivation
-  check gains no unguarded class. **[REDLINE S8.6]**
+  check gains no unguarded class.
 - **A Review-group member.** `docs/converging-review.md` joins the Review group's anchor row beside
   `agents/self-review.md`.
 - **The template mirror.** The method may not name `templates/`, so the obligation that this repository's
@@ -520,21 +537,6 @@ The inspect skill's `allowed-tools` line gains the script.
 | 8 | Signals in the inspection report: the `gates` block in the per-session reader's JSON and text output, the skill's Step 1b hand-over, the inspector's reporting of both counts and of each contradiction | `scripts/loop-metrics.sh`, `skills/inspect/SKILL.md`, `agents/inspector.md` | AC17 | 4 |
 | 9 | The human-raised count: the script with its three modes, push times read from the site's push-activity record with its reach check, the bot, fold, version-bump and merge-commit exclusions, and the cannot-compute exit; the version-bump profile line in the template, in set-up and in this repository; the inspect skill's branch-resolved step, its `allowed-tools`, and the inspector's report of the count; the README's inspect section | `scripts/human-findings.sh`, `templates/project/ai-docs/context.md`, `ai-docs/context.md`, `skills/harness-init/SKILL.md`, `skills/inspect/SKILL.md`, `agents/inspector.md`, `README.md` | AC18 | 8 |
 | 10 | Sync and delivery: the Check-Scope group in the propagation table, the propagation sweep over every edited instruction file, and the plugin patch version bump | `docs/propagation.md`, `.claude-plugin/plugin.json` | AC8, AC12 | 6, 7, 9 |
-
-## Handoff plan
-
-- **(a)** Grouping is required for every M ≥ 1, a threshold the design contract hands down. Here M = 10, counted from the decomposition's rows.
-- **(b)** Non-terminal groups are exactly 3 consecutive subtasks, a size the design contract hands down. The terminal group is subtask 10 alone.
-- **Handoff into Group A:** spawn `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`.
-- **Group A:** subtasks 1–3. This is the converging checklist end to end.
-- **Handoff after Group A:** spawn `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. The parent /task resumes in Group B with fresh context.
-- **Group B:** subtasks 4–6. It covers the gate record, the profile half and rule, and the task loop.
-- **Handoff after Group B:** spawn `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. The parent /task resumes in Group C with fresh context.
-- **Group C:** subtasks 7–9. It covers the other loops, the inspection report, and the human-raised count.
-- **Handoff after Group C:** spawn `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. The parent /task resumes in Group D with fresh context.
-- **Group D:** subtask 10. This is the terminal group: 1 subtask, within the 1..3 range.
-- **(c)** The handoff destination at every boundary is `/context-reset`, as named above.
-- **(d)** The terminal group size is within the 1..3 range.
 
 ## Risks
 
@@ -640,7 +642,3 @@ The inspect skill's `allowed-tools` line gains the script.
   mode argument, so a scoped run and a full run of one runner are different artefacts. Set-up fills it.
 - `**Version-bump paths:**` profile line — the human-findings script reads it to exclude version-bump commits.
   Set-up fills it.
-
-## Open questions
-
-- (none)
