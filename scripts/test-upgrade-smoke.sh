@@ -46,7 +46,16 @@ PASS=0; FAIL=0
 ok()  { PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
 bad() { FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }
 has() { case "$2" in *"$3"*) ok "$1" ;; *) bad "$1 -- expected [$3]" ;; esac; }
-hasnt(){ case "$2" in *"$3"*) bad "$1 -- unexpected [$3]" ;; *) ok "$1" ;; esac; }
+check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want [$3], got [$2])"; fi; }
+
+# The human-readable listing prints a local-folder marketplace's own manifest
+# version (`folderVersion` in the JSON), so it reports a raised source as
+# installed while the cached payload has not moved; `version` is what the
+# install recorded.
+recorded() {
+  claude plugin list --json 2>/dev/null \
+    | jq -r --arg id "${NAME}@${MARKET}" '.[] | select(.id == $id) | .'"$1"' | tostring'
+}
 
 # A gate that cannot run must say so, not pass quietly. Exit 2 keeps it
 # distinguishable from a real failure (1).
@@ -95,8 +104,7 @@ if [ "$rc" = "0" ]; then ok "marketplace add succeeds"; else bad "marketplace ad
 out=$(claude plugin install "${NAME}@${MARKET}" -y 2>&1); rc=$?
 if [ "$rc" = "0" ]; then ok "install succeeds"; else bad "install succeeds (rc=$rc): $out"; fi
 if [ -d "${CACHE}/${LOW}" ]; then ok "cache carries $LOW"; else bad "cache carries $LOW (has: $(ls "$CACHE" 2>&1 | tr '\n' ' '))"; fi
-out=$(claude plugin list 2>&1)
-has "plugin list reports $LOW" "$out" "$LOW"
+check "plugin list records $LOW" "$(recorded version)" "$LOW"
 
 printf '\n== raise the source, then the negative control: install is NOT an upgrade ==\n'
 jq --arg v "$HIGH" '.version = $v' "$TREE/.claude-plugin/plugin.json" > "$TREE/.claude-plugin/plugin.json.tmp" \
@@ -106,8 +114,7 @@ out=$(claude plugin install "${NAME}@${MARKET}" --scope user -y 2>&1); rc=$?
 if [ "$rc" = "0" ]; then ok "install against an existing install still exits 0"; else bad "install against an existing install still exits 0 (rc=$rc): $out"; fi
 has "  and reports success" "$out" "already installed"
 if [ -d "${CACHE}/${HIGH}" ]; then bad "  but the payload did NOT move -- $HIGH appeared in the cache"; else ok "  but the payload did NOT move"; fi
-out=$(claude plugin list 2>&1)
-hasnt "  and plugin list still does not report $HIGH" "$out" "$HIGH"
+check "  and plugin list still records $LOW" "$(recorded version)" "$LOW"
 
 printf '\n== the documented procedure, EXTRACTED from README section Update ==\n'
 STEPS=$(awk '/^## /{s=substr($0,4)} /^```/{f=!f;next} f&&s=="Update"&&/^claude /' "$ROOT/README.md")
@@ -133,9 +140,8 @@ done <<< "$STEPS"
 
 printf '\n== and the payload moved -- both observables ==\n'
 if [ -d "${CACHE}/${HIGH}" ]; then ok "cache carries $HIGH"; else bad "cache carries $HIGH (has: $(ls "$CACHE" 2>&1 | tr '\n' ' '))"; fi
-out=$(claude plugin list 2>&1)
-has "plugin list reports $HIGH" "$out" "$HIGH"
-has "  and the plugin is still enabled" "$out" "✔ enabled"
+check "plugin list records $HIGH" "$(recorded version)" "$HIGH"
+check "  and the plugin is still enabled" "$(recorded enabled)" "true"
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]
