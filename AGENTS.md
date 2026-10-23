@@ -22,7 +22,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4. `run-checks.sh` runs both as its `shell-syntax` and `manifests` members |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
-**Structural checks that stand in for a test suite** — run all seven before any commit that touches
+**Structural checks that stand in for a test suite** — run all eight before any commit that touches
 instruction files.
 
 **`bash scripts/run-checks.sh` runs every one of them in a single call**, reporting a verdict per member
@@ -83,7 +83,7 @@ is the same commands.
    `scripts/test-check-redline.sh`, `scripts/test-check-release.sh`,
    `scripts/test-check-plan-convergence.sh`,
    `scripts/test-hook-behaviour.sh`,
-   `scripts/test-run-checks.sh`.
+   `scripts/test-run-checks.sh`, `scripts/test-check-method-purity.sh`.
    **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed
    file COUNT beside the syntax verdict and reddens a separate `untracked-shell` member on any `*.sh` the
    index cannot see — but only when it runs, so a hand-run still owes both reads.
@@ -124,9 +124,16 @@ is the same commands.
    scanning tool and says so when it is absent — the host `grep` is not a substitute, having been
    measured answering `0` to a pattern it refused on a complexity limit.
    **Numbered `5b` for the reason item `5a` gives.**
+5c. `bash scripts/check-method-purity.sh` — enforces the method/profile boundary in § Project-specific
+   conventions. Two legs: every tracked `*.md` under `docs/`, `skills/`, `agents/`, `rules/` names no
+   language, framework, build or doc tool, and uses no one language's syntax as its example; and no
+   tracked text file anywhere carries a known identifier from another real codebase. The second leg's
+   stems are stored hashed, so the gate does not itself carry the material it refuses. A new stem is
+   added as its length and sha256 prefix. Exits `0 clean / 1 findings / 2 cannot run`, needs `python3`.
+   **Numbered `5c` for the reason item `5a` gives.**
 
 **Delivery gates** — the checks above validate this repository's CONTENTS; these three validate that the
-contents reach a consumer. The seven structural checks cannot see delivery by construction: the first two
+contents reach a consumer. The eight structural checks cannot see delivery by construction: the first two
 gates exist because a bug got past every check there was at the time, the third because nothing above it
 walks an upgrade against a *pre-existing* install:
 
@@ -180,6 +187,7 @@ at that heading.
 | `hooks/lib/loop-*`, `scripts/bin-of.jq`, `ai-docs/fixtures/loop-corpus/` | `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh` |
 | `scripts/tree-digest.sh` | `scripts/test-review-ledger.sh`, `hooks/lib/test-gate-record.sh` |
 | `hooks/lib/gate-pattern.sh` | `hooks/lib/test-gate-record.sh`, `scripts/test-hook-behaviour.sh`, `hooks/lib/test-harness-managed.sh` |
+| any tracked text file — the foreign-identifier leg reads the whole tree | `method-purity` |
 | `templates/project/**` | `skills/harness-init/scripts/test-scaffold.sh`, `scripts/test-audit-project.sh` |
 
 **Selection flag:** `--only`
@@ -229,8 +237,8 @@ the profile page, and the two have already fallen out of step once.
 
 - **Two surfaces, two audiences.** A file under `docs/`, `skills/`, `agents/`, `rules/` is **method** —
   it must hold in every project, so it may not name a language, a build tool, a domain entity, or a
-  ticket prefix. A file under `ai-docs/` or `templates/project/` is **profile** — project facts live
-  there. A method file that acquires a project fact is a `major` finding.
+  ticket prefix; check `5c` enforces the first two. A file under `ai-docs/` or `templates/project/` is
+  **profile** — project facts live there. A method file that acquires a project fact is a `major` finding.
 - **Paths inside method files are `${CLAUDE_PLUGIN_ROOT}`-relative; paths to project data are
   repo-relative.** `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` is method; `ai-docs/plans/…` is data and
   resolves against whichever project is open. Mixing them is the one mistake that breaks the harness for
