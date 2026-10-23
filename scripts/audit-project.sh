@@ -45,7 +45,7 @@ finding() { # <severity> <check> <message>
 # Some %TOKENS% are permanent LABELS, not values waiting to be filled: the left
 # column of the command table names each placeholder, and the prose refers to
 # them. Only a token outside that allowlist is an unfilled value.
-LABELS='%PLACEHOLDER%|%BUILD_CMD%|%TEST_CMD%|%FORMAT_CMD%|%LINT_CMD%|%PROJECT_NAME%'
+LABELS='%PLACEHOLDER%|%BUILD_CMD%|%TEST_CMD%|%FULL_CHECK_CMD%|%FORMAT_CMD%|%LINT_CMD%|%PROJECT_NAME%'
 for f in AGENTS.md ai-docs/context.md; do
   [ -f "${DIR}/${f}" ] || { finding blocker Q "missing profile file: ${f} -- run /harness:harness-init"; continue; }
   unfilled=$(grep -oE '%[A-Z_]+%' "${DIR}/${f}" | grep -vE "^(${LABELS})$" | sort -u | tr '\n' ' ')

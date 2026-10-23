@@ -898,6 +898,52 @@ has "the contradiction prints in --for too" "$out" "ATTRIBUTION CANARY: 1 subage
 has "  naming the distinct ids it saw" "$out" "(1 distinct agent id(s))"
 has "  and the bound is on this view as well" "$out" "the canary itself is not firing"
 
+printf '\n== --for: the gates block counts the gate record and its two signals ==\n'
+GR="$W/gates"; mkdir -p "$GR/loops" "$GR/projects/-proj/sessg/subagents"
+GRTX="$GR/projects/-proj/sessg.jsonl"
+GRL="$GR/loops/sessg.jsonl"
+: > "$GRTX"; : > "$GRL"
+tu "$GRTX" g1; tu "$GRTX" g2; tu "$GRTX" g3
+grow() { jq -nc --arg id "$1" --arg s "$2" --arg a "$3" \
+         '{ts:"2026-09-26T00:00:0\($id[1:])Z",kind:"gate",gate:"scripts/check-x.sh",args:[],artefact:[],
+           repo:"/r",digest:"d",ok:true,agent_id:$a,tool_use_id:$id,cwd:"/r",command:"bash scripts/check-x.sh",
+           signal:(if $s == "" then null else $s end)}
+          + (if $s == "" then {} else {prior_tool_use_id:"g1",prior_ts:"2026-09-26T00:00:01Z",prior_agent_id:"main"} end)' \
+         >> "$GRL"; }
+acall g1 main "$GRL"; grow g1 "" main
+acall g2 main "$GRL"; grow g2 repeat AAA
+acall g3 main "$GRL"; grow g3 contradiction BBB
+r=$(HARNESS_LOOP_DIR="$GR/loops" bash "$READER" --for "$GRTX" --json)
+check "gate rows are counted by kind, apart from the calls beside them" \
+      "$(printf '%s' "$r" | jq -r '[.gates.recorded, .calls] | join(",")')" "3,3"
+check "  one repeat and one contradiction" \
+      "$(printf '%s' "$r" | jq -r '[.gates.repeats, .gates.contradictions] | join(",")')" "1,1"
+check "  one entry per signal, none for the silent row" \
+      "$(printf '%s' "$r" | jq -r '[.gates.signals[].signal] | join(",")')" "repeat,contradiction"
+check "  each naming its time, gate, agent and the prior invocation" \
+      "$(printf '%s' "$r" | jq -r '.gates.signals[1]
+         | [.ts, .gate, .agent_id, .tool_use_id, .prior.tool_use_id, .prior.agent_id] | join(",")')" \
+      "2026-09-26T00:00:03Z,scripts/check-x.sh,BBB,g3,g1,main"
+out=$(HARNESS_LOOP_DIR="$GR/loops" bash "$READER" --for "$GRTX")
+has "the text view prints both counts" "$out" "gates: 3 recorded, 1 repeat(s), 1 contradiction(s)"
+EG="$W/gates-empty"; mkdir -p "$EG/loops" "$EG/projects/-proj"
+: > "$EG/projects/-proj/sesse.jsonl"; : > "$EG/loops/sesse.jsonl"
+acall e1 main "$EG/loops/sesse.jsonl"
+check "a session with no gate row reports zeros, not an absent block" \
+      "$(HARNESS_LOOP_DIR="$EG/loops" bash "$READER" --for "$EG/projects/-proj/sesse.jsonl" --json \
+         | jq -r '[.gates.recorded, .gates.repeats, .gates.contradictions, (.gates.signals | length)] | join(",")')" "0,0,0,0"
+
+MG1="$W/mut-gates-any-signal.sh"
+perl -0pe 's/repeats: \(\[ \$sig\[\] \| select\(\.signal == "repeat"\)/repeats: ([ \$sig[] | select(.signal != null)/' "$READER" > "$MG1"
+check "the mutation applied" "$(grep -c 'repeats: (\[ \$sig\[\] | select(.signal != null)' "$MG1")" "1"
+check "counting every signal as a repeat is caught" \
+      "$(HARNESS_LOOP_DIR="$GR/loops" bash "$MG1" --for "$GRTX" --json | jq -r '.gates.repeats')" "2"
+MG2="$W/mut-gates-no-kind.sh"
+perl -0pe 's/\[ \.\[\] \| select\(\.kind == "gate"\) \]/[ .[] | select(.tool_use_id != null) ]/' "$READER" > "$MG2"
+check "the mutation applied" "$(grep -cF 'select(.tool_use_id != null) ] ) as $gate_rows' "$MG2")" "1"
+check "selecting gate rows by anything but kind inflates the count" \
+      "$(HARNESS_LOOP_DIR="$GR/loops" bash "$MG2" --for "$GRTX" --json | jq -r '.gates.recorded')" "6"
+
 printf '\n== the entry point is executable ==\n'
 check "loop-metrics.sh carries the execute bit" "$( [ -x "$READER" ] && echo yes || echo no )" "yes"
 

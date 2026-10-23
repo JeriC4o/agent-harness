@@ -145,7 +145,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `skills/<name>/SKILL.md` | The 13 workflow skills — re-derive with `ls -d skills/*/ \| wc -l` rather than trusting this line; the install smoke gate asserts the installed skill list covers every one the tree ships, so a stale count here is invisible to it |
 | `agents/<name>.md` | The 10 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
-| `hooks/hooks.json` | **22** hook entries in 12 matcher groups, running **19** distinct guards — three are registered twice: two of them on two EVENTS each, and the plan-invariants refusal on two MATCHERS of one event, which is why "how many hooks" has three defensible answers and this row gives all three. Re-derive from the manifest with `jq` over `.hooks[][].hooks[]` (length, and the length of its unique `.command` set) rather than trusting this line; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
+| `hooks/hooks.json` | **24** hook entries in 13 matcher groups, running **20** distinct guards — four are registered twice: three of them on two EVENTS each, and the plan-invariants refusal on two MATCHERS of one event, which is why "how many hooks" has three defensible answers and this row gives all three. Re-derive from the manifest with `jq` over `.hooks[][].hooks[]` (length, and the length of its unique `.command` set) rather than trusting this line; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
 | `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `check-plan-invariants.sh`, `check-plan-convergence.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `ref-current.sh` as the remote-currency helper `check-redline.sh` and `check-release.sh` both call, `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
@@ -186,6 +186,12 @@ per backticked token, all on that one line; a project with no such class writes 
 guard. **This project holds no deployed configuration in the tree** — the two globs are the class the
 method surface itself names, they are gitignored here, and the declaration exists so the guard has a class
 to read rather than one to invent.
+
+**Version-bump paths:** `.claude-plugin/plugin.json` `.claude-plugin/marketplace.json`
+
+The paths a version-bump commit touches and nothing else. `scripts/human-findings.sh` reads the line above
+to keep such a commit out of the count of findings a human raised after a pull request opened. One path or
+glob per backticked token, all on that one line; `none` when the project has no such files.
 
 ## Build & test commands
 

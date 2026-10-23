@@ -474,6 +474,32 @@ OUT=$(bash "$RUNNER" --root "$FAKE" --list skills/ 2>&1); RC=$?
 check "a bare module path with --list -> still rc 0" "$RC" "0"
 has "  and --list names the ignored argument too" "$OUT" "skills/"
 
+printf '\n== --only runs the named members, and says the full list did not run ==\n'
+make_tree "$FAKE"
+printf '#!/usr/bin/env bash\nexit 1\n' > "$FAKE/scripts/test-alpha.sh"
+OUT=$(bash "$RUNNER" --root "$FAKE" --only references,hooks/lib/test-beta.sh 2>&1); RC=$?
+check "a selection that leaves out the failing suite -> rc 0" "$RC" "0"
+has "  the selected member ran"            "$OUT" "ok   references"
+has "  the selected suite ran"             "$OUT" "ok   hooks/lib/test-beta.sh"
+hasnt "  an unselected member did not"     "$OUT" "manifests"
+hasnt "  nor did the unselected suite"     "$OUT" "scripts/test-alpha.sh"
+has "  the selection is printed"           "$OUT" "selected by --only: references hooks/lib/test-beta.sh"
+has "  and the verdict says the full list was not run" "$OUT" "so the full list was NOT run"
+hasnt "  one verdict per selected member, no false drift" "$OUT" "member-verdicts"
+OUT=$(bash "$RUNNER" --root "$FAKE" --only=scripts/test-alpha.sh 2>&1); RC=$?
+check "the joined spelling selects the failing suite -> rc 1" "$RC" "1"
+has "  and names it" "$OUT" "FAIL scripts/test-alpha.sh"
+OUT=$(bash "$RUNNER" --root "$FAKE" --only references --only shell-syntax 2>&1); RC=$?
+has "  a repeated --only adds to the selection" "$OUT" "ok   shell-syntax"
+make_tree "$FAKE"
+OUT=$(bash "$RUNNER" --root "$FAKE" --only references,no-such-member 2>&1); RC=$?
+check "an unknown member name -> 2, never an empty selection" "$RC" "2"
+has "  and the name is given" "$OUT" "no-such-member"
+bash "$RUNNER" --root "$FAKE" --only >/dev/null 2>&1; check "a valueless --only -> 2" "$?" "2"
+bash "$RUNNER" --root "$FAKE" --list --only references >/dev/null 2>&1; check "--list with --only -> 2" "$?" "2"
+OUT=$(bash "$RUNNER" --root "$FAKE" 2>&1)
+hasnt "a run without the flag says nothing about a selection" "$OUT" "NOT run"
+
 printf '\n== usage ==\n'
 bash "$RUNNER" --root /nonexistent >/dev/null 2>&1; check "missing root -> 2" "$?" "2"
 mkdir -p "$T/empty"

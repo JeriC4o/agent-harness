@@ -125,6 +125,21 @@ depends on what happened in between, and that is in the transcript rather than i
 decided *while the session ran*. Without it the inspector re-derives everything from scratch and cannot tell
 a detector hit from a detector miss, which is the only feedback the thresholds ever get. It is also a wider
 view: the ledger records calls made inside spawned agents, whose transcripts the reduction pass never opens.
+Its `gates` block counts the gate record's two signals for the session: a check re-run over an unchanged
+tree, and one check answering both ways about one unchanged artefact.
+
+`scripts/human-findings.sh` counts what a person raised after the automated review passed — each comment
+posted on the pull request and each fix commit pushed after it opened, the closing fold, version bumps and
+merge commits excluded. Push times come from the hosting site's push-activity record, never from commit
+dates, and a pull request older than that record's reach is reported as not computable rather than as
+zero. `/harness:inspect` runs it for the session's branch; it also runs on demand:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/human-findings.sh --pr <n>
+${CLAUDE_PLUGIN_ROOT}/scripts/human-findings.sh --merged --limit 30   # tally; says when it is partial
+```
+
+It needs `gh` and the `**Version-bump paths:**` line in `ai-docs/context.md`.
 
 **Loop-shaped is not loop.** Every repetition signature carries a *time* qualifier (the repeats fall inside
 one window); `repeated-tool-call` also carries a *state* qualifier (no `Edit`/`Write` in between — re-running
@@ -364,6 +379,11 @@ delivery gates:
 to actually load, `scripts/check-release.sh` refuses a branch that changed shipped content without a
 version bump, and `scripts/test-upgrade-smoke.sh` runs this README's own update commands against a
 lowered install and requires the payload to move. See [`AGENTS.md` § Build & Test](AGENTS.md#build--test).
+
+Inside a work loop the runner takes `--only <member>[,<member>…]`, naming members as `--list` prints them:
+it runs just those, prints the selection, and says the full list was not run. Which members a change
+selects is the touched-scope rule in [`docs/check-scope.md`](docs/check-scope.md); the full list runs once,
+unnarrowed, after review approves.
 
 ## Design notes
 

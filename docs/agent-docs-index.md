@@ -88,6 +88,20 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Lifecycle.** Byte-stable. A wording change, a removal and a new principle all travel the same authorisation route, and a one-sided wording change or removal is reported rather than applied.
 **When to read.** Before proposing a change to either document’s required composition, and whenever the plan-invariants verification names a principle in a finding.
 
+### `${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md`
+
+**Purpose.** How a self-review round after the first decides its breadth: the checklist ledger, its digest, the trigger set and the ledger script's verbs.
+**Writer.** A task that changes the reviewer's breadth rule; a Review-group member, so it moves with `agents/self-review.md`.
+**Lifecycle.** Stable.
+**When to read.** When writing or sealing a ledger, and when judging one in a whole-repository review.
+
+### `${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`
+
+**Purpose.** Which checks run inside a loop that ends in a commit (only those a touched path selects) and the single full run after review approves, with its tree-unchanged condition and its failure route.
+**Writer.** A task that changes check selection or the final run; the Check-Scope group's anchor, so it moves with every loop step that applies it.
+**Lifecycle.** Stable.
+**When to read.** Before running checks inside a task, bugfix, whole-branch review or post-push fix loop, and before the final full run.
+
 ### `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`
 
 **Purpose.** Canonical `.progress.md` schema spec.

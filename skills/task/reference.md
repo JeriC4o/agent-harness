@@ -77,7 +77,7 @@ Activation sequence (bare-ticket → matching deferred spec):
      Context: design was amended during implementation / self-review — describe what changed.
    ")
    ```
-5. **On GO** → resume from the step that triggered the amendment. **A branch carrying redline rows hands the rebuild every accumulated marker and row in step 3's prompt.** After the GO the log is empty and the rebuilt document is the new frozen base.
+5. **On GO** → resume from the step that triggered the amendment. **A branch carrying redline rows hands the rebuild every accumulated marker and row in step 3's prompt.** After the GO the log is empty and the rebuilt document is the new frozen base. **The amendment is what makes the next self-review round sweep every checklist item:** it moves the plan digest that round's ledger is compared against ([`${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` § Triggers](${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md#triggers)).
 6. **On ITERATE** → re-spawn the `design` subagent with the iteration feedback and re-run review (counts against the 3-round limit). Never edit the design doc inline to "fix the blockers".
 7. **On STOP** → surface to user; do not proceed.
 
@@ -97,6 +97,7 @@ Entered from any Step 7 verdict carrying a genuine-conflict row, or from a Step 
 5. **Ask the one question that decides the rest: does the amendment change the AGREED APPROACH?**
    - **Yes** — scope, intent or the approach itself moved. Re-enter Step 6 (`design`) stating that the spec was amended, then Step 7 against the new pair (counts against the 3-round cap); on GO proceed. The rebuilt design is the **new frozen base** and the redline log **resets**.
    - **No** — a criterion restated, an over-promise withdrawn, a wording clarified. **No design re-derivation, no design-review round, and no log row either**: a changed requirement is not a divergence, so nothing of it is recorded in the log and the log does **not** reset. The closing fold authors the design from the amended spec.
+   - **Either branch, once self-review has run, makes the next round sweep every checklist item** — the amended spec moves the plan digest, as in the Design Amendment recipe's step 5.
 
    **On an ITERATE entry the verdict's own loop resumes, whatever step 5 answers.** Once the spec is amended, re-enter Step 6 against it — the `design` subagent revises the design for the verdict's other rows and for the amended requirement — then Step 7, counting against the 3-round cap; the "No" branch leaves no GO, and Step 8 needs one. Before the GO freeze there is neither a frozen base to re-derive nor a log to reset, so step 5's answer is moot here, and the Step 6 → Step 7 return is the ITERATE loop itself, which the question never governed.
 
@@ -178,7 +179,7 @@ Create using canonical format at [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress
 **Branch:** <TICKET-KEY>-<slug>
 **base_commit:** <git rev-parse HEAD>
 **current_step:** Step 8 — Implementation start
-**last_passed_gate:** %BUILD_CMD% <module-path> | <ISO-8601 UTC timestamp> | <git rev-parse HEAD>
+**last_passed_gate:** %BUILD_CMD% <module-path> | <ISO-8601 UTC timestamp> | <git rev-parse HEAD> | <tree digest from the gate record's line, or measured>
 **entry_args:** <original $ARGUMENTS — a ticket key, "activate <slug>", free text, or (none)>
 ```
 
@@ -188,11 +189,15 @@ The `**entry_args:**` field is recorded ONCE at Step 8 and **read-only thereafte
 
 Verify both spec and design (with GO verdict) exist AND that **every note / minor / recommendation from the latest design-review GO verdict has been written back into the design document**. "Applied in code later" ≠ "resolved in the design"; the design doc is the implementation contract. Scan the most recent design-review verdict block — for each `Severity: note` / `minor` row and each `## Recommendations` bullet, confirm the corresponding section of `ai-docs/plans/YYYY-MM-DD-name.design.md` was updated to match. Missing spec, missing design, missing GO verdict, OR unresolved GO-notes = previous steps incomplete.
 
+## Step 8 — transport-drop backoff
+
+**On a transport-level drop (socket closed / connection closed mid-response), resume the SAME agent from its transcript (`SendMessage`) — it preserves already-gathered context.** First resume after a single drop may be immediate; from the 2nd consecutive failure on the same step, `sleep` 2s→4s→8s→16s→32s (cap 32s, small jitter) before re-dispatching; cap ~5 attempts per step, then surface to the user — never a silent loop. Reset the delay after any success.
+
 ## Step 9 — verify list (full)
 
 1. `%BUILD_CMD% <module-path>` — PASS.
 1b. **Run the gate over DEPENDENTS when the change alters a published interface, or what a component requires of its collaborators.** A module-scoped gate cannot see either class, and both break a file the diff never touched. An altered **published interface** can invalidate a call site that itself did not change — including a test double built against the old shape, and most sharply where the new form is ambiguous with an existing one at the CALL site rather than at the definition; prefer avoiding that ambiguity at the source (a distinct name beats an optional form that collides) over compiling every dependent to find it. A change to **what a component requires of its collaborators** fails where the component is ASSEMBLED rather than where it is named, so a module that never mentions the new requirement still breaks at wiring time. Find the dependents by searching the test sources for the **CHANGED** name — not the new one, which no dependent uses yet — and run each hit's module through the gate.
-2. `%TEST_CMD% <module-path>` — all green, read per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Reading a test result`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result). A zero-selected run reports success; prove selection before trusting a filtered pass.
+2. The touched-scope checks — the selection stated in one line, then run with `%TEST_CMD%` in its narrowing form per [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md); never the full list, which Step 12 runs once — all green, read per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Reading a test result`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result). A zero-selected run reports success; prove selection before trusting a filtered pass.
 3. `%FORMAT_CMD%` on every changed source file to format, THEN `%LINT_CMD%` as the gate — must exit clean. The formatter is not the gate.
 4. For shell (`.sh`) files: `shellcheck <file>` — the analogue of the lint gate. Honor existing per-file `# shellcheck disable=...` directives; do not add new blanket disables. Surface it as an explicit AC at spec/design time, not only as a workflow gate.
 5. For each AC — confirm covered by test or manual verification.
@@ -222,6 +227,19 @@ Moved to [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROO
 micro-loop and the narrative behind each beat. The heading stays here so inbound references to it keep
 resolving, and because the gate list below reads this page's own section names at run time.
 
+## Step 12 — full run, digest compare, failure route
+
+**Why only two `current_step` values pass the step-skip gate.** Both admissible values mean the review question is settled: one by a verdict, one by the user overriding it in writing. A compaction landing between Step 11's write and its return is exactly how the inadmissible state reaches this gate, so read the value rather than inferring the step from how far the work looks done.
+
+**The single full run** is item 6 of Step 12: after the plan files move to `done/` and the build passes, `%FULL_CHECK_CMD%` runs once, its output redirected to a file. Its passing record goes into `**last_passed_gate:**` with the tree digest from the gate record's line — or measured with `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh` straight after the run and marked as measured, when the full command is outside the gate vocabulary. Immediately before surfacing the commit, the field's digest is compared with a fresh `tree-digest.sh`; a difference owes the run again. The rule and its edge cases: [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md).
+
+**On a failing full run:**
+
+1. **Move the plan files back** out of `done/` — spec, design and the redline log if one moved — so routing, exclusions and review prompts see the paths they key on.
+2. **Write progress:** rewrite `**current_step:**` to `Step 12 — full run failed (Round N)`; rewrite `## Next action`.
+3. **Spawn the Step 10 reviewer** with the failing output's file named. It records one `major` finding per failing check. Every checklist row whose scope is unchanged carries, so the round is narrow.
+4. **Continue as an ordinary round** — Step 11 fixes, Step 10 reviews — and return to Step 12, which runs the full list again. The commit is surfaced only after a passing full run that followed the last approval.
+
 ## Step 12 — PR-body template (detail)
 
 Claude prepares the title + body per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § PR title + body shape`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#pr-title--body-shape); the user approves before `gh pr create` runs:
@@ -234,7 +252,7 @@ Claude prepares the title + body per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md §
 
 Validated approaches `/task` should keep applying (carrot signals; soft verbs). **Each is stated in full elsewhere and this is a pointer list, not a second statement** — it was not: three rules lived only here until they were moved to the page that carries their siblings, which is the shape this list exists to avoid.
 
-- **Default to** resuming the SAME agent from its transcript (`SendMessage`) on a transport-level drop, with exponential backoff from the 2nd consecutive failure, rather than cold-spawning a replacement that discards its gathered context. Full rule: [SKILL.md § Step 8](SKILL.md#step-8-implementation); re-stated for the design phase in [SKILL.md § Design Amendment](SKILL.md#design-amendment-re-entrant--triggered-from-step-8-or-step-11).
+- **Default to** resuming the SAME agent from its transcript (`SendMessage`) on a transport-level drop, with exponential backoff from the 2nd consecutive failure, rather than cold-spawning a replacement that discards its gathered context. Full rule: [§ Step 8 — transport-drop backoff](#step-8--transport-drop-backoff); re-stated for the design phase in [SKILL.md § Design Amendment](SKILL.md#design-amendment-re-entrant--triggered-from-step-8-or-step-11).
 - **Writing and receiving a spawn prompt** — mark every factual claim with how it was obtained, treat a restated rule as a reminder rather than enforcement, read an instruction that contradicts itself as evidence rather than as a command, and read a relayed finding for which artefact it actually points at. All four, with the measurements behind them: [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication) and § Tooling.
 
 ## FORBIDDEN
@@ -255,12 +273,12 @@ Validated approaches `/task` should keep applying (carrot signals; soft verbs). 
 | Step 6 | Spec exists? ACs confirmed? Not a "spec-only / defer" run? |
 | Step 8 | Design doc with GO? `## Handoff plan` present for every M ≥ 1? **Every GO-note written back into design doc?** |
 | Step 8 start | Feature branch checked out? `git branch --show-current` is NOT the default branch? `base_commit` + `branch` recorded in progress file? |
-| Each subtask | Build ✅? Tests run? `.progress.md` updated? Group handoff via `/context-reset`? |
+| Each subtask | Build ✅? Touched-scope checks run, selection stated? `.progress.md` updated? Group handoff via `/context-reset`? |
 | Step 9 | Build + tests + lint clean? `## Criterion checks (Round N)` filled, `Shown non-empty by` included? (**No design-side verification line is asked for — a design says nothing about tests**, so the round record is where a criterion meets a check.) |
 | Step 9.5 | context.md updated? (spec/design NOT moved yet) |
 | Step 10 | Self-review APPROVE? (Progress file persists in the working tree — gitignored — until `/pr-merged`.) |
 | Step 11 | `major`/`blocker` objections confirmed by user? Breaking divergence → Amendment, non-breaking → marker + log row? PR body re-read after any push? |
-| Step 12 | Branch ≠ default? spec/design moved to done/? Build clean? PR title prefixed and body summary-only (no Summary/Test-plan sections)? |
+| Step 12 | Branch ≠ default? spec/design moved to done/? Build clean? Full list passed once, digest unchanged before surfacing? PR title prefixed and body summary-only (no Summary/Test-plan sections)? |
 
 ## Commit authorisation + hooks
 

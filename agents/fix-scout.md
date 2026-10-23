@@ -33,7 +33,7 @@ The plan section already exists when you start: the gate's `baseline` verb appen
 3. Decide each finding's **disposition** from the closed vocabulary below. Every open finding gets exactly one row — no merging two findings into one row, no dropping one as already covered.
 4. Estimate each row's expected changed lines **on the basis below**.
 5. Answer the Arm A question per finding: *would closing this finding leave a sentence in a spec or design artefact untrue?* Record the **sentence**, not your verdict about it. A spec sentence that is only broader than what shipped, or that another spec sentence overrides, is not left untrue — only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts — so its Arm A cell is `none`.
-6. Name the verification the round expects to re-run.
+6. Name the verification the round expects to re-run: the touched-scope checks for the round's target files, selected per [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md) and stated with the path that selected each. **Never the full list** — it runs once, after review approves.
 7. Fill the table and the two empty header fields by editing the existing section. Sum your own column and write that sum.
 8. Return a short hand-back: the row count, the declared total, and any finding whose anchor did not resolve.
 
@@ -43,7 +43,7 @@ The plan section already exists when you start: the gate's `baseline` verb appen
 ## Fix Plan (Round N)
 
 **round_base:** <written by the gate's baseline verb — never edit this line>
-**verification:** <the command(s) this round expects to re-run>
+**verification:** <the touched-scope check command(s) for the target files — never the full list>
 **declared_changed_lines:** <integer — the sum of the column below>
 
 | # | Disposition | Target file:line | Expected changed lines (max(added,removed)) | Arm A — artefact sentence at stake |

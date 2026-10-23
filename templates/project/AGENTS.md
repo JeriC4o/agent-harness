@@ -12,10 +12,28 @@
 | Placeholder | Meaning | This project |
 |---|---|---|
 | `%BUILD_CMD%` | Compile the changed module | `%FILL_ME%` |
-| `%TEST_CMD%` | Run a module's tests (+ the filter syntax for one test) | `%FILL_ME%` |
+| `%TEST_CMD%` | Run the checks a touched path selects — the narrowing form (+ the filter syntax for one test) | `%FILL_ME%` |
+| `%FULL_CHECK_CMD%` | Run the full check list — once, after review approves, never inside a loop | `%FILL_ME%` |
 | `%FORMAT_CMD%` | Auto-format changed files (NOT a gate) | `%FILL_ME%` |
 | `%LINT_CMD%` | Lint as the gate (exits non-zero on violations) | `%FILL_ME%` |
 | `<module-path>` | How a module is addressed on the command line | `%FILL_ME%` |
+
+### Touched-scope selection
+
+Inside a loop only the checks a touched path selects run, through `%TEST_CMD%`; the full list runs once at
+the end. The rule: `${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`.
+
+**Path rule:** `%FILL_ME%` — which checks read which paths, e.g. "a touched path selects `%TEST_CMD%` for
+its module, and `%LINT_CMD%` over the changed files".
+
+**Mapping** — the cases the path rule cannot see, one row per touched path:
+
+| Touched path | Selects |
+|---|---|
+| (none yet) | |
+
+**Selection flag:** `%SELECTION_FLAG%` — the flag through which `%TEST_CMD%` names its selection, or `none`
+when it selects by path alone.
 
 Project-specific gate notes (profile flags, suites needing a container runtime, how to run a single
 test) go in [`ai-docs/context.md`](ai-docs/context.md) § Build & test commands.

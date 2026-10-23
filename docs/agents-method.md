@@ -39,7 +39,7 @@ Read `.cursorignore` | `.gitignore`, deny access to matched paths.
 
 ## Build & Test
 
-The project's build, test, format and lint commands live in the **project profile** (`AGENTS.md` §&nbsp;Build & Test in the consuming repo). Skills reference them by the placeholder names `%BUILD_CMD%`, `%TEST_CMD%`, `%FORMAT_CMD%`, `%LINT_CMD%` and `<module-path>`; resolve each against that table before running anything. An unresolved placeholder is a STOP — ask the user rather than guessing a command.
+The project's build, test, format and lint commands live in the **project profile** (`AGENTS.md` §&nbsp;Build & Test in the consuming repo). Skills reference them by the placeholder names `%BUILD_CMD%`, `%TEST_CMD%`, `%FULL_CHECK_CMD%`, `%FORMAT_CMD%`, `%LINT_CMD%` and `<module-path>`; resolve each against that table before running anything. An unresolved placeholder is a STOP — ask the user rather than guessing a command. `%TEST_CMD%` is the narrowing run inside a loop and `%FULL_CHECK_CMD%` the full list, run once after review approves: [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md).
 
 Reading a green test run correctly — the four ways a pass can be fake — is in [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Reading a test result](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result).
 
@@ -183,6 +183,8 @@ Interpret **the user's** phrasing literally and conservatively. When uncertain �
 | `${CLAUDE_PLUGIN_ROOT}/docs/instruction-file-validation.md` | Dual-model instruction-file clarity test methodology |
 | `${CLAUDE_PLUGIN_ROOT}/docs/plans-summary.md` | Cross-cutting maintenance plans |
 | `${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md` | Base principles of a spec and a design — the authority on their wording |
+| `${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` | Checklist ledger — how a later self-review round decides its breadth |
+| `${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md` | Touched-scope checks in a loop; the full list once, after review approves |
 | `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` | Canonical `.progress.md` schema |
 | `${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md` | Canonical entry template + § Target file (where a new entry goes) |
 | `ai-docs/plans/*.spec.md` | Active task spec + acceptance criteria |

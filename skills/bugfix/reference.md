@@ -49,7 +49,7 @@ Reporter: <quote from user message>
 
 **current_step:** Step 1: Reproduce and Trace
 **last_passed_gate:** (none yet)
-**parent_skill:** /task    <!-- only when /bugfix is invoked from /task Step 8; omit otherwise -->
+**parent_skill:** /task | post-push    <!-- only when invoked from /task Steps 8–12 or a post-push fix round's Step 4; omit standalone, since Step 6.7 keys on its absence -->
 **entry_args:** <$ARGUMENTS at trace creation; omit if empty>
 
 ## Actual behaviour
@@ -84,6 +84,7 @@ Agent(subagent_type="general-purpose", prompt="
   Diff window: git diff <base_commit> HEAD
   Progress file (write findings here): ai-docs/bugfix/trace-YYYY-MM-DD-<name>.md
     — append a '## Self-Review (Round N)' section.
+  Failing full run (only after a Step 6.7 failure): <output file>
 ")
 ```
 

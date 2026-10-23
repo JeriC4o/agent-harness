@@ -121,10 +121,10 @@ fi
 # across sessions hides the one session that produced every finding.
 per_session() {
   jq -s --arg sid "$(basename "${1%.jsonl}")" '
-    # Ignore any line whose kind this build does not know. There are five
-    # classes -- "call", "result", "turn", "verdict" and "agent-mark" -- and a
-    # future sixth must not silently join a count, so every reader below selects
-    # on kind by name rather than filtering anything out.
+    # Ignore any line whose kind this build does not know. There are six
+    # classes -- "call", "result", "turn", "verdict", "agent-mark" and "gate" --
+    # and a future seventh must not silently join a count, so every reader below
+    # selects on kind by name rather than filtering anything out.
     . as $all
     # POSITION, NOT TIME, and this is load-bearing rather than pedantic. A verdict
     # is appended immediately after the call that triggered it, so at one-second
@@ -353,8 +353,16 @@ if [ -n "$FOR" ]; then
         | map(select(. != null and . != "main"))
         | map(select($read_ok | index(.) == null)) ) as $unread
     | ( ($unread | length) == 0 ) as $every_read
+    | ( [ .[] | select(.kind == "gate") ] ) as $gate_rows
+    | ( [ $gate_rows[] | select(.signal == "repeat" or .signal == "contradiction") ] ) as $sig
     | $side[0]
       + { available: true, ledger: $led, transcript: $tr,
+          gates: { recorded: ($gate_rows | length),
+                   repeats: ([ $sig[] | select(.signal == "repeat") ] | length),
+                   contradictions: ([ $sig[] | select(.signal == "contradiction") ] | length),
+                   signals: [ $sig[] | { ts, gate, signal, agent_id, tool_use_id,
+                                         prior: { ts: .prior_ts, agent_id: .prior_agent_id,
+                                                  tool_use_id: .prior_tool_use_id } } ] },
           # An id the transcripts do not account for is reported, never absorbed:
           # on a LIVE session the most recent call has no transcript record yet,
           # and a reader that quietly folded those into "main" would invent an
@@ -401,6 +409,7 @@ if [ -n "$FOR" ]; then
     "  \(.calls) call(s), \(.turns) turn marker(s), \(.verdicts) verdict(s)",
     "  calls: \(.results.ok) ok, \(.results.failed) failed" +
       (if .results.unknown > 0 then ", \(.results.unknown) with no outcome recorded" else "" end),
+    "  gates: \(.gates.recorded) recorded, \(.gates.repeats) repeat(s), \(.gates.contradictions) contradiction(s)",
     ( .attribution
       | "  by agent: " + ( [ .by_agent | to_entries[] | "\(.key)=\(.value)" ] | join(", ") )
         # The benign gloss is CONDITIONED on the census being complete, and it

@@ -19,7 +19,7 @@ What IS reviewable is a sentence **in** the tree that puts a load-bearing rule o
 
 **Presumption of guilt.** Your job is to find problems before the user does.
 
-APPROVE is only issued if you **actively** checked every checklist item and found no violations — not "didn't notice anything bad."
+APPROVE is only issued if every checklist item was either **actively** swept this round and found clean, or carried with a matching recomputed digest — not "didn't notice anything bad."
 
 Every suspicion — investigate via a path-filtered search + Read; don't guess.
 
@@ -28,14 +28,16 @@ A passing test doesn't mean it's correct. **Actually revert the production fix a
 ## Instructions
 
 1. Read `AGENTS.md` — current project rules.
-2. Read the progress file (path passed in prompt) — find `base_commit` and current round. Verify required canonical fields (`current_step`, `last_passed_gate`, `Decisions log` section) are PRESENT per `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`. Don't review their content — their lifecycle is the calling skill's responsibility. Three carve-outs: a `[REDLINE <key>]` marker is honoured (step 5), `## Criterion checks (Round N)` IS read for content, and `## Design-review notes` IS read for content — it is the only record of the GO verdict's notes.
+2. Read the progress file (path passed in prompt) — find `base_commit` and current round. Verify required canonical fields (`current_step`, `last_passed_gate`, `Decisions log` section) are PRESENT per `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`. Don't review their content — their lifecycle is the calling skill's responsibility. Four carve-outs: a `[REDLINE <key>]` marker is honoured (step 5), `## Criterion checks (Round N)` IS read for content, `## Design-review notes` IS read for content — it is the only record of the GO verdict's notes — and your own latest `### Checklist ledger` IS read for content.
 3. Get the diff: `git diff <base_commit> HEAD` for committed work, or `git diff main` when the branch carries no commits yet and everything is still in the working tree. Either form can come back EMPTY at rc=0 — a review that passes on nothing is the failure mode here, so sanity-check the diff is non-empty before reviewing.
 4. Read spec — only `## Acceptance Criteria`.
 5. Read design doc — architecture and decomposition. **An item carrying a `**[REDLINE <key>]**` marker is SETTLED — corrected once already in this task, not re-raised in this round or a later one, whatever key it carries.** You are not asked to read the redline log, nor to reconcile it against the design.
-6. Run through the checklist below.
-7. Count existing `## Self-Review` sections in the progress file to determine round N.
-8. **Append** a `## Self-Review (Round N)` section to the progress file (do not replace existing sections).
-9. Output your verdict to stdout as well.
+6. Count existing `## Self-Review` sections in the progress file to determine round N.
+7. Run through the checklist below. **Round 1 sweeps every item. A later round runs the ledger script's `plan`, sweeps exactly the rows it marks plus every applicable item over each `new-file` path, and carries the rest** — unit, scope, rule, triggers and verbs: [`${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md`](${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md).
+8. **Append** a `## Self-Review (Round N)` section to the progress file (do not replace existing sections), ending in its ledger, then run `seal`.
+9. Output your verdict to stdout as well, with one line giving the swept and carried item totals.
+
+**A failing final run.** When the prompt names the output file of a failing full check run, read it and record one `major` finding per failing check, citing the check and that file. Every ledger row whose scope is unchanged carries, so the round stays narrow.
 
 ## Checklist
 
@@ -172,6 +174,10 @@ Append **exactly** this section:
 |---|-----------|----------|---------|--------|
 | 1 | path/Foo:42 | major | Description | ⬜ Open |
 | 2 | path/Bar:10 | nit | Unused import | ⬜ Open |
+
+### Checklist ledger
+
+(header fields and table per ${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md § The ledger; from round 2, the `objections` row)
 ```
 
 Every `File:line` is **re-derived, never computed** — cite what `grep -n '<the actual token>' <file>` prints against the tree under review, and anchor on the executable statement rather than the doc-comment describing it. Never reach a line number by adding a delta to a pre-edit one (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling).
@@ -194,10 +200,10 @@ no obligation, and this contract restates none of it.
 - On REJECT — every violation must have exact file + line.
 - Maximum 10 findings per round. If more, list the 10 most severe.
 - Don't invent problems. If unsure, read the code before raising a finding.
-- **On round > 1, re-verify against the RULE FILE, not against the previous round's findings.** An APPROVE cements whatever bar the prior round happened to set, and the drift is invisible from inside the loop — round 2 checks compliance with round 1 rather than with `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, and only an outside reader ever breaks the cycle. Where a rule has a strict clause and a lenient one, apply the STRICT one. Re-read the cited rule text each round; do not carry it forward from memory or from the earlier round's summary.
+- Where a rule has a strict clause and a lenient one, apply the STRICT one.
 - On re-review (round > 1):
   - `✅ Fixed` items: do not re-raise unless the fix is incorrect or incomplete.
   - `⚠️ Objected` items: evaluate the rationale — do not accept blindly.
   - Focus on remaining `⬜ Open` items plus anything newly introduced.
 - **For a prose deliverable (analysis / report / research doc), a passing AC-verification grep is necessary, NOT sufficient.** Structural checks (heading present, row counts equal, keyword present, negative-keyword absent) test SHAPE, never TRUTH — a document can satisfy every one and still be wrong. Budget a separate claim-verification pass: re-derive each load-bearing claim FROM SOURCE, not from the document's own citations. And apply the tagged-claim rule (`${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` § Rules): `[inferred]` / `[unverified]` / `[out of scope]` may not carry a verdict — if a conclusion or headline rests solely on a tagged claim, that is a `major`, however honestly the tag was written.
-- **Reconcile every green verdict against evidence that it ran.** An affirmative-looking result proves nothing until you have shown the thing you care about was actually exercised. For the test gate, the exit status is NOT the gate — parse the OUTPUT per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Reading a test result](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result) and confirm all four criteria there. Prove SELECTION by running the filtered suite for real and matching its reported count against a counted number of test methods; a dry-run/list flag is weaker evidence, because a list mode that errors can still exit 0. A reported pass count can also include non-test suites (lint, dependency checks), so a module can report a healthy count having run ZERO of the tests you care about — confirm WHICH tests ran. If the author piped the run through `tail`/`grep`, the skip/selection criteria could not have fired at all — piped output usually drops those lines — so an unpiped re-run is required before accepting the gate. For any grep/lint gate expected to be empty, confirm the tool actually saw the files (check for a `No files matched` warning) or run a control that MUST produce output. **A token-authed CLI returning empty with exit 0 is the same class** — a `curl -sf … | jq` wrapper swallows 4xx into empty output, so "no comments / no data / broken resource" from such a tool is never ground truth: probe the raw endpoint with `curl -s -o /dev/null -w "HTTP %{http_code}\n"` before drawing the conclusion.
+- **Reconcile every green verdict against evidence that it ran.** An affirmative-looking result proves nothing until you have shown the thing you care about was actually exercised. For the test gate, the exit status is NOT the gate — parse the OUTPUT per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Reading a test result](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result) and confirm all four criteria there. Prove SELECTION by running the filtered suite for real and matching its reported count against a counted number of test methods; a dry-run/list flag is weaker evidence, because a list mode that errors can still exit 0. A reported pass count can also include non-test suites (lint, dependency checks), so a module can report a healthy count having run ZERO of the tests you care about — confirm WHICH tests ran. If the author piped the run through `tail`/`grep`, the skip/selection criteria could not have fired at all — piped output usually drops those lines — so an unpiped re-run of the touched-scope checks is required before accepting the gate. Re-run only then, or when `last_passed_gate` carries no gate-record digest equal to the current tree's: a run the gate record stamped over the tree under review already shows it ran. Re-run scoped checks, never the full list ([`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md)). For any grep/lint gate expected to be empty, confirm the tool actually saw the files (check for a `No files matched` warning) or run a control that MUST produce output. **A token-authed CLI returning empty with exit 0 is the same class** — a `curl -sf … | jq` wrapper swallows 4xx into empty output, so "no comments / no data / broken resource" from such a tool is never ground truth: probe the raw endpoint with `curl -s -o /dev/null -w "HTTP %{http_code}\n"` before drawing the conclusion.

@@ -38,7 +38,12 @@ import sys,re,pathlib
 d=pathlib.Path(sys.argv[1])
 a=d/'AGENTS.md'; t=a.read_text()
 t=t.replace('| `%BUILD_CMD%` | Compile the changed module | `%FILL_ME%` |','| `%BUILD_CMD%` | Compile the changed module | `make build` |')
-t=t.replace("| `%TEST_CMD%` | Run a module's tests (+ the filter syntax for one test) | `%FILL_ME%` |","| `%TEST_CMD%` | Run a module's tests | `make test` |")
+t=t.replace("| `%TEST_CMD%` | Run the checks a touched path selects — the narrowing form"
+            " (+ the filter syntax for one test) | `%FILL_ME%` |","| `%TEST_CMD%` | Run the selected checks | `make test` |")
+t=t.replace('| `%FULL_CHECK_CMD%` | Run the full check list — once, after review approves, never inside a loop'
+            ' | `%FILL_ME%` |','| `%FULL_CHECK_CMD%` | Run the full list | `make check` |')
+t=t.replace('**Path rule:** `%FILL_ME%`','**Path rule:** `a touched path selects its module`')
+t=t.replace('**Selection flag:** `%SELECTION_FLAG%`','**Selection flag:** `none`')
 t=t.replace('| `%FORMAT_CMD%` | Auto-format changed files (NOT a gate) | `%FILL_ME%` |','| `%FORMAT_CMD%` | Auto-format changed files | `make fmt` |')
 t=t.replace('| `%LINT_CMD%` | Lint as the gate (exits non-zero on violations) | `%FILL_ME%` |','| `%LINT_CMD%` | Lint as the gate | `make lint` |')
 t=t.replace('| `<module-path>` | How a module is addressed on the command line | `%FILL_ME%` |','| `<module-path>` | How a module is addressed | `a directory` |')
@@ -51,6 +56,15 @@ PY
 out=$(audit "$Q"); rc=$?
 check "no blockers -> rc 0" "$rc" "0"
 hasnt "no placeholder finding" "$out" "unresolved placeholder"
+
+printf '\n== an unfilled selection flag is a placeholder, a label is not ==\n'
+S=$(fresh)
+cp "$Q/AGENTS.md" "$S/AGENTS.md"; cp "$Q/ai-docs/context.md" "$S/ai-docs/context.md"
+sed -i '' 's/^\*\*Selection flag:\*\* `none`/**Selection flag:** `%SELECTION_FLAG%`/' "$S/AGENTS.md"
+out=$(audit "$S"); rc=$?
+check "the selection flag left unfilled -> rc 1" "$rc" "1"
+has "  and it is named" "$out" "%SELECTION_FLAG%"
+hasnt "the full-list label in the table is not reported" "$(audit "$Q")" "%FULL_CHECK_CMD%"
 
 printf '\n== command liveness is checked, not assumed ==\n'
 R=$(fresh)

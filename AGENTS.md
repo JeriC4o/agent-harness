@@ -16,7 +16,8 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | Placeholder | Meaning | This project |
 |---|---|---|
 | `%BUILD_CMD%` | Compile the changed module | n/a — no build step |
-| `%TEST_CMD%` | Run a module's tests | `bash scripts/run-checks.sh` — the whole list below in one call. It takes no module path: a `<module-path>` argument is accepted, **ignored, and reported as ignored**, because this gate list is undivided by design |
+| `%TEST_CMD%` | Run the checks a touched path selects | `bash scripts/run-checks.sh --only <member>[,<member>…]` — members named as `--list` prints them; the selection comes from § Touched-scope selection below. A `<module-path>` argument is accepted, **ignored, and reported as ignored**: the selection is `--only`'s alone |
+| `%FULL_CHECK_CMD%` | Run the full check list, once, after review approves | `bash scripts/run-checks.sh` — the whole list below in one call |
 | `%FORMAT_CMD%` | Auto-format changed files | n/a |
 | `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4. `run-checks.sh` runs both as its `shell-syntax` and `manifests` members |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
@@ -70,10 +71,11 @@ is the same commands.
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
    `scripts/test-check-readme-update.sh`, `scripts/test-loop-metrics.sh`,
    `scripts/test-bin-of.sh`, `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh`,
+   `scripts/test-tree-digest.sh`, `scripts/test-review-ledger.sh`, `scripts/test-human-findings.sh`,
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
    `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-ledger-write.sh`,
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
-   `hooks/lib/test-plan-invariants-guard.sh`,
+   `hooks/lib/test-plan-invariants-guard.sh`, `hooks/lib/test-gate-record.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
    `skills/task/scripts/test-check-fix-plan.sh`,
@@ -148,6 +150,40 @@ walks an upgrade against a *pre-existing* install:
 installed on every machine that edits this repo, and a gate that cannot run is worse than one that is
 honestly absent. Run it when you have it.
 
+### Touched-scope selection
+
+Inside a loop only the members a touched path selects run, as `%TEST_CMD%`; the full list runs once after
+review approves, as `%FULL_CHECK_CMD%` — [`docs/check-scope.md`](docs/check-scope.md). This subsection sits
+after the delivery gates on purpose: it names members, and the span the `gate-inventory` member parses ends
+at that heading.
+
+**Path rule:**
+
+- A touched `<dir>/<name>.sh`, or one of its payload siblings, selects `<dir>/test-<name>.sh` where that
+  exists.
+- A touched suite selects itself.
+- Any touched `*.sh` selects `shell-syntax` and `untracked-shell`.
+- A touched manifest selects `manifests`.
+- Any touched `*.md` selects `references`.
+
+**Mapping** — derived by reading which files each member opens:
+
+| Touched path | Selects |
+|---|---|
+| `hooks/hooks.json` | `scripts/test-hook-behaviour.sh`, `propagation-arms`, `plan-invariants`, `scripts/test-plugin-manifest.sh` |
+| `hooks/hooks.json` | `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`, `hooks/lib/test-loop-verdict.sh` |
+| `hooks/hooks.json` | `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-skill-gate.sh`, `hooks/lib/test-plan-invariants-guard.sh` |
+| `docs/propagation.md` | `propagation-arms` |
+| `README.md` | `readme-update` |
+| `docs/plan-invariants.md`, any instruction file on the surfaces it examines, `hooks/lib/plan-invariants-guard.sh` | `plan-invariants` |
+| `AGENTS.md` § Build & Test, or a `test-*.sh` added or removed | `gate-inventory`, `scripts/test-run-checks.sh` |
+| `hooks/lib/loop-*`, `scripts/bin-of.jq`, `ai-docs/fixtures/loop-corpus/` | `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh` |
+| `scripts/tree-digest.sh` | `scripts/test-review-ledger.sh`, `hooks/lib/test-gate-record.sh` |
+| `hooks/lib/gate-pattern.sh` | `hooks/lib/test-gate-record.sh`, `scripts/test-hook-behaviour.sh`, `hooks/lib/test-harness-managed.sh` |
+| `templates/project/**` | `skills/harness-init/scripts/test-scaffold.sh`, `scripts/test-audit-project.sh` |
+
+**Selection flag:** `--only`
+
 ## VCS
 
 | Setting | Value |
@@ -210,6 +246,11 @@ the profile page, and the two have already fallen out of step once.
   shape. `scripts/check-references.sh` enforces the mirror, so this is a gate rather than a hope. The
   copy is what every scaffolded project receives, so a gap there reaches consumers who cannot see the
   implementation it describes.
+- **This repository's `AGENTS.md` § Build & Test and `templates/project/AGENTS.md` § Build & Test keep one
+  shape** — the placeholder rows, including `%FULL_CHECK_CMD%`, and the "Touched-scope selection"
+  subsection with its path rule, mapping and `**Selection flag:**` line. The method cannot name
+  `templates/`, so the obligation is recorded here, as the learning-log mirror's is: an edit to either
+  side's shape lands on the other in the same change. Nothing checks it mechanically.
 - **Any PR touching plugin-loaded content bumps `.claude-plugin/plugin.json`'s patch version.** The
   install cache is keyed by version, so an unbumped fix silently never reaches an installed copy. See
   [`README.md` § Releasing](README.md#releasing).
