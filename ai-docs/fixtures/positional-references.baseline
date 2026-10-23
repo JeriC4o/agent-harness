@@ -419,3 +419,5 @@ path-line	scripts/test-check-plan-convergence.sh	docs/plan-invariants.md:120
 path-line	scripts/test-check-plan-convergence.sh	docs/elsewhere.md:12
 path-line	scripts/test-check-plan-convergence.sh	docs/plugin-only.md:7
 prose-line	scripts/test-check-plan-convergence.sh	line 42
+path-line	scripts/test-review-ledger.sh	src/a.sh:1
+path-line	scripts/test-review-ledger.sh	src/b.sh:1
