@@ -47,17 +47,17 @@ What a gate's RESULT may be — the three outcomes, a could-not-run never readin
 being read rather than the exit status alone, and the standard a check whose judgement a model makes is held
 to instead of determinism — is in [`${CLAUDE_PLUGIN_ROOT}/docs/gate-outcomes.md`](${CLAUDE_PLUGIN_ROOT}/docs/gate-outcomes.md).
 
-> **AXIOM — Every instruction file Agent loads MUST stay below 40,000 chars.**
-> Harness-enforced soft cap; crossing it imposes per-invocation cost on every subagent spawn, `/task`, and review pass. Project-side **35,000-char early warning** gives one full `/task` cycle of headroom before the harness warning fires.
-> Applies to: `AGENTS.md`, `CLAUDE.md`, every `${CLAUDE_PLUGIN_ROOT}/skills/**/*.md`, every `${CLAUDE_PLUGIN_ROOT}/agents/**.md`, every `${CLAUDE_PLUGIN_ROOT}/rules/**/*.md`, every `${CLAUDE_PLUGIN_ROOT}/docs/*.md`, and the project's own `AGENTS.md` + `ai-docs/context.md`.
+> **AXIOM — Every instruction file loaded WHOLE when an agent starts MUST stay below 40,000 chars.**
+> Such a file is paid for on every subagent spawn, skill invocation or session start, which is what the cap prices. Applies to: `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, the project's `ai-docs/context.md`, this file, every `agents/*.md` and `skills/*/SKILL.md` under `${CLAUDE_PLUGIN_ROOT}` or the project's `.claude/`. The **35,000-char early warning** gives one full `/task` cycle of headroom; the harness repo's check list reddens at it, so a task closes with that headroom intact.
+> **A page reached only by link carries no per-file cap** — every other `${CLAUDE_PLUGIN_ROOT}/docs/**` page, a skill's `reference.md` and other supporting files, `${CLAUDE_PLUGIN_ROOT}/rules/**`. It is read when a rule that already states the obligation links to it, and it is where extracted rationale goes: capping it as well leaves an extraction nowhere to land. Keep it sectioned and link to an anchor, not to the page.
 >
-> | If `wc -c <file>` reports... | Action |
+> | If `wc -m <file>` reports, for a file loaded whole... | Action |
 > |---|---|
-> | ≥ 40,000 chars | **`major`** — plan extraction / dedup for the next `/ai-audit` pass; extract verbose subsections into `docs/<topic>.md` reference pages with anchored links. |
+> | ≥ 40,000 chars | **`major`** — extract verbose subsections into a page reached by link, leaving an anchored link behind. |
 > | 35,000–39,999 chars | **`minor`** — proactive extraction pass; don't let the next `/task` push it over 40k. |
 > | < 35,000 chars | OK. |
 >
-> Quick scan, from the harness repo: `wc -c AGENTS.md CLAUDE.md skills/**/*.md agents/*.md rules/*.md docs/*.md`.
+> Quick scan, from the harness repo: `wc -m AGENTS.md CLAUDE.md ai-docs/context.md docs/agents-method.md agents/*.md skills/*/SKILL.md`; `bash scripts/check-instruction-size.sh` runs the same scan as a gate.
 
 ## Search
 

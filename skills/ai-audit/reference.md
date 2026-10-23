@@ -59,7 +59,7 @@ Per the official Claude Code docs:
 
 - **`SKILL.md` line count belongs to Checklist K, not here** — K.1 owns the soft target and the exemption index at `${CLAUDE_PLUGIN_ROOT}/docs/skill-size-exemptions.md`, and **the figure lives there alone**: a second copy of it on this line is how the two came to disagree, and Checklist B of this same list is "conflicting / duplicated rules". **This sentence sits in a THREE-member sync group** (`${CLAUDE_PLUGIN_ROOT}/docs/propagation.md`, the ai-audit group), which names them in this order: the Step 2.3 letter table in `SKILL.md`, these checklist detail bodies, and the `**Reference:**` footer letter range. A change that stops at one member leaves the old threshold live one file over, which is this very defect's own shape — so read the group off that table rather than off this sentence, and sweep all three. Checklist I keeps only what K does not cover: a **Subagent** file past ~500 lines with no sectioning, and the structural expectation that a long skill splits into a thin `SKILL.md` + reference file (`task`, `ai-audit`, `bugfix`, `interview` use this pattern).
 - Each skill directory contains exactly one `SKILL.md` (plus optional reference / scripts subdirectories).
-- AGENTS.md AXIOM: every file in the audited corpus stays under 40,000 chars; 35,000–39,999 is a `minor` warning band.
+- Method AXIOM: every file in the audited corpus that loads whole at agent start stays under 40,000 chars; 35,000–39,999 is a `minor` warning band. A page reached only by link carries no cap.
 
 ## Checklist J — Allow-list / permission consistency
 
@@ -124,7 +124,7 @@ A field added to the entry format without parallel coverage in all five targets 
 | 5 | **Pattern 5 (lock-step verbs)** — verb shape matches rule shape. Stick verbs on carrot rules / carrot verbs on stick rules → `major`. |
 | 6 | **Pattern 6 (link, don't duplicate)** — cross-surface duplicate rule with `[link]` to canonical sibling. | `minor` |
 | 7 | **Pattern 7 (extract verbose detail)** — body > 5KB and no extraction anchor in `ai-docs/` → `nit`. |
-| 8 | **Pattern 8 (file-size cap)** — every covered instruction file < 40,000 chars; 35,000–39,999 is `minor`. | see body |
+| 8 | **Pattern 8 (file-size cap)** — every instruction file that loads whole at agent start < 40,000 chars; 35,000–39,999 is `minor`. | see body |
 | 9 | **Anti-patterns table audit** — no row of the Anti-patterns table appears verbatim as a positive rule. | `major` |
 | 10 | **Cross-shape verbs** — carrot blocks must NOT use stick verbs; stick blocks must NOT use carrot verbs. | `major` |
 | 11 | **Compaction-recovery callout consistency** — role-aware presence of the locked invariant tiers across the callout-carrying skills, whose population is DERIVED (see detail note below). | `major` |
@@ -163,11 +163,9 @@ A missing Tier-1 or Tier-2 invariant, or an invented variant of either, is `majo
 Detection mechanism:
 
 ```bash
-wc -c AGENTS.md CLAUDE.md ${CLAUDE_PLUGIN_ROOT}/skills/**/*.md ${CLAUDE_PLUGIN_ROOT}/agents/*.md \
-      ${CLAUDE_PLUGIN_ROOT}/rules/**/*.md \
-      ${CLAUDE_PLUGIN_ROOT}/docs/code-style.md ${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md ai-docs/context.md \
-      ${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md ${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md \
-      ${CLAUDE_PLUGIN_ROOT}/docs/workflow.md ${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md
+wc -m AGENTS.md CLAUDE.md CLAUDE.local.md ai-docs/context.md ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md \
+      ${CLAUDE_PLUGIN_ROOT}/agents/*.md ${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md \
+      .claude/agents/*.md .claude/skills/*/SKILL.md
 ```
 
 | Reported size (chars) | Finding | Severity |
@@ -176,7 +174,7 @@ wc -c AGENTS.md CLAUDE.md ${CLAUDE_PLUGIN_ROOT}/skills/**/*.md ${CLAUDE_PLUGIN_R
 | `35,000–39,999` | `<path>: <count> chars — early warning (≥ 35,000)` | `minor` (**actionable** — present extraction plan in same pass) |
 | `≥ 40,000` | `<path>: <count> chars — AXIOM violation (≥ 40,000)` | `major` |
 
-The 35,000–39,999 band is actionable, NOT a passive heads-up. Recurring misclassification: large instruction files (e.g. AGENTS.md around 36k chars) get tagged "Heads-up surfaced — no fix this pass" and extraction is deferred. When the band fires, propose a concrete extraction plan in the same `/ai-audit` pass — list candidate verbose subsections + target `ai-docs/<topic>.md` paths + the anchored pointers to leave behind — and ask the user to approve via the SKILL.md Step 2.5 `minor` rule. The point of the band (separate from the 40k hard cap) is to give one full `/task` cycle of headroom; deferring to "next `/ai-audit`" wastes that headroom.
+The 35,000–39,999 band is actionable, NOT a passive heads-up. Recurring misclassification: large instruction files (e.g. AGENTS.md around 36k chars) get tagged "Heads-up surfaced — no fix this pass" and extraction is deferred. When the band fires, propose a concrete extraction plan in the same `/ai-audit` pass — list candidate verbose subsections + the page reached by link each moves to + the anchored pointers to leave behind — and ask the user to approve via the SKILL.md Step 2.5 `minor` rule. The point of the band (separate from the 40k hard cap) is to give one full `/task` cycle of headroom; deferring to "next `/ai-audit`" wastes that headroom.
 
 ## Checklist N — Bidirectional `## Patterns` ↔ `Kind: validation` coherence
 

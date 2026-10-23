@@ -147,7 +147,7 @@ freely while acting on the file in front of you; never let one travel into the e
 | F | Hooks (`${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`) — event names, matchers, exit codes, env-var quoting |
 | G | `propagation.md` coherence — sync groups intact; exemptions replicated everywhere |
 | H | Documentation conformance pointers — `doc-convention.md` references resolve; section order matches |
-| I | File-size & structure — a Subagent file > ~500 lines without sectioning; 40,000-char cap not crossed. **`SKILL.md` line count belongs to K**, which owns the soft target and the exemption index |
+| I | File-size & structure — a Subagent file > ~500 lines without sectioning; 40,000-char cap not crossed by a file that loads whole at agent start. **`SKILL.md` line count belongs to K**, which owns the soft target and the exemption index |
 | J | Allow-list / permission consistency — `allowed-tools` covered by `permissions.allow`; no dead entries |
 | K | Skill-directory layout — oversized SKILL.md, multi-consumer supporting files, inline-script extraction candidates |
 | L | Learning-Log field coherence — every Entry-format field covered in all five mandatory locations; declared-enum fields (`Kind:`) additionally value-conformant across every log entry in the union (`ai-docs/learnings.md` + `ai-docs/learnings/*.md`) |
@@ -182,7 +182,7 @@ Show user a numbered list of findings with proposed fixes:
 - `blocker` / `major`: ask user to confirm before applying.
 - `minor` / `nit`: may apply autonomously if mechanical and obvious; otherwise ask.
 
-> **File-size sub-check (35,000–39,999 char band) is ACTIONABLE `minor`, not passive heads-up.** Recurring misclassification: large instruction files (e.g. AGENTS.md at ~36k chars) get tagged "Heads-up surfaced (no fix this pass)" and extraction is deferred. The early-warning band exists specifically to give one full `/task` cycle of headroom before the file crosses 40k. Treat the band as actionable: present an extraction plan (which verbose subsections move to which `ai-docs/<topic>.md` reference page, with anchored pointer left behind) and ask the user to approve per the `minor` rule above. Do NOT defer to "next `/ai-audit`" — that wastes the headroom.
+> **File-size sub-check (35,000–39,999 char band) is ACTIONABLE `minor`, not passive heads-up.** Recurring misclassification: large instruction files (e.g. AGENTS.md at ~36k chars) get tagged "Heads-up surfaced (no fix this pass)" and extraction is deferred. The early-warning band exists specifically to give one full `/task` cycle of headroom before the file crosses 40k. Treat the band as actionable: present an extraction plan (which verbose subsections move to which page reached by link, with an anchored pointer left behind) and ask the user to approve per the `minor` rule above. Do NOT defer to "next `/ai-audit`" — that wastes the headroom.
 
 Apply approved fixes via `Edit` / `Write`. Write a new entry to `ai-docs/learnings/<username>-<branch>.md` ([§ Target file](${CLAUDE_PLUGIN_ROOT}/docs/templates/learnings-entry-format.md#target-file)) per AGENTS.md "Learning Log" format **only if** the audit revealed a *new* class of mistake worth tracking. New entries never go into the archive.
 

@@ -53,7 +53,7 @@ git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 \
   || { printf 'check-method-purity: cannot run -- %s is not a git working tree\n' "$ROOT" >&2; exit 2; }
 
 OUT=$(python3 -B -c '
-import hashlib, os, re, subprocess, sys
+import fnmatch, hashlib, os, re, subprocess, sys
 
 root = sys.argv[1]
 def listed(*extra):
@@ -84,10 +84,18 @@ STACK = [(re.compile("(?i)" + EDGE % "|".join(WORDS)), "stack name"),
          (re.compile(r"@Suppress\w*|@Test\b|\bIllegal\w*Exception\b|`(?:require|check)\("), "language syntax"),
          (re.compile(r"(?<![\w./*-])[\w./*-]+\.(?:kts?|java|scala|rb|rs|py|go|tsx?|jsx?|cs|swift|php)\b"), "source path")]
 
-# A path naming a file this tree itself holds is harness tooling (a python
-# payload, say), not the source of a consuming project.
+# A path naming a file this tree itself holds, or a glob rooted in one of its
+# directories that matches such a file, is harness tooling (a python payload,
+# say), not the source of a consuming project. A bare `*.ext` glob is never
+# exempt: it names a language, whatever the tree happens to hold.
 def own(token):
     token = token.lstrip("./")
+    if "*" in token:
+        lead = token[:token.index("*")]
+        if "/" not in lead:
+            return False
+        base = lead.rsplit("/", 1)[0] + "/"
+        return any(p.startswith(base) and fnmatch.fnmatchcase(p, token) for p in tracked)
     return any(p == token or p.endswith("/" + token) for p in tracked)
 
 def is_method(p):
