@@ -68,8 +68,9 @@ round on an open pull request, which sends a real defect to the bugfix workflow.
 
 The gate record stamps every covered gate run with the tree digest and flags a **repeat** (the same gate
 with the same arguments over the same tree) or a **contradiction** (the same gate over the same artefact
-and tree with the opposite verdict). The flag is a ledger row first; that the hook's line reaches a
-subagent's own context has not been observed, so a reviewer cannot count on being told. A reviewer that
+and tree with the opposite verdict). The flag is a ledger row, and the hook's line also reaches the
+calling agent's own context, a subagent's included, after a pass or a failure (observed on the installed
+0.1.53 build). A reviewer that
 re-runs a scoped check over the tree the author's run was stamped against gets a repeat — **expected, not
 a defect**; the reviewer re-runs only when the author's run was piped or `last_passed_gate` carries no
 digest equal to the current tree's. A scoped pass followed by a failing full run over an unchanged tree is
