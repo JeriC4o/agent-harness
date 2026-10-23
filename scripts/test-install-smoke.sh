@@ -70,7 +70,13 @@ case "$out" in
   *"failed to load"*) bad "no load error (got: $(printf '%s' "$out" | grep -i 'Error:' | head -1))" ;;
   *)                  ok "no load error" ;;
 esac
-has "installed version matches the manifest" "$out" "$VERSION"
+# The text listing prints the folder's own manifest version for a local-folder
+# marketplace, which here is $ROOT itself, so only the recorded `version` in
+# the JSON listing can disagree with the manifest.
+rec=$(claude plugin list --json 2>/dev/null \
+  | jq -r --arg id "${NAME}@${MARKET}" '.[] | select(.id == $id) | .version')
+if [ "$rec" = "$VERSION" ]; then ok "installed version matches the manifest"
+else bad "installed version matches the manifest (want [$VERSION], recorded [$rec])"; fi
 
 printf '\n== every component is present, not just the plugin ==\n'
 det=$(claude plugin details "$NAME" 2>&1)
@@ -79,7 +85,7 @@ SKILLS=(task bugfix interview context-reset project-review pr-merged redline-fol
 for comp in "${SKILLS[@]}"; do
   case "$det" in *"$comp"*) ok "skill: $comp" ;; *) bad "skill: $comp missing from the inventory" ;; esac
 done
-AGENTS=(spec-writer design design-review self-review review-findings self-improve learnings-escalation-audit inspector fix-scout fix-apply)
+AGENTS=(spec-writer design design-review self-review review-findings self-improve learnings-escalation-audit inspector fix-scout fix-apply plan-convergence)
 for comp in "${AGENTS[@]}"; do
   case "$det" in *"$comp"*) ok "agent: $comp" ;; *) bad "agent: $comp missing from the inventory" ;; esac
 done
