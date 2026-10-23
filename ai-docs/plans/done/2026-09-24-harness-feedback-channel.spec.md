@@ -135,7 +135,7 @@ consuming project, none of them had a route home.
   |---|---|---|
   | `scripts/session-events.sh` | PASSES | the intended target is admitted |
   | `myproject/scripts/deploy-prod.sh` | **PASSES — leaked** | a PROJECT path is admitted; the defect |
-  | `server/core/Merge.kt` | REFUSED | **negative control**: the check is still refusing, so the other two verdicts are not a blanket pass |
+  | `gizmo/panel/Flange` | REFUSED | **negative control**: the check is still refusing, so the other two verdicts are not a blanket pass |
   The unanchored alternation is the cause. A tightening is therefore **required for the mode to be
   admissible at all**. The named candidate is: additionally require the named file to **exist under
   `${CLAUDE_PLUGIN_ROOT}`**, converting the permit from a name match into an existence check. Design
@@ -186,7 +186,7 @@ consuming project, none of them had a route home.
 | AC2 | In the new mode, every project-identifier refusal still fires: project directory name, registry `name`, ticket prefix, a `KEY-123`-shaped token, an `ai-docs/context.md` entity heading, a `deny-extra.txt` term, and a URL host each produce exit 1. Asserted per class by an observed refusal (positive control), not spot-checked. |
 | AC3 | In the new mode, a report missing any of Symptom / Repro / Expected / Surface / Evidence is REFUSED with a `structure` finding. |
 | AC4 | The default mode's existing behaviour is unchanged: `scripts/test-promotion.sh`'s pre-existing cases pass untouched. |
-| AC5 | **The permit-leak fixture triple.** In the new mode the gate returns: `scripts/session-events.sh` → PASS; `myproject/scripts/deploy-prod.sh` → **REFUSED** (the leak measured under the naive widening is closed); `server/core/Merge.kt` → REFUSED (negative control — proves the first row is not a blanket pass). All three asserted in `scripts/test-promotion.sh`. |
+| AC5 | **The permit-leak fixture triple.** In the new mode the gate returns: `scripts/session-events.sh` → PASS; `myproject/scripts/deploy-prod.sh` → **REFUSED** (the leak measured under the naive widening is closed); `gizmo/panel/Flange` → REFUSED (negative control — proves the first row is not a blanket pass). All three asserted in `scripts/test-promotion.sh`. |
 | AC6 | `scripts/test-promotion.sh` covers AC1–AC5 and exits 0. |
 | AC7 | The skill writes the drafted report to a local file under `ai-docs/feedback/` in the consuming project and runs the gate against it before showing it to the user. No issue is filed without the user's explicit approval of the shown text. |
 | AC8 | When the gate refuses the draft, the skill aborts without retrying, prints the gate's offending term, and leaves the local file on disk. No rewrite-and-recheck loop exists in the skill's instructions. |

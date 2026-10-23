@@ -139,7 +139,8 @@ untracked-shell|fn:untracked_member
 gate-inventory|fn:inventory_member
 readme-update|sh:scripts/check-readme-update.sh
 propagation-arms|sh:scripts/check-propagation-arms.sh
-plan-invariants|sh:scripts/check-plan-invariants.sh'
+plan-invariants|sh:scripts/check-plan-invariants.sh
+method-purity|sh:scripts/check-method-purity.sh'
 
 member_names()   { printf '%s\n' "$MEMBERS" | sed 's/|.*//'; }
 member_scripts() { printf '%s\n' "$MEMBERS" | sed -n 's/^[^|]*|sh:\(..*\)$/\1/p'; }

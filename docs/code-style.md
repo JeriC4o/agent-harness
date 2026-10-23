@@ -45,7 +45,7 @@ Numeric literals with semantic meaning → a named constant in the language's co
 
 ```text
 DEFAULT_RETRY_COUNT = 3
-LANGUAGE_CACHE_SIZE = 1024
+GIZMO_CACHE_SIZE = 1024
 
 withRetry(3) { ... }   // ❌ what does 3 mean?
 cache(1024) { ... }    // ❌ what does 1024 mean?

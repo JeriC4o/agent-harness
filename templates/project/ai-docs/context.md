@@ -68,6 +68,7 @@ often confused with, and where it lives in code.
 | Linter (the gate) | `%LINT_CMD%` |
 | Source root / test root | `%SRC_ROOT%` / `%TEST_ROOT%` |
 | Test-file mapping | `<Name>` → `<Name>Test` under the test root, same package/module |
+| Doc-comment tool | e.g. "`<tool>`; its spelling of the parameter, return, error, sample and see-also sections" |
 
 Idiom rules that only make sense for this project's language (stdlib preferences, DI conventions,
 migration tool, metrics library) belong here, not in the harness's language-agnostic

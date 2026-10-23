@@ -124,7 +124,7 @@ section carries the "is that green real?" detail.
 >
 > **A filter that matches nothing reports success.** Before trusting a filtered run as evidence, prove the
 > runner SELECTED the tests: match the reported count against a counted number of test methods (three
-> `@Test`s in the file → `OK: 3`). A dry-run/list flag is weaker evidence than a real filtered run — list
+> test cases in the file → `OK: 3`). A dry-run/list flag is weaker evidence than a real filtered run — list
 > modes fail in their own ways, and a list that errors can still exit 0.
 >
 > **A positive control must exercise the exact command shape it licenses.** Proving that a wildcard filter

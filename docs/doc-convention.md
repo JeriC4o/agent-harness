@@ -17,14 +17,14 @@ If the only thing a doc-comment would say is recoverable from the name and types
 
 ## Summary line
 
-- **Third-person present indicative:** `Returns the language map`, `Creates a new review request`, `Validates the diff signature`.
-- **Never imperative:** ❌ `Return the language map`, ❌ `Create a new review request`.
+- **Third-person present indicative:** `Returns the cached gizmo`, `Creates a new flange`, `Validates the sprocket checksum`.
+- **Never imperative:** ❌ `Return the cached gizmo`, ❌ `Create a new flange`.
 
 ## Section order
 
 > **This section governs SHAPE, never COVERAGE.** It fires only once § *When a doc-comment is written* (`:5-16` above) has already established that this doc-comment should exist at all. Nothing below ever mandates ADDING a doc-comment, a `@param`, or a `@return` to a symbol that does not warrant one — "you are missing `@param`" is a finding ONLY on a doc-comment that is itself warranted. **If you arrived here from a citation, read `:5-16` before acting on it:** a formatting rule ("if you write X, format it thus") is not a mandate ("write X"), and the difference is stated in the preamble that a section-level citation skips. (Recurrence: a review finding cited item 3 below, thirteen `@param` lines were added to doc-comments that did not warrant one, and the reviewer rejected the round twice.)
 
-When a doc-comment carries sections, the order is fixed:
+When a doc-comment carries sections, the order is fixed. Each section is named by a common tag spelling; the project's doc tool decides the real one, recorded in its `ai-docs/context.md` § Language profile:
 
 1. Summary (one line).
 2. Free-form prose (optional).
@@ -42,7 +42,7 @@ Only the canonical headings above are allowed. No stray `# Notes`, `# Implementa
 
 A public function that asserts a precondition, throws an argument/state exception, indexes into a collection without bounds-checking, or performs arithmetic that can overflow on plausible inputs — MUST document the exception in `@throws`.
 
-`@throws IllegalArgumentException` on a one-line getter that asserts a non-blank name is required, not optional. This overrides § *When a doc-comment is written*'s default-to-NONE for this one case: the doc-comment must be created even where the fn carries none, and it is the sole carve-out from the rule that a reviewer's request to ADD a comment is a suggestion the author may decline (`${CLAUDE_PLUGIN_ROOT}/agents/self-review.md § Requests to ADD a comment`).
+Documenting the argument error raised by a one-line getter that asserts a non-blank name is required, not optional. This overrides § *When a doc-comment is written*'s default-to-NONE for this one case: the doc-comment must be created even where the fn carries none, and it is the sole carve-out from the rule that a reviewer's request to ADD a comment is a suggestion the author may decline (`${CLAUDE_PLUGIN_ROOT}/agents/self-review.md § Requests to ADD a comment`).
 
 **`@throws <Type>` is a TYPE assertion — verify the hierarchy, never write it from recall.** The mandate above is discharged by naming the type that actually propagates, not a plausible one. For an exception originating in a framework or dependency, confirm the type against the branch's OWN resolved dependency versions before naming it — a version cached by an unrelated module is a different version, and verifying the wrong one is the exact failure this rule exists to prevent. A sibling type reads like a subtype and is the common error: documenting a supertype the real failure does not extend is a false contract that invites a wrong `catch`. When the honest answer is "everything propagates", write prose instead of a type tag; naming one type reads as an exhaustive contract. When the design document already contains the analysis, the doc-comment MUST agree with it — contradicting your own cited proof is worse than saying nothing. A doc-only fix round is NOT low-risk and does not warrant a lower bar.
 
@@ -51,13 +51,13 @@ A public function that asserts a precondition, throws an argument/state exceptio
 `@return` is required when:
 
 - The return type is a multi-shaped result.
-- `null` carries semantic meaning (a `Foo?` whose null encodes "not found" vs "deleted").
+- `null` carries semantic meaning (a nullable result whose null encodes "not found" vs "deleted").
 - The return is a collection whose ordering / sortedness / nullability of elements is invariant.
 
 `@return` is NOT required for:
 
 - Single-shape returns where the type name is self-explanatory.
-- Unit / `void` return types.
+- Return types that carry no value.
 
 ## Code fences
 
