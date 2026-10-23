@@ -26,10 +26,10 @@ _Updated: YYYY-MM-DD_
 
 <!-- Compaction-recovery / re-entry fields (required for code-side orchestrators): -->
 **current_step:** <Step / Phase the orchestrator was last at>
-**last_passed_gate:** <gate command | ISO-8601 UTC timestamp or `(not measured)` | commit hash, or `(none yet)` for the whole field>
+**last_passed_gate:** <gate command | ISO-8601 UTC timestamp or `(not measured)` | commit hash | tree digest, or `(none yet)` for the whole field>
 
 <!-- Optional re-entry fields: -->
-**parent_skill:** </task | /project-review>    <!-- omit unless nested -->
+**parent_skill:** </task | /project-review | post-push>    <!-- omit unless nested -->
 **entry_args:** <original $ARGUMENTS at skill entry>            <!-- required for /task; optional elsewhere -->
 
 <!-- /task-specific fields: -->
@@ -127,7 +127,7 @@ the pass that folds the note in, so a blank there is an unfolded note. -->
 names only the step-specific value for `current_step`; the other three are owed at every one of them,
 and an instruction that enumerates fewer is naming its own variable, not closing the set.
 | post-push fix round (CI fix / reviewer nit on an open PR) | All `/task` fields PLUS a per-round `## Fix cycle round M` section, and **PR** | — |
-| `/bugfix` | current_step, last_passed_gate, parent_skill (when invoked from `/task`), entry_args, Actual behaviour, Expected behaviour, Confirmed by user, Decisions log | — |
+| `/bugfix` | current_step, last_passed_gate, parent_skill (when nested: `/task` or `post-push`), entry_args, Actual behaviour, Expected behaviour, Confirmed by user, Decisions log | — |
 
 ## Lifecycle by field
 
@@ -145,14 +145,14 @@ The fail-loud step gate. Every step boundary REWRITES this field. Subagents read
 
 ### `last_passed_gate`
 
-Three-field format: `<gate command> | <ISO-8601 UTC timestamp or `(not measured)`> | <commit hash>`.
+Four-field format: `<gate command> | <ISO-8601 UTC timestamp or `(not measured)`> | <commit hash> | <tree digest>`.
 
-Example: `%TEST_CMD% common/http-client | 2026-05-25T11:55:00Z | a3f9c1d`.
+Example: `%TEST_CMD% common/http-client | 2026-05-25T11:55:00Z | a3f9c1d | 5a4315ee4394023ba2ac799630424381dab138a0`.
 
-Rewritten only when a gate passes. The hash lets a re-entering Subagent verify the gate ran against the current tree (or detect that work happened since).
+Rewritten only when a gate passes. The digest is copied from the gate record's line for that run; a finalise step compares it with a fresh `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh`, and a difference means the run is owed again.
 
 > **AXIOM — the timestamp is MEASURED, never composed, and a field that demands a stamp does not entitle you to produce one.**
-> Measure first, read the output, THEN write — never batch the clock read into the same tool call as the write that consumes it, which guarantees the field is authored before the reading exists. Where no clock was read for the run, write `(not measured)` and say whose measurement the previous stamp was; **NEVER overwrite a measured stamp with an invented one.** Two recorded instances on one branch, the second inside a session handoff — the moment of lowest scrutiny and highest consequence, because every number in that document will be trusted by a session that cannot check it against a transcript it will not have. This field is the three-field format's whole justification: a fabricated command or hash is obvious on sight, while **a fabricated timestamp is indistinguishable from a real one**, so the field hardest to audit is the one that most needs measure-then-write.
+> Measure first, read the output, THEN write — never batch the clock read into the same tool call as the write that consumes it, which guarantees the field is authored before the reading exists. Where no clock was read for the run, write `(not measured)` and say whose measurement the previous stamp was; **NEVER overwrite a measured stamp with an invented one.** Two recorded instances on one branch, the second inside a session handoff — the moment of lowest scrutiny and highest consequence, because every number in that document will be trusted by a session that cannot check it against a transcript it will not have. This field is the four-field format's whole justification: a fabricated command or hash is obvious on sight, while **a fabricated timestamp is indistinguishable from a real one**, so the field hardest to audit is the one that most needs measure-then-write.
 
 ### `entry_args`
 
@@ -160,7 +160,7 @@ Written ONCE at file creation, read-only thereafter. The original `$ARGUMENTS` v
 
 ### `parent_skill`
 
-Written when the file is owned by a nested skill (`/bugfix` called from `/task` Step 8, `/context-reset` from any parent). The parent's compaction-recovery callout reads this to identify which orchestrator owns the file.
+Written when the file is owned by a nested skill (`/bugfix` called from `/task` or a post-push round's Step 4, `/context-reset` from any parent). The parent's compaction-recovery callout reads this to identify which orchestrator owns the file.
 
 ### `Issue` / `Spec` / `Design`
 
@@ -200,7 +200,7 @@ other source.
 
 ### `Self-Review (Round N)` sections
 
-Appended by the `self-review` Subagent. Count existing `## Self-Review` sections to determine N. Each round writes its full findings table — earlier round tables stay intact.
+Appended by the `self-review` Subagent. Count existing `## Self-Review` sections to determine N. Each round writes its full findings table, ending in a sealed `### Checklist ledger` (`${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md`) — earlier round tables stay intact.
 
 > **Anchor a new round at EOF, on unique text.** An empty findings-table header is identical in every round, so a patch keyed on it inserts Round N between an EARLIER round's header and its rows. Anchor on the file's final line(s), then verify the `## Self-Review (Round …)` headings run in ascending order before returning a verdict.
 

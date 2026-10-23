@@ -4,7 +4,7 @@ description: "Analyse a finished session for harness defects: loops, gates re-ru
 when_to_use: "Activate when the user asks why a session went in circles, where its effort went, or what the harness itself cost — and after a run that burned a review cap, re-ran a gate with no state change between runs, or spent several rounds on one finding. It reads a FINISHED session, so it is near-useless mid-task: the transcript it would read is the one still being written, and the loop it would find is the one still running. It proposes Learning Log entries and edits no instruction file. SKIP when the question is what the instructions SAY rather than what a run did (that is /ai-audit), when it is whether a diff is correct (that is self-review), and when nothing actually looped — a clean run has nothing to report and this pass is not free. PUT THE CALL TO THE USER rather than taking it on a hunch: it costs a full pass over a whole transcript."
 model: opus
 argument-hint: "[session.jsonl path, or omitted for the most recent session of this project]"
-allowed-tools: Read, Write, Edit, Glob, Grep, Bash(scripts/session-events.sh:*), Bash(scripts/trace-tokens.sh:*), Bash(scripts/loop-metrics.sh:*), Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(jq:*)
+allowed-tools: Read, Write, Edit, Glob, Grep, Bash(scripts/session-events.sh:*), Bash(scripts/trace-tokens.sh:*), Bash(scripts/loop-metrics.sh:*), Bash(scripts/human-findings.sh:*), Bash(ls:*), Bash(git branch:*), Bash(git status:*), Bash(jq:*)
 ---
 
 Reads what a session actually did and reports where the **harness** sent the agent in circles — as opposed
@@ -93,6 +93,14 @@ means nothing; the agent has a reading for it and reports it as a harness defect
 direction only** — zero recorded starts cannot separate "no subagent ran" from "the canary is not firing" —
 so a zero is never evidence that attribution is sound.
 
+**Pass `gates` too — it is the gate record's own count of wasted and inconsistent runs.** `recorded` is the
+number of covered gate runs, `repeats` the runs of one gate with the same arguments over an unchanged tree,
+`contradictions` one gate's opposite verdicts about one artefact over an unchanged tree, and `signals` one
+entry per firing with its time, gate, agent and the earlier invocation it matched. Neither signal blocked
+anything, and the row is the record of both. That the causing agent was told live is claimed for the main
+thread only — delivery to a subagent's own context has not been observed. The agent reports both counts
+and names each contradiction.
+
 **A tier-1 verdict row carries `settings.window_unit`, and a row without it is not the same row.** `window`
 changed meaning without changing shape: rows written before the call-counted window recorded a number of
 ledger LINES, rows after it record a number of CALLS. Comparing two `window` values across that line
@@ -101,6 +109,20 @@ not `null`** — the reader infers it from the row, because only a pre-change bu
 unit beside it and that build counted lines. `null` is reserved for a row with no window at all (tier 2,
 tier 3), so it means "no unit applies" rather than "unknown".
 
+## Step 1c: Findings a human raised on the session's pull request
+
+```bash
+jq -rn '[inputs | .gitBranch? // empty] | last // empty' <session.jsonl>
+${CLAUDE_PLUGIN_ROOT}/scripts/human-findings.sh --branch <that branch> --json
+```
+
+The transcript records the branch each entry ran on; the last one names the session's branch. The script
+counts, for the pull request whose head is that branch, each comment a person posted and each fix commit
+pushed after it opened — the closing fold, version bumps and merge commits excluded. A non-zero count is
+what the automated review let through. **rc 2 is a cannot-compute, never a zero**: no branch, no pull
+request, the site unreachable, the profile's version-bump line missing, or a push record that does not
+reach back to the opening. Put its reason in the `unavailable` list.
+
 ## Step 2: Judge — spawn the inspector
 
 ```
@@ -108,6 +130,7 @@ Agent(subagent_type="inspector", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/inspector.md and follow it exactly.
   Here are the signatures and the unavailable list: <paste the --signatures JSON>
   Here is the loop ledger for this session: <paste the --for JSON, or the unavailable record it returned>
+  Here is the human-raised count for its pull request: <paste the --branch JSON, or the reason it could not compute>
   The transcript is at <path>. Start from the signatures, then read the run where they point —
   by seq range, turn, or timestamp span. Do not read it front to back; it does not fit.
   Quote the run where the quote is the evidence; do not copy a credential into an entry.

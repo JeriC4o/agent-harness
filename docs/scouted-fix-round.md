@@ -114,7 +114,7 @@ A `FINDING` is a finding to act on — it goes into the round like any other, ne
 - attempt 2 — finding 5, row 1: the divergence named was <quoted reason>; re-fix dispatched
 ```
 
-Why that location rather than a counter in the gate: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Why the attempt count lives beside the plan](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#why-the-attempt-count-lives-beside-the-plan). **The bullet must NOT begin with `|`** — the gate reads any line in that section whose first non-space character is a pipe as a plan row, and one with the wrong cell count refuses the whole plan under `plan-row-malformed`. A leading `-` is invisible to that parser, a literal `|` in the quoted reason is then harmless, and the count is `grep -c '^- attempt '` over the section.
+Why that location rather than a counter in the gate: [§ Why the attempt count lives beside the plan](#why-the-attempt-count-lives-beside-the-plan). **The bullet must NOT begin with `|`** — the gate reads any line in that section whose first non-space character is a pipe as a plan row, and one with the wrong cell count refuses the whole plan under `plan-row-malformed`. A leading `-` is invisible to that parser, a literal `|` in the quoted reason is then harmless, and the count is `grep -c '^- attempt '` over the section.
 
 **Then record the loop, once, as it closes** — `check-fix-plan.sh record <progress-file> <iterations> <cost_tool_calls> <answer>`. It decides nothing and exits 0; it appends one verdict row carrying the loop's iteration count, its cost and the question's answer, which is what this loop's own retirement is read from. **All three arguments are required and none defaults:** a default would record a zero silently and the retirement rule would be read off a column of zeros — an absent figure is recoverable, a wrong one is not. **The cost unit is the number of orchestrator tool calls the loop consumed** (not wall-clock, not tokens), counted from the calls made for that loop and no others, which the attempt bullets make auditable. **`<answer>` is exactly one of `MATCH` or `DIVERGE`** — anything else is exit 2, and the word is written into the row rather than only checked, because a check whose input is discarded leaves no evidence it ran. A failed write never changes the round's outcome.
 
@@ -131,7 +131,7 @@ For each `⬜ Open` finding in the latest `## Self-Review (Round N)` section —
   - `nit` / `minor`: Subagent may object autonomously — write reason, mark `⚠️ Objected: <reason>`.
   - `major` / `blocker`: **surface to user first** before objecting. User must approve.
 
-After all findings are resolved, run gates (`%BUILD_CMD%`, `%TEST_CMD%`, `%FORMAT_CMD%` to format then `%LINT_CMD%` as the gate), update `.progress.md`, re-read the PR body via `gh pr view --json title,body` (edit only if it contradicts new commits), and resolve every fixed review thread per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § PR review comment resolution`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#pr-review-comment-resolution).
+After all findings are resolved, run gates (`%BUILD_CMD%`, the touched-scope checks over the round's touched paths per [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md) — never the full list, which runs once after review approves — `%FORMAT_CMD%` to format then `%LINT_CMD%` as the gate), update `.progress.md`, re-read the PR body via `gh pr view --json title,body` (edit only if it contradicts new commits), and resolve every fixed review thread per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § PR review comment resolution`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#pr-review-comment-resolution).
 
 ## Rationale moved out of the always-loaded step text
 
@@ -155,3 +155,11 @@ asserted against a tree that does not yet hold what it is about to write. The or
 between two workable sequences — one of them makes the assertion meaningless. The same assertion is why a
 corrective marking invocation COMPLETES the round's one pass rather than being a second one: the
 once-per-round bound is satisfied, not broken, by finishing a pass that did not land.
+
+## Why the attempt count lives beside the plan
+
+Three reasons, not one: the fix-plan gate recomputes from the tree on every invocation and holds no state
+between them; the progress file survives a compaction and a session restart, which is exactly when a cap
+is lost; and an attempt count written beside the plan it counts against is auditable by the same read that
+checks the plan. The format constraint that follows from the gate's parser is stated where the count is
+written, in [§ Step 11 — the scouted-plan sequence (recipe)](#step-11--the-scouted-plan-sequence-recipe).

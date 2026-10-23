@@ -116,10 +116,11 @@ and holds in every repo, which is why it carries no guard.
 | PostToolUse(Write\|Edit) | `sh-syntax-check` | |
 | PostToolUse(Bash) | PR-body-sync reminder | [guarded] |
 | PostToolUse(*), PostToolUseFailure(*) | `loop-result` | |
+| PostToolUse(Bash), PostToolUseFailure(Bash) | `gate-record` | |
 | Stop, SubagentStop | `loop-verdict` | |
 | SubagentStart | `loop-agent-mark` | |
 
-The ledger the last four write — its one unswallowed failure, its five record classes, and the view
+The ledger the last five write — its one unswallowed failure, its six record classes, and the view
 `/inspect` reads: [`${CLAUDE_PLUGIN_ROOT}/docs/loop-ledger.md` § The loop ledger](${CLAUDE_PLUGIN_ROOT}/docs/loop-ledger.md#the-loop-ledger).
 
 > **Not configured, but expected per project:** a `PostToolUse(Write|Edit)` formatter hook running

@@ -24,7 +24,7 @@ Two mechanical arms run over your diff after you return. Both compare it against
 2. Take **only** the rows whose disposition is `fix`. Leave every other row alone — see the table below.
 3. For each such row, read the target at its `file:line` before editing it. The anchor resolved when the gate ran; if it does not resolve for you, something moved between the two moments, and that is a stop, not a search.
 4. Apply the edit. Keep it inside the file the row names.
-5. Re-run the command(s) the plan's `**verification:**` field names, each as its own call, and read the full output of each.
+5. Re-run the command(s) the plan's `**verification:**` field names — the touched-scope checks for the files the round targets — each as its own call, and read the full output of each. Do not widen them to the full list; it runs once, after review approves.
 6. Return a hand-back naming every file you edited, every row you applied, and the verification result.
 
 ## Which rows you touch

@@ -142,7 +142,7 @@ jq -r '.hooks | to_entries[] | .key as $ev | .value[] | (.matcher // "-") as $m
        | .hooks | to_entries[] | [$ev, $m, (.key|tostring)] | @tsv' "$HOOKS" > "${WORK}/keys.tsv"
 TOTAL=$(wc -l < "${WORK}/keys.tsv" | tr -d ' ')
 DISTINCT=$(sort -u "${WORK}/keys.tsv" | wc -l | tr -d ' ')
-check "every hook command has a triple" "$TOTAL" "22"
+check "every hook command has a triple" "$TOTAL" "24"
 check "the ${TOTAL} triples are distinct" "$DISTINCT" "$TOTAL"
 SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS" | sort -u | wc -l | tr -d ' ')
 [ "$SM_DISTINCT" -lt "$TOTAL" ] \
@@ -180,11 +180,13 @@ PreToolUse|*|0|repeated_call|jq|[loop-index] this exact call (same tool, same ar
 PostToolUse|Write|Edit|0|misplaced_append|err|[learnings-append-check]
 PostToolUse|Write|Edit|1|broken_sh|err|[sh-syntax-check]
 PostToolUse|Bash|0|push_on_feature|err|[pr-body-sync]
+PostToolUse|Bash|1|gate_pass|jq|[gate-record] scripts/test-thing.sh exited zero; tree digest
 PostToolUse|*|0|result_ok|none|
 Stop|-|0|turn_verdict|err|[loop-index] coarse repeat:
 SubagentStart|-|0|agent_mark|none|
 SubagentStop|-|0|turn_verdict_sub|err|[loop-index] coarse repeat:
-PostToolUseFailure|*|0|result_fail|none|'
+PostToolUseFailure|*|0|result_fail|none|
+PostToolUseFailure|Bash|0|gate_fail|jq|[gate-record] scripts/test-thing.sh exited non-zero; tree digest '
 
 # loop-index.sh emits TWICE and its stderr line is the half its own comment
 # calls load-bearing, so it carries a second marker row of its own.
@@ -244,6 +246,8 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
       jq -nc '{tool_input:{command:"git push"}}' ;;
     result_ok)   ledger_payload s-result Bash "echo hi" PostToolUse tu-r1 ;;
     result_fail) ledger_payload s-result Bash "echo hi" PostToolUseFailure tu-r2 ;;
+    gate_pass) gate_payload PostToolUse tu-g1 ;;
+    gate_fail) gate_payload PostToolUseFailure tu-g2 ;;
     # The session is `s-result` because the `none` branch's non-vacuity witness
     # is a DELTA on that one ledger. A canary row is still a row, so it serves
     # the same purpose -- and the live payload carries no tool_use_id, which is
@@ -258,6 +262,11 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
   esac
 }
 
+gate_payload(){ # <event> <tool_use_id>
+  jq -nc --arg e "$1" --arg u "$2" --arg d "$PROJ" \
+    '{session_id:"s-gate", hook_event_name:$e, tool_name:"Bash", tool_input:{command:"bash scripts/test-thing.sh"},
+      tool_use_id:$u, cwd:$d}'
+}
 ledger_payload(){ # <session> <tool> <command> <event> <tool_use_id>
   jq -nc --arg s "$1" --arg t "$2" --arg c "$3" --arg e "$4" --arg u "$5" \
     '{session_id:$s, hook_event_name:$e, tool_name:$t, tool_input:{command:$c},
@@ -352,7 +361,7 @@ printf '\n== AC15a: the markers are pairwise disjoint over the distinguishable c
 MARKERS=$(printf '%s\n' "$TABLE" | awk -F'|' '{print $NF}' | grep -v '^$')
 MARKERS=$(printf '%s\n%s' "$MARKERS" "$EXTRA_MARKER" | sort -u)
 MCOUNT=$(printf '%s\n' "$MARKERS" | wc -l | tr -d ' ')
-check "distinct marker strings in the table" "$MCOUNT" "19"
+check "distinct marker strings in the table" "$MCOUNT" "21"
 clash=0
 while IFS= read -r a; do
   while IFS= read -r b; do
@@ -837,9 +846,9 @@ GATE_CMD=$(cmd_of PreToolUse Bash 6)
 [ -n "$GATE_CMD" ] && ok "the gate guard command extracted" \
                    || bad "could not extract the gate guard at PreToolUse|Bash index 6"
 
-gate_verdict(){ # <command-string> <hook-command> -> BLOCK | pass
+gate_verdict(){ # <command-string> <hook-command> [plugin-root] [shell] -> BLOCK | pass
   jq -nc --arg c "$1" '{tool_input:{command:$c}}' > "${WORK}/gate.json"
-  ( cd "$PROJ" && CLAUDE_PLUGIN_ROOT="$ROOT" bash -c "$2" ) \
+  ( cd "$PROJ" && CLAUDE_PLUGIN_ROOT="${3:-$ROOT}" "${4:-bash}" -c "$2" ) \
     < "${WORK}/gate.json" > "${WORK}/gate.out" 2> "${WORK}/gate.err"
   if [ "$?" -eq 0 ]; then printf 'pass'; else printf 'BLOCK'; fi
 }
@@ -891,15 +900,41 @@ gate_case pass  "a [ -n ] guard is not a second gate"     '[ -n "$x" ] && bash s
 gate_case pass  "the load-bearing xargs syntax sweep is untouched" \
   "git ls-files -z '*.sh' | xargs -0 -n1 bash -n"
 
+printf '\n== the shared vocabulary file: sourced, and failing open when it cannot be ==\n'
+# The guard runs before the `.`, because a `.` that cannot open its file ends a POSIX
+# shell before any `|| exit 0` is reached; nothing states which shell runs an inline
+# hook, so every leg runs under sh and dash as well as bash.
+check "the command carries no inline pattern of its own" "$(printf '%s' "$GATE_CMD" | grep -c "G='")" "0"
+FO="${WORK}/failopen"
+mkdir -p "${FO}/absent" "${FO}/unread/hooks/lib" "${FO}/empty/hooks/lib"
+cp "${ROOT}/hooks/lib/gate-pattern.sh" "${FO}/unread/hooks/lib/"; chmod 000 "${FO}/unread/hooks/lib/gate-pattern.sh"
+printf 'B=x\n' > "${FO}/empty/hooks/lib/gate-pattern.sh"
+[ -r "${FO}/unread/hooks/lib/gate-pattern.sh" ] && bad "the unreadable fixture is readable; its legs measure nothing"
+PIPED='bash scripts/test-x.sh | tail -3'
+for sh in bash sh dash; do
+  if ! command -v "$sh" >/dev/null 2>&1; then printf '  skip %s is not installed\n' "$sh"; continue; fi
+  check "${sh}: present, the piped gate is refused" "$(gate_verdict "$PIPED" "$GATE_CMD" "$ROOT" "$sh")" "BLOCK"
+  check "${sh}: absent file fails open" "$(gate_verdict "$PIPED" "$GATE_CMD" "${FO}/absent" "$sh")" "pass"
+  check "${sh}: unreadable file fails open" "$(gate_verdict "$PIPED" "$GATE_CMD" "${FO}/unread" "$sh")" "pass"
+  check "${sh}: a file leaving G empty fails open" "$(gate_verdict "$PIPED" "$GATE_CMD" "${FO}/empty" "$sh")" "pass"
+done
+chmod 644 "${FO}/unread/hooks/lib/gate-pattern.sh"
+
 printf '\n== degradation controls: each change, deleted, brings the old behaviour back ==\n'
 
-# (1) the jq alternative, removed from $G
+# (1) the jq alternative, removed from $G -- which lives in the shared vocabulary file
+# the command sources, so the degradation is a plugin root of its own.
 JQ_ALT='|jq[[:space:]]+(-[A-Za-z]*e[A-Za-z]*|--exit-status)[[:space:]]'
-DEG_JQ=${GATE_CMD/"$JQ_ALT"/}
-if [ "$DEG_JQ" = "$GATE_CMD" ]; then bad "the jq-alternative degradation changed nothing -- the control is vacuous"; else
+DEGROOT="${WORK}/degroot"
+mkdir -p "${DEGROOT}/hooks/lib"
+cp "${ROOT}/hooks/lib/plugin-ref.sh" "${DEGROOT}/hooks/lib/"
+GP=$(cat "${ROOT}/hooks/lib/gate-pattern.sh")
+printf '%s\n' "${GP/"$JQ_ALT"/}" > "${DEGROOT}/hooks/lib/gate-pattern.sh"
+if cmp -s "${ROOT}/hooks/lib/gate-pattern.sh" "${DEGROOT}/hooks/lib/gate-pattern.sh"; then
+  bad "the jq-alternative degradation changed nothing -- the control is vacuous"; else
   ok "jq-alternative degradation applied"
   check "without it the manifest parse goes unflagged again" \
-    "$(gate_verdict 'jq -e . hooks/hooks.json > /dev/null' "$DEG_JQ")" "pass"
+    "$(gate_verdict 'jq -e . hooks/hooks.json > /dev/null' "$GATE_CMD" "$DEGROOT")" "pass"
 fi
 
 # (2) the && leg, removed entirely

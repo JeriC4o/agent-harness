@@ -96,9 +96,9 @@ reviewer-nit fixes — passes `self-review` before push. The bar is the same as 
 | Step 1 — open progress section | `## Fix cycle round M` appended to the active progress file |
 | Step 2 — classify | class ∈ {`lint` / `build` / `test` / `flake` / `other`} |
 | Step 3 — reproduce locally | run the mapped local reproducer; on no-reproduce, STOP and surface |
-| Step 4 — diagnose + fix | inline-fix classes apply edits; a real defect routes to `/bugfix` |
+| Step 4 — diagnose + fix | inline-fix classes apply edits; a real defect routes to `/bugfix` with `**parent_skill:** post-push`, so it runs no full list |
 | Step 5 — `self-review` | APPROVE or REJECT (loop cap 3) |
-| Step 6 — commit | gates green; single commit per invocation |
+| Step 6 — commit | touched-scope checks green in the loop, and `%FULL_CHECK_CMD%` passed once after the Step 5 approval over the tree as it stands ([check scope](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md)); single commit per invocation |
 | Step 7 — user pushes; AXIOM 2 PR-body sync | re-read the PR body via `gh pr view` after every push |
 
 ## TDD + lint-changed-files
@@ -469,14 +469,6 @@ spec, is for.
 agreed base, so the redline log resets — its rows described a base that no longer exists. An amendment
 that leaves the approach intact is not a divergence at all, so nothing resets and the accumulated rows
 survive to the closing fold.
-
-## Why the attempt count lives beside the plan
-
-Three reasons, not one: the fix-plan gate recomputes from the tree on every invocation and holds no state
-between them; the progress file survives a compaction and a session restart, which is exactly when a cap
-is lost; and an attempt count written beside the plan it counts against is auditable by the same read that
-checks the plan. The format constraint that follows from the gate's parser is stated where the count is
-written, in [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md).
 
 ## Why four path classes are excluded from the unplanned-file arm
 

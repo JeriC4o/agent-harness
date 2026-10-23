@@ -71,10 +71,10 @@ For each `⬜ Open` finding in the `## AC Status` table (top-to-bottom):
 After every 3 fixes (or when all findings in a subtask are resolved):
 
 1. `%BUILD_CMD% <module-path>` — PASS.
-2. `%TEST_CMD% <module-path>` — all green. "Green" is the parsed OUTPUT, never the exit code — a run that selected zero tests reports success. Prove selection by matching the reported count against a counted number of test methods. See [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` → Reading a test result](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result).
+2. The touched-scope checks, selection stated ([`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md)) — never the full list, which runs once in Step 5 — all green. "Green" is the parsed OUTPUT, never the exit code — a run that selected zero tests reports success. Prove selection by matching the reported count against a counted number of test methods. See [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` → Reading a test result](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result).
 3. `%FORMAT_CMD%` on changed files.
 4. Update `## Files touched` and mark subtask `[x]` in progress file.
-5. **Write progress:** rewrite `**current_step:**` to `Phase 2 — fix loop (after N fixes)`; rewrite `**last_passed_gate:**` to `%TEST_CMD% <module-path> | <UTC timestamp> | <git rev-parse HEAD>`.
+5. **Write progress:** rewrite `**current_step:**` to `Phase 2 — fix loop (after N fixes)`; rewrite `**last_passed_gate:**` to `<gate command> | <UTC timestamp> | <git rev-parse HEAD> | <tree digest>`.
 
 > **Spec/Design Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue? A spec sentence merely broader than what shipped, or one another spec sentence overrides, is not left untrue; only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts. It fires even when the fix lands entirely in code, and the finding is not closed until that sentence is re-read and either confirmed or amended. **(B)** The fix diff touches one under `ai-docs/plans/` (including `done/`). Either is an amendment, not an ordinary fix — STOP. Route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume the fix loop ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group)).
 
@@ -85,7 +85,7 @@ After every 3 fixes (or when all findings in a subtask are resolved):
 ### Step 4: Final verify
 
 1. `%BUILD_CMD% <module-path>` — PASS.
-2. `%TEST_CMD% <module-path>` — all green. Read the result per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` → Reading a test result](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result), as in Step 3.
+2. The touched-scope checks over every path the fix loop touched — all green; the full list still waits for Step 5. Read the result per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` → Reading a test result](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result), as in Step 3.
 3. `%FORMAT_CMD%` on every changed file to format, THEN `%LINT_CMD%` as the gate — must exit clean. The formatter is not the gate.
 4. **Doc convention conformance.** Doc-comments are NOT mandatory — a public symbol with no doc-comment is correct, not a finding. **Asking for a comment to be ADDED (including a `@Suppress` justification) is a SUGGESTION, never a defect:** it carries no severity, never blocks, applies only with the author's agreement, and is voiced ONCE — never restated in a later round, reworded or re-severitied. Absence of a comment is the documented default, so "there is no justification here" is not a finding; an identical construct elsewhere in the same file carrying no comment settles it in the author's favour. Deliberately asymmetric with the rule below — DELETING narration stays `major`. **A comment an instrument reads is a directive, NOT a comment — never flag one, and deleting one is `major`.** Its membership test — an instrument is anything that fails or changes behaviour when the comment goes — is on `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments`, which is also where the id class this repository carries is defined. **One CLOSED exception — the `@throws` mandate:** a public function asserting a precondition, throwing an argument/state exception, indexing without a bounds-check, or overflowing on plausible inputs MUST document it (`${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md § @throws requirement`), and its absence stays a finding even when the fn carries no doc-comment — that is the one place the documented default is a comment rather than none. It covers `@throws` only, never `@param` / `@return` / section order (those presuppose an already-warranted doc-comment, so they are not add-a-comment requests) and never a suppression justification. Flag narration doc-comments (restate the signature / narrate WHAT) as `major` per `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments` — read each doc-comment's OPENING sentence in isolation (an opening sentence restating the symbol name / type / signature / return is narration even when a genuine why follows: strip the opening sentence, not the whole comment), and treat a doc-comment on a brand-new symbol with extra suspicion (default-expect NONE; copying a precedent's structure does not justify copying its doc-comment). For doc-comments that ARE present (or that the `@throws` mandate warrants creating — `@return` does NOT warrant one, per `doc-convention.md:14`), verify the SHAPE against `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md` (summary tense, `@param` / section order / `@throws` / `@return` where applicable). Overriding methods are exempt. Also flag any comment / provenance note that names a framework/library/tool, asserts an annotation's presence, claims an API field's absence/presence, or asserts storage-engine / concurrency behaviour ("this never waits", "this statement takes no lock", "the database cannot do X") NOT confirmable against the source (imports / deps / schema) as `major` — false claims propagate as ground truth (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments`); judge a DB/concurrency claim by its observable failure mode ("does it ever wait? does it ever enqueue?"), since a claim can be true about locks and false about queueing. `@throws <Type>` is the same claim class: a type originating in a framework/dependency that is not confirmable against the branch's own resolved dependency versions → `major` (a sibling type reads like a supertype, and a false tag invites a wrong `catch`); where a doc-comment and a design doc's analysis disagree, the doc-comment is the finding. Mechanical heading scan:
 
@@ -109,6 +109,7 @@ Agent(subagent_type="general-purpose", prompt="
   base_commit is recorded in the progress file.
   There is no spec or design doc — this is a review-driven task.
   Treat the findings table in ## AC Status as the acceptance criteria.
+  Failing full run (only after a full-run failure): <output file>
 ")
 ```
 
@@ -116,9 +117,10 @@ Agent(subagent_type="general-purpose", prompt="
 
 1. **Write progress:** rewrite `**current_step:**` to `Phase 4 — self-review APPROVE (Round N)`.
 2. `%FORMAT_CMD%` on every changed file to format, then `%LINT_CMD%` as the gate (final pass).
-3. Surface staged file list + suggested commit message to the user (Claude doesn't commit; the user does).
-4. After the user confirms commit landed: delete `ai-docs/plans/YYYY-MM-DD-project-review.progress.md`.
-5. Done.
+3. **The single full run:** `%FULL_CHECK_CMD%` once, output redirected to a file; its record goes into `**last_passed_gate:**`, digest included. Immediately before surfacing, compare that digest with `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh` — a difference owes the run again. **On a failure:** rewrite `**current_step:**` to `Phase 4 — full run failed (Round N)` and take the REJECT path below, fixing each failing check and naming the output file in the next Step 5 prompt ([check scope](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md#a-failing-final-run)).
+4. Surface staged file list + suggested commit message to the user (Claude doesn't commit; the user does).
+5. After the user confirms commit landed: delete `ai-docs/plans/YYYY-MM-DD-project-review.progress.md`.
+6. Done.
 
 **On REJECT:**
 
@@ -133,7 +135,7 @@ Agent(subagent_type="general-purpose", prompt="
 | Before | Check |
 |---|---|
 | Step 2 | branch confirmed? base_commit recorded? |
-| Step 3 | build green after every 3 fixes? |
-| Step 4 | all four checks pass (build, test, lint, doc convention)? |
-| Step 5 | self-review APPROVE before commit-surface? |
+| Step 3 | build and touched-scope checks green after every 3 fixes? |
+| Step 4 | all four checks pass (build, touched-scope checks, lint, doc convention)? |
+| Step 5 | self-review APPROVE, then one passing full run whose digest equals the tree's, before commit-surface? |
 | Cleanup | `major`/`blocker` objections user-approved? progress file deleted? |

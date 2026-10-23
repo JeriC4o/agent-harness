@@ -84,6 +84,13 @@ match one of these globs is refused before it runs. One glob per backticked toke
 write `none` if this project has no such class, which silences the guard. Keep the line's `**…:**` key
 exactly as spelled — the guard matches on it.
 
+**Version-bump paths:** `%VERSION_BUMP_PATHS%`
+
+The paths a version-bump commit touches and nothing else, such as the manifest carrying the release version.
+`${CLAUDE_PLUGIN_ROOT}/scripts/human-findings.sh` reads the line above to keep such a commit out of the count
+of findings a human raised after a pull request opened. One path or glob per backticked token, all on that
+one line; write `none` if this project has no such files. Keep the `**…:**` key exactly as spelled.
+
 ## Build & test commands
 
 The canonical command table lives in this project's [`AGENTS.md` § Build & Test](../AGENTS.md#build--test); repeat here only the

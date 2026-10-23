@@ -3,7 +3,8 @@
 # Run this repository's whole pre-commit gate list, one member at a time, and
 # report a verdict per member.
 #
-# Run:  run-checks.sh [--root <dir>] [--list]
+# Run:  run-checks.sh [--root <dir>] [--list | --only <member>[,<member>...]]
+#       Members are named as --list prints them.
 # Exit: 0 every member passed
 #       1 at least one member failed, is missing, or the list drifted
 #       2 cannot run (a required tool absent, a root that is not this repo, a
@@ -36,10 +37,14 @@
 #     fewer files than are tracked is red: a gate that silently narrows its own
 #     input set is the quietest false green there is.
 #
-# NO FLAG NARROWS THE RUN. There is deliberately no --only / --skip: an opt-out
-# is the hazard above wearing a convenience's clothes, which is also why the
-# four-minute corpus suite ships none. --list derives and checks the list and
-# executes nothing, which is a different thing from running part of it.
+# --only NARROWS, AND SAYS SO. It was refused while narrowing could be silent: an
+# opt-out is the hazard above wearing a convenience's clothes. What replaced that
+# concern is twofold. The narrowing is explicit and reported -- the selected names
+# are printed, every selected member still gives one verdict, and the run states
+# that the full list was not run -- and the loops run the full list once, unnarrowed,
+# after review approves, which is the safety net a scoped run inside the loop leans
+# on. An unknown name is a cannot-run, never an empty selection. There is still no
+# --skip, and the suite list is still derived from the tree.
 #
 # NOT IN SCOPE: the three delivery gates (install smoke, release check, upgrade
 # smoke). They answer "does this reach a consumer", run once before a PR rather
@@ -76,6 +81,7 @@ done
 ROOT=$(cd -- "$(dirname -- "$0")/.." && pwd)
 LIST_ONLY=0
 IGNORED_ARG=''
+ONLY=''
 
 while [ $# -gt 0 ]; do
   case $1 in
@@ -84,18 +90,23 @@ while [ $# -gt 0 ]; do
       [ -d "$2" ] || die 2 "usage: --root: no such directory: $2"
       ROOT=$(cd -- "$2" && pwd); shift 2 ;;
     --list) LIST_ONLY=1; shift ;;
+    --only)
+      [ $# -ge 2 ] && [ -n "$2" ] || die 2 "usage: --only needs a comma-separated member list"
+      ONLY="${ONLY}${ONLY:+,}$2"; shift 2 ;;
+    --only=?*) ONLY="${ONLY}${ONLY:+,}${1#--only=}"; shift ;;
     -h|--help)
       sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
-    -*) die 2 "usage: run-checks.sh [--root <dir>] [--list]" ;;
+    -*) die 2 "usage: run-checks.sh [--root <dir>] [--list | --only <member>[,<member>...]]" ;;
     *)
-      # AGENTS.md resolves %TEST_CMD% to this script and skills invoke that as
-      # `%TEST_CMD% <module-path>`. Refusing would read as a broken project
-      # profile; narrowing to the path would be the opt-out this script refuses
-      # to have. So it runs everything and SAYS it ignored the path -- running
-      # more than was asked is the safe direction, staying quiet is not.
+      # A skill may still append a module path to %TEST_CMD%. Refusing would read as
+      # a broken project profile, and treating the path as a selection would be a
+      # narrowing nobody asked for by name. So it is ignored and SAID to be ignored --
+      # the selection is --only's alone.
       IGNORED_ARG="${IGNORED_ARG}${IGNORED_ARG:+ }$1"; shift ;;
   esac
 done
+
+[ "$LIST_ONLY" -eq 0 ] || [ -z "$ONLY" ] || die 2 "usage: --list describes the whole list; it does not take --only"
 
 for f in AGENTS.md hooks/hooks.json .claude-plugin/plugin.json .claude-plugin/marketplace.json; do
   [ -f "$ROOT/$f" ] || die 2 "cannot run: $ROOT is not this repository ($f is absent)."
@@ -344,9 +355,21 @@ script_member() {
   else report_fail "$name" "rc $rc, $((SECONDS-t0))s" "$out"; fi
 }
 
+SELECTED=''
+if [ -n "$ONLY" ]; then
+  known=" $(member_names | tr '\n' ' ')$(derived_suites | tr '\n' ' ')"
+  for want in $(printf '%s' "$ONLY" | tr ',' ' '); do
+    in_list "$want" "$known" \
+      || die 2 "cannot run: --only names [$want], which is no member; name members as --list prints them."
+    in_list "$want" "$SELECTED" || SELECTED="${SELECTED}${SELECTED:+ }$want"
+  done
+  [ -n "$SELECTED" ] || die 2 "usage: --only selected nothing"
+fi
+selected() { [ -z "$ONLY" ] || in_list "$1" "$SELECTED"; }
+
 if [ "$LIST_ONLY" -eq 1 ]; then
   if [ -n "$IGNORED_ARG" ]; then
-    printf 'note: [%s] ignored — this gate list is undivided, so --list describes all of it.\n' "$IGNORED_ARG" >&2
+    printf 'note: [%s] ignored — a positional argument selects nothing, so --list describes all of it.\n' "$IGNORED_ARG" >&2
   fi
   member_names
   derived_suites
@@ -368,12 +391,16 @@ fi
 
 printf 'gate list for %s\n' "$ROOT"
 if [ -n "$IGNORED_ARG" ]; then
-  printf 'note: [%s] ignored — this gate list is undivided, so the whole list runs.\n' "$IGNORED_ARG"
+  printf 'note: [%s] ignored — a positional argument selects nothing; select with --only.\n' "$IGNORED_ARG"
+fi
+if [ -n "$ONLY" ]; then
+  printf 'selected by --only: %s — the full list was NOT run.\n' "$SELECTED"
 fi
 printf '\n'
 
 while IFS='|' read -r name spec; do
   [ -n "$name" ] || continue
+  selected "$name" || continue
   printf '.. %s\n' "$name"
   kind=${spec%%:*}; target=${spec#*:}
   case $kind in
@@ -392,7 +419,7 @@ MEMBERS_EOF
 # one name and none under the other, while both the ok and the failed totals
 # stay exactly as they were — so neither count can show it, and the member whose
 # gate silently stopped running is the one nobody hears from.
-expected_verdicts=$(member_names | tr '\n' ' ' | sed 's/ *$//')
+expected_verdicts=$(member_names | while IFS= read -r n; do selected "$n" && printf '%s ' "$n"; done | sed 's/ *$//')
 if [ "$REPORTED" != "$expected_verdicts" ]; then
   report_fail member-verdicts "one verdict per member expected, in order" \
     "expected: $expected_verdicts
@@ -403,6 +430,7 @@ fi
 # takes about four minutes and silence there reads as a hang.
 while IFS= read -r suite; do
   [ -n "$suite" ] || continue
+  selected "$suite" || continue
   printf '.. %s\n' "$suite"
   script_member "$suite" "$suite"
 done <<SUITES_EOF
@@ -412,7 +440,8 @@ SUITES_EOF
 # The counts are part of the verdict, not decoration: "0 failed" over a member
 # set that quietly shrank is the false green this whole script is built against.
 suite_count=$(derived_suites | sed '/^$/d' | wc -l | tr -d ' ')
-printf '\n%s ok, %s failed — %s suites derived from the tree\n' "$PASSED" "$FAILED" "$suite_count"
+printf '\n%s ok, %s failed — %s suites derived from the tree%s\n' "$PASSED" "$FAILED" "$suite_count" \
+  "${ONLY:+; --only selected $(printf '%s\n' $SELECTED | wc -l | tr -d ' ') names, so the full list was NOT run}"
 if [ "$FAILED" -gt 0 ]; then
   printf 'failed: %s\n' "$FAILED_NAMES"
   exit 1

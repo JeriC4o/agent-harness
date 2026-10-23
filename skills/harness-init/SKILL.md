@@ -44,7 +44,7 @@ The scaffolder prints a detected build system and *suggested* commands. They are
 answer — **verify each one runs in this repo before writing it into `AGENTS.md`.** A command that was
 guessed and never executed is the exact defect `design-review` rejects as a decorative gate.
 
-For each of `%BUILD_CMD%`, `%TEST_CMD%`, `%FORMAT_CMD%`, `%LINT_CMD%` and `<module-path>`:
+For each of `%BUILD_CMD%`, `%TEST_CMD%`, `%FULL_CHECK_CMD%`, `%FORMAT_CMD%`, `%LINT_CMD%` and `<module-path>`:
 
 1. Propose the detected form; ask the user to confirm or correct it (`AskUserQuestion`, one round).
 2. **Run it.** A build/test command that errors on its own repo is not a gate.
@@ -53,7 +53,22 @@ For each of `%BUILD_CMD%`, `%TEST_CMD%`, `%FORMAT_CMD%`, `%LINT_CMD%` and `<modu
    later verification into a silent pass.
 4. Write the confirmed value into the project's `AGENTS.md` § Build & Test table.
 
-If no build system is detected, ask for all four outright rather than guessing.
+If no build system is detected, ask for all five outright rather than guessing.
+
+**`%TEST_CMD%` is the narrowing run and `%FULL_CHECK_CMD%` the full list** — inside a loop only the checks a
+touched path selects run, and the full list runs once after review approves
+(`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`). Confirm the full command runs. **If it is not a covered
+gate** — a build or lint tool, a `bash`/`sh`/`zsh` script whose path carries `test`, `check`, `lint` or
+`verify`, or `jq -e` — warn the user: no gate record stamps it, so each loop's final run measures the tree
+digest by hand. Then fill the § Build & Test "Touched-scope selection" subsection:
+
+- **Path rule** — which checks read which paths. For a module-addressed project, default to "a touched path
+  selects `%TEST_CMD%` for its module, and `%LINT_CMD%` over the changed files".
+- **Mapping** — leave it as `(none yet)`; entries are added when a final run catches a check the rule
+  missed.
+- **Selection flag** — the flag through which `%TEST_CMD%` names its selection, or `none` when it selects by
+  path alone. A module-addressed project defaults to `none`: the module directory it names is keyed as a
+  path argument. Leaving `%SELECTION_FLAG%` unfilled is reported by the audit as an unresolved placeholder.
 
 ## Step 3: Seed `ai-docs/context.md`
 
@@ -63,6 +78,9 @@ facts:
 - **Language profile** — extension, line length, formatter/linter, source and test roots. Derive from the
   tree (`ls`, existing config files), not from the build system's conventions.
 - **Overview** — one paragraph. Ask the user; do not paraphrase the README, which may be stale.
+- **Version-bump paths** — the files a release-version bump touches and nothing else, e.g. the manifest
+  carrying the version; `none` is valid. Ask the user. The human-raised count reads this line to keep bump
+  commits out of it, and refuses to compute while it is missing or still `%VERSION_BUMP_PATHS%`.
 - **Entities / modules** — leave the template headings in place unless the user names them now. `/task`
   Step 9.5 appends them as they are discovered, which is more reliable than a cold guess.
 

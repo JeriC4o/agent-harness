@@ -101,7 +101,7 @@ Find the single point of failure.
 - OR assertion is too weak → rewrite the assertion.
 - ⛔ Do NOT proceed to fix while the test is green.
 
-**Write progress:** rewrite `**current_step:**` to `Step 3: Failing Test — red`; rewrite `**last_passed_gate:**` to `%TEST_CMD% <args> (RED as expected) | <UTC timestamp> | <git rev-parse HEAD>`; append a `## Decisions log` bullet recording the test name + invariant.
+**Write progress:** rewrite `**current_step:**` to `Step 3: Failing Test — red`; rewrite `**last_passed_gate:**` to `%TEST_CMD% <args> (RED as expected) | <UTC timestamp> | <git rev-parse HEAD> | <tree digest>`; append a `## Decisions log` bullet recording the test name + invariant.
 
 ---
 
@@ -143,9 +143,9 @@ Now open Edit.
 ## Step 6: Verify
 
 1. Run the failing test from Step 3 — must turn green.
-2. Run the full module: `%TEST_CMD% <module-path>` — confirm nothing else broke. Read the result per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Reading a test result`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result), not by exit code.
+2. Run the touched-scope checks, selection stated ([`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md)) — never the full list, which runs once after approval (Step 6.7). Read the result per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Reading a test result`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result), not by exit code.
 3. `%FORMAT_CMD%` on changed files to format, then `%LINT_CMD%` as the gate.
-4. **Write progress:** rewrite `**current_step:**` to `Step 6: Verify — green`; rewrite `**last_passed_gate:**` to `%TEST_CMD% <module-path> | <UTC timestamp> | <git rev-parse HEAD>`; append a bullet recording any non-trivial regressions caught.
+4. **Write progress:** rewrite `**current_step:**` to `Step 6: Verify — green`; rewrite `**last_passed_gate:**` to `<gate command> | <UTC timestamp> | <git rev-parse HEAD> | <tree digest>`; append a bullet recording any non-trivial regressions caught.
 
 > ⛔ **Do NOT delete the trace artifact yet — Step 6.5 still needs it as the spec-equivalent input for `self-review`.**
 
@@ -161,13 +161,24 @@ Now open Edit.
 
 2. Spawn `self-review` — full prompt: [reference.md § self-review subagent prompt (Step 6.5)](reference.md#self-review-subagent-prompt-step-65).
 
-3. **On APPROVE:** proceed to Step 7. **Write progress:** rewrite `**current_step:**` to `Step 6.5: Self-review — APPROVE (Round N)`.
+3. **On APPROVE:** proceed to Step 6.7. **Write progress:** rewrite `**current_step:**` to `Step 6.5: Self-review — APPROVE (Round N)`.
 4. **On REJECT:** loop back to Step 5 — address each `⬜ Open` finding. After fixes, return for Round N+1. Rewrite `**current_step:**` to `Step 6.5: Self-review — REJECT (Round N), addressing findings`.
 5. **After Round 3 with REJECT:** STOP. Do not commit. Surface remaining findings to the user.
 
 ---
 
-## Step 7: Cleanup (only after Step 6.5 APPROVE)
+## Step 6.7: Full check list (standalone only)
+
+**Skip this step when the trace carries `**parent_skill:**`** — a bugfix reached from `/task` or from Step 4 of a post-push fix round is still inside that loop, whose finalise step owes the run ([§ The nested case](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md#the-nested-case)).
+
+1. `%FULL_CHECK_CMD%` once, output redirected to a file. Rewrite `**last_passed_gate:**` with its record, digest included.
+2. Immediately before surfacing the commit, compare that digest with `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh` — a difference owes the run again.
+3. **On a failure:** rewrite `**current_step:**` to `Step 6.7: Full run failed (Round N)`, go back to Step 5, then Step 6, then Step 6.5 with the failing output's file named in the reviewer prompt, and return here. The commit is surfaced only after a passing run that followed the last approval.
+4. **Write progress:** rewrite `**current_step:**` to `Step 6.7: Full check list — PASS`.
+
+---
+
+## Step 7: Cleanup (only after Step 6.5 APPROVE and, standalone, Step 6.7 PASS)
 
 1. **Delete the trace artifact:** `rm -f ai-docs/bugfix/trace-*.md` (the file is gitignored, so no `git rm` is needed unless it was deliberately tracked).
 

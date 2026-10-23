@@ -26,6 +26,7 @@ that defect is invisible to both, and visible here.
 | `signatures` | mechanically detected candidates, each with counts, a time span, and a qualifier result |
 | `unavailable` | signatures that could NOT run, with the reason |
 | the ledger | what the LIVE cascade saw and decided while the session ran — or a record saying it was absent |
+| the human-raised count | for the session's pull request: comments people posted and fix commits pushed after it opened — or the reason it could not be computed |
 | the transcript | the session `.jsonl`, by path — the full record of what the session did |
 
 Start from `signatures`: it is the cheap pass, and it tells you where in a transcript of thousands of
@@ -175,6 +176,15 @@ rests on, not the verdict itself: a call whose stored transcript is missing coun
 one whose transcript is on disk without that `tool_use_id` in it. `unresolved_calls` at or near
 `flagged_calls` means the model judged from little, so say so when you cite the verdict.
 
+**`gates` is the gate record's view of the same session.** `repeats` counts gate runs whose gate, arguments
+and tree digest matched an earlier run — the same check re-run with nothing it examines changed.
+`contradictions` counts runs whose gate, artefact and tree digest matched an earlier run with the opposite
+verdict — one check answering both ways about one unchanged thing, so at least one of the two answers was
+wrong or depended on state outside the tree, such as a fetched remote or a prefix command. Each entry in
+`signals` carries `tool_use_id` and `prior.tool_use_id`; join both to the run and read what lay between
+them. A repeat a reviewer makes over the tree the author's run was stamped against is expected, not a
+defect. Report both counts, and name every contradiction with its two invocations.
+
 ## Step 3: Locate the harness defect, not the symptom
 
 A confirmed loop is evidence. The finding is the **instruction that permitted it**:
@@ -222,6 +232,10 @@ do not copy a credential into it. Say a value was read, not what the value was. 
 - **what the live cascade missed, and what it caught** (Step 2b) — a confirmed loop with no verdict beside
   it is a finding about the detector, and a verdict whose outcome was `abandoned` is the only place its
   value is ever visible
+- the gate record: `gates.repeats` and `gates.contradictions`, and each contradiction named with its gate,
+  its two invocations and what you found between them
+- the human-raised count: `count` with its comment and commit split, or that it could not be computed and
+  why — a non-zero count is what review let through, and a cannot-compute is never reported as zero
 - counts: signatures examined, confirmed, dismissed
 
 ## FORBIDDEN
