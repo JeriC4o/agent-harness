@@ -97,8 +97,8 @@ so a zero is never evidence that attribution is sound.
 number of covered gate runs, `repeats` the runs of one gate with the same arguments over an unchanged tree,
 `contradictions` one gate's opposite verdicts about one artefact over an unchanged tree, and `signals` one
 entry per firing with its time, gate, agent and the earlier invocation it matched. Neither signal blocked
-anything, and the row is the record of both. That the causing agent was told live is claimed for the main
-thread only — delivery to a subagent's own context has not been observed. The agent reports both counts
+anything, and the row is the record of both. The hook's line tells the causing agent live, in the main thread
+or a subagent alike; the row, not the delivery, is the evidence. The agent reports both counts
 and names each contradiction.
 
 **A tier-1 verdict row carries `settings.window_unit`, and a row without it is not the same row.** `window`
