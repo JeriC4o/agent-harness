@@ -365,7 +365,7 @@ the agreed approach?** The two answers go different ways.
   code fix lands in the same round.** The design is not rewritten mid-task; it is corrected once, after
   the PR is approved, by `/redline-fold`, which applies the log's rows. Who marks, what the
   marker carries and what a row holds:
-  [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking](${CLAUDE_PLUGIN_ROOT}/agents/design.md#redline-marking).
+  [`${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md`](${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md).
 
 **Why the question is about the approach rather than about the document.** The reviewer's rule used to
 reject correct code because a design sentence had gone stale, so the expensive path fired on every stale
@@ -394,7 +394,7 @@ its evidence, never on being right.
 The breaking / non-breaking test still informs that choice; what it no longer does is decide it. At the
 review-and-fix round the test is mechanical and routes the finding; here it is one input to a call the
 user makes. The modes, the rubric and the marker's spelling are in
-[`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Redline marking](${CLAUDE_PLUGIN_ROOT}/agents/design.md#redline-marking),
+[`${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md`](${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md),
 and the chosen mode is written into the log's HEADER rather than the progress file: the progress file is
 gitignored and is deleted at merge, while the log is committed and is what the closing pass reads.
 

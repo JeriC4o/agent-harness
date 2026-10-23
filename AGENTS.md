@@ -22,7 +22,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4. `run-checks.sh` runs both as its `shell-syntax` and `manifests` members |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
-**Structural checks that stand in for a test suite** — run all eight before any commit that touches
+**Structural checks that stand in for a test suite** — run all nine before any commit that touches
 instruction files.
 
 **`bash scripts/run-checks.sh` runs every one of them in a single call**, reporting a verdict per member
@@ -83,7 +83,8 @@ is the same commands.
    `scripts/test-check-redline.sh`, `scripts/test-check-release.sh`,
    `scripts/test-check-plan-convergence.sh`,
    `scripts/test-hook-behaviour.sh`,
-   `scripts/test-run-checks.sh`, `scripts/test-check-method-purity.sh`.
+   `scripts/test-run-checks.sh`, `scripts/test-check-method-purity.sh`,
+   `scripts/test-check-instruction-size.sh`.
    **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed
    file COUNT beside the syntax verdict and reddens a separate `untracked-shell` member on any `*.sh` the
    index cannot see — but only when it runs, so a hand-run still owes both reads.
@@ -131,9 +132,15 @@ is the same commands.
    stems are stored hashed, so the gate does not itself carry the material it refuses. A new stem is
    added as its length and sha256 prefix. Exits `0 clean / 1 findings / 2 cannot run`, needs `python3`.
    **Numbered `5c` for the reason item `5a` gives.**
+5d. `bash scripts/check-instruction-size.sh` — the size AXIOM in `docs/agents-method.md` § Build & Test,
+   for the class it caps: every file that loads whole at agent start, here and in `templates/project/`.
+   Red at the 35,000-character early warning rather than at the 40,000 cap, so a task cannot close
+   without leaving the next one room to add a rule. Counts characters, not bytes. A page reached only by
+   link is outside the class by design. Exits `0 clean / 1 findings / 2 cannot run`, needs `python3`.
+   **Numbered `5d` for the reason item `5a` gives.**
 
 **Delivery gates** — the checks above validate this repository's CONTENTS; these three validate that the
-contents reach a consumer. The eight structural checks cannot see delivery by construction: the first two
+contents reach a consumer. The nine structural checks cannot see delivery by construction: the first two
 gates exist because a bug got past every check there was at the time, the third because nothing above it
 walks an upgrade against a *pre-existing* install:
 
@@ -188,6 +195,7 @@ at that heading.
 | `scripts/tree-digest.sh` | `scripts/test-review-ledger.sh`, `hooks/lib/test-gate-record.sh` |
 | `hooks/lib/gate-pattern.sh` | `hooks/lib/test-gate-record.sh`, `scripts/test-hook-behaviour.sh`, `hooks/lib/test-harness-managed.sh` |
 | any tracked text file — the foreign-identifier leg reads the whole tree | `method-purity` |
+| `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `ai-docs/context.md`, `docs/agents-method.md`, `agents/*.md`, `skills/*/SKILL.md`, `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, their `templates/project/` copies | `instruction-size` |
 | `templates/project/**` | `skills/harness-init/scripts/test-scaffold.sh`, `scripts/test-audit-project.sh` |
 
 **Selection flag:** `--only`

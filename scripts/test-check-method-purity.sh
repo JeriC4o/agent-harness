@@ -62,9 +62,12 @@ put "$D" "templates/project/notes.md" "Kotlin"; put "$D" "docs/notes.txt" "Kotli
 run "$D"
 check "a stack name in profile data, a template or a non-md doc -> rc 0" "$RC" "0"
 tree "$D"; put "$D" "scripts/own.py" "pass"
-put "$D" "rules/r.md" "guard rails, a rusty bolt, a swift fix in the spring, rust-free; python3 runs own.py"
+put "$D" "rules/r.md" "guard rails, a rusty bolt, a swift fix in the spring, rust-free; python3 runs own.py and scripts/*.py"
 run "$D"
 check "ordinary words, and a path to one of the tree's own files -> rc 0" "$RC" "0"
+tree "$D"; put "$D" "scripts/own.py" "pass"; put "$D" "rules/r.md" "Every \`*.py\` file is a source file."
+run "$D"
+check "a bare *.py glob fires even though the tree holds a .py file -> rc 1" "$RC" "1"
 
 printf '\n== foreign leg: every tracked text file, substring of a token ==\n'
 tree "$D"; put "$D" "ai-docs/plan.md" "Idiom at SprocketWheelDao and nowhere else."
@@ -94,7 +97,8 @@ tree "$D"; printf 'new.md\n' > "$D/.gitignore"; printf 'Kotlin\n' > "$D/agents/n
 check "an ignored file is not read -> rc 0" "$RC" "0"
 tree "$D"; put "$D" "skills/s/SKILL.md" "See OrderRepo.kt."; printf 'x\n' > "$D/OrderRepo.kt"; run "$D"
 check "an UNTRACKED file does not exempt a path naming it -> rc 1" "$RC" "1"
-tree "$D"; sed "s/^import hashlib/import hashlib; raise SystemExit(1)  #/" "$GATE" > "$T/crash.sh"
+tree "$D"; sed "s/^import /raise SystemExit(1)  # import /" "$GATE" > "$T/crash.sh"
+cmp -s "$GATE" "$T/crash.sh" && bad "the crash mutant did not apply"
 OUT=$(bash "$T/crash.sh" --root "$D" 2>&1); RC=$?
 check "a body that ends without a verdict -> rc 2, not findings" "$RC" "2"
 
