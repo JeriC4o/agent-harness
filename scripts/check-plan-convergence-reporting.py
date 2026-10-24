@@ -1,7 +1,8 @@
-# The three classes of check-plan-convergence.py whose findings are a REPORT
-# rather than a hold: provenance, reference and pairing. The payload beside this
-# file owns the plan pair, the segmentation, the numeral readers, the excuse
-# route and the report; this carries these three classes and nothing else.
+# The four classes of check-plan-convergence.py whose findings are a REPORT
+# rather than a hold: provenance, reference, pairing and isolation. The payload
+# beside this file owns the plan pair, the segmentation, the numeral readers,
+# the excuse route and the report; this carries these four classes and nothing
+# else.
 #
 # WHY IT IS A THIRD FILE AT ALL. The single payload reached 1,447 lines against
 # this repository's hard thousand-line limit, whose two documented exemptions --
@@ -10,8 +11,8 @@
 # Thousand-line exemption row in ai-docs/context.md. The seam is the one the
 # check already states as data -- which classes HOLD a plan and which only
 # report -- rather than a cut chosen to make files of similar size: a caller
-# refuses on the holding count, so the three classes OUTSIDE that count are the
-# group with a reason to travel together.
+# refuses on the holding count, so the classes OUTSIDE that count are the group
+# with a reason to travel together.
 #
 # THE TWO GROUPS HAVE NO EDGE BETWEEN THEM, and that is what made the seam free.
 # Every helper here is called only by a class here. The three relation patterns
@@ -35,19 +36,25 @@
 import os
 import re
 
+# The borrowed fragment length, exposed for the report beside this group's
+# findings: a zero where a non-zero is expected is a report about the run.
+MINIMUM = None
 ENTERED = set()
 SKIPPED = {}
 
 
 def run(ctx):
-    """The three reporting classes, and the record one of them compares against.
+    """The four reporting classes, and the two inputs they borrow: the record
+    the reference class compares against and the isolation class's minimum
+    fragment length.
 
-    A preflight that could not read its comparand returns without running a
-    class, because a sweep against nothing must not report what it found as
-    arrivals it established. The core re-tests its own block between the two
-    groups for that reason.
+    A preflight that could not read its source returns without running a class,
+    because a sweep against nothing must not report what it found as arrivals
+    it established. The core re-tests its own block between the two groups for
+    that reason.
     """
-    global finding, blocked, norm, read_rel, spot_of
+    global MINIMUM
+    global finding, blocked, norm, read_rel, read_method, spot_of
     global masked, figures, clause_at
     global EQUATION, TOTAL_WORD, TOTAL_PHRASE, TICK_SPAN
     global HEADING_LINE, FENCE, QUOTE_MARK, PROJECT_ROOT
@@ -55,6 +62,7 @@ def run(ctx):
     blocked = ctx['blocked']
     norm = ctx['norm']
     read_rel = ctx['read_rel']
+    read_method = ctx['read_method']
     spot_of = ctx['spot_of']
     masked = ctx['masked']
     figures = ctx['figures']
@@ -72,6 +80,9 @@ def run(ctx):
     record = recorded_positions(paths)
     if record is None:
         return
+    MINIMUM = fragment_minimum()
+    if MINIMUM is None:
+        return
     ENTERED.add('provenance')
     for doc, body, units in ctx['documents']:
         provenance(doc, body, units, ctx['built'])
@@ -82,6 +93,9 @@ def run(ctx):
         reference(paths, record)
     ENTERED.add('pairing')
     pairing([(doc, units) for doc, _b, units in ctx['documents']], paths)
+    ENTERED.add('isolation')
+    for doc, _body, units in ctx['documents']:
+        isolation(doc, units, MINIMUM)
 
 
 # ---------------------------------------------------------------------------
@@ -456,3 +470,86 @@ def pairing(units, paths):
                 % (slug, sites[0][0], sites[0][1][:120]))
 
 
+# ---------------------------------------------------------------------------
+# The isolation class. Reports.
+#
+# THE MINIMUM FRAGMENT LENGTH IS BORROWED, NOT CHOSEN, and the borrowing is
+# load-bearing twice over: a second stated length would be the duplicated fact
+# this class exists to report, and a value invented here would be a number whose
+# provenance the class beside it would refuse. An unreadable source is a
+# cannot-run for that reason -- falling back to a default IS choosing one.
+#
+# ITS BOUND, AND THE UNIT IS WHERE THE WHOLE COST SITS. The reach is a repeated
+# LITERAL: the same figure at two sites, or a whole statement or table cell of at
+# least that length repeated at two sites. The unit is deliberately NOT a sliding
+# window over the text: measured on one real plan pair, a 24-character window
+# found 438 repeats, almost every one a fragment of shared English phrasing
+# inside two different sentences, which a reader would wade through on every
+# plan. A repeated statement or cell is the same FACT in two places, which is
+# what the requirement asks for; a repeated phrase inside two different claims
+# is not. A paraphrase is the judgement class's subject either way.
+#
+# IT REPORTS AND NO LONGER HOLDS. A repeat is not the event that does harm: a
+# one-sided edit to one of two linked sites is, and a repeat across the spec
+# and the design is never seen here, since the unit is one document. Its whole
+# record held no drift catch -- every waiver it was granted covered noise, a
+# boilerplate sentence or the exit codes 0, 1 and 2. A legitimate restatement
+# of a whole short clause still fires, and the reviewer weighs it rather than
+# an excuse quieting it.
+# ---------------------------------------------------------------------------
+FRAGMENT_SOURCE = 'skills/task/scripts/check-fix-plan.sh'
+FRAGMENT_NAME = 'ARMA_QUOTE_MIN'
+REPEATS = 0
+
+
+def fragment_minimum():
+    body = read_method(FRAGMENT_SOURCE,
+                       'and the minimum fragment length is borrowed from it rather than chosen here')
+    if body is None:
+        return None
+    m = re.search(r'(?m)^\s*%s=(\d+)' % FRAGMENT_NAME, body)
+    if m is None:
+        blocked('%s no longer states %s, so the minimum fragment length could not be borrowed and inventing one is the thing this class refuses'
+                % (FRAGMENT_SOURCE, FRAGMENT_NAME))
+        return None
+    return int(m.group(1))
+
+
+def isolation(doc, units, minimum):
+    global REPEATS
+    # A SITE IS A STATEMENT, not an occurrence. The same literal twice inside one
+    # sentence cannot drift apart -- one edit moves both -- and counting
+    # occurrences reported `20 + 20 = 41` as a duplicated fact against itself.
+    sites = {}
+    for statement in units:
+        for literal in set(lit for lit, _off in figures(statement)):
+            sites.setdefault(literal, []).append(statement)
+    for literal, where in sorted(sites.items()):
+        if len(where) < 2:
+            continue
+        REPEATS += 1
+        finding('isolation', doc, literal,
+                '%s states the figure [%s] at %d sites that can drift apart: %s'
+                % (doc, literal, len(where),
+                   ' || '.join(norm(s)[:90] for s in where[:3])))
+
+    spans = {}
+    for statement in units:
+        text = norm(statement)
+        pieces = [c.strip() for c in text.strip('|').split('|')] if text.startswith('|') else [text]
+        for piece in pieces:
+            if len(piece) >= minimum:
+                spans.setdefault(piece, []).append(text)
+    for span, where in sorted(spans.items()):
+        if len(where) < 2:
+            continue
+        REPEATS += 1
+        # BOTH SITES ARE NAMED, and a repeated table CELL is the case where the
+        # span does not name them by itself: there the span is the cell and the
+        # sites are two different rows. A repeated whole statement IS its own
+        # site, so the surrounding text is printed only where it adds one.
+        shown = [norm(s)[:90] for s in where[:3] if norm(s) != span]
+        finding('isolation', doc, span,
+                '%s states the same span at %d sites that can drift apart -- [%s]%s'
+                % (doc, len(where), span[:160],
+                   (': ' + ' || '.join(shown)) if shown else ''))

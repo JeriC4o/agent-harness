@@ -137,8 +137,8 @@ the obligation: a judgement class may never be the only check standing, and noth
 contract asks for that — it is satisfied by the deterministic check running in the same step.
 
 **The deterministic half** is `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec> <design>`,
-its own bare call. Six classes, three of which HOLD a plan — completeness, isolation, arithmetic —
-and three of which only report. Read the per-class roster and the counts beside the verdict rather
+its own bare call. Six classes, two of which HOLD a plan — completeness, arithmetic — and four of
+which only report. Read the per-class roster and the counts beside the verdict rather
 than the exit status: a class reporting zero over a document with content examined nothing, and a
 plan whose findings are all excused exits 0 while saying so in those terms. A cannot-run is not a
 pass. The author's own exit check already ran this before handing back
@@ -235,7 +235,7 @@ resolving, and because the gate list below reads this page's own section names a
 
 **On a failing full run:**
 
-1. **Move the plan files back** out of `done/` — spec, design and the redline log if one moved — so routing, exclusions and review prompts see the paths they key on.
+1. **Move the plan files back** out of `done/` — spec, design, and the redline log and the record of excused findings if either moved — so routing, exclusions and review prompts see the paths they key on.
 2. **Write progress:** rewrite `**current_step:**` to `Step 12 — full run failed (Round N)`; rewrite `## Next action`.
 3. **Spawn the Step 10 reviewer** with the failing output's file named. It records one `major` finding per failing check. Every checklist row whose scope is unchanged carries, so the round is narrow.
 4. **Continue as an ordinary round** — Step 11 fixes, Step 10 reviews — and return to Step 12, which runs the full list again. The commit is surfaced only after a passing full run that followed the last approval.

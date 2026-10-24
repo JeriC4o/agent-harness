@@ -35,6 +35,8 @@ cp "${ROOT}/docs/plan-invariants.md" "$T/docs/plan-invariants.md"
 # The real file, not a stub: the minimum fragment length is BORROWED from it,
 # so a fixture carrying an invented assignment would test the fixture.
 cp "${ROOT}/skills/task/scripts/check-fix-plan.sh" "$T/skills/task/scripts/"
+# The same for the sections a folded spec keeps, borrowed from the fold's gate.
+cp "${ROOT}/scripts/check-redline.sh" "$T/scripts/"
 # All three payloads, because the entry point preflights each one by name and
 # the core loads the two siblings from its own directory: a sandbox carrying
 # only the core would make every leg below a cannot-run.
@@ -254,6 +256,49 @@ $SPEC_ONE" "${COMPLETE/| AC1 |/| AC1, AC9 |}"
 out=$(run)
 has "a row claiming a criterion the spec does not state is reported" "$out" 'claims to deliver AC9'
 
+printf '\n== a folded spec: the criterion leg has nothing to check, and says so ==\n'
+# The kept sections are read out of the copied gate, for the reason tok() reads
+# the record: a suite that spelled them would be the second place they live.
+KEPT=$(sed -n "/^RETAINED='/,/'\$/p" "$T/scripts/check-redline.sh" | sed "s/^RETAINED='//; s/'\$//")
+[ "$(printf '%s\n' "$KEPT" | grep -c .)" -ge 2 ] \
+  && ok "the kept sections were derived from the fold's gate" \
+  || bad "the kept sections were derived from the fold's gate"
+write_folded() { # [extra spec text]
+  { printf '%s\n' "$KEPT" | while IFS= read -r h; do printf '%s\n\n- Kept.\n\n' "$h"; done
+    [ -z "${1:-}" ] || printf '%s\n' "$1"; } > "$T/plans/a.spec.md"
+  printf '# Design\n\n%s\n\n%s\n' "$DESIGN_FIRST" "$COMPLETE" > "$T/plans/a.design.md"
+}
+write_folded
+out=$(run)
+hasnt "a row's delivery claim against a folded spec is not reported" "$out" 'claims to deliver'
+has "and the roster says the criterion leg was not examined, and why" "$out" 'criteria not examined (the spec is folded'
+has "and the rest of the class still ran" "$out" 'objects=1'
+write_folded '### A note under the last kept section'
+out=$(run)
+hasnt "a subsection under a kept section leaves the spec folded" "$out" 'claims to deliver'
+write_folded "\`\`\`
+$SPEC_FIRST
+\`\`\`"
+out=$(run)
+hasnt "a heading inside a fence leaves the spec folded" "$out" 'claims to deliver'
+printf '%s\n\n- Kept.\n' "$(printf '%s\n' "$KEPT" | tail -n 1)" > "$T/plans/a.spec.md"
+out=$(run)
+has "control: a spec carrying only some kept sections is read as a plan" "$out" 'claims to deliver AC1, which the spec does not state'
+printf '# Draft\n\nNo section yet.\n' > "$T/plans/a.spec.md"
+out=$(run)
+has "control: a spec with no heading at the kept depth is read as a plan" "$out" 'claims to deliver AC1, which the spec does not state'
+write_folded "$SPEC_FIRST
+
+Still a plan."
+out=$(run)
+has "control: one heading beyond the kept ones and the spec is read as a plan" "$out" 'claims to deliver AC1, which the spec does not state'
+hasnt "and the roster does not call it folded" "$out" 'the spec is folded'
+mv "$T/scripts/check-redline.sh" "$T/scripts/gone-redline.sh"
+out=$(run); rc=$?
+check "an unreadable source for the kept sections -> rc 2" "$rc" "2"
+has "and says they are borrowed rather than named here" "$out" 'borrowed from it rather than named here'
+mv "$T/scripts/gone-redline.sh" "$T/scripts/check-redline.sh"
+
 printf '\n== section references, resolved against the document that makes them ==\n'
 write_pair 'Nothing.' "$COMPLETE
 
@@ -273,11 +318,13 @@ out=$(run)
 hasnt "a reference qualified by a file name is not resolved here" "$out" 'refers to a section'
 has "but it is counted, so the figure says what this class did not carry" "$out" 'section-refs=0/1'
 
-printf '\n== the isolation class, which HOLDS ==\n'
+printf '\n== the isolation class, which REPORTS ==\n'
 write_pair 'The window is 40 rounds wide, a threshold handed down. The same 40 is the cap, a threshold handed down.' 'Nothing.'
 out=$(run)
 has "the minimum fragment length is borrowed rather than chosen" "$out" 'fragment-min=24'
 has "a figure repeated across two statements is reported" "$out" 'states the figure [40] at 2 sites'
+has "and it is counted as a report, not a hold" "$out" 'holding=0 reporting=1'
+has "and the roster says the class reports" "$out" 'repeated literals at or above 24 characters -- examined-with-findings (1)  reports'
 write_pair 'The window is 40 rounds wide, a threshold handed down.' 'Nothing.'
 out=$(run)
 hasnt "a figure at one site is silent" "$out" 'finding isolation'
@@ -494,7 +541,7 @@ has "and says so" "$out" 'ALREADY EXCUSED'
 AFTER=$(cksum < "$EX")
 check "the record is byte-identical after the repeat" "$AFTER" "$BEFORE"
 
-printf '\n== an excuse survives the passage being edited, and dies with its plan ==\n'
+printf '\n== an excuse survives the passage being edited, and does not travel to another plan ==\n'
 write_pair 'The window is 40 rounds wide, a span rewritten since. The band is 20 + 20 = 41 wide.' 'Nothing.'
 out=$(run)
 has "rewording the passage does not revoke the waiver" "$out" 'excused provenance'
@@ -575,6 +622,7 @@ cp "$CHECK" "${HERE}/check-plan-convergence.py" \
    "${HERE}/check-plan-convergence-reporting.py" "$P/scripts/"
 cp "${ROOT}/docs/plan-invariants.md" "$P/docs/"
 cp "${ROOT}/skills/task/scripts/check-fix-plan.sh" "$P/skills/task/scripts/"
+cp "${ROOT}/scripts/check-redline.sh" "$P/scripts/"
 XSUB="$P/scripts/check-plan-convergence.sh"
 git -C "$P" rev-parse >/dev/null 2>&1 \
   && bad "the copy is outside any git work tree" || ok "the copy is outside any git work tree"
@@ -665,7 +713,7 @@ git -C "$P" add -A >/dev/null 2>&1
 out=$(xrun); rc=$?
 check "a copy that is its own work tree with every method input staged -> rc 0" "$rc" "0"
 hasnt "  and the plugin's own tracked files are not swept" "$out" 'plugin-only.md'
-for input in docs/plan-invariants.md skills/task/scripts/check-fix-plan.sh; do
+for input in docs/plan-invariants.md skills/task/scripts/check-fix-plan.sh scripts/check-redline.sh; do
   git -C "$P" rm -q --cached "$input" >/dev/null 2>&1
   out=$(xrun); rc=$?
   check "that copy with ${input} unstaged -> rc 2" "$rc" "2"

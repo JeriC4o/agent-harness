@@ -1,7 +1,13 @@
-# The three classes of check-plan-convergence.py that HOLD a plan: arithmetic,
-# completeness and isolation. The payload beside this file owns the plan pair,
-# the segmentation, the numeral readers, the excuse route and the report; this
-# carries these three classes and nothing else.
+# The two classes of check-plan-convergence.py that HOLD a plan: arithmetic and
+# completeness. The payload beside this file owns the plan pair, the
+# segmentation, the numeral readers, the excuse route and the report; this
+# carries these two classes and nothing else.
+#
+# THE ISOLATION CLASS USED TO BE THE THIRD, and it moved to the reporting
+# sibling when it stopped holding. It flags a fact stated twice inside one
+# document, which is not the event that does harm -- a one-sided edit to one of
+# two linked sites is -- and its whole record held no drift catch, only waived
+# noise. It is a report the reviewer weighs now.
 #
 # WHY IT IS A SECOND FILE AT ALL. The single payload reached 1,447 lines against
 # this repository's hard thousand-line limit, whose two documented exemptions --
@@ -10,8 +16,8 @@
 # Thousand-line exemption row in ai-docs/context.md. The seam is the one the
 # check already states as data -- which classes HOLD a plan and which only
 # report -- rather than a cut chosen to make two files of similar size: a caller
-# refuses on the holding count, so the three classes behind that count are the
-# group with a reason to travel together.
+# refuses on the holding count, so the classes behind that count are the group
+# with a reason to travel together.
 #
 # THE TWO GROUPS HAVE NO EDGE BETWEEN THEM, and that is what made the seam free.
 # Every helper here is called only by a class here. The three patterns the
@@ -33,23 +39,20 @@
 # Tests: scripts/test-check-plan-convergence.sh
 import re
 
-# The borrowed fragment length, exposed for the report beside this group's
-# findings: a zero where a non-zero is expected is a report about the run.
-MINIMUM = None
 ENTERED = set()
 
 
 def run(ctx):
-    """The three holding classes, and the one input this group borrows.
+    """The two holding classes, and the one input this group borrows.
 
     A preflight that could not read its source returns without running a class,
     because a class reporting against a bound nobody established is exactly the
     false green this check exists to catch. The core re-tests its own block
     between the two groups for that reason.
     """
-    global MINIMUM
+    global RETAINED
     global finding, blocked, norm, read_method, region, statements, spot_of
-    global masked, figures, value_of
+    global masked, value_of
     global CLAUSE_SPLIT, EQUATION, TOTAL_WORD, TOTAL_PHRASE
     global HEADING_LINE, FENCE, QUOTE_MARK
     finding = ctx['finding']
@@ -60,7 +63,6 @@ def run(ctx):
     statements = ctx['statements']
     spot_of = ctx['spot_of']
     masked = ctx['masked']
-    figures = ctx['figures']
     value_of = ctx['value_of']
     CLAUSE_SPLIT = ctx['CLAUSE_SPLIT']
     EQUATION = ctx['EQUATION']
@@ -70,14 +72,13 @@ def run(ctx):
     FENCE = ctx['FENCE']
     QUOTE_MARK = ctx['QUOTE_MARK']
 
-    MINIMUM = fragment_minimum()
-    if MINIMUM is None:
+    RETAINED = retained_sections()
+    if RETAINED is None:
         return
     documents = ctx['documents']
-    ENTERED.update(('arithmetic', 'isolation'))
+    ENTERED.add('arithmetic')
     for doc, body, units in documents:
         arithmetic(doc, body, units)
-        isolation(doc, units, MINIMUM)
     # The pair, never one document: the class compares a spec against a design,
     # and one of the two missing is a cannot-run the core has already reported.
     if len(documents) == 2:
@@ -238,6 +239,64 @@ SECTION_REFS = 0
 QUALIFIED_REFS = 0
 DELIVERY_COLUMN = 'absent'
 
+# A FOLDED SPEC IS RECOGNISED, NOT REPORTED. The closing fold collapses the spec
+# to its record of deliberate absence, so no criterion survives for a delivery
+# cell to name, and every row of a correctly-folded plan read as claiming a
+# requirement the spec does not state. The criterion leg has nothing to check in
+# that state and says so in the roster instead. The sign is the spec's own
+# headings at the depth the fold keeps: exactly the kept set, every kept one
+# present and nothing else. A spec carrying any other heading at that depth, or
+# missing a kept one, is read as a plan however few criteria it has. Requiring
+# every kept section costs no correctly folded plan, because the fold's own gate
+# reports a missing one; it is what keeps a draft that so far holds only one of
+# them from reading as folded.
+#
+# THE KEPT SECTIONS ARE BORROWED, NOT NAMED, from the assignment the fold's own
+# gate states them in -- the same list the plan-invariants check derives from
+# there. Naming them here would put section tokens in this file, which the
+# header rules out, and an unreadable source is a cannot-run, because falling
+# back to a default IS choosing one.
+RETAINED_SOURCE = 'scripts/check-redline.sh'
+RETAINED_NAME = 'RETAINED'
+RETAINED = None
+FOLDED = False
+
+
+def retained_sections():
+    body = read_method(RETAINED_SOURCE,
+                       'and the sections a folded spec keeps are borrowed from it rather than named here')
+    if body is None:
+        return None
+    m = re.search(r"(?ms)^%s='(.*?)'" % RETAINED_NAME, body)
+    kept = [norm(t) for t in m.group(1).split('\n') if t.strip()] if m is not None else []
+    if not kept:
+        blocked('%s no longer states %s, so a folded spec could not be told from an incomplete one and guessing is the thing this class refuses'
+                % (RETAINED_SOURCE, RETAINED_NAME))
+        return None
+    return kept
+
+
+def heading_tokens(body):
+    out = []
+    in_fence = False
+    for line in body.split('\n'):
+        plain = QUOTE_MARK.sub('', line)
+        if FENCE.match(plain):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        got = HEADING_LINE.match(plain.lstrip())
+        if got is not None:
+            out.append('%s %s' % (got.group(1), norm(got.group(2))))
+    return out
+
+
+def is_folded(spec_body, kept):
+    depths = set(t.split(' ', 1)[0] for t in kept)
+    at_depth = [t for t in heading_tokens(spec_body) if t.split(' ', 1)[0] in depths]
+    return set(at_depth) == set(kept)
+
 
 def rows_of(body, tokens, pattern):
     out = []
@@ -342,7 +401,7 @@ def headings_of(body):
 
 
 def completeness(spec_body, design_body, spec_tokens, design_tokens, built, units):
-    global OBJECTS, CRITERIA, SECTION_REFS, QUALIFIED_REFS
+    global OBJECTS, CRITERIA, SECTION_REFS, QUALIFIED_REFS, FOLDED
     rows = rows_of(design_body, design_tokens, DECOMP_ROW)
     bullets = use_case_bullets(design_body, design_tokens)
     objects = list(built)
@@ -385,12 +444,14 @@ def completeness(spec_body, design_body, spec_tokens, design_tokens, built, unit
     delivered = set()
     for cell in delivery_cells(design_body, design_tokens):
         delivered |= cell
-    for crit in sorted(stated - delivered, key=lambda c: int(c[2:])):
-        finding('completeness', 'design', crit,
-                'the requirement %s is stated in the spec and no decomposition row delivers it' % crit)
-    for crit in sorted(delivered - stated, key=lambda c: int(c[2:])):
-        finding('completeness', 'design', crit,
-                'a decomposition row claims to deliver %s, which the spec does not state' % crit)
+    FOLDED = is_folded(spec_body, RETAINED)
+    if not FOLDED:
+        for crit in sorted(stated - delivered, key=lambda c: int(c[2:])):
+            finding('completeness', 'design', crit,
+                    'the requirement %s is stated in the spec and no decomposition row delivers it' % crit)
+        for crit in sorted(delivered - stated, key=lambda c: int(c[2:])):
+            finding('completeness', 'design', crit,
+                    'a decomposition row claims to deliver %s, which the spec does not state' % crit)
 
     for doc, body in (('spec', spec_body), ('design', design_body)):
         known = headings_of(body)
@@ -413,86 +474,3 @@ def completeness(spec_body, design_body, spec_tokens, design_tokens, built, unit
                     finding('completeness', spot_of(doc, statement), want,
                             '%s refers to a section [%s] that no heading in it resolves to: %s'
                             % (doc, want, norm(statement)[:160]))
-
-
-# ---------------------------------------------------------------------------
-# The isolation class. Holds.
-#
-# THE MINIMUM FRAGMENT LENGTH IS BORROWED, NOT CHOSEN, and the borrowing is
-# load-bearing twice over: a second stated length would be the duplicated fact
-# this class exists to report, and a value invented here would be a number whose
-# provenance the class beside it would refuse. An unreadable source is a
-# cannot-run for that reason -- falling back to a default IS choosing one.
-#
-# ITS BOUND, AND THE UNIT IS WHERE THE WHOLE COST SITS. The reach is a repeated
-# LITERAL: the same figure at two sites, or a whole statement or table cell of at
-# least that length repeated at two sites. The unit is deliberately NOT a sliding
-# window over the text: measured on one real plan pair, a 24-character window
-# found 438 repeats, almost every one a fragment of shared English phrasing
-# inside two different sentences -- and this class HOLDS, so an over-counting
-# unit does not merely add noise, it stops every plan. A repeated statement or
-# cell is the same FACT in two places, which is what the requirement asks for; a
-# repeated phrase inside two different claims is not. A paraphrase is the
-# judgement class's subject either way.
-#
-# It still over-fires where a document legitimately restates a whole short
-# clause, and a single harmless finding is what the excuse route is for.
-# ---------------------------------------------------------------------------
-FRAGMENT_SOURCE = 'skills/task/scripts/check-fix-plan.sh'
-FRAGMENT_NAME = 'ARMA_QUOTE_MIN'
-REPEATS = 0
-
-
-def fragment_minimum():
-    body = read_method(FRAGMENT_SOURCE,
-                       'and the minimum fragment length is borrowed from it rather than chosen here')
-    if body is None:
-        return None
-    m = re.search(r'(?m)^\s*%s=(\d+)' % FRAGMENT_NAME, body)
-    if m is None:
-        blocked('%s no longer states %s, so the minimum fragment length could not be borrowed and inventing one is the thing this class refuses'
-                % (FRAGMENT_SOURCE, FRAGMENT_NAME))
-        return None
-    return int(m.group(1))
-
-
-def isolation(doc, units, minimum):
-    global REPEATS
-    # A SITE IS A STATEMENT, not an occurrence. The same literal twice inside one
-    # sentence cannot drift apart -- one edit moves both -- and counting
-    # occurrences reported `20 + 20 = 41` as a duplicated fact against itself.
-    sites = {}
-    for statement in units:
-        for literal in set(lit for lit, _off in figures(statement)):
-            sites.setdefault(literal, []).append(statement)
-    for literal, where in sorted(sites.items()):
-        if len(where) < 2:
-            continue
-        REPEATS += 1
-        finding('isolation', doc, literal,
-                '%s states the figure [%s] at %d sites that can drift apart: %s'
-                % (doc, literal, len(where),
-                   ' || '.join(norm(s)[:90] for s in where[:3])))
-
-    spans = {}
-    for statement in units:
-        text = norm(statement)
-        pieces = [c.strip() for c in text.strip('|').split('|')] if text.startswith('|') else [text]
-        for piece in pieces:
-            if len(piece) >= minimum:
-                spans.setdefault(piece, []).append(text)
-    for span, where in sorted(spans.items()):
-        if len(where) < 2:
-            continue
-        REPEATS += 1
-        # BOTH SITES ARE NAMED, and a repeated table CELL is the case where the
-        # span does not name them by itself: there the span is the cell and the
-        # sites are two different rows. A repeated whole statement IS its own
-        # site, so the surrounding text is printed only where it adds one.
-        shown = [norm(s)[:90] for s in where[:3] if norm(s) != span]
-        finding('isolation', doc, span,
-                '%s states the same span at %d sites that can drift apart -- [%s]%s'
-                % (doc, len(where), span[:160],
-                   (': ' + ' || '.join(shown)) if shown else ''))
-
-

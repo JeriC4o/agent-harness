@@ -1,6 +1,6 @@
 ---
 name: redline-fold
-description: "The closing pass of a task that accumulated redline corrections: once the PR is approved, apply the correction log's rows to the design items that diverged, collapse the spec to its record of deliberate absence, remove the redline log and the plan's record of excused findings, and surface one commit — on that PR if it is still open, or on a fold-only PR if the merge already happened."
+description: "The closing pass of a task that accumulated redline corrections: once the PR is approved, apply the correction log's rows to the design items that diverged, collapse the spec to its record of deliberate absence, remove the redline log, and surface one commit — on that PR if it is still open, or on a fold-only PR if the merge already happened."
 when_to_use: "Activate on the user's word that the PR is APPROVED, in either of two régimes. EARLY: the PR is still open and you are standing on its branch — the fold's commit joins that PR. LATE: the merge already happened and a log survived it — cut a fresh branch off the default one and the fold gets its own PR. Not on 'pushed': an unapproved PR is before both régimes. The approval cannot be measured in a repository whose review surface reports none, so the user's invocation IS the approval; an agent that merely believes a PR was approved has nothing to read."
 argument-hint: "[spec base name, when the branch carries more than one plan]"
 allowed-tools: Read, Edit, Write, Glob, Grep, Bash(git branch:*), Bash(git status:*), Bash(git rev-parse:*), Bash(git show:*), Bash(git rm:*), Bash(git mv:*), Bash(git diff:*), Bash(git checkout:*), Bash(git switch:*), Bash(git ls-tree:*), Bash(gh pr view:*), Bash(ls:*), Bash(scripts/check-redline.sh:*), Bash(scripts/check-plan-convergence.sh:*)
@@ -66,11 +66,8 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    no rows: **stop here** and record which branch was taken. The frozen plan already describes what
    shipped, so there is nothing to correct, and a rewrite that changes nothing still risks dropping a
    sentence nobody re-read. If a log with no rows is present, remove it (step 5) — a surviving log is the
-   signal that this pass never ran, and leaving an empty one would raise that signal falsely. **A record
-   of excused findings is removed on this branch too**, if the plan has one: a plan can waive a finding
-   without ever diverging, so the two records do not always arrive together, and the gate reports either
-   one surviving on its own finding. Stopping here without removing it would leave a survivor the gate
-   would red on and this branch would never reach.
+   signal that this pass never ran, and leaving an empty one would raise that signal falsely. The plan's
+   record of excused findings stays on this branch, as on every other (step 5).
 
 3. **Spawn the `design` subagent to apply the log's rows.** The orchestrator never writes a
    `*.design.md`; this pass is a spawn, not an edit.
@@ -111,13 +108,13 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    ")
    ```
 
-5. **Remove the log from the tree, and the plan's record of excused findings with it** — `git rm` both:
-   `<spec-base>.redline.md` and `<spec-base>.excuses.md`, the second only if the plan has one, since most
-   waive nothing. Nothing downstream reads either: the post-merge reading list names the spec and the
-   design and no third class, and the commit history preserves both records. That removal is what makes a
-   survivor mean *this pass never ran*. **The record goes because the plan's end of life ends the spot
-   every row of it covers** — a waiver is scoped to one plan and nothing inherits it. Nothing else deletes
-   it: the merge-time cleanup removes the working record by its exact name and reaches neither of these.
+5. **Remove the log from the tree** — `git rm <spec-base>.redline.md`. Nothing downstream reads it: the
+   post-merge reading list names the spec and the design, and the commit history preserves the log. That
+   removal is what makes a survivor mean *this pass never ran*. Nothing else deletes it: the merge-time
+   cleanup removes the working record by its exact name and does not reach it. **The plan's record of
+   excused findings stays**, beside the folded spec: the archived plan still has a reader in the
+   convergence check, and removing the record would un-excuse every waiver in it permanently. Its rows
+   stay scoped to this plan; nothing inherits them.
 
 6. **Read the corrected ITEMS and vouch for them** — the items a row was recorded against, never every
    section. This is a **judgement** and is named as one. It cannot be done by searching for superseded
@@ -141,8 +138,7 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    ```
 
    `folded` compares the three retained spec sections byte-for-byte against the previous commit, asserts
-   the design carries none of the residue patterns, and asserts the log and the record of excused
-   findings are both gone, each on its own finding. The comparand is version control deliberately — it
+   the design carries none of the residue patterns, and asserts the log is gone. The comparand is version control deliberately — it
    predates the rewrite and therefore cannot BE the rewrite, which a copy captured by this same pass
    could not promise. `revision` is the **spot-check** under step 6's judgement, never a substitute for
    it: it matches a bounded list of the phrases that introduce an account of a past revision, so it
@@ -160,18 +156,20 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    whole document describes what shipped. **Those three REPORT rather than hold**, so this call is read
    rather than passed: fix what it names in the folded document, and carry anything it names elsewhere
    into the commit message instead of fixing it here — the two tree-wide classes can name a position or
-   an identity no plan's author put there. A cannot-run is still not a pass. **The three holding classes
-   are not this pass's business** — completeness, isolation and arithmetic read the plan AS A PLAN, and
-   by this point the spec is collapsed, so their counts read low for a reason that has nothing to do
-   with the fold. Expect that and read it as the collapse rather than as a defect.
+   an identity no plan's author put there. A cannot-run is still not a pass. **The other three classes
+   are not this pass's business** — completeness, arithmetic and isolation read the plan AS A PLAN, and
+   by this point the spec is collapsed. Completeness recognises a folded spec and says in its roster line
+   that it did not examine the criteria; the other counts read low for the same reason. Read that as the
+   collapse rather than as a defect.
 
 8. **Surface the commit; do not commit unasked.** One commit carrying the corrected design, the
-   collapsed spec and the removal of both records — on the task's own PR in the early régime, and on a
+   collapsed spec and the removal of the log — on the task's own PR in the early régime, and on a
    fold-only PR opened off the default branch in the late one. **In the late régime, check whether the task's own
-   Step 12 move to `ai-docs/plans/done/` ever happened** and carry it in the same commit if it did not: a
-   merge that outran the fold outran everything after it too, and the trio sitting in the active directory
-   while every completed plan sits beside it in `done/` is the same omission wearing a different file
-   path. Give the user the staged-file list and a suggested message. No review pass, no user reading and no approval gate is added on the folded document: its
+   Step 12 move to `ai-docs/plans/done/` ever happened** and carry it in the same commit if it did not —
+   the spec, the design and the record of excused findings together, since the convergence check looks
+   for that record beside the spec. A merge that outran the fold outran everything after it too, and the
+   plan's files sitting in the active directory while every completed plan sits beside them in `done/` is
+   the same omission wearing a different file path. Give the user the staged-file list and a suggested message. No review pass, no user reading and no approval gate is added on the folded document: its
    correctness is whether it matches the shipped code, and step 7 is more than a review spawn on a
    documentation-only commit would deliver.
 

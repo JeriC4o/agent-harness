@@ -111,7 +111,7 @@ command -v python3 >/dev/null 2>&1 \
 # fit no hand-written script. A per-file route does exist and the verification
 # payload took it: the Thousand-line exemption row in ai-docs/context.md. The
 # six classes moved out in the two groups this check already states as data:
-# the three that HOLD a plan into one sibling, the three whose findings are a
+# the ones that HOLD a plan into one sibling, the ones whose findings are a
 # report into the other. What the core keeps is what both groups read.
 #
 # A payload that EXISTS but cannot be loaded reports as findings rather than as
@@ -127,12 +127,12 @@ PAYLOAD="${HERE}/check-plan-convergence.py"
   || { printf 'check-plan-convergence: cannot run -- the payload %s is missing or unreadable, and an absent payload is not a clean sweep\n' "$PAYLOAD" >&2; exit 2; }
 HOLDING_PAYLOAD="${HERE}/check-plan-convergence-holding.py"
 [ -e "$HOLDING_PAYLOAD" ] \
-  || { printf 'check-plan-convergence: cannot run -- the payload sibling %s does not exist, so the three classes that HOLD a plan would never run and a verdict without them is not a clean sweep\n' "$HOLDING_PAYLOAD" >&2; exit 2; }
+  || { printf 'check-plan-convergence: cannot run -- the payload sibling %s does not exist, so the classes that HOLD a plan would never run and a verdict without them is not a clean sweep\n' "$HOLDING_PAYLOAD" >&2; exit 2; }
 [ -r "$HOLDING_PAYLOAD" ] \
   || { printf 'check-plan-convergence: cannot run -- the payload sibling %s is unreadable\n' "$HOLDING_PAYLOAD" >&2; exit 2; }
 REPORTING_PAYLOAD="${HERE}/check-plan-convergence-reporting.py"
 [ -e "$REPORTING_PAYLOAD" ] \
-  || { printf 'check-plan-convergence: cannot run -- the payload sibling %s does not exist, so the three classes whose findings are a report would never run and a verdict without them is not a clean sweep\n' "$REPORTING_PAYLOAD" >&2; exit 2; }
+  || { printf 'check-plan-convergence: cannot run -- the payload sibling %s does not exist, so the classes whose findings are a report would never run and a verdict without them is not a clean sweep\n' "$REPORTING_PAYLOAD" >&2; exit 2; }
 [ -r "$REPORTING_PAYLOAD" ] \
   || { printf 'check-plan-convergence: cannot run -- the payload sibling %s is unreadable\n' "$REPORTING_PAYLOAD" >&2; exit 2; }
 

@@ -421,3 +421,7 @@ path-line	scripts/test-check-plan-convergence.sh	docs/plugin-only.md:7
 prose-line	scripts/test-check-plan-convergence.sh	line 42
 path-line	scripts/test-review-ledger.sh	src/a.sh:1
 path-line	scripts/test-review-ledger.sh	src/b.sh:1
+path-line	scripts/test-check-method-purity.sh	skills/s/SKILL.md:1
+path-line	scripts/test-check-method-purity.sh	ai-docs/plan.md:1
+path-line	scripts/test-check-method-purity.sh	scripts/x.sh:1
+path-line	skills/task/scripts/test-check-fix-plan.sh	ai-docs/plans/x.spec.md:2

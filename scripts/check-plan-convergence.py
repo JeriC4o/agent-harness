@@ -5,8 +5,8 @@
 # the flags, the preflights, the root resolution and the exit convention.
 #
 # There are three payload files: this one, check-plan-convergence-holding.py
-# with the three classes that HOLD a plan, and
-# check-plan-convergence-reporting.py with the three whose findings are a
+# with the two classes that HOLD a plan, and
+# check-plan-convergence-reporting.py with the four whose findings are a
 # report. This file loads both -- see THE TWO PAYLOAD SIBLINGS below for what
 # stays here and why.
 #
@@ -47,11 +47,12 @@ excused = []
 cannot = []
 
 # Which classes HOLD a plan and which only report. Stated once here so every
-# enumeration in the output agrees with it: the three mechanical classes hold,
-# the three whose findings are a report travel in the author's hand-back and
-# into the review instead. A caller refuses on the holding count, never on the
-# total, which is why the verdict carries both.
-HOLDING = ('completeness', 'isolation', 'arithmetic')
+# enumeration in the output agrees with it: the two whose findings a plan cannot
+# carry hold, and the four whose findings are a report travel in the author's
+# hand-back and into the review instead. A caller refuses on the holding count,
+# never on the total, which is why the verdict carries both. Isolation was the
+# third holding class and reports now -- its sibling states why.
+HOLDING = ('completeness', 'arithmetic')
 
 # ---------------------------------------------------------------------------
 # The excuse route.
@@ -599,8 +600,8 @@ def grant():
 # ---------------------------------------------------------------------------
 # WHAT STAYS HERE AND WHY. The single payload reached 1,447 lines against this
 # repository's hard thousand-line limit, so the six classes move out in the two
-# groups this check already states as data -- the three that HOLD a plan into
-# one sibling, the three that report into the other. What this file keeps is
+# groups this check already states as data -- the ones that HOLD a plan into
+# one sibling, the ones that report into the other. What this file keeps is
 # what BOTH groups read: the section-name derivation, the segmenter, the numeral
 # readers, the three relation patterns, the built-path marking, the excuse route
 # and the report. No helper of any class is called from any other class, which
@@ -702,7 +703,8 @@ if not cannot:
 
 # EACH GROUP IS ASKED IN TURN AND THE BLOCK IS RE-TESTED BETWEEN THEM, because
 # each group preflights an input it BORROWS rather than chooses -- the holding
-# group the minimum fragment length, the reporting group the baseline record --
+# group the sections a folded spec keeps, the reporting group the baseline
+# record and the minimum fragment length --
 # and a preflight that could not read its source must stop the classes behind it
 # instead of letting them report against a bound nobody established.
 if not cannot and HOLDING_CLASSES is not None:
@@ -720,7 +722,7 @@ def counts():
     # whether ten excuses waived ten holds or quieted ten reports: the first is
     # a plan proceeding over ten findings, the second is noise management.
     waived = sum(1 for cls, _line in excused if cls in HOLDING)
-    minimum = tally(HOLDING_CLASSES, 'MINIMUM', None)
+    minimum = tally(REPORTING_CLASSES, 'MINIMUM', None)
     own_refs = tally(HOLDING_CLASSES, 'SECTION_REFS')
     return ('documents=%d statements=%d regions=%d/%d numbers=%d identities=%d '
             'relations=%d not-evaluable=%d built=%d objects=%d criteria=%d '
@@ -738,7 +740,7 @@ def counts():
                tally(HOLDING_CLASSES, 'DELIVERY_COLUMN', 'absent'),
                own_refs, own_refs + tally(HOLDING_CLASSES, 'QUALIFIED_REFS'),
                minimum if minimum is not None else '-',
-               tally(HOLDING_CLASSES, 'REPEATS'),
+               tally(REPORTING_CLASSES, 'REPEATS'),
                tally(REPORTING_CLASSES, 'SWEPT'),
                tally(REPORTING_CLASSES, 'POSITIONS'),
                tally(REPORTING_CLASSES, 'ACCOUNTED'),
@@ -750,11 +752,19 @@ def counts():
                held, len(findings) - held, len(findings)))
 
 
+def criteria_reach():
+    """A folded spec states no criterion by construction, and a zero beside it
+    would read as a spec that forgot them."""
+    if tally(HOLDING_CLASSES, 'FOLDED', False):
+        return 'criteria not examined (the spec is folded: it carries only the sections the closing fold keeps)'
+    return '%d criteria' % tally(HOLDING_CLASSES, 'CRITERIA')
+
+
 def roster():
     """What each class examined, so a run that narrowed its own input set is
     distinguishable from a clean one. A zero where a non-zero is expected is a
     report about the run and never a clean verdict."""
-    minimum = tally(HOLDING_CLASSES, 'MINIMUM', None)
+    minimum = tally(REPORTING_CLASSES, 'MINIMUM', None)
     entered = tally(HOLDING_CLASSES, 'ENTERED', set()) | tally(REPORTING_CLASSES, 'ENTERED', set())
     skipped = tally(REPORTING_CLASSES, 'SKIPPED', {})
     for cls, examined in (('provenance', '%d numbers in %d documents'
@@ -762,12 +772,12 @@ def roster():
                           ('arithmetic', '%d relations, %d of them not evaluable'
                            % (tally(HOLDING_CLASSES, 'RELATIONS'),
                               tally(HOLDING_CLASSES, 'NOT_EVALUABLE'))),
-                          ('completeness', '%d objects, %d criteria, %d own-document section references'
+                          ('completeness', '%d objects, %s, %d own-document section references'
                            % (tally(HOLDING_CLASSES, 'OBJECTS'),
-                              tally(HOLDING_CLASSES, 'CRITERIA'),
+                              criteria_reach(),
                               tally(HOLDING_CLASSES, 'SECTION_REFS'))),
                           ('isolation', '%d repeated literals at or above %s characters'
-                           % (tally(HOLDING_CLASSES, 'REPEATS'),
+                           % (tally(REPORTING_CLASSES, 'REPEATS'),
                               minimum if minimum is not None else '-')),
                           ('reference', '%d positions in %d swept files, %d of them accounted for'
                            % (tally(REPORTING_CLASSES, 'POSITIONS'),

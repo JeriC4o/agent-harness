@@ -31,8 +31,8 @@
 # the rule necessarily does. That is why it is a SPOT-CHECK the FOLD runs as its
 # own step -- `skills/redline-fold/SKILL.md` calls `revision <design>` directly
 # -- and NOT a leg inside `folded`, which checks the retained spec sections, the
-# residue headings, the marker, the log and the record of excused findings, and
-# never reads the phrase list. The distinction is worth the sentence: a comment
+# residue headings, the marker and the log, and never reads the phrase list.
+# The distinction is worth the sentence: a comment
 # that promises a leg the code does not have is the quietest kind of false green,
 # and this one is the phrase list's only caller outside its own suite. Likewise
 # the fold's judgement step -- reading the CORRECTED ITEMS and vouching for them
@@ -392,7 +392,7 @@ do_pending() {
 
 # --- folded -----------------------------------------------------------------
 do_folded() {
-  local spec=$1 design=$2 sdir plans base h p log='' excuses=''
+  local spec=$1 design=$2 sdir plans base h p log=''
   readable "$spec" 'spec'
   readable "$design" 'design'
   sdir=$(dirname -- "$spec")
@@ -437,20 +437,9 @@ EOF
   done
   [ -z "$log" ] || finding "the redline log survives at ${log}, and the fold removes it"
 
-  # THE RECORD OF EXCUSED FINDINGS GOES WITH THE LOG, and it is asserted by the
-  # SAME literal-path construction rather than by a glob over the directory: a
-  # glob would also match a sibling plan's record, which this fold has no
-  # business removing and whose survival is correct. The plan's end of life ends
-  # the spot every row of it covers, so a surviving record means the same thing
-  # a surviving log does -- this pass did not finish. Reported SEPARATELY from
-  # the log, because the two do not always arrive together: a plan can waive a
-  # finding without ever diverging, so one finding naming both would leave the
-  # reader guessing which record actually survived.
-  for p in "${plans}/${base}.excuses.md" "${plans}/done/${base}.excuses.md"; do
-    [ -f "$p" ] || continue
-    excuses="${excuses}${excuses:+ }${p}"
-  done
-  [ -z "$excuses" ] || finding "the record of excused findings survives at ${excuses}, and the fold removes it with the log"
+  # THE RECORD OF EXCUSED FINDINGS IS NOT ASSERTED HERE, because the fold keeps
+  # it: the archived plan still has a reader in the convergence check, and a
+  # removed record would un-excuse every waiver in it permanently.
 
   printf 'check-redline: verb=folded verdict=%s findings=%s\n' "$(verdict_word)" "$FINDINGS"
   [ "$FINDINGS" -eq 0 ]

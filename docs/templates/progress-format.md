@@ -335,7 +335,7 @@ one not. Each row waives **one** finding of the plan-convergence check, for **th
 ```markdown
 | Class | Spot | Subject | Grounds |
 |---|---|---|---|
-| isolation | <design-path> § <heading or numbered item> | <the figure, object, id or span> | <why it does no harm here> |
+| completeness | <design-path> § <heading or numbered item> | <the figure, object, id or span> | <why it does no harm here> |
 ```
 
 - **Granted by an act that shows the finding first**, and by nothing else: the check's
@@ -350,8 +350,10 @@ one not. Each row waives **one** finding of the plan-convergence check, for **th
   the key, which is correct, because the two sites then no longer say the same thing.
 - **Removing a row is an act of the same kind as granting one**, done by hand, which is why this is a table
   a reader can find a row in. **Lifecycle:** created by the task's first grant act, moved to
-  `ai-docs/plans/done/` with the plan trio, and **removed by the fold together with the redline log** by
-  nobody's explicit act, because the plan's end of life ends the spot every row covers.
+  `ai-docs/plans/done/` with the spec and the design at the task's close, and **kept by the fold**. The
+  folded plan still has readers — the fold's own convergence call, and any later run over the archived
+  pair — and removing the record would un-excuse every waiver in it permanently, against a plan nobody
+  will act on. Its rows stay scoped to this plan; nothing inherits them.
 
 ## Criterion checks (Round N)
 
