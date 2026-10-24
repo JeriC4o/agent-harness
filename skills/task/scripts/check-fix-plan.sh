@@ -297,6 +297,20 @@ open_findings() { # <section file>
     }' "$1"
 }
 
+# A row's Target cell is an anchor, optionally followed by prose: the table has
+# no column for a row's guidance, so it shares the cell. The anchor is the text
+# up to the first space. Every reader of the cell takes it from here, because
+# two parsers of one cell disagreed once and every planned file read as
+# unplanned.
+target_anchor() { printf '%s' "${1%% *}"; }
+
+target_path() { # <Target cell> -> the anchor's path, without a trailing :line
+  local a
+  a=$(target_anchor "$1")
+  case ${a##*:} in ''|*[!0-9]*) ;; *) [ "$a" = "${a%:*}" ] || a=${a%:*} ;; esac
+  printf '%s\n' "$a"
+}
+
 anchor_fault() { # <path or path:line> -> the fault, or nothing when it resolves
   local anchor=$1 path line total
   case $anchor in
@@ -513,7 +527,7 @@ do_plan() {
 
   sum=0
   while IFS="$SEP" read -r ncells num disp target expected arma; do
-    anchor=${target%% *}
+    anchor=$(target_anchor "$target")
     fault=$(anchor_fault "$anchor")
     [ -z "$fault" ] || faults="${faults}${faults:+; }finding ${num}: ${fault}"
     if [ "${arma}" != none ] && [ -n "${arma}" ]; then
@@ -600,7 +614,7 @@ do_plan() {
     # Inside `case`, `*` matches `/` -- there is no pathname expansion here -- so
     # `ai-docs/plans/*.design.md` already covers `ai-docs/plans/done/<x>.design.md`.
     if [ "$disp" = fix ]; then
-      case $target in
+      case $(target_anchor "$target") in
         ai-docs/plans/*.spec.md|ai-docs/plans/*.spec.md:*)
           routespec="${routespec}${routespec:+, }finding ${num} targets ${target}" ;;
         ai-docs/plans/*.design.md|ai-docs/plans/*.design.md:*)
@@ -763,7 +777,9 @@ do_applied() {
   # `object:`, `resolved:` or `amendment:` row names a file `fix-apply` is
   # forbidden to touch, so admitting its target would pre-authorise the one edit
   # this arm exists to report.
-  planned=$(table_rows "$sec" | awk -F"$SEP" '$3 == "fix" { t = $4; sub(/:[0-9]+$/, "", t); print t }')
+  planned=$(table_rows "$sec" | while IFS="$SEP" read -r _ _ disp target _; do
+    [ "$disp" != fix ] || target_path "$target"
+  done)
 
   actual=0; ignored=0; binary=0; unplanned=''; binpaths=''; ignpaths=''
   while IFS="	" read -r added removed path; do

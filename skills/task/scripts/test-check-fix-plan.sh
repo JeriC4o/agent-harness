@@ -167,6 +167,24 @@ check "an active spec path on a fix row routes -- the disposition is load-bearin
 has   "  decision" "$OUT" "decision=ROUTE-SPEC reason=spec-amendment"
 hasnt "  and never reports a plan the fix agent may apply" "$OUT" "decision=PASS"
 
+# Routing reads the anchor, not the whole cell: prose after a bare plan path
+# still routes, and a plan path named only in the prose does not.
+F=$(mkfix); review "$F" "$ONE_OPEN"
+plan "$F" x 'the suite' 6 '| 1 | fix | ai-docs/plans/t.spec.md guidance prose | 6 | none |'
+gate plan "$(prog "$F")"
+check "a spec path with prose after it routes" "$RC" "1"
+has   "  decision" "$OUT" "decision=ROUTE-SPEC reason=spec-amendment"
+F=$(mkfix); review "$F" "$ONE_OPEN"
+plan "$F" x 'the suite' 6 '| 1 | fix | ai-docs/plans/t.design.md guidance prose | 6 | none |'
+gate plan "$(prog "$F")"
+check "a design path with prose after it routes" "$RC" "1"
+has   "  arm A3 fires on it" "$OUT" "A3   design-amendment     FAIL  finding 1 targets ai-docs/plans/t.design.md"
+F=$(mkfix); review "$F" "$ONE_OPEN"; printf 'notes\n' > "${F}/ai-docs/plans/notes.md"
+plan "$F" x 'the suite' 6 '| 1 | fix | ai-docs/plans/notes.md cf ai-docs/plans/x.spec.md:2 | 6 | none |'
+gate plan "$(prog "$F")"
+check "a spec path named only in the prose does not route" "$RC" "0"
+has   "  arm A2 passes" "$OUT" "A2   spec-amendment       pass"
+
 F=$(mkfix); review "$F" "$ONE_OPEN"
 plan "$F" x 'the suite' 6 '| 1 | amendment: spec | docs/workflow.md:10 | 6 | none |'
 gate plan "$(prog "$F")"
@@ -586,7 +604,8 @@ has   "  so the arm keys on the disposition, not the row's position" "$OUT" "dec
 # never match -- `$` anchors end-of-line, and the empty result reads as drift.
 ALLOWED=$(grep -F 'planned=$(table_rows' "$GATE")
 check "the allowed-set construction was found at all" "$(printf '%s\n' "$ALLOWED" | grep -c .)" "1"
-has   "  and it admits a row only when its disposition is exactly fix" "$ALLOWED" '$3 == "fix"'
+ALLOWED=$(grep -F -A2 'planned=$(table_rows' "$GATE")
+has   "  and it admits a row only when its disposition is exactly fix" "$ALLOWED" '[ "$disp" != fix ] || target_path "$target"'
 hasnt "  so an amendment row cannot widen it" "$ALLOWED" 'amendment'
 hasnt "  nor can an objected row" "$ALLOWED" 'object'
 
@@ -722,6 +741,25 @@ printf 'edit\n' >> "${F}/docs/workflow.md"; printf 'new\n' > "${F}/docs/created.
 gate applied "$(prog "$F")"
 check "an unplanned file CREATED this round is a finding" "$RC" "1"
 has   "  names the path" "$OUT" "docs/created.md"
+
+# A Target cell carrying prose after its anchor. The plan arm takes the
+# anchor up to the first space, so arm (a) must read the same path from it.
+F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
+plan "$F" "$B" 'the suite' 3 '| 1 | fix | docs/workflow.md:10 — address the `x` token, not the line | 3 | none |'
+gate plan "$(prog "$F")"
+check "a Target with prose after the anchor passes the plan gate" "$RC" "0"
+printf 'edit\n' >> "${F}/docs/workflow.md"
+gate applied "$(prog "$F")"
+check "and the file it names is planned on apply" "$RC" "0"
+has   "  arm (a) passes" "$OUT" "(a)  unplanned-file       pass"
+
+F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
+plan "$F" "$B" 'the suite' 3 '| 1 | fix | docs/workflow.md guidance prose with no line | 3 | none |'
+printf 'edit\n' >> "${F}/docs/workflow.md"; printf 'edit\n' >> "${F}/docs/other.md"
+gate applied "$(prog "$F")"
+check "a prose Target without a line still plans its path, and an unplanned edit still fires" "$RC" "1"
+has   "  naming only the unplanned path" "$OUT" "(a)  unplanned-file       FAIL  docs/other.md"
+hasnt "  not the planned one" "$(printf '%s\n' "$OUT" | grep -F '(a)')" "docs/workflow.md"
 
 printf '\n== T1-I applied REPORTS the measurement; the size arm is gone ==\n'
 # Arm (b) is withdrawn, so nothing post-apply compares a total against a limit.
