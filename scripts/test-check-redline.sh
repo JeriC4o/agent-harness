@@ -191,44 +191,34 @@ run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
 check "a log left in done/ is found too, from a spec in the active directory" "$RC" "1"
 has   "  and names it" "$OUT" "done/t.redline.md"
 
-# THE RECORD OF EXCUSED FINDINGS, which the fold removes WITH the log. The
-# fixture carries none, which is why every leg above is clean on it: most plans
-# waive nothing and an absent record is the ordinary state. These legs plant one.
-#
-# THE SIBLING CONTROL IS THE LEG THAT MATTERS. A glob over the plans directory
-# would satisfy every firing leg here and ALSO redden on another plan's record,
-# which this fold has no business removing -- so the firing legs alone cannot
-# tell the literal-path construction from a glob, and the silent one can.
+# THE RECORD OF EXCUSED FINDINGS, which the fold KEEPS. The folded plan still
+# has readers -- the fold's own convergence call, and any later run over the
+# archived pair -- and a removed record would un-excuse every waiver in it
+# permanently. The fixture
+# carries none, which is the ordinary state; these legs plant one beside the
+# plan, in both directories the fold finds a plan in, and assert it is not a
+# finding -- alone, and beside a surviving log, which still is one.
 mkexcuses() { # <tree> <relative directory> <spec base>
   { printf '| Class | Spot | Subject | Grounds |\n'
     printf '|---|---|---|---|\n'
-    printf '| isolation | `%s.design.md` § Approach | the figure 24 | a restated disposition, not a fact two places could disagree about |\n' "$3"
+    printf '| arithmetic | `%s.design.md` § Approach | 20 + 20 = 41 | a worked example of a false equation |\n' "$3"
   } > "${1}/${2}/${3}.excuses.md"
 }
 
 T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans t
 run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "a surviving record of excused findings is a finding on its own" "$RC" "1"
-has   "  and names where it survives" "$OUT" "the record of excused findings survives at"
-has   "  by path" "$OUT" "ai-docs/plans/t.excuses.md"
-hasnt "  and does not report the log, which is gone" "$OUT" "the redline log survives"
+check "a record of excused findings beside the plan survives the fold, and is no finding" "$RC" "0"
+has   "  verdict" "$OUT" "verdict=clean"
 
 T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans/done t
 run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "a record left in done/ is found too, from a spec in the active directory" "$RC" "1"
-has   "  and names it" "$OUT" "done/t.excuses.md"
+check "a record in done/ survives too" "$RC" "0"
 
 T=$(mktree); mkexcuses "$T" ai-docs/plans t
 run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "both surviving -> findings" "$RC" "1"
-has   "  the log on its own finding" "$OUT" "the redline log survives at"
-has   "  and the record on a separate one, so the reader knows which step was skipped" \
-      "$OUT" "the record of excused findings survives at"
-
-T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mkexcuses "$T" ai-docs/plans u
-run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
-check "control: ANOTHER plan's record of excused findings is not this fold's business" "$RC" "0"
-has   "  verdict" "$OUT" "verdict=clean"
+check "a surviving log beside a kept record -> findings" "$RC" "1"
+has   "  the log is reported" "$OUT" "the redline log survives at"
+hasnt "  and the record is not" "$OUT" "t.excuses.md"
 
 # The spec collapsed in done/, which is where the fold actually finds it.
 T=$(mktree)

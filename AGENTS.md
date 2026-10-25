@@ -78,6 +78,7 @@ is the same commands.
    `hooks/lib/test-plan-invariants-guard.sh`, `hooks/lib/test-gate-record.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
+   `skills/pr-merged/scripts/test-cleanup-progress.sh`,
    `skills/task/scripts/test-check-fix-plan.sh`,
    `scripts/test-check-plan-invariants.sh`, `scripts/test-check-propagation-arms.sh`,
    `scripts/test-check-redline.sh`, `scripts/test-check-release.sh`,

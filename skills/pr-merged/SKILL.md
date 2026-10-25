@@ -48,7 +48,7 @@ Otherwise, run in order. **Capture `<previous-branch>` from the `Current branch:
    ${CLAUDE_SKILL_DIR}/scripts/cleanup-progress.sh <previous-branch>
    ```
 
-   The script encapsulates the ticket-linkage derivation (branch name → ticket key → spec lookup → progress-file paths) and handles the failure modes:
+   The script finds the progress file by its own `**Branch:** <previous-branch>` line, which survives the closing fold. Only when no progress file names the branch does it fall back to ticket linkage (branch name → ticket key → spec lookup → progress-file path), with two skip cases:
 
    - **Branch name doesn't match `KEY-NNN-<slug>`** (e.g. a manual branch): prints a one-line note and skips the spec-driven cleanup.
    - **No matching `/task` spec** (manual PR without `/task`): skips the `/task`-progress-file deletion.

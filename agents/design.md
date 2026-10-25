@@ -107,17 +107,15 @@ to their pre-fold text — because the design has no section that can carry it: 
 built, never the boundary of what was deliberately not built. That write belongs to the spec's owner, not
 to this subagent and not to the orchestrator.
 
-**The log is removed from the tree, and the plan's record of excused findings goes with it** — the plan's
-end of life ends the spot every row of that record covers. Nothing downstream reads either, the post-merge
-reading list naming the spec and the design and no third class, and the commit history preserves both. A
-surviving log is therefore the unambiguous mechanical signal that the fold never ran, which is what lets
-the merge-time workflow refuse on one. **The two do not always arrive together** — a plan may waive a
-finding without ever diverging — so each is removed on its own account.
+**The log is removed from the tree.** Nothing downstream reads it, the post-merge reading list naming the
+spec and the design, and the commit history preserves it. A surviving log is therefore the unambiguous
+mechanical signal that the fold never ran, which is what lets the merge-time workflow refuse on one. **The
+plan's record of excused findings stays**: the archived plan still has a reader in the convergence check,
+and removing the record would un-excuse every waiver in it permanently.
 
 **The whole output is gated**, by `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh folded <spec> <design>`:
 the three retained spec sections byte-compared against the previous commit, the design asserted free of
-all three residue patterns, and the log and the record of excused findings each asserted gone on its own
-finding. The comparand is version control deliberately — it predates the rewrite and therefore cannot BE
+all three residue patterns, and the log asserted gone. The comparand is version control deliberately — it predates the rewrite and therefore cannot BE
 the rewrite, which a copy captured by this same pass could not promise. Its three outcomes are this
 repository's: clean, findings, and cannot-run, where cannot-run is not a pass.
 
@@ -193,11 +191,12 @@ it will be tested is not, and is not this document's business.
 - Decomposition is **part** of design, not a separate phase.
 - **This document's own exit check, and it is a refusal.** Before handing back, run
   `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>` and hand back on
-  nothing but a verdict carrying no unexcused finding of the three classes that HOLD a plan —
-  completeness, isolation, arithmetic. On anything else, say which of the two non-clean outcomes it was,
-  findings or cannot-run, and which findings it named. **The other three report and do not hold:**
-  provenance, reference and pairing travel in the hand-back for the reviewer to weigh and never block it,
-  their input being the whole tracked tree, so one of them can name something nobody here wrote. A holding
+  nothing but a verdict carrying no unexcused finding of the two classes that HOLD a plan —
+  completeness and arithmetic. On anything else, say which of the two non-clean outcomes it was,
+  findings or cannot-run, and which findings it named. **The other four report and do not hold:**
+  provenance, reference, pairing and isolation travel in the hand-back for the reviewer to weigh and never
+  block it. Two of them read the whole tracked tree, so they can name something nobody here wrote, and a
+  repeated fact is not by itself a fault. A holding
   finding is fixed, or excused by the act that records the grounds beside the plan; nothing else lets the
   document through. **Read the counts and the per-class roster rather than the exit status** — a class
   reporting zero over a document with content examined nothing. One obligation falls out of it and is
