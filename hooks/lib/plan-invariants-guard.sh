@@ -5,15 +5,25 @@
 # shell.
 #
 # Run:  fed a PreToolUse payload on stdin; emits an `ask` decision or nothing.
-# Exit: always 0. A malformed payload, an absent jq or an unreadable field
-#       yields silence, which defers to the normal permission flow rather than
-#       blocking work on a guard that could not read its own input.
+# Exit: always 0. A malformed payload, an absent jq, an unreadable field or an
+#       absent or unreadable transcript yields silence, which defers to the
+#       normal permission flow rather than blocking work on a guard that could
+#       not read whether it is armed. Once armed, the two inputs that decide an
+#       edit fail the other way: an unreadable element record or an unreadable
+#       change is put to the author.
 #
-# THE REFUSAL IS PAGE-WIDE BY DECISION. Every edit to a protected page is put to
-# the author, inspecting nothing about what the edit touches. A narrower
-# content-keyed refusal was considered and rejected with the interruption cost
-# named and accepted, so the breadth of PROTECTED is a requirement rather than a
-# detail: every surplus member is a recurring interruption.
+# ARMED BY LEARNING MODE, KEYED ON THE ELEMENT SIGNATURE (GH-169). The threat is
+# the measured one: a self-improvement pass made a new element required. So the
+# refusal fires only in a session that ran one of the automated learning passes
+# -- /improve, /improve-global, or /ai-audit, whose escalation audit edits
+# instruction files on its own -- and while armed an Edit or Write asks only
+# when it changes the page's element signature. A shell write asks whenever it
+# targets a protected page, because its content is not visible here. Outside
+# learning mode it is silent, and an element arriving or leaving is caught by
+# scripts/check-plan-invariants.sh in the full check list and by the PR review.
+# It replaced a page-wide refusal that prompted on every edit: about 36 prompts
+# in auto mode, where 2 of 70 edits to these pages changed a required-section
+# name.
 #
 # THE PAGE LIST IS DATA. scripts/check-plan-invariants.sh extracts the covered
 # set from PROTECTED below and compares it against the table in
@@ -113,18 +123,127 @@ emit() { # <marker-and-reason>
   exit 0
 }
 
-reason_for() { # <lead> <pages>
+reason_for() { # <lead> <pages> <what was seen>
   r="${CLAUDE_PLUGIN_ROOT:-}"
   a=$("${HERE}/plugin-ref.sh" docs/plan-invariants.md 2>/dev/null)
   [ -n "$a" ] || a="${r:+$r/}docs/plan-invariants.md — correct operation of the plugin requires read access to the plugin directory${r:+ $r}"
-  printf '%s -- %s. That page defines or enforces a required element of a spec or a design, so EVERY edit to it is put to you, whatever the edit touches: a typo fix in an unrelated paragraph is refused exactly as a change to the required-element set is. ALLOWING this call lets the edit proceed, which is the authorisation route rather than a way round it -- installing or repairing this protection never requires switching it off. What makes a page a member, the seven members with a reason each, and the near misses deliberately left out: %s.' \
-    "$1" "$2" "$a"
+  printf '%s -- %s. That page defines or enforces a required element of a spec or a design, and this session ran /improve, /improve-global or /ai-audit, so a change to what a spec or a design must contain is put to you rather than made by the learning pass alone. %s ALLOWING this call lets the edit proceed, which is the authorisation route rather than a way round it. What makes a page a member, the seven members with a reason each, and the near misses deliberately left out: %s.' \
+    "$1" "$2" "$3" "$a"
+}
+
+# [learning-mode]
+# A session is in learning mode once its transcript records a run of /improve,
+# /improve-global or /ai-audit: a user message that IS the slash command, or a
+# Skill tool call naming it. Read by structure, not by text, because the
+# transcript also holds every MENTION of those names -- the skill listing, tool
+# output, prose -- and a mention is not a run. It lasts for the rest of the
+# session. A subagent's payload carries the parent's transcript, so a pass the
+# skill delegates is armed too.
+#
+# THE SHAPES ARE CLAUDE CODE'S, NOT OURS. Measured on the CLI's own transcripts:
+# a skill's slash command is a user message whose string content opens with
+# <command-message>NAME</command-message>, and a model-invoked skill is a Skill
+# tool_use with input.skill. If the CLI records either differently, the refusal
+# silently stays off -- the suite's fixtures pin both shapes, and the
+# verification in the full check list is unaffected.
+#
+# The verdict is read from jq's OUTPUT, never from the pipeline's status: `any`
+# stops at the first run it finds, grep then dies on SIGPIPE, and under pipefail
+# that status reads a found run as none -- on exactly the long transcripts where
+# the run sits early.
+learning_mode() {
+  tp=$(printf '%s' "$in" | jq -r '.transcript_path // empty' 2>/dev/null) || return 1
+  [ -n "$tp" ] && [ -r "$tp" ] || return 1
+  verdict=$(grep -F -e 'improve' -e 'ai-audit' -- "$tp" 2>/dev/null | jq -n -R '
+    def learning: type == "string" and test("^(harness:)?(improve(-global)?|ai-audit)$");
+    any(inputs | fromjson? | objects;
+      (.type == "user" and (.message.content | type) == "string"
+        and (([.message.content | capture("^<command-message>(?<n>[^<]*)</command-message>") | .n]
+              | first // "") | learning))
+      or (.type == "assistant" and (.message.content | type) == "array"
+        and any(.message.content[]; type == "object" and .type == "tool_use"
+                and .name == "Skill" and (.input.skill | learning))))' 2>/dev/null)
+  [ "$verdict" = true ]
+}
+
+# [element-names]
+# The required-element names, read from the record in docs/plan-invariants.md
+# rather than retyped here, so the two cannot drift apart.
+ELEMENT_NAMES=""
+load_element_names() {
+  rec="${CLAUDE_PLUGIN_ROOT:-${HERE}/../..}/docs/plan-invariants.md"
+  ELEMENT_NAMES=$(awk '/^\| (spec|design) \| `## [^`]+` \|[[:space:]]*$/ {
+      s = $0; sub(/^[^`]*`## /, "", s); sub(/`.*$/, "", s); print s }' "$rec" 2>/dev/null | sort -u)
+  [ -n "$ELEMENT_NAMES" ]
+}
+
+# [element-signature]
+# A text's composition as a sorted multiset: every heading span of level two or
+# deeper, wherever it sits on the line (a template line, a backticked mention, a
+# quoted list entry), and every occurrence of a required-element name. Two texts
+# with equal signatures add, remove and rename no section -- which holds of a
+# PAGE, not of an edit's own text: renaming `## Risks` by replacing only the
+# word after the marker leaves both sides of the edit free of any heading. So an
+# edit is judged by the page before it against the page after it.
+signature() { # stdin: text
+  NAMES="$ELEMENT_NAMES" awk -v q="'" '
+    BEGIN { n = split(ENVIRON["NAMES"], name, "\n"); hre = "##+[ \t]+[^`\"|" q "]+" }
+    {
+      rest = $0
+      while (match(rest, hre)) {
+        h = substr(rest, RSTART, RLENGTH); sub(/[ \t]+$/, "", h); print "H " h
+        rest = substr(rest, RSTART + RLENGTH)
+      }
+      for (i = 1; i <= n; i++) {
+        if (name[i] == "") continue
+        rest = $0
+        while ((p = index(rest, name[i])) > 0) { print "N " name[i]; rest = substr(rest, p + length(name[i])) }
+      }
+    }' | LC_ALL=C sort
 }
 
 if [ -n "$fp" ]; then
   record_hit "$fp"
   [ -n "$HITS" ] || exit 0
-  emit "$(reason_for 'CONFIRM: this edit targets a protected plan-invariants page' "$HITS")"
+  learning_mode || exit 0
+  load_element_names \
+    || emit "$(reason_for 'CONFIRM: this edit targets a protected plan-invariants page' "$HITS" \
+         'The required-element record could not be read, so this edit cannot be told apart from one that changes a required section.')"
+  shape=$(printf '%s' "$in" | jq -r '.tool_input | if .content != null then "write"
+           elif .old_string != null or .new_string != null then "edit" else "" end' 2>/dev/null) || shape=""
+  case "$shape" in
+    write)
+      old=$(cat -- "$fp" 2>/dev/null) || old=""
+      new=$(printf '%s' "$in" | jq -r '.tool_input.content' 2>/dev/null) || exit 0 ;;
+    edit)
+      [ -r "$fp" ] \
+        || emit "$(reason_for 'CONFIRM: this edit targets a protected plan-invariants page' "$HITS" \
+             'The page could not be read, so this edit cannot be told apart from one that changes a required section.')"
+      # The page after the edit, replaced literally the way the tool replaces:
+      # the first occurrence, or every one under replace_all. Prefixed so a page
+      # the edit empties is not mistaken for no output.
+      after=$(printf '%s' "$in" | jq -r --rawfile page "$fp" '
+          .tool_input as $t | ($t.old_string // "") as $o | ($t.new_string // "") as $n
+          | if $o == "" then empty else ($page | split($o)) as $p
+            | if ($p | length) < 2 then empty
+              elif $t.replace_all == true then "x" + ($p | join($n))
+              else "x" + $p[0] + $n + ($p[1:] | join($o)) end end' 2>/dev/null) || after=""
+      if [ -n "$after" ]; then
+        old=$(cat -- "$fp" 2>/dev/null) || old=""
+        new=${after#x}
+      else
+        # The replaced text is not on the page, so the edit cannot apply; what
+        # is left to judge is its own text.
+        old=$(printf '%s' "$in" | jq -r '.tool_input.old_string // ""' 2>/dev/null) || exit 0
+        new=$(printf '%s' "$in" | jq -r '.tool_input.new_string // ""' 2>/dev/null) || exit 0
+      fi ;;
+    *)
+      emit "$(reason_for 'CONFIRM: this edit targets a protected plan-invariants page' "$HITS" \
+        'The change this tool call makes could not be read, so it cannot be told apart from one that changes a required section.')" ;;
+  esac
+  [ "$(printf '%s\n' "$old" | signature)" = "$(printf '%s\n' "$new" | signature)" ] && exit 0
+  emit "$(reason_for 'CONFIRM: this edit changes a required section on a protected plan-invariants page' "$HITS" \
+    'This edit adds, removes or renames a section heading or a required-element name.')"
 fi
 
 [ -n "$cmd" ] || exit 0
@@ -448,4 +567,6 @@ EOF
 fi
 
 [ -n "$HITS" ] || exit 0
-emit "$(reason_for 'CONFIRM: this command writes to a protected plan-invariants page' "$HITS")"
+learning_mode || exit 0
+emit "$(reason_for 'CONFIRM: this command writes to a protected plan-invariants page' "$HITS" \
+  "A shell write's content is not visible here, so every one that targets a protected page is put to you while learning mode lasts.")"

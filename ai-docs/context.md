@@ -143,7 +143,10 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   page, unaccounted and finding counts followed by a per-surface roster.
   `hooks/lib/plan-invariants-guard.sh` is the edit-time refusal, registered on two `PreToolUse` matchers
   so both the editing tools and the shell route reach it; it covers the seven protected pages and nothing
-  else, through the one list the refusal-agreement leg compares against the table.
+  else, through the one list the refusal-agreement leg compares against the table. It is armed only in a
+  session whose transcript records a run of `/improve`, `/improve-global` or `/ai-audit`, and while armed
+  an edit asks only when it changes a heading or a required-element name on the page; a shell write asks
+  whenever it is recognised (GH-169).
 - **Invariant.** The record is not the route by which an element becomes required: it is cross-checked
   against the pages that mandate one, in both directions, so a one-sided edit is reported whichever side
   it happened on. A change to a principle is two co-ordinated edits — this page and the verification's
