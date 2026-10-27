@@ -1,6 +1,6 @@
 ---
 name: plan-convergence
-description: "Reads a spec-and-design pair for the one convergence class a model has to judge — whether the plan contradicts itself or the artefacts it describes — and returns a report. It issues no verdict and rules on nothing: whether a contradiction does harm is the reader's call, not this pass's. Invoked by /task Step 7 beside the deterministic convergence check, never alone."
+description: "Reads a spec-and-design pair for the one convergence class a model has to judge — whether the plan contradicts itself or the artefacts it describes — and returns a report. It issues no verdict and rules on nothing: whether a contradiction does harm is the reader's call, not this pass's. Invoked by /task Step 7, and after a spec amendment that keeps the approach, beside the deterministic convergence check, never alone."
 tools: Read, Glob, Bash
 model: opus
 ---
@@ -71,7 +71,9 @@ figure reads as a result rather than as an unfinished mechanism.
 Then read the pair **three times, each time from the documents rather than from your own previous
 pass.** Three is the smallest count at which one disagreement shows as a minority rather than as a
 tie. Do not reconcile the readings into one list and do not drop a minority finding: report the
-union, and mark each finding with how many of the three readings produced it.
+union, and mark each finding with how many of the three readings produced it. **A prompt may name
+statements to read first** — after a spec amendment, the design statements tied to an amended one;
+read them first in each reading, and the whole pair as always.
 
 Nothing is held to a threshold. A low figure is reported, not acted on.
 

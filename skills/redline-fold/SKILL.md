@@ -67,7 +67,8 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    shipped, so there is nothing to correct, and a rewrite that changes nothing still risks dropping a
    sentence nobody re-read. If a log with no rows is present, remove it (step 5) — a surviving log is the
    signal that this pass never ran, and leaving an empty one would raise that signal falsely. The plan's
-   record of excused findings stays on this branch, as on every other (step 5).
+   record of excused findings and its record of declared links stay on this branch, as on every other
+   (step 5).
 
 3. **Spawn the `design` subagent to apply the log's rows.** The orchestrator never writes a
    `*.design.md`; this pass is a spawn, not an edit.
@@ -114,7 +115,9 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    cleanup removes the working record by its exact name and does not reach it. **The plan's record of
    excused findings stays**, beside the folded spec: the archived plan still has a reader in the
    convergence check, and removing the record would un-excuse every waiver in it permanently. Its rows
-   stay scoped to this plan; nothing inherits them.
+   stay scoped to this plan; nothing inherits them. **The plan's record of declared links stays as
+   well**: a later run of the declared-link check over the archived pair still examines every link with
+   both ends in the design, and reports every link with a spec end skipped.
 
 6. **Read the corrected ITEMS and vouch for them** — the items a row was recorded against, never every
    section. This is a **judgement** and is named as one. It cannot be done by searching for superseded
@@ -166,8 +169,8 @@ set of human corrections — the exact failure the one-pass-at-the-end shape exi
    collapsed spec and the removal of the log — on the task's own PR in the early régime, and on a
    fold-only PR opened off the default branch in the late one. **In the late régime, check whether the task's own
    Step 12 move to `ai-docs/plans/done/` ever happened** and carry it in the same commit if it did not —
-   the spec, the design and the record of excused findings together, since the convergence check looks
-   for that record beside the spec. A merge that outran the fold outran everything after it too, and the
+   the spec, the design, the record of excused findings and the record of declared links together, since
+   the convergence check and the declared-link check each look for their record beside the spec. A merge that outran the fold outran everything after it too, and the
    plan's files sitting in the active directory while every completed plan sits beside them in `done/` is
    the same omission wearing a different file path. Give the user the staged-file list and a suggested message. No review pass, no user reading and no approval gate is added on the folded document: its
    correctness is whether it matches the shipped code, and step 7 is more than a review spawn on a

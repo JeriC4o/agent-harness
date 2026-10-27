@@ -115,7 +115,13 @@ IGNORE_GLOB_DESIGN='ai-docs/plans/*.design.md'
 # `actual_changed_lines`. Nothing fires on that figure, and the
 # `excluded-in-round` line NAMES the log -- so the write stays visible to the
 # orchestrator by name rather than as an anonymous addend.
+# [ignore-glob-redline]
 IGNORE_GLOB_REDLINE='ai-docs/plans/*.redline.md'
+# The declared-link record, for the redline log's reason and in its own variable
+# for the same one: the design author writes it mid-round -- on a design
+# amendment, on an approach-changing re-entry, in an amendment's own pass -- and
+# no `fix` row can name it.
+IGNORE_GLOB_LINKS='ai-docs/plans/*.links.md'
 
 SEP=$'\002'
 PIPEHOLD=$'\001'
@@ -404,13 +410,14 @@ arma_quote_fault() { # <path:line> <restored cell> -> the fault, or nothing
 
 restore() { printf '%s' "${1//$PIPEHOLD/|}"; }
 
+# [is-ignored]
 is_ignored() { # <path>
   [ "$1" = "$IGNORE_EXACT" ] && return 0
-  # The two plans globs are UNQUOTED on purpose: a quoted expansion in a `case`
+  # The plans globs are UNQUOTED on purpose: a quoted expansion in a `case`
   # pattern is a LITERAL, so the quoted form would match no real path at all.
   case $1 in
     "${IGNORE_PREFIX}"*) return 0 ;;
-    $IGNORE_GLOB_SPEC|$IGNORE_GLOB_DESIGN|$IGNORE_GLOB_REDLINE) return 0 ;;
+    $IGNORE_GLOB_SPEC|$IGNORE_GLOB_DESIGN|$IGNORE_GLOB_REDLINE|$IGNORE_GLOB_LINKS) return 0 ;;
   esac
   return 1
 }

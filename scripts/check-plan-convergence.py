@@ -618,6 +618,7 @@ def grant():
 # is not which exception a sibling raises but that none of them reaches the
 # interpreter's exit path. The filename is hyphenated and so not importable by
 # `import`, hence a path off `__file__`.
+# [load-sibling]
 def load_sibling(name):
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), name)
     try:

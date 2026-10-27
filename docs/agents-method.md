@@ -104,15 +104,8 @@ See [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`](${CLAUDE_PLUGIN_ROOT}/docs/code
 - Files with ~50+ lines of substantial logic MUST have a sibling test file. → [§ Sibling-test rule](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#sibling-test-rule)
 - **PR review comment resolution:** Resolve only comments fixed by code; objections stay open for the reviewer. → [§ PR review comment resolution](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#pr-review-comment-resolution)
 
-> **AXIOM 2 — Read the PR body after EVERY push to a feature branch with an open PR. Unconditional.**
-> The READ is mandatory even when the push was a routine typo / format / nit. The EDIT is conditional — only when the body contradicts the new commits.
->
-> | After... | Required action                                                                              |
-> |---|----------------------------------------------------------------------------------------------|
-> | User pushes to a feature branch with an open PR | Read PR body immediately (`gh pr view --json title,body`).                                   |
-> | Body still describes the diff accurately | No edit needed.                                                                              |
-> | Body contradicts new commits (renames, scope drift, AC flips, cited counts) | Edit the PR description to sync (`gh pr edit`).                                              |
-> | Push immediately preceded (first push that opened the PR) | **Skip** the read — the body is what you just authored. The rule fires on the **next** push. |
+> **AXIOM 2 — At the end of every iteration, read the ticket and write the PR description; a push by itself triggers nothing.**
+> An iteration ends at the first pass, before the PR is opened, and at every correction pass after it, in whichever workflow runs that pass on an open PR. The ticket changes only with the user's consent; the description is written for the reviewer from the whole task, not from the last push. → [§ The ticket and the PR description at the end of an iteration](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-ticket-and-the-pr-description-at-the-end-of-an-iteration)
 >
 > **AXIOM — Every code-producing commit on a feature branch with an open PR (or about-to-be-opened PR) must pass `self-review` before push.**
 > The per-skill rules already exist (`/task` Step 10, `/bugfix` Step 6.5). This AXIOM names them as instances of a single workspace rule.

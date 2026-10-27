@@ -137,9 +137,10 @@ do_paired() { # <design> <log>
   pairs=$(comm -12 "${WORK}/pm" "${WORK}/pr" | grep -c . )
 
   # THE MODE FIELD, AND THE OVER-FIRING CASE THAT BOUNDS IT. An
-  # implementation-step row exists only because the step put the once-per-task
-  # choice to the user, so a log carrying one and no mode means the gate never
-  # fired. A log whose rows all came from review rounds never reaches that gate
+  # implementation-step row exists only because a party put the once-per-task
+  # choice to the user -- the step itself, or the route of a spec amendment that
+  # keeps the approach, before its marking pass -- so a log carrying one and no
+  # mode means the gate never fired. A log whose rows all came from review rounds never reaches that gate
   # and owes nothing -- keying the refusal on "rows but no mode" would redden a
   # correct log, so it is keyed on the presence of an `S` row instead. The
   # GROUNDS are required as well as the token, because a mode is meant to be
@@ -391,6 +392,7 @@ do_pending() {
 }
 
 # --- folded -----------------------------------------------------------------
+# [do-folded]
 do_folded() {
   local spec=$1 design=$2 sdir plans base h p log=''
   readable "$spec" 'spec'
@@ -437,9 +439,10 @@ EOF
   done
   [ -z "$log" ] || finding "the redline log survives at ${log}, and the fold removes it"
 
-  # THE RECORD OF EXCUSED FINDINGS IS NOT ASSERTED HERE, because the fold keeps
-  # it: the archived plan still has a reader in the convergence check, and a
-  # removed record would un-excuse every waiver in it permanently.
+  # NEITHER THE RECORD OF EXCUSED FINDINGS NOR THE RECORD OF DECLARED LINKS IS
+  # ASSERTED HERE, because the fold keeps both: the archived plan still has a
+  # reader in the convergence check and in the declared-link check, and a removed
+  # excuse record would un-excuse every waiver in it permanently.
 
   printf 'check-redline: verb=folded verdict=%s findings=%s\n' "$(verdict_word)" "$FINDINGS"
   [ "$FINDINGS" -eq 0 ]

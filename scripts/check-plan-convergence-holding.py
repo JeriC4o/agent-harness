@@ -1,7 +1,7 @@
 # The two classes of check-plan-convergence.py that HOLD a plan: arithmetic and
 # completeness. The payload beside this file owns the plan pair, the
 # segmentation, the numeral readers, the excuse route and the report; this
-# carries these two classes and nothing else.
+# carries these two classes.
 #
 # THE ISOLATION CLASS USED TO BE THE THIRD, and it moved to the reporting
 # sibling when it stopped holding. It flags a fact stated twice inside one
@@ -20,7 +20,10 @@
 # with a reason to travel together.
 #
 # THE TWO GROUPS HAVE NO EDGE BETWEEN THEM, and that is what made the seam free.
-# Every helper here is called only by a class here. The three patterns the
+# Every helper here is called only by a class here, except `folded_spec`, the
+# one helper reached from outside a class here: the declared-link check asks it
+# whether a spec is folded, so the rule the completeness class applies is stated
+# once. The three patterns the
 # arithmetic class and the provenance class BOTH read stayed in the core for
 # that reason: either sibling holding them would make the other depend on it.
 # Measured after the split rather than assumed.
@@ -262,6 +265,7 @@ RETAINED = None
 FOLDED = False
 
 
+# [retained-sections]
 def retained_sections():
     body = read_method(RETAINED_SOURCE,
                        'and the sections a folded spec keeps are borrowed from it rather than named here')
@@ -292,10 +296,26 @@ def heading_tokens(body):
     return out
 
 
+# [is-folded]
 def is_folded(spec_body, kept):
     depths = set(t.split(' ', 1)[0] for t in kept)
     at_depth = [t for t in heading_tokens(spec_body) if t.split(' ', 1)[0] in depths]
     return set(at_depth) == set(kept)
+
+
+# [folded-spec]
+def folded_spec(ctx, spec_body):
+    global norm, read_method, blocked, HEADING_LINE, FENCE, QUOTE_MARK
+    norm = ctx['norm']
+    read_method = ctx['read_method']
+    blocked = ctx['blocked']
+    HEADING_LINE = ctx['HEADING_LINE']
+    FENCE = ctx['FENCE']
+    QUOTE_MARK = ctx['QUOTE_MARK']
+    kept = retained_sections()
+    if kept is None:
+        return None
+    return is_folded(spec_body, kept)
 
 
 def rows_of(body, tokens, pattern):

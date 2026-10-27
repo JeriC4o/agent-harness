@@ -99,7 +99,7 @@ reviewer-nit fixes — passes `self-review` before push. The bar is the same as 
 | Step 4 — diagnose + fix | inline-fix classes apply edits; a real defect routes to `/bugfix` with `**parent_skill:** post-push`, so it runs no full list |
 | Step 5 — `self-review` | APPROVE or REJECT (loop cap 3) |
 | Step 6 — commit | touched-scope checks green in the loop, and `%FULL_CHECK_CMD%` passed once after the Step 5 approval over the tree as it stands ([check scope](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md)); single commit per invocation |
-| Step 7 — user pushes; AXIOM 2 PR-body sync | re-read the PR body via `gh pr view` after every push |
+| Step 7 — user pushes; the iteration ends | read the ticket and rewrite the PR description in place, once for the round ([§ The ticket and the PR description at the end of an iteration](#the-ticket-and-the-pr-description-at-the-end-of-an-iteration)) |
 
 ## TDD + lint-changed-files
 
@@ -231,8 +231,8 @@ says to the **user** about work a Subagent returned.
 | Push | `git push -u origin <branch>` | **ASK-level for Claude** — Claude asks before running. Blocked on the default branch by the `branch-protection` hook, **except a LONE deletion of some other branch** (`--delete` / `-d`, or a push whose refspecs are ALL `:<branch>` deletions — one colon refspec standing beside a plain one pushes as well as deletes, while several deletions together are fine), which pushes nothing there. Deleting the default branch stays blocked, and so does any deletion carrying a shell metacharacter — send it as its own bare call. |
 | Stage everything | `git add -A` / `git add .` | **FORBIDDEN** — see § Explicit-file staging. |
 | Open a PR | `gh pr create --title … --body …` | **ASK-level for Claude.** Never `--fill` blindly; never auto-merge. |
-| Read a PR | `gh pr view --json title,body,state,url` / `gh pr view --comments` | The AXIOM-2 post-push read. |
-| Edit a PR | `gh pr edit --title … --body …` | The AXIOM-2 sync action. |
+| Read a PR | `gh pr view --json title,body,state,url` / `gh pr view --comments` | The end-of-iteration read (AXIOM 2). |
+| Edit a PR | `gh pr edit --title … --body-file <file>` | The end-of-iteration rewrite of the description (AXIOM 2). |
 | CI status | `gh pr checks` | |
 
 ### Recovery from accidental edits on the default branch
@@ -303,41 +303,51 @@ Resolve only comments fixed by code; objections stay open for the reviewer.
 | `defer` | "Tracked as <TICKET-KEY> for follow-up" | YES if uncontroversial; NO if contested |
 | `ignore-bot` | (no action) | — |
 
-## PR body sync after every push
+## The ticket and the PR description at the end of an iteration
 
-Per AGENTS.md `## Workflow` AXIOM 2: after every push to a feature branch with an open PR, read the PR body
-(`gh pr view --json title,body`). Edit only if the body contradicts the new commits (`gh pr edit`).
+The method file's `## Workflow` AXIOM 2 in full. **An iteration ends at the first pass, before the PR is
+opened, and at every correction pass after it** — a fix round for failing checks or one for reviewer
+comments — in whichever workflow runs that pass on an open PR. Two workflows carry the act at a step of
+their own: `/task`, which ends every pass at item 9 of Step 12, and the post-push fix round, which ends at
+the last row of its table in [§ Post-push fix commits get self-review too](#post-push-fix-commits-get-self-review-too),
+a `/bugfix` reached from that round returning to it. Any other workflow that runs such a pass — a
+standalone `/bugfix` on a branch with an open PR among them — owes the act at the pass's end with no step
+of its own. **The closing fold is not a correction pass:** it applies corrections the review already
+approved and changes neither the problem, the reason, nor what to look at in review, so its commit to an
+open PR triggers neither act. **A push that ends no iteration triggers nothing** — no reminder, no re-read
+and no reconciliation with the diff.
 
-| After... | Required action |
+**The orchestrator reads, as it writes the description, with no reader spawned.** It is a judgement of
+meaning: it stops nothing, and no check reads the ticket or the description.
+
+| At the end of an iteration | Act |
 |---|---|
-| User pushes to a feature branch with an open PR | Read the PR body immediately. |
-| Body still describes the diff accurately | No edit needed. |
-| Body contradicts new commits (scope drift, AC flips, cited counts) | `gh pr edit --title/--body` to sync. |
-| Push immediately preceded `gh pr create` (first push that opened the PR) | Skip the read — the body is what was just authored. The rule fires on the next push. |
+| The ticket, when the task has one | Read it for whether it still conveys the task's meaning. When it does not, put a correction to the user in plain terms ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)), and edit the ticket only when the user accepts it — it stays the original basis for the work |
+| The PR description, at the first pass | Written to [§ PR title + body shape](#pr-title--body-shape) and opened with the PR, with the user's approval |
+| The PR description, at each correction pass | Rewritten in place to the same shape (`gh pr edit --body-file <file>`), from the whole task rather than from the last push, and shown to the user before it is applied |
 
 ## PR title + body shape
 
 - **PR title:** `<TICKET-KEY>: <conventional-commits header>` when the project uses ticket keys; a bare
   conventional-commits header otherwise.
-- **PR body:** summary paragraph(s) ONLY — what changed and why, ≤3 bullets. Markdown renders, so bullets
-  and inline code are fine; the constraint is *content* (summary-only), not plain text. **NEVER** add
-  `## Summary` / `## Test plan` section headers, test-count or stats lines ("N tests green", "all ACs
-  PASS"), or `Co-Authored-By:` trailers (unless the user explicitly asks).
-- **Size the description to a merge commit message** — it usually becomes one. Measurement tables, tool
-  provenance, version pins and verification transcripts belong in the review thread or the progress file;
-  neither ships. The test to apply before saving: *would this sentence still be worth reading in `git log`
-  in six months?* A constraint a future editor must not violate passes; evidence that a past check
-  succeeded does not.
+- **PR description:** written for the reviewer from the whole task, not from the last push. It states the
+  problem in the task's own terms, why it is being solved, and what to pay attention to in review — what
+  changed is the diff's to show. Where the task changed a process, it carries a diagram of that process in
+  the form the project's `AGENTS.md` § VCS names; when the profile names no form, the process is described
+  in prose. It carries no test details, no counts, no acceptance-criterion checklist and no stats; no
+  `## Summary` or `## Test plan` header; and no `Co-Authored-By:` trailer unless the user asks. It carries
+  the closing trailer the project's profile names, when it names one, for the issue the PR resolves and
+  under the profile's condition, and every in-place rewrite keeps it. Markdown renders, so bullets, inline
+  code and links are fine.
 - **Keep a small, self-contained PR to the files the user asked to change.** Workflow artefacts
   (`*.spec.md` / `*.design.md`, even once moved to `ai-docs/plans/done/`) go in only when the user asks or
   they carry lasting engineering value.
 - **In a tracker-integrated repo, writing an identifier is an ACTION, not a reference.** A bare ticket key
-  in a PR title/body can create a remote link and transition that ticket's status. Correct for the ticket
-  the PR implements; wrong for subtasks, follow-ups, and context tickets cited for background — wrap those
-  in backticks, or describe them in prose. Before naming ANY external id in a shared artefact, ask what the
-  integration does on match.
-- **The commit message body and the PR description are NOT interchangeable.** The commit body (visible via
-  `git log`) MAY carry full detail; the PR description stays summary-shaped.
+  in a PR title/body can create a remote link and transition that ticket's status. So a PR title or
+  description names no ticket but the one the PR implements: no other key appears in it, wrapped in
+  backticks or not, and a subtask, a follow-up or a ticket cited for background is described in prose
+  without its key. Before naming ANY external id in a shared artefact, ask what the integration does on
+  match.
 
 ## Markdown link tracing after generate/move
 
@@ -379,12 +389,19 @@ behaviour**, and that is a constraint rather than an omission: `agents/self-revi
 four callers, while the marker, the committed log and the closing redline fold exist in `/task` alone. A
 divergence one of those three finds therefore routes exactly as it did before. Extending the cheap path to
 them is the same conditional-on-evidence question as the scouted plan below, and it is not in scope here.
+**One exception: a spec amendment that keeps the approach**, from any of the three, is followed by a re-read
+of the amended pair whose one design pass marks a falsified design item where the amended plan still has a
+correction log ahead of its closing fold — a `/task` plan whose fold has not run — and corrects it directly
+where it has none. Which form each workflow takes:
+[`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict),
+step 5.
 
 ### The implementation step takes no route by itself
 
 A divergence found while the code is being written has no round number and no finding number, because no
 review has run. **It restarts nothing on its own account.** The step stops at the FIRST such divergence in
-the task, leads with a recommended correction mode and the grounds for it in one line, and the user's
+the task — unless the log's head already carries a mode, which a spec amendment's route can have put
+first and which is not asked again — leads with a recommended correction mode and the grounds for it in one line, and the user's
 single word settles it — for the whole task, because a question re-asked at every divergence is the cost
 this mechanism exists to remove. The grounds **quote** a signal read off the design under implementation:
 a non-empty open-questions section and risks deferred to a later task point one way, decisions carried as
@@ -427,8 +444,11 @@ itself, and if no effect shows, the extension does not happen at all. Tracked in
 as issue #98. The amendment routing in this section fires at all four sites either way — the plan changes
 *who* detects an amendment in the main flow, not *whether* the trigger applies anywhere.
 
-Recipe: stop, get user approval, have `spec-writer` amend the spec, re-run `/task` Steps 6 → 7 on the
-amended pair (max 3 rounds), then resume from the GO.
+Recipe: stop, get user approval, have `spec-writer` amend the spec, then take the branch the amendment's
+one question names — when it changes the agreed approach, re-run `/task` Steps 6 → 7 on the amended pair
+(max 3 rounds) and resume from the GO; when it keeps the approach, re-read the amended pair, route each
+genuine finding by the side that is wrong, and resume the interrupted step
+([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict)).
 
 Detection: mechanical at the top of every fix round — `git diff` includes a `*.spec.md` path → the trigger
 fires regardless of how small the doc edit appears.
@@ -468,9 +488,12 @@ spec, is for.
 **The log's fate follows from the same question, and is not a separate decision.** A rebuild replaces the
 agreed base, so the redline log resets — its rows described a base that no longer exists. An amendment
 that leaves the approach intact is not a divergence at all, so nothing resets and the accumulated rows
-survive to the closing fold.
+survive to the closing fold. The fold applies those rows and nothing else, so it authors nothing from the
+amended spec: a design item the amendment made false, and a predating design-side contradiction the
+amended pair's re-read finds, are logged where the plan has a log and corrected directly by the design
+author where it has none, rather than left to the fold.
 
-## Why four path classes are excluded from the unplanned-file arm
+## Why five path classes are excluded from the unplanned-file arm
 
 The learnings archive and the per-branch learnings files are excluded because the in-flow capture exception
 permits appending to them mid-round. `ai-docs/plans/*.spec.md` and `ai-docs/plans/*.design.md` are excluded
@@ -480,10 +503,15 @@ without the exclusion the arm would fire by construction on every amendment-then
 permanently. `ai-docs/plans/*.redline.md` is excluded for the same reason one step on: the marking pass
 writes the log mid-round, no `fix` row can name it, and the arm's ignore test short-circuits its
 membership check — so an unexcluded log is reported as unplanned on every round that marks a divergence.
+`ai-docs/plans/*.links.md`, the record of declared links, is excluded for the same reason again: the design
+author writes it mid-round — on a design amendment, on the Step 6 re-entry of an amendment that changes the
+approach, and in the pass of an amendment that keeps it — and no `fix` row can name it. The verdict
+still names it on the `excluded-in-round` line, which the orchestrator accounts for against the design
+author's pass it knows it ran.
 
 **The two plan suffixes and not the directory.** The routing arms key on the suffixes, so a
 directory-wide exclusion would be wider than its own justification: it would drop the briefed lines of a
 tracked non-routing path under that directory from the measured total while they still counted on the
-declared side. The redline glob is a third variable read by the ignore test alone and by no arm, which is
-what keeps that correspondence intact.
+declared side. The redline glob and the declared-link glob are variables of their own, read by the ignore
+test alone and by no arm, which is what keeps that correspondence intact.
 

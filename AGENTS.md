@@ -82,7 +82,7 @@ is the same commands.
    `skills/task/scripts/test-check-fix-plan.sh`,
    `scripts/test-check-plan-invariants.sh`, `scripts/test-check-propagation-arms.sh`,
    `scripts/test-check-redline.sh`, `scripts/test-check-release.sh`,
-   `scripts/test-check-plan-convergence.sh`,
+   `scripts/test-check-plan-convergence.sh`, `scripts/test-check-plan-links.sh`,
    `scripts/test-hook-behaviour.sh`,
    `scripts/test-run-checks.sh`, `scripts/test-check-method-purity.sh`,
    `scripts/test-check-instruction-size.sh`.
@@ -194,6 +194,8 @@ at that heading.
 | `AGENTS.md` § Build & Test, or a `test-*.sh` added or removed | `gate-inventory`, `scripts/test-run-checks.sh` |
 | `hooks/lib/loop-*`, `scripts/bin-of.jq`, `ai-docs/fixtures/loop-corpus/` | `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh` |
 | `scripts/tree-digest.sh` | `scripts/test-review-ledger.sh`, `hooks/lib/test-gate-record.sh` |
+| `scripts/check-plan-convergence-holding.py` | `scripts/test-check-plan-links.sh` |
+| `scripts/check-redline.sh` | `scripts/test-check-plan-links.sh`, `scripts/test-check-plan-convergence.sh` |
 | `hooks/lib/gate-pattern.sh` | `hooks/lib/test-gate-record.sh`, `scripts/test-hook-behaviour.sh`, `hooks/lib/test-harness-managed.sh` |
 | any tracked text file — the foreign-identifier leg reads the whole tree | `method-purity` |
 | `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `ai-docs/context.md`, `docs/agents-method.md`, `agents/*.md`, `skills/*/SKILL.md`, `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, their `templates/project/` copies | `instruction-size` |
@@ -209,6 +211,7 @@ at that heading.
 | Branch naming | `<TICKET-KEY>-<slug>`, or `chore/<slug>` for work with no issue |
 | Ticket key format | `GH-<issue number>` |
 | Review surface | GitHub PR via `gh` |
+| PR-description diagram form | Mermaid, which GitHub renders in a PR description |
 
 **GitHub Issues have no key prefix** — an issue is a bare `#N`, and PRs share the same counter, so the
 numbering is contiguous across both. `GH-` is a *local* prefix this repo adds so an issue number can ride
@@ -222,8 +225,9 @@ in a branch name and a spec header, where a bare `#` does not belong. It maps on
 | PR title | `GH-10: <conventional-commits header>` |
 | Any `gh` command | `gh issue view 10` — **strip the prefix**; `gh` knows nothing about `GH-` |
 
-> **Carve-out — `Closes #N` is permitted in a PR body**, and is the one trailer this repo allows despite
-> the summary-only rule. It is an ACTION, not a reference: GitHub closes the issue when the PR merges.
+> **Carve-out — the PR description carries `Closes #N` for the issue the PR resolves, and keeps it
+> across every rewrite of the description.** It is the one closing trailer this repo allows in the PR
+> description. It is an ACTION, not a reference: GitHub closes the issue when the PR merges.
 > That is the intended behaviour here, and the softer cousin of the hazard
 > [`docs/workflow.md` § PR title + body shape](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#pr-title--body-shape)
 > warns about — write it only for the issue the PR actually resolves, never for one it merely mentions.
@@ -236,8 +240,8 @@ in a branch name and a spec header, where a bare `#` does not belong. It maps on
 ## Language profile
 
 See [`ai-docs/context.md`](ai-docs/context.md) § Language profile. In short: Markdown instruction files
-plus POSIX shell, with eight non-shell payload files in three other languages — two `awk`, one `jq` and
-five `python3`; no compiled sources. Each is a SIBLING a `.sh` entry point loads from its own directory,
+plus POSIX shell, with nine non-shell payload files in three other languages — two `awk`, one `jq` and
+six `python3`; no compiled sources. Each is a SIBLING a `.sh` entry point loads from its own directory,
 never an entry point itself, so every caller still invokes a shell script. **The count in this sentence
 moves whenever a payload sibling is added**, and nothing derives it — the sibling list it summarises is on
 the profile page, and the two have already fallen out of step once.

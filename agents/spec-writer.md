@@ -173,10 +173,16 @@ reason:                     # required iff status == unresolvable
   category: cap_reached | logically_unresolvable | external_dependency | empty_scope | user_loop
   detail: "..."
   suggested_action: defer_to_deferred | abort | extend_cap | request_external_info
+amended:                    # required iff this invocation applied an amendment the Spec Amendment recipe passed
+  - change: changed | added | removed
+    heading: "..."
+    words: "..."
 ---
 ```
 
 The orchestrator parses this block. **Malformed YAML triggers a one-shot retry asking you to re-emit only the status block.**
+
+**`amended` names every spec statement the amendment changed, added or removed** — the heading it sits under and its words as they now stand, a removed one by its heading and the words it had. After an amendment that keeps the approach, the orchestrator reads it to name to the whole-pair reader the design statements linked to those statements, so an omitted statement is one whose links nobody reads first ([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict), step 5).
 
 ## Hard rules
 
@@ -185,7 +191,7 @@ The orchestrator parses this block. **Malformed YAML triggers a one-shot retry a
 3. **When `round == round_cap`, status MUST be `ready` or `unresolvable`.** Never `ask` on the final round.
 4. **Apply the optimization target.** If the `design` Subagent could resolve this ambiguity by convention or design choice, it goes to `## Open questions`.
 5. **Self-contained spec.** A reader of `spec_path` should understand the task without re-reading the ticket or the Q&A log.
-6. **Don't rewrite the ticket body.** Spec is a derived artifact; ticket is the user's original problem statement.
+6. **Don't rewrite the ticket body.** Spec is a derived artifact; ticket is the user's original problem statement. The orchestrator reads the ticket at the end of each iteration and puts any correction to the user, who alone accepts one ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The ticket and the PR description at the end of an iteration](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-ticket-and-the-pr-description-at-the-end-of-an-iteration)).
 7. **`**Tracked in:**` is owned here.** Write the ticket key into the spec's `**Tracked in:**` field. In free-text mode the ticket may not exist until the orchestrator resolves it post-`ready` — when the orchestrator re-invokes you carrying a resolved key (in `prior_qa` or `extra_context`, e.g. "set Tracked in to <TICKET-KEY>"), update `**Tracked in:**` to that key and return `ready`. The orchestrator never edits the spec itself.
 
 8. **Every question is written FOR A HUMAN, in the product's own terms** — see [§ Question wording](#question-wording--for-a-human-not-for-the-model). A question a developer cannot answer without opening a file is a defect, not a question.
