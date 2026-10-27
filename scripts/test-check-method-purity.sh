@@ -46,6 +46,7 @@ for row in "stack name|Prefer the Kotlin idiom here." \
            "stack name|Tests run under JUnit5." \
            "stack name|Build it with npm first." \
            "stack name|A C# project." \
+           "stack name|Draw the process as a Mermaid diagram." \
            "source path|The entry point is main.py." \
            "source path|See src/app/OrderRepo.kt for it." \
            "source path|Every *.kt file is a module." \

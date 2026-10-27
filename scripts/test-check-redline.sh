@@ -220,6 +220,38 @@ check "a surviving log beside a kept record -> findings" "$RC" "1"
 has   "  the log is reported" "$OUT" "the redline log survives at"
 hasnt "  and the record is not" "$OUT" "t.excuses.md"
 
+# THE RECORD OF DECLARED LINKS, which the fold keeps as it keeps the excuse
+# record: a later run over the archived pair still reads its design-to-design
+# links. The same legs, for that record.
+mklinks() { # <tree> <relative directory> <spec base>
+  { printf '| Id | End A | Quote A | End B | Quote B | Grounds |\n'
+    printf '|---|---|---|---|---|---|\n'
+    printf '| L1 | spec § Scope | Something. | design § Approach | The working logic | the design restates the scope |\n'
+  } > "${1}/${2}/${3}.links.md"
+}
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mklinks "$T" ai-docs/plans t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "a record of declared links beside the plan survives the fold, and is no finding" "$RC" "0"
+has   "  verdict" "$OUT" "verdict=clean"
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"; mklinks "$T" ai-docs/plans/done t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "a record of declared links in done/ survives too" "$RC" "0"
+
+T=$(mktree); mklinks "$T" ai-docs/plans t
+run folded "${T}/ai-docs/plans/t.spec.md" "${T}/ai-docs/plans/t.design.md"
+check "a surviving log beside a kept record of declared links -> findings" "$RC" "1"
+has   "  the log is reported" "$OUT" "the redline log survives at"
+hasnt "  and the record is not" "$OUT" "t.links.md"
+
+T=$(mktree); rm -f "${T}/ai-docs/plans/t.redline.md"
+mklinks "$T" ai-docs/plans t; mklinks "$T" ai-docs/plans/done t
+run pending "${T}/ai-docs/plans"
+check "pending: a record of declared links in both directories is no log" "$RC" "0"
+has   "  verdict" "$OUT" "verdict=clean"
+hasnt "  and the record is not named" "$OUT" "t.links.md"
+
 # The spec collapsed in done/, which is where the fold actually finds it.
 T=$(mktree)
 git -C "$T" mv ai-docs/plans/t.spec.md ai-docs/plans/done/t.spec.md

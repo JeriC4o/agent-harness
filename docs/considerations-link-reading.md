@@ -10,7 +10,7 @@ A link's surrounding sentence usually carries the one-line summary you need. *De
 
 - The link target is the **canonical source** of a rule the current step enforces (e.g. `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § File size` when the current diff adds a 1200-line file).
 - The link target is a **template** the current step must produce (e.g. `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` when writing a `.progress.md`).
-- The link target is **named in an AXIOM** (e.g. AGENTS.md `## Workflow` AXIOM 2 links to `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § PR body sync` — the AXIOM is unactionable without the recipe).
+- The link target is **named in an AXIOM** (e.g. the method file's `## Workflow` AXIOM 2 links to `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § The ticket and the PR description at the end of an iteration` — the AXIOM is unactionable without the recipe).
 - The summary disagrees with what the current task implies — read the target to resolve.
 
 ## Don't follow the link when
@@ -21,7 +21,7 @@ A link's surrounding sentence usually carries the one-line summary you need. *De
 
 ## Anchor-aware paths
 
-A link like `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#pr-body-sync` resolves to that exact h2 / h3 anchor — read only the anchored section, not the whole file. Tools that strip the `#anchor` (e.g. naive `realpath`) miss the contract.
+A link like `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-ticket-and-the-pr-description-at-the-end-of-an-iteration` resolves to that exact h2 / h3 anchor — read only the anchored section, not the whole file. Tools that strip the `#anchor` (e.g. naive `realpath`) miss the contract.
 
 ## When the link is broken
 

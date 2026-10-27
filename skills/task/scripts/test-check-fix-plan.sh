@@ -1631,6 +1631,18 @@ has   "  decision" "$OUT" "decision=FINDING reason=unplanned-file"
 ARMA=$(printf '%s\n' "$OUT" | grep -F '(a)')
 has   "  named on arm (a) by itself" "$ARMA" "ai-docs/plans/t.redline-notes.md"
 
+printf '\n== T1-ZS the declared-link record is excluded like the redline log ==\n'
+F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
+printf 'edit\n' >> "${F}/docs/workflow.md"
+printf '| L1 | design § A | a | design § B | b | grounds |\n' > "${F}/ai-docs/plans/t.links.md"
+plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |'
+gate applied "$(prog "$F")"
+check "a round that writes the declared-link record fires no arm" "$RC" "0"
+has   "  arm (a) does not name the record" "$OUT" "(a)  unplanned-file       pass"
+EXCL=$(printf '%s\n' "$OUT" | grep 'excluded-in-round')
+has   "  the excluded-in-round line NAMES the record" "$EXCL" "ai-docs/plans/t.links.md"
+has   "  the measurement charges the briefed file alone" "$OUT" "actual_changed_lines=1"
+
 printf '\n== T1-X the entry point the skill invokes is executable ==\n'
 if [ -x "$GATE" ]; then ok "check-fix-plan.sh carries the execute bit"
 else bad "check-fix-plan.sh carries the execute bit"; fi

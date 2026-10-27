@@ -133,12 +133,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/harness-managed.sh || exit 0; cmd=$(jq -r '.tool_input.command // empty'); base=$(git symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's|^origin/||'); : \"${base:=main}\"; if echo \"$cmd\" | grep -qE '(^|[ ;&|`])git[[:space:]]+push\\b'; then branch=$(git branch --show-current 2>/dev/null || true); if [ -n \"$branch\" ] && [ \"$branch\" != \"$base\" ]; then printf '\\n[pr-body-sync] git push on %s — if an open PR exists, re-read the PR body (gh pr view --json title,body) and edit only if scope / AC checklist / cited counts drifted (gh pr edit) — AGENTS.md AXIOM 2. Skip the read iff this push immediately preceded gh pr create (first push opens the PR).\\n' \"$branch\" >&2; fi; fi; exit 0",
-            "timeout": 5,
-            "statusMessage": "PR body sync reminder..."
-          },
-          {
-            "type": "command",
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/gate-record.sh",
             "timeout": 30,
             "statusMessage": "Recording the gate run and the tree it ran against..."

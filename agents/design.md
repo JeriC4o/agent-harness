@@ -42,14 +42,18 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 
 A third invocation mode, and the only one in which this subagent writes to an AGREED design rather than
 authoring one. Invoked by `/task` wherever a divergence between the design and what shipped is found after
-the freeze — during implementation, or in a review-and-fix round whose findings carry one.
+the freeze — during implementation, or in a review-and-fix round whose findings carry one — and by the route
+of a spec amendment that keeps the approach, in whichever workflow entered it, where the plan has a
+correction log ahead of its closing fold.
 
 **The contract for this mode is [`${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md`](${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md)
 — read it in full before writing a marker.** It holds the freeze point, the marker's form and placement, how
 a log row is derived or authored, extensions, the mode choice, and the exit check. In short: one invocation
-per review round or implementation step that carries divergences; a `**[REDLINE <key>]**` marker appended
-to each diverged item and a row under the same key in `ai-docs/plans/<spec-base>.redline.md`; and hand back
-only on a clean 0 from `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh paired <design> <log>`.
+per review round or implementation step that carries divergences, and per spec amendment whose re-read
+leaves a false design item or a non-silent declared link; a `**[REDLINE <key>]**` marker appended
+to each diverged item and a row under the same key in `ai-docs/plans/<spec-base>.redline.md`; and, whenever
+the pass wrote a marker or the log exists, hand back only on a clean 0 from
+`${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh paired <design> <log>`.
 
 ## The redline fold
 
@@ -111,7 +115,8 @@ to this subagent and not to the orchestrator.
 spec and the design, and the commit history preserves it. A surviving log is therefore the unambiguous
 mechanical signal that the fold never ran, which is what lets the merge-time workflow refuse on one. **The
 plan's record of excused findings stays**: the archived plan still has a reader in the convergence check,
-and removing the record would un-excuse every waiver in it permanently.
+and removing the record would un-excuse every waiver in it permanently. **So does its record of declared
+links**, which the declared-link check still reads over the archived pair.
 
 **The whole output is gated**, by `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh folded <spec> <design>`:
 the three retained spec sections byte-compared against the previous commit, the design asserted free of
@@ -201,7 +206,20 @@ it will be tested is not, and is not this document's business.
   document through. **Read the counts and the per-class roster rather than the exit status** — a class
   reporting zero over a document with content examined nothing. One obligation falls out of it and is
   stated here because it is the author's: **every criterion the spec states is delivered by some
-  decomposition row**, which is what that column is for.
+  decomposition row**, which is what that column is for. **Beside it, a second call that is a report and
+  never part of that refusal:** at the end of every pass but the redline fold, which carries its own gates,
+  run `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-links.sh <spec_path> <design_path>`, act on its report as
+  [`${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md` § Where a report leads](${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md#where-a-report-leads)
+  says, run it again, and hand back its verdict line with each row you rewrote or removed and why, and each
+  row left non-silent with where it leads.
+- **The record of declared links is yours alone, written on every write of the design.** In
+  `ai-docs/plans/<spec-base>.links.md`, record every pair of statements that must move together — a design
+  statement that restates or depends on a statement of the spec, such as a figure, a criterion it honours or
+  a count, and any two statements of one document that must move together — as two verbatim quotes with
+  their grounds, at the moment you write the restatement. A pair with no link gets a record with no row.
+  Stage the record by name the first time you write it. What a link is, the empty record and the absent
+  one, the states and how a row is cleared:
+  [`${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md`](${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md).
 - Each task in decomposition = one logically complete step.
 - Don't write code — only the plan. Code is written by `/task` Step 8.
 - If scope > 7 tasks in decomposition — propose splitting into multiple tickets.

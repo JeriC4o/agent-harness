@@ -72,9 +72,10 @@ LENGTHS = sorted({n for n, _ in DENY})
 
 # Case-insensitive names, then names that are also ordinary English and so
 # count only capitalised, then spellings no word boundary can bracket.
+# [purity-words]
 WORDS = ("kotlin java jvm jdk javap typescript javascript scala php golang csharp dotnet nodejs "
          "django postgres postgresql mysql sqlite gradle maven npm cargo kdoc javadoc jsdoc "
-         "rustdoc godoc doxygen sphinx pytest junit\\d* mockito mockk ktlint detekt").split()
+         "rustdoc godoc doxygen sphinx mermaid pytest junit\\d* mockito mockk ktlint detekt").split()
 CAPITAL = "Python Ruby Swift Rust Spring".split()
 EDGE = r"(?<![A-Za-z0-9_-])(%s)(?![A-Za-z0-9_])"
 STACK = [(re.compile("(?i)" + EDGE % "|".join(WORDS)), "stack name"),

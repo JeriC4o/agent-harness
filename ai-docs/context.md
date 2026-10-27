@@ -75,17 +75,37 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   the planning chain, and one closing fold after the PR is approved applies the log's rows to the items that diverged.
 - **Identity.** The spec base name. Its head carries four required fields — `**Tracked in:**`,
   `**Spec:**`, `**Design:**`, `**Mode:**` — of which `Mode` is the one with a consumer: `R&D` or
-  `Hybrid`, chosen once per task at the first divergence found while writing the code, with grounds that
-  must cite the design.
+  `Hybrid`, chosen once per task at the task's first divergence, with grounds that must cite the design.
 - **Code.** `scripts/check-redline.sh` — six verbs (`pending`, `folded`, `suppression`,
   `revision`, `paired`, `specform`) on the `0 clean / 1 findings / 2 cannot run` convention. `paired` is the pairing
   half for every key form and the marking pass's own exit check; `check-fix-plan.sh`'s `A7` and `A8` are
   the in-round halves. `skills/redline-fold/SKILL.md` is the closing fold; `/pr-merged` refuses on an
   unprocessed log.
-- **Invariant.** It is the one file in the plan family that is COMMITTED, because the fold runs after a
-  human review and a gitignored file does not survive that far. It is excluded from the fix-plan gate's
+- **Invariant.** It is COMMITTED, as the spec, the design, `<spec-base>.excuses.md` and
+  `<spec-base>.links.md` are — the plan family's gitignored files are the progress file and the interview
+  state alone — because the fold runs after a human review and a gitignored file does not survive that
+  far. It is excluded from the fix-plan gate's
   measured diff by `IGNORE_GLOB_REDLINE` and named on the `excluded-in-round` line instead. It is removed
   by the fold, so a surviving log is an unambiguous signal the fold never ran.
+
+## Declared links
+
+- **What it is.** A committed `ai-docs/plans/<spec-base>.links.md` holding one row per pair of plan
+  statements that must move together — a design statement that restates or depends on a spec statement,
+  or two statements of one document — as two verbatim quotes, each with its document and heading, plus the
+  grounds for the link.
+- **Why it exists.** A link is known when the restatement is written, so the party writing it declares it
+  then, and the check compares the declared quotes with the current text, rather than guessing links from a
+  diff afterwards.
+- **Identity.** The spec base name. The design author is its only writer, on every write of the design; a
+  record with the header and no row declares a pair with no links, and an absent one declares nothing.
+- **Code.** `scripts/check-plan-links.sh` with its payload `scripts/check-plan-links.py`, on the
+  `0 clean / 1 findings / 2 cannot run` convention: a row is silent, `moved`, `re-confirm` or `ambiguous`,
+  and a folded spec is `skipped`, never clean. The contract is `docs/declared-links.md`; the format is
+  `docs/templates/progress-format.md` § The record of declared links (committed).
+- **Invariant.** It reports and stops nothing: no site refuses on it. It survives the closing fold as the
+  excuse record does and moves to `ai-docs/plans/done/` with the plan; the fix-plan gate's measured diff
+  excludes it through `IGNORE_GLOB_LINKS`.
 
 ## Plan invariants
 
@@ -156,7 +176,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 | Concern | Choice |
 |---|---|
-| Language | Markdown instruction files + POSIX shell, plus eight non-shell payload files in three other languages: `awk`, `jq` and `python3` |
+| Language | Markdown instruction files + POSIX shell, plus nine non-shell payload files in three other languages: `awk`, `jq` and `python3` |
 | Build | none |
 | Test | `bash scripts/run-checks.sh` — the whole structural list in one call; see `AGENTS.md § Build & Test` |
 | CI | none yet |
@@ -165,14 +185,14 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 
 | Field | Value |
 |---|---|
-| Primary language(s) | Markdown, POSIX shell (`bash`). Eight tracked payload files are in three other languages — `hooks/lib/loop-window.awk`, `hooks/lib/loop-window-prefix.awk`, `scripts/bin-of.jq`, `scripts/check-plan-invariants.py`, `scripts/check-plan-invariants-refusal.py`, `scripts/check-plan-convergence.py`, `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py` |
+| Primary language(s) | Markdown, POSIX shell (`bash`). Nine tracked payload files are in three other languages — `hooks/lib/loop-window.awk`, `hooks/lib/loop-window-prefix.awk`, `scripts/bin-of.jq`, `scripts/check-plan-invariants.py`, `scripts/check-plan-invariants-refusal.py`, `scripts/check-plan-convergence.py`, `scripts/check-plan-convergence-holding.py`, `scripts/check-plan-convergence-reporting.py` and `scripts/check-plan-links.py` |
 | New-file rule | Method content is Markdown; executable helpers are `.sh` under `skills/<skill>/scripts/`. A payload in another language is a SIBLING loaded by a `.sh` entry point from its own directory, never an entry point itself, so every caller still invokes a shell script and the interpreter is preflighted with its reason in one place |
 | Max line length | soft 110 for prose; no hard limit |
 | Formatter | none |
-| Linter (the gate) | `shellcheck` for `.sh`; `jq -e .` for JSON manifests. **Neither the `shell-syntax` member nor `untracked-shell` globs anything but `*.sh`, so no gate in the pre-commit list parses a payload sibling by walking the tree** — each is asserted by the suite that owns its entry point instead: `scripts/check-plan-invariants.py` is `ast.parse`d by a leg of `scripts/test-check-plan-invariants.sh`, and `scripts/check-plan-convergence.py` with both of its siblings — `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py` — by a leg of `scripts/test-check-plan-convergence.sh` that enumerates all three, each run by its single entry point, and the invariants payloads are additionally asserted tracked by the check itself, because a file read for its data while untracked makes the local run green and every other clone a cannot-run |
+| Linter (the gate) | `shellcheck` for `.sh`; `jq -e .` for JSON manifests. **Neither the `shell-syntax` member nor `untracked-shell` globs anything but `*.sh`, so no gate in the pre-commit list parses a payload sibling by walking the tree** — each is asserted by the suite that owns its entry point instead: `scripts/check-plan-invariants.py` is `ast.parse`d by a leg of `scripts/test-check-plan-invariants.sh`, and `scripts/check-plan-convergence.py` with both of its siblings — `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py` — by a leg of `scripts/test-check-plan-convergence.sh` that enumerates all three, and `scripts/check-plan-links.py` by a leg of `scripts/test-check-plan-links.sh`, each run by its single entry point, and the invariants payloads are additionally asserted tracked by the check itself, because a file read for its data while untracked makes the local run green and every other clone a cannot-run |
 | Source root / test root | n/a — no compiled sources |
-| Required external interpreters | `python3` and `perl`, beside the `awk` and `jq` the payload files above need. `python3` runs all five `.py` payloads above — `scripts/check-plan-invariants.py` with the refusal sibling it loads, and `scripts/check-plan-convergence.py` with the holding and reporting siblings it loads — is the scanning tool of both plan-document checks and, inline, of `scripts/check-method-purity.sh` and `scripts/check-instruction-size.sh`, each of which preflights it by name and names every payload it could not find. `perl` executes nowhere in the tree's shipped code and is still a hard dependency of the mandatory check list: five of its members build their mutant fixtures with it — the loop-index and loop-verdict verifications under `hooks/lib/`, and the bin-of, loop-grid and loop-metrics suites under `scripts/` — so on a host without it those positive controls cannot run, and a could-not-run is not a pass. `scripts/run-checks.sh` demands it in the same preflight roster as the tools it invokes itself, which is what makes that failure loud and early rather than mid-suite. **A word-list mention is not an invocation:** `hooks/lib/plan-invariants-guard.sh` and its own verification carry the name as DATA, inside the vocabulary that recognises a command writing a file in place, and neither runs it |
-| Thousand-line exemption | **No file in this repository is exempt from `docs/code-style.md` § File size today**, and the row keeps this heading because three files cite it by name — `scripts/check-plan-convergence.sh`, `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py`, a measurement taken with `grep -rl 'Thousand-line exemption'` over the tree. What the row records is the band below that limit. The convergence payload answered the same limit by splitting rather than by an exemption: it crossed it at 1,447 lines and became three files. The core file that split left measures 824 lines with `wc -l`, inside the 800–1000 band `docs/code-style.md` calls **hard-ish** and routes to a justification in the pull-request description: what that file keeps is what both sibling groups read — the plan pair, the segmentation, the numeral readers, the two readers that separate the method root from the project root, the excuse route and the report — so a further cut would have to cross machinery both siblings call rather than follow a seam the check already states as data, and the lines above 800 are tolerated on that ground. This row is the durable record of that justification, and the pull request carries the same one when it opens. |
+| Required external interpreters | `python3` and `perl`, beside the `awk` and `jq` the payload files above need. `python3` runs all six `.py` payloads above — `scripts/check-plan-invariants.py` with the refusal sibling it loads, `scripts/check-plan-convergence.py` with the holding and reporting siblings it loads, and `scripts/check-plan-links.py` with the holding sibling it loads — is the scanning tool of the three plan-document checks and, inline, of `scripts/check-method-purity.sh` and `scripts/check-instruction-size.sh`, each of which preflights it by name and names every payload it could not find. `perl` executes nowhere in the tree's shipped code and is still a hard dependency of the mandatory check list: five of its members build their mutant fixtures with it — the loop-index and loop-verdict verifications under `hooks/lib/`, and the bin-of, loop-grid and loop-metrics suites under `scripts/` — so on a host without it those positive controls cannot run, and a could-not-run is not a pass. `scripts/run-checks.sh` demands it in the same preflight roster as the tools it invokes itself, which is what makes that failure loud and early rather than mid-suite. **A word-list mention is not an invocation:** `hooks/lib/plan-invariants-guard.sh` and its own verification carry the name as DATA, inside the vocabulary that recognises a command writing a file in place, and neither runs it |
+| Thousand-line exemption | **No file in this repository is exempt from `docs/code-style.md` § File size today**, and the row keeps this heading because three files cite it by name — `scripts/check-plan-convergence.sh`, `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py`, a measurement taken with `grep -rl 'Thousand-line exemption'` over the tree. What the row records is the band below that limit. The convergence payload answered the same limit by splitting rather than by an exemption: it crossed it at 1,447 lines and became three files. The core file that split left measures, with `wc -l`, inside the 800–1000 band `docs/code-style.md` calls **hard-ish** and routes to a justification in the pull-request description: what that file keeps is what both sibling groups read — the plan pair, the segmentation, the numeral readers, the two readers that separate the method root from the project root, the excuse route and the report — so a further cut would have to cross machinery both siblings call rather than follow a seam the check already states as data, and the lines above 800 are tolerated on that ground. This row is the durable record of that justification, and the pull request carries the same one when it opens. |
 
 ## Deployed configuration
 

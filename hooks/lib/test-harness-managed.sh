@@ -157,7 +157,7 @@ printf '%s' "$out" | jq -e '.hookSpecificOutput.additionalContext' >/dev/null 2>
   && ok "valid JSON when managed" || bad "valid JSON when managed"
 
 printf '\n== every guarded hook names the guard ==\n'
-for msg in "branch before" "Auto-staging" "Co-Authored-By" "Propagation Rule" "PR body sync"; do
+for msg in "branch before" "Auto-staging" "Co-Authored-By" "Propagation Rule"; do
   c=$(jq -r --arg m "$msg" '[.hooks[][] | .hooks[]? | select(.statusMessage? // "" | test($m)) | .command] | first' "$HOOKS_JSON")
   case "$c" in *harness-managed.sh*) ok "guarded: $msg" ;; *) bad "guarded: $msg" ;; esac
 done
