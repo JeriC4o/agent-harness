@@ -442,15 +442,18 @@ it is replaced by one read at the end of each iteration.
   place of the previous one. It states the problem in the task's own terms, why it is being solved, and what
   to pay attention to in review; where the task changed a process, it carries a diagram of that process in the
   form the project's `AGENTS.md` § VCS names, and when the profile names no form, the process is described in
-  prose, a departure recorded in § Risks. It carries no test details, no counts, no acceptance-criterion checklist and no stats; no
-  `## Summary` or `## Test plan` header, no `Co-Authored-By:` trailer unless the user asks, and at most a
-  closing trailer the project's profile permits. The shape is stated once, on `docs/workflow.md` § PR title +
-  body shape, whose heading is kept because `AGENTS.md` § VCS and the template link its anchor: the three
-  bullets quoted above give way to it, and the bullets on the title, on keeping a small pull request to the
-  files asked for, and on an identifier being an action stay as they are. The template's body bullet defers
-  to that section without restating the shape, keeping its rule against naming another ticket key, and its
-  opening sentence names the in-place rewrite beside the opening of a pull request as the act the user
-  approves. **[REDLINE R1.1]** **[REDLINE S8.1]** **[REDLINE S8.2]**
+  prose, a departure recorded in § Risks. It carries no test details, no counts, no acceptance-criterion checklist and no stats;
+  no `## Summary` or `## Test plan` header; and no `Co-Authored-By:` trailer unless the user asks. It carries
+  the closing trailer the project's profile names, for the issue the pull request resolves, and every in-place
+  rewrite keeps it. The shape is stated once, on `docs/workflow.md` § PR title + body shape, whose heading is
+  kept because `AGENTS.md` § VCS and the template link its anchor: the three bullets quoted above give way to
+  it; the bullet on an identifier being an action loses its allowance for a key wrapped in backticks, so that a
+  PR title or description names no ticket but the pull request's own, wrapped in backticks or not, and a ticket
+  cited for context is described in prose without its key; and the bullets on the title and on keeping a small
+  pull request to the files asked for stay as they are. The template's body bullet defers to that section
+  without restating the shape, keeping its rule against naming another ticket key with the exception for a
+  key wrapped in backticks removed, and its opening sentence names the in-place rewrite beside the opening of
+  a pull request as the act the user approves.
 - **The per-push statements go.** The method file's second workflow axiom becomes the end-of-iteration rule,
   a short statement linking the section that states it in full: `docs/workflow.md` § PR body sync after every
   push, renamed "The ticket and the PR description at the end of an iteration" and rewritten. The rows for
@@ -472,8 +475,8 @@ it is replaced by one read at the end of each iteration.
 - **The trailer's condition stays a profile fact.** `AGENTS.md` § VCS keeps its `Closes #N` carve-out and the
   condition on it — only for the issue the pull request resolves, never for one it merely mentions — and its
   phrase "the one trailer this repo allows despite the summary-only rule" is reworded to name the description,
-  since no summary-only rule remains. The method page says no more than that a closing trailer the profile
-  permits is allowed. **[REDLINE R1.1]**
+  since no summary-only rule remains. The method page says the description carries and keeps the profile's
+  closing trailer for the issue the pull request resolves; the profile keeps the spelling and its condition.
 
 **Rejected:** rewording the reminder to the end of an iteration, because its trigger is still a push; a
 spawned reader for the end-of-iteration read, which would cost a spawn per iteration for a judgement nothing
@@ -489,18 +492,6 @@ review approves.
 | 3 | **The record through the other gates, Step 12 and the fold.** Name the record beside the excuse record in item 4 of Step 12, in item 1 of the failure route on the reference page, in steps 2, 5 and 8 of the fold skill, in the fold section of the design contract, and in the `do_folded` comment of the redline check, marking `do_folded` with its id. Exclude the record from the fix-plan gate's unplanned-file arm through `IGNORE_GLOB_LINKS`, its own variable read by the ignore test alone, with a comment giving the reason, and mark `is_ignored` and `IGNORE_GLOB_REDLINE` with their ids. Under the Scouted-Fix group sweep, add the record to the workflow page's section on the excluded path classes with the count in its heading corrected, carry the renamed anchor and the count to the fix-round page's beat-5 paragraph, and add the redline log and the record to the format page's in-round exclusion list. Protected pages, each edit put to the owner: item 4 of Step 12 on `skills/task/SKILL.md`; item 1 of `skills/task/reference.md` § Step 12 — full run, digest compare, failure route; steps 2, 5 and 8 of `skills/redline-fold/SKILL.md`; the paragraph keeping the excuse record in `agents/design.md` § The redline fold; in `scripts/check-redline.sh`, the comment in `do_folded` on the excuse record and the id mark above that function | `skills/task/SKILL.md`, `skills/task/reference.md`, `skills/redline-fold/SKILL.md`, `agents/design.md`, `scripts/check-redline.sh`, `skills/task/scripts/check-fix-plan.sh`, `docs/workflow.md`, `docs/scouted-fix-round.md`, `docs/templates/progress-format.md` | AC6 | 1 |
 | 4 | **The amendment that keeps the approach.** Correct the three sentences claiming the fold authors the design from an amended spec; state the six acts, the test for a correction log and the table of which form each workflow takes on the "No" branch of step 5 on the reference page, and their one sentence in the second paragraph of the task skill's recipe; add the `amended` field to the spec writer's final status block; give the reader its second occasion and its read-first clause; reword the changed-requirement paragraph; give every site § The amendment that keeps the approach lists the occasion — the amendment's `S` row keyed to the step whose work the item belongs to, the mode question put when the log carries none, and the direct correction where the plan has no log — and the "One writer" bullet the wording that section quotes, and the mode-field comment in `do_paired` the party that section names; reword the reviewer contract's sentence on the callers that have no log, and give the workflow page's Spec-Amendment section the exception and a link to the table. Protected pages, each edit put to the owner: on `skills/task/SKILL.md` the recipe's second paragraph; on `skills/task/reference.md` the "No" branch of step 5; the two sentences of `agents/design.md` § Redline marking; on `agents/spec-writer.md` the final status block of its output contract; in `scripts/check-redline.sh` the mode-field comment inside `do_paired` | `skills/task/SKILL.md`, `skills/task/reference.md`, `agents/spec-writer.md`, `docs/redline-marking.md`, `docs/templates/progress-format.md`, `agents/design.md`, `agents/self-review.md`, `docs/workflow.md`, `agents/plan-convergence.md`, `ai-docs/context.md`, `scripts/check-redline.sh` | AC5, AC8 | 2 |
 | 5 | **The rule for the pull-request description and the ticket.** Replace the per-push read with the end-of-iteration read at every site § The pull-request description and the ticket lists: the method file's second workflow axiom; on `docs/workflow.md` the per-push section, renamed and rewritten, the post-push round's last row, the command map's two rows and the three bullets of the shape section; item 2 of Step 11, removed, and item 9 of Step 12; the template and the Step 11 and Step 12 rows of the gate checklist; the fix-round paragraph. Remove the reminder hook and its two inventory entries; reword the link-reading page's two examples; give the spec writer's hard rule against rewriting the ticket body its clause; add the diagram-form row to both profiles' VCS sections and reword the carve-out's summary-only phrase; add `mermaid` to the method-purity vocabulary and mark `WORDS` with its id; bump the plugin's patch version. Protected pages, each edit put to the owner: on `skills/task/SKILL.md` item 2 of Step 11 and item 9 of Step 12; on `skills/task/reference.md` the PR-body template and the Step 11 and Step 12 rows of the gate checklist; on `agents/spec-writer.md` the hard rule against rewriting the ticket body | `docs/agents-method.md`, `docs/workflow.md`, `hooks/hooks.json`, `docs/hook-inventory.md`, `docs/claude-tools-hierarchy.md`, `skills/task/SKILL.md`, `skills/task/reference.md`, `docs/scouted-fix-round.md`, `agents/spec-writer.md`, `docs/considerations-link-reading.md`, `AGENTS.md`, `templates/project/AGENTS.md`, `scripts/check-method-purity.sh`, `.claude-plugin/plugin.json` | AC9, AC10, AC11, AC12, AC13, AC14 | 4 |
-
-## Handoff plan
-
-- **Entry into Group A:** spawn `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`;
-  the group runs in its own subagent.
-- **Group A:** subtasks 1–3 — the check and its record, its wiring, and the record through the other gates,
-  Step 12 and the fold.
-- **Handoff after Group A:** spawn `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`.
-  Parent /task resumes in Group B with fresh context.
-- **Group B:** subtasks 4–5 — the amendment that keeps the approach, then the rule for the pull-request
-  description and the ticket with the version bump; the terminal group, two subtasks, inside the one-to-three
-  range.
 
 ## Risks
 
@@ -666,7 +657,3 @@ review approves.
 - `IGNORE_GLOB_LINKS` — read by the fix-plan gate's ignore test alone, so a fix round's `applied` verdict
   counts the record out of the measured diff and names it on the `excluded-in-round` line instead of reporting
   it as an unplanned file; read by no routing arm.
-
-## Open questions
-
-- (none)
