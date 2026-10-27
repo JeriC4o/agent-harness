@@ -23,6 +23,12 @@
 # that matters: there is no shape on which the house style meets a refusal it
 # would want switched off.
 #
+# LEARNING MODE IS ON IN EVERY PAYLOAD UNLESS A CASE SAYS OTHERWISE. Each one
+# names a transcript recording a run of /improve, so the shell-arm cases measure
+# the arm itself. The learning-mode section pairs each arming shape with a
+# transcript that only mentions the names, and the content-key section pairs
+# each section change with an edit that leaves the sections alone.
+#
 # THE SEGMENTATION SWEEP READS ITS CHARACTERS OUT OF THE GUARD rather than out
 # of a list retyped here, so a character added to the guard's segmentation list
 # without an assertion beside it fails instead of passing in silence. Both
@@ -52,6 +58,34 @@ PLAIN=$(mktemp -d /tmp/gh116-plain.XXXXXX)
 # calls are copied beside it. Without them every mutant exits at the
 # harness-managed guard and each control below passes while measuring nothing.
 cp "${HERE}/harness-managed.sh" "${HERE}/plugin-ref.sh" "$WORK/"
+
+# Session transcripts. ARMED carries a slash-command run of /improve and
+# SKILLRUN a Skill tool call to /improve-global. MENTIONS carries the names in
+# every place they appear WITHOUT a run: the skill listing, a tool result quoting
+# the slash-command text, a tool call quoted in prose, a request typed in prose.
+# LONG puts the run first and enough mentions after it that jq stops before grep
+# finishes, the shape on which a verdict read from the pipeline status loses the
+# run to SIGPIPE.
+ARMED="${WORK}/armed.jsonl"
+SKILLRUN="${WORK}/skillrun.jsonl"
+MENTIONS="${WORK}/mentions.jsonl"
+LONG="${WORK}/long.jsonl"
+listing='{"type":"attachment","attachment":{"type":"skill_listing","content":"harness:improve harness:improve-global"}}'
+slash='{"type":"user","message":{"content":"<command-message>harness:improve</command-message>\n<command-name>/harness:improve</command-name>"}}'
+printf '%s\n' "$listing" "$slash" > "$ARMED"
+printf '%s\n' "$listing" \
+  '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"harness:improve-global"}}]}}' \
+  > "$SKILLRUN"
+printf '%s\n' "$listing" \
+  '{"type":"user","message":{"content":[{"type":"tool_result","content":"<command-message>harness:improve</command-message>"}]}}' \
+  '{"type":"assistant","message":{"content":[{"type":"text","text":"next: {\"name\":\"Skill\",\"input\":{\"skill\":\"harness:improve\"}}"}]}}' \
+  '{"type":"user","message":{"content":"run /harness:improve later"}}' \
+  > "$MENTIONS"
+{ printf '%s\n' "$slash"; i=0; while [ "$i" -lt 20000 ]; do printf '%s\n' "$listing"; i=$((i+1)); done; } > "$LONG"
+TRANSCRIPT="$ARMED"
+
+# The default edit adds a heading, so it changes the element signature.
+NEWHEAD=$'## Approach\n## Verification'
 
 PROTECTED_PAGES='agents/spec-writer.md
 agents/design.md
@@ -93,8 +127,15 @@ fire(){ # <payload> [root] [guard]
 }
 decision(){ printf '%s' "$1" | jq -r '.hookSpecificOutput.permissionDecision // empty' 2>/dev/null; }
 reason(){ printf '%s' "$1" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null; }
-sh_payload(){ jq -nc --arg c "$1" '{tool_name:"Bash",tool_input:{command:$c}}'; }
-ed_payload(){ jq -nc --arg p "$1" '{tool_name:"Edit",tool_input:{file_path:$p}}'; }
+with_t(){ jq -c --arg t "$1" 'if $t == "" then . else . + {transcript_path: $t} end'; }
+sh_payload(){ # <command> [transcript]
+  jq -nc --arg c "$1" '{tool_name:"Bash",tool_input:{command:$c}}' | with_t "${2-$TRANSCRIPT}"; }
+ed_payload(){ # <path> [old] [new] [transcript]
+  jq -nc --arg p "$1" --arg o "${2-## Approach}" --arg n "${3-$NEWHEAD}" \
+    '{tool_name:"Edit",tool_input:{file_path:$p,old_string:$o,new_string:$n}}' | with_t "${4-$TRANSCRIPT}"; }
+wr_payload(){ # <path> <content> [transcript]
+  jq -nc --arg p "$1" --arg c "$2" '{tool_name:"Write",tool_input:{file_path:$p,content:$c}}' \
+    | with_t "${3-$TRANSCRIPT}"; }
 
 asks(){ # <label> <payload> [root] [guard]
   d=$(decision "$(fire "$2" "${3:-$PROJ}" "${4:-$GUARD}")")
@@ -107,7 +148,7 @@ silent(){ # <label> <payload> [root] [guard]
 sh_asks(){   asks   "$1" "$(sh_payload "$2")" ;}
 sh_silent(){ silent "$1" "$(sh_payload "$2")" ;}
 
-printf '\n== the tool arm: every protected page, whatever the edit touches ==\n'
+printf '\n== the tool arm: every protected page, on an edit that adds a heading ==\n'
 for rel in $PROTECTED_PAGES; do
   asks "an edit to ${rel} is put to the author" "$(ed_payload "${PROJ}/${rel}")"
 done
@@ -134,8 +175,8 @@ case "$(reason "$out")" in
   *) bad "the reason does not say that allowing it lets the edit proceed" ;;
 esac
 case "$(reason "$out")" in
-  *'whatever the edit touches'*) ok "and it says the refusal inspects nothing about the edit" ;;
-  *) bad "the reason does not state that the refusal is page-wide" ;;
+  *'/improve'*'adds, removes or renames'*) ok "and it says why it fired: learning mode, and a section changed" ;;
+  *) bad "the reason does not name learning mode and the section change: [$(reason "$out")]" ;;
 esac
 case "$(reason "$out")" in
   *plan-invariants.md*) ok "and it points at the page that holds the membership rule" ;;
@@ -146,6 +187,100 @@ $out
 EOF
 then bad "an unexpanded plugin-root token reached the reason"
 else ok "no unexpanded plugin-root token in the reason" ; fi
+
+printf '\n== learning mode: armed only in a session that ran /improve or /improve-global ==\n'
+P="${PROJ}/agents/design.md"
+asks   "a slash-command run of /improve arms it" \
+       "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$ARMED")"
+asks   "a Skill tool call to /improve-global arms it" \
+       "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$SKILLRUN")"
+asks   "a run early in a long transcript still arms it" \
+       "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$LONG")"
+check  "  and the long transcript does stop grep early, so it measures the SIGPIPE shape" \
+       "$(grep -F improve "$LONG" | jq -n -R 'any(inputs; true)' >/dev/null 2>&1 && echo no || echo yes)" "yes"
+silent "a transcript that only MENTIONS the learning skills does not" \
+       "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$MENTIONS")"
+silent "a payload naming no transcript does not" \
+       "$(ed_payload "$P" '## Approach' "$NEWHEAD" '')"
+silent "an unreadable transcript does not" \
+       "$(ed_payload "$P" '## Approach' "$NEWHEAD" "${WORK}/absent.jsonl")"
+silent "outside learning mode a shell write to a protected page is silent too" \
+       "$(sh_payload 'printf x >> agents/design.md' "$MENTIONS")"
+
+printf '\n== learning mode: which runs arm it, by name ==\n'
+BARE="${WORK}/bare.jsonl"
+AUDIT="${WORK}/audit.jsonl"
+OTHER="${WORK}/other.jsonl"
+printf '%s\n' '{"type":"user","message":{"content":"<command-message>improve</command-message>"}}' > "$BARE"
+printf '%s\n' '{"type":"user","message":{"content":"<command-message>harness:ai-audit</command-message>"}}' > "$AUDIT"
+printf '%s\n' '{"type":"user","message":{"content":"<command-message>harness:improve-docs</command-message>"}}' > "$OTHER"
+asks   "a run under the bare skill name arms it" "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$BARE")"
+asks   "a run of /ai-audit arms it -- its escalation audit edits instruction files" \
+       "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$AUDIT")"
+silent "a run of a skill whose name only STARTS with improve does not" \
+       "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$OTHER")"
+
+printf '\n== while armed, an Edit asks only when it changes the page element signature ==\n'
+# The page carries every text the cases below replace, so each one is judged by
+# the page before it against the page after it -- the route a real edit takes.
+printf '%s\n' '## Approach' 'a typo teh' '## Risks' 'old text' \
+  'the Handoff plan section must exist' 'blocking when absent' \
+  'a missing `## Risks` is blocking' > "$P"
+R="${PROJ}/scripts/check-redline.sh"
+printf '%s\n' '# old note' "RETAINED='## Out of scope'" > "$R"
+silent "a prose fix touching no heading and no element name is silent" \
+       "$(ed_payload "$P" 'a typo teh' 'a typo the')"
+silent "an edit under a heading that keeps the heading is silent" \
+       "$(ed_payload "$P" $'## Risks\nold text' $'## Risks\nnew text')"
+silent "a one-hash comment edit in a script is silent" "$(ed_payload "$R" '# old note' '# new note')"
+asks   "a renamed heading asks" "$(ed_payload "$P" '## Risks' '## Hazards')"
+asks   "a heading renamed by replacing only the words after the marker asks" \
+       "$(ed_payload "$P" $'Risks\nold text' $'Risks and mitigations\nold text')"
+asks   "a removed heading asks" "$(ed_payload "$P" $'## Risks\nold text' 'old text')"
+asks   "a deeper heading added asks" "$(ed_payload "$P" 'old text' $'old text\n### Rollout')"
+asks   "an element name dropped from prose asks" \
+       "$(ed_payload "$P" 'the Handoff plan section must exist' 'the section must exist')"
+asks   "an element name added to prose asks" \
+       "$(ed_payload "$P" 'blocking when absent' 'blocking when Use cases is absent')"
+asks   "a backticked heading added to a rubric asks" \
+       "$(ed_payload "$P" 'a missing `## Risks` is blocking' 'a missing `## Risks` or `## Rollout` is blocking')"
+silent "  while a prose edit on the same line, after the backticked heading, is silent" \
+       "$(ed_payload "$P" 'a missing `## Risks` is blocking' 'a missing `## Risks` is a blocking finding')"
+asks   "a quoted list entry added to a script asks" \
+       "$(ed_payload "$R" "RETAINED='## Out of scope'" $'RETAINED=\'## Out of scope\n## Rollout\'')"
+asks   "an edit whose text is not on the page is judged by its own text: a heading added asks" \
+       "$(ed_payload "$P" 'not on the page' $'not on the page\n## Rollout')"
+silent "  and the same with no section change is silent" \
+       "$(ed_payload "$P" 'not on the page' 'not on this page')"
+# replace_all decides which occurrences move: the first one here is prose, the
+# second is a heading, so only the replace-every edit changes a section.
+RA="${PROJ}/skills/task/reference.md"
+printf '%s\n' 'each mitigation is named' '## Hazard mitigation' > "$RA"
+ra_payload(){ # <replace_all>
+  jq -nc --arg p "$RA" --arg t "$ARMED" --argjson a "$1" \
+    '{tool_name:"Edit",tool_input:{file_path:$p,old_string:"mitigation",new_string:"rollback",replace_all:$a},transcript_path:$t}'; }
+asks   "a replace_all edit that reaches a heading asks" "$(ra_payload true)"
+silent "  while the same edit replacing only the first occurrence, in prose, is silent" "$(ra_payload false)"
+: > "$RA"
+
+printf '\n== while armed, a Write is judged against the page it replaces ==\n'
+W="${PROJ}/agents/spec-writer.md"
+printf '## Scope\nold text\n' > "$W"
+silent "a Write that keeps every heading is silent" "$(wr_payload "$W" $'## Scope\nnew text\n')"
+asks   "a Write that adds a heading asks" "$(wr_payload "$W" $'## Scope\n## Rollout\n')"
+: > "$W"
+
+printf '\n== while armed, a change it cannot read is put to the author ==\n'
+mkdir -p "${WORK}/no-record"
+out=$(printf '%s' "$(ed_payload "$P" 'teh' 'the')" \
+  | ( cd "$PROJ" && CLAUDE_PLUGIN_ROOT="${WORK}/no-record" CLAUDE_PROJECT_DIR="$PROJ" "$GUARD" ) 2>/dev/null)
+check  "an unreadable element record fails toward asking" "$(decision "$out")" "ask"
+asks   "an edit payload carrying neither content nor strings asks" \
+       "$(jq -nc --arg p "$P" --arg t "$ARMED" '{tool_name:"Edit",tool_input:{file_path:$p},transcript_path:$t}')"
+chmod 000 "$P"
+asks   "an edit to a page that cannot be read asks" "$(ed_payload "$P" 'a typo teh' 'a typo the')"
+chmod 644 "$P"
+: > "$P"; : > "$R"
 
 printf '\n== the shell arm, direct write forms ==\n'
 sh_asks   "an in-place edit fires"            "sed -i '' agents/design.md"

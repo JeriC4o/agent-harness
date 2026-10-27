@@ -29,8 +29,8 @@
 #
 # THIS FILE HOLDS NO SECTION NAME OF A SPEC OR A DESIGN AS A LITERAL, on the
 # condition its core states: a script carrying a section token beside a presence
-# word reads as enforcing a required element, and a check that had to be
-# authorised before every edit could not be grown.
+# word reads as enforcing a required element, and a check in that set has any
+# edit that changes its section data put to the author during a learning pass.
 #
 # Tests: scripts/test-check-plan-convergence.sh
 import os

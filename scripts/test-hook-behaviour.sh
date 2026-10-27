@@ -174,7 +174,7 @@ PreToolUse|Bash|6|piped_gate|err|BLOCKED: a gate (build / test / lint / format /
 PreToolUse|Bash|7|plan_inv_shell|jq|CONFIRM: this command writes to a protected plan-invariants page
 PreToolUse|Edit|Write|0|member_path|err|[propagation-rule-reminder] You are editing
 PreToolUse|Edit|Write|1|learnings_headers|err|[archive-protection-reminder]
-PreToolUse|Edit|Write|2|plan_inv_edit|jq|CONFIRM: this edit targets a protected plan-invariants page
+PreToolUse|Edit|Write|2|plan_inv_edit|jq|CONFIRM: this edit changes a required section on a protected plan-invariants page
 PreToolUse|Skill|0|skill_task_main|jq|CONFIRM: /task starts the full ordered workflow
 PreToolUse|*|0|repeated_call|jq|[loop-index] this exact call (same tool, same arguments) has run
 PostToolUse|Write|Edit|0|misplaced_append|err|[learnings-append-check]
@@ -226,8 +226,13 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
     # The guard resolves the edited path against CLAUDE_PROJECT_DIR, so the
     # trigger has to be a path under the fixture project rather than a bare
     # repo-relative one -- the tool payload carries absolute paths in practice.
-    plan_inv_edit) jq -nc --arg p "$PROJ/agents/design.md" '{tool_name:"Edit", tool_input:{file_path:$p}}' ;;
-    plan_inv_shell) jq -nc '{tool_name:"Bash", tool_input:{command:"printf x >> agents/design.md"}}' ;;
+    plan_inv_edit) learn_transcript; printf '## Risks\n' > "$PROJ/agents/design.md"
+      jq -nc --arg p "$PROJ/agents/design.md" --arg t "$LEARN_T" \
+        '{tool_name:"Edit", tool_input:{file_path:$p, old_string:"## Risks", new_string:"## Risks\n## Rollout"}, transcript_path:$t}' ;;
+    # The plan-invariants guard fires only in learning mode, so both payloads name
+    # a transcript recording a run of /improve, and the edit adds a heading.
+    plan_inv_shell) learn_transcript
+      jq -nc --arg t "$LEARN_T" '{tool_name:"Bash", tool_input:{command:"printf x >> agents/design.md"}, transcript_path:$t}' ;;
     skill_task_main)
       # No agent_id: the MAIN-thread branch, which must ASK rather than deny.
       # The plugin spelling is used deliberately -- the gate strips the prefix,
@@ -258,6 +263,11 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
   esac
 }
 
+LEARN_T="${WORK}/learning-mode.jsonl"
+learn_transcript(){
+  printf '%s\n' '{"type":"user","message":{"content":"<command-message>harness:improve</command-message>\n<command-name>/harness:improve</command-name>"}}' \
+    > "$LEARN_T"
+}
 gate_payload(){ # <event> <tool_use_id>
   jq -nc --arg e "$1" --arg u "$2" --arg d "$PROJ" \
     '{session_id:"s-gate", hook_event_name:$e, tool_name:"Bash", tool_input:{command:"bash scripts/test-thing.sh"},

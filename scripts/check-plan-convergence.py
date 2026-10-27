@@ -16,8 +16,9 @@
 # is a condition on which the check stays OUT of the edit-time refusal's page
 # set rather than a stylistic preference. A page joins that set by defining or
 # by enforcing a required element, so a script carrying a section token beside a
-# presence word reads as enforcing one -- and a check that had to be authorised
-# before every edit could not be grown. The names it needs are derived from the
+# presence word reads as enforcing one -- and a check in that set has any edit
+# that changes its section data put to the author during a learning pass. The
+# names it needs are derived from the
 # required-element record at run time, the way the propagation gate derives its
 # path classes from the table beside them.
 #

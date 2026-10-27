@@ -175,11 +175,21 @@ acquires such a rule joins the set rather than becoming the unguarded route.
 | `${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` | Its step-gate checklists assert the presence of individual sections before a step may close; an element asserted there is required in practice whatever the templates say |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh` | Carries the retained-spec-section list, the surviving-design-heading list and the criterion-content rule as data. Widening a list here adds a required element without touching one word of prose. **It carried a fourth, the per-criterion verification-line requirement, until that element was removed**; the verb asserting it was deleted with it |
 
-**Every edit to one of these seven is put to the author, whatever it touches.** The refusal inspects
-nothing about the edit's text: a typo fix in an unrelated paragraph is refused exactly as a change to the
-required-element set is. That is a decision taken with its interruption cost named and accepted, and it
-is why the breadth of this table is a requirement rather than a detail — every surplus member is a
-recurring interruption.
+**The refusal is armed by learning mode, and while armed it asks only about a section change.** The
+measured damage came from a self-improvement pass, so the refusal fires only in a session that ran one of
+the automated learning passes — `/improve`, `/improve-global`, or `/ai-audit`, whose escalation audit
+edits instruction files on its own — read from that session's transcript by structure: a mention of the
+name is not a run. While armed, an edit to one of these seven is judged by the page before it against the
+page after it, and put to the author when it adds, removes or renames a heading of level two or deeper, or
+adds or drops a name from the required-element record above; a typo fix in an unrelated paragraph passes.
+A shell write to one of them is put to the author whenever it is recognised, because its content is not
+visible to the refusal. A change the refusal cannot read — an unreadable record, an unreadable page, an
+edit whose text the payload does not carry — fails toward asking. **A mandate written in plain prose
+inside an existing section, spelling neither a heading nor a recorded name, passes the refusal even when
+armed;** what reads it is the pull-request diff, the class the opening limit of this page already names.
+Outside learning mode the refusal is silent, and an element arriving or leaving is what the verification
+catches, in the full check list and in the pull-request diff. This replaced a refusal that asked on every
+edit, and measured, almost none of the edits it stopped changed a section.
 
 ## The near misses
 
@@ -208,7 +218,7 @@ describes ship either way.
 
 | Surface | What it covers |
 |---|---|
-| The refusal | The seven pages above — nothing else |
+| The refusal | The seven pages above, in a session that ran `/improve`, `/improve-global` or `/ai-audit` — nothing else |
 | The detection | The instruction material on five named surfaces — the project profile, the method pages, the scaffolding a consuming project receives, the text the enforcement layer writes into context as a session or a tool use begins, and the checks and suites where element lists live as data. Not everything an agent reads: a tracked file outside all five is outside the detection, which is what the three named exclusions and the report's own count of unaccounted files exist to say out loud |
 
 **Being outside the refusal is never being outside the detection — for every surface the detection
@@ -243,7 +253,7 @@ halves, which is exactly what "not silently" means.
 | Removing a principle | The same two edits; the verification reports an absence distinctly from a wording difference, because a vanished principle protects nothing while a reworded one still says something |
 | Adding a principle | The same route, because an addition can contradict a sentence already here |
 | Adding or removing a required element | Edit the page that mandates it and the record on this page; a one-sided edit is reported in whichever direction it went |
-| Any edit to a protected page | Allow the refusal when it fires. Allowing it lets the edit proceed, so installing or repairing this protection never requires switching it off |
+| An edit to a protected page that the refusal stops | Allow it. Allowing it lets the edit proceed, so installing or repairing this protection never requires switching it off |
 
 **A correction recorded in the learning record never travels this route automatically.** An entry whose
 remedy would change either document's composition, or change, weaken or remove a principle, is surfaced
