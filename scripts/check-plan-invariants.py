@@ -107,6 +107,7 @@ def norm(text):
 # ---------------------------------------------------------------------------
 PROFILE_FILES = ('AGENTS.md', 'CLAUDE.md', 'ai-docs/context.md')
 SURFACE_ORDER = ('profile', 'method', 'scaffolding', 'enforcement', 'verification')
+# [excluded-surfaces]
 EXCLUDED_SURFACES = (
     ('plan-documents', 'the artefacts under these rules, which quote principle text by construction',
      lambda p: p.startswith('ai-docs/plans/')),
@@ -219,13 +220,14 @@ for _needed in ('docs/plan-invariants.md', 'hooks/lib/plan-invariants-guard.sh',
 # ---------------------------------------------------------------------------
 PRINCIPLES_DOC = 'docs/plan-invariants.md'
 
+# [pinned-principles]
 PINNED = [
     "**One writer per artefact.** The orchestrator writes neither a spec nor a design; each is written only by its owning subagent. *Because a party that both writes a document and reports on it can close a finding by editing the evidence.*",
     "**A spec is a behaviour contract, not an implementation plan.** A criterion may not spell a command, script, tool or test identifier. *Because a criterion naming its instrument asserts which instrument ran, not what the system does, and cannot survive a change of instrument.*",
     "**A design says NOTHING about tests**, and the furthest it goes is naming the cases each object it builds is used in. *Because every sentence a design could write about a test is a promise about something that does not exist when the document is authored, and each narrowed version of this rule regrew — first a per-criterion command, then an intent line, then a suite total.*",
     "**The design is frozen at the design-review GO verdict.** After it, a divergence that does not break the agreed approach is a marker plus a log row, never a rewrite. *Because re-verifying an unchanged document every round is the cost this replaced.*",
     "**A changed requirement goes to the spec; a changed artefact goes to the log; nothing is recorded in both places.** *Because two records of one fact is the drift the mechanism exists to reduce.*",
-    "**Neither document carries a record of superseded material, and no verdict may require one.** *Because every such passage is read in full by every later whole-repository review and none of it describes the system.*",
+    "**Neither document carries a record of superseded material, and no verdict may require one.** *Because every later reader of the document pays for every such passage — the record of deliberate absence and the use cases on every whole-repository review, the rest whenever the document is opened — and none of it describes the system.*",
     "**The closing fold runs once, after approval.** It applies the correction log's rows to the design items that diverged, collapses the spec to its record of deliberate absence, and leaves the rest of the frozen document alone. *Because an untouched sentence is now either caught mechanically — a number whose provenance is gone, an identity that no longer pairs in either direction — or it is prose stating neither, which is accepted as unnoticed rather than re-derived against the chance that it rotted.*",
     "**A required element of a spec or a design must be knowable at the time the document is authored, and so must the origin of every number either document states.** An element whose content is only determined later is forbidden. A stated number names, in the same sentence, which kind it is — a threshold the task handed down, an estimate derived in place with its derivation shown, or a measurement of something that already exists — and how it was obtained; a figure whose only honest origin would be a measurement of the artefact the document describes is forbidden with it, that measurement being one nobody can take while the document is still being written. *Because it guarantees two failures at once: invented content at authoring time, and a review loop at the end that cannot converge — the document is corrected against reality, reality moves on, and the correction reopens.*",
     "**A question left open must be one whose answer would change neither the chosen approach, nor the requirements, nor how the work breaks up.** A gap failing that test is closed before the plan is agreed; a gap passing it that later turns out to have changed any of the three re-enters the full design-and-review cycle rather than being patched in place. *Because the gap is paid for either way, and the cheaper-looking price — note it and carry on — is the one that falls due as a rewrite of an agreed plan at the moment the work is most committed to it.*",

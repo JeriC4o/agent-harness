@@ -36,8 +36,9 @@ nothing.
 5. **A changed requirement goes to the spec; a changed artefact goes to the log; nothing is recorded in
    both places.** *Because two records of one fact is the drift the mechanism exists to reduce.*
 6. **Neither document carries a record of superseded material, and no verdict may require one.** *Because
-   every such passage is read in full by every later whole-repository review and none of it describes the
-   system.*
+   every later reader of the document pays for every such passage — the record of deliberate absence and
+   the use cases on every whole-repository review, the rest whenever the document is opened — and none of
+   it describes the system.*
 7. **The closing fold runs once, after approval.** It applies the correction log's rows to the design
    items that diverged, collapses the spec to its record of deliberate absence, and leaves the rest of the
    frozen document alone. *Because an untouched sentence is now either caught mechanically — a number

@@ -22,7 +22,7 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 ## Instructions
 
 1. Read `AGENTS.md`, `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`.
-2. Read every `*.spec.md` and `*.design.md` in `ai-docs/plans/done/` — the spec for the boundary of what was deliberately left out, the design for the working logic of what was built. Both are read; only one of them can silence a finding, and § What you do NOT check says which.
+2. Read the archive listing the prompt names, whole. It is how completed plans reach this review: per plan, its date, task key and document names, the spec's record of deliberate absence and the design's use cases. Open a completed spec or design in full only to settle a specific finding, never to survey the archive. If the prompt names no listing, raise no finding: record that in the `## Decisions log` and stop.
 3. Walk the source tree of the module under review:
    ```bash
    rg --files <module-path>
@@ -33,9 +33,9 @@ Every suspicion — investigate via a path-filtered search + Read. Don't guess. 
 
 ## Checklist
 
-### 0. Design conformance (when designs exist in `done/`)
+### 0. Design conformance (when the listing carries use cases)
 
-- **Use-case coverage (mandatory).** A completed design names the cases each object it builds is used in and says NOTHING about tests, so there is nothing here to re-run and no identifier to resolve. For every case listed under `## Use cases` in any `ai-docs/plans/done/*.design.md`, name a shipped test that covers it; a case nothing covers → `major`. **The question is only whether a covering test was written:** one case may be covered by several tests, tests belonging to no case are legitimate functional coverage of a component and are invisible here, and the finding reads "no test covers this case" — never a count, never a test's name, never a result. Asking the design for any of those three is itself the defect the prohibition removes. **This predicate is deliberately weaker than the in-task reviewer's, and the reason is a lifecycle fact rather than an oversight:** that gate asserts each covering check was shown able to come back NON-EMPTY, reading the per-criterion record's falsification column — and that record lives in the task's progress file, which no commit contains and which is deleted when the PR merges. A pass running after the merge has nothing stronger left to read, so handing this gate the stronger predicate would specify a read of a deleted file.
+- **Use-case coverage (mandatory).** A completed design names the cases each object it builds is used in and says NOTHING about tests, so there is nothing here to re-run and no identifier to resolve. For every case the listing carries from a completed design's use-case section, name a shipped test that covers it; a case nothing covers → `major`. A design the listing carries no use-case section for contributes no case. **The question is only whether a covering test was written:** one case may be covered by several tests, tests belonging to no case are legitimate functional coverage of a component and are invisible here, and the finding reads "no test covers this case" — never a count, never a test's name, never a result. Asking the design for any of those three is itself the defect the prohibition removes. **This predicate is deliberately weaker than the in-task reviewer's, and the reason is a lifecycle fact rather than an oversight:** that gate asserts each covering check was shown able to come back NON-EMPTY, reading the per-criterion record's falsification column — and that record lives in the task's progress file, which no commit contains and which is deleted when the PR merges. A pass running after the merge has nothing stronger left to read, so handing this gate the stronger predicate would specify a read of a deleted file.
 
 ### 1. Safety and correctness
 
@@ -117,7 +117,7 @@ Flag each of:
 
 - Formatter drift — enforced by the fix loop in the calling skill.
 - Build / test gates — enforced by the fix loop's verify step.
-- Anything a completed `*.spec.md` in `ai-docs/plans/done/` explicitly documents as **intentional** — that record of deliberate absence is the only artefact conferring this. A completed design states the working logic of what was built and claims nothing was deliberate, so it never silences a finding.
+- Anything a completed `*.spec.md` in `ai-docs/plans/done/` explicitly documents as **intentional** — that spec's record of deliberate absence is the only artefact conferring this, and the archive listing is where you read it. A completed design states the working logic of what was built and claims nothing was deliberate, so it never silences a finding, its use cases included.
 - Subjective preferences — only objective violations.
 
 ## Progress file format
@@ -177,5 +177,5 @@ This Subagent writes the initial values at file creation; subsequent updates are
 - Every finding has a file and line number — **re-derived, never computed.** Cite what `grep -n '<the actual token>' <file>` prints against the tree you reviewed, and cite the executable statement rather than the doc-comment describing it. Never arrive at a line number by adding a delta to a pre-edit one (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling).
 - Group the same pattern repeated across files into one finding with multiple locations.
 - Maximum 25 findings. If more, list the 25 most severe.
-- Cross-reference done plans before raising a finding — if it's documented there, skip.
+- Before raising a finding, check the listing for a completed spec whose record of deliberate absence documents it as intentional, and skip it only then.
 - Severity: `blocker` · `major` · `minor` · `nit`.

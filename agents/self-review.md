@@ -146,7 +146,7 @@ For each `⚠️ Objected` item:
 
 A finding's subject or target can be a sentence in the task's own plan documents, on either of two arms:
 
-- **(A) Subject** — would closing this finding leave a sentence in `ai-docs/plans/**/*.{spec,design}.md` untrue? **Fires even when the fix lands entirely in code.** A spec sentence merely broader than what shipped, or one another spec sentence overrides, is not left untrue; only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts. Flag it on this arm and say which sentence; the routing decision is not yours to defer to whoever picks the remedy.
+- **(A) Subject** — would closing this finding leave a sentence in `ai-docs/plans/**/*.{spec,design}.md` untrue? **Fires even when the fix lands entirely in code.** A spec sentence merely broader than what shipped, or one another spec sentence overrides, is not left untrue; only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts. Flag it on this arm and say which sentence; the routing decision is not yours to defer to whoever picks the remedy. For a completed plan the archive listing is not enough: what the arm needs is any sentence of a completed plan, which the listing's four sections do not carry, so search the completed plans for what the fix changes, and open in full only a document that search names.
 - **(B) Target** — the proposed resolution requires editing one of those files.
 
 **Firing an arm is not routing: does the divergence break the agreed approach?**

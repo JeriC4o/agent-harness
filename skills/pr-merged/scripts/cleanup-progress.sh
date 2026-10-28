@@ -60,6 +60,10 @@ if [ -z "${TICKET_KEY}" ]; then
   exit 0
 fi
 
+# Read here rather than through the archive listing (scripts/plan-archive.sh):
+# the lookup needs one header line from active specs as well, and the listing
+# reads the archive alone.
+# [spec-by-key]
 SPEC_PATH=$(grep -lE "^\*\*Tracked in:\*\* ${TICKET_KEY}\b" ai-docs/plans/done/*.spec.md ai-docs/plans/*.spec.md 2>/dev/null | head -n1)
 if [ -n "${SPEC_PATH}" ]; then
   SPEC_BASE=$(basename "${SPEC_PATH}" .spec.md)

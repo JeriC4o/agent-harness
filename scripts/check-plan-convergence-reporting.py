@@ -287,6 +287,9 @@ def recorded_positions(paths):
     return rows
 
 
+# Archived plans are read whole here, not through the archive listing
+# (scripts/plan-archive.sh): a position can sit anywhere in a file.
+# [reference-sweep]
 def reference(paths, record):
     global SWEPT, POSITIONS, ACCOUNTED, UNDECODABLE
     exts = tree_extensions(paths)
@@ -404,6 +407,9 @@ def marks_in(path, body):
     return out
 
 
+# A named file is read whole here, an archived plan included, not through the
+# archive listing (scripts/plan-archive.sh): a mark can sit anywhere in a file.
+# [pairing-sweep]
 def pairing(units, paths):
     global CLAIMS, MARKS, PAIRS
     known = set(paths)

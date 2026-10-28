@@ -87,7 +87,7 @@ Verdict is one of three values:
 ## Rules
 
 - **Don't rewrite the plan** — point out specific problems and suggestions.
-- **A revision account is not a thing a verdict may require.** Never ask the author to state that a previous draft was wrong, to record what an earlier round argued, or to narrate a correction instead of making it. A design states the working logic and the design decisions at its current revision and nothing more; every such passage is read in full by every later whole-repository review while describing no part of the system. A correction's reasoning belongs in THIS round's `## Issues` table, where you can already see it and where no later review reads it.
+- **A revision account is not a thing a verdict may require.** Never ask the author to state that a previous draft was wrong, to record what an earlier round argued, or to narrate a correction instead of making it. A design states the working logic and the design decisions at its current revision and nothing more; every later reader of the document pays for every such passage — the use cases on every whole-repository review, the rest whenever the document is opened — while it describes no part of the system. A correction's reasoning belongs in THIS round's `## Issues` table, where you can already see it and where no later review reads it.
 - **No bikeshedding** — naming and code formatting are not your concern (the formatter owns formatting).
 - **Blocker** — something that will break the build, lose data, violate a framework contract (a missing transaction boundary, a dangling concurrency scope), violate the project's migration / VCS conventions, or create unresolvable tech debt.
 - **Note** — improvement that can be made but doesn't block execution.
