@@ -1,9 +1,9 @@
 ---
 name: project-review
-description: "Whole-codebase review on the current branch (or branch given as argument). Reads all source files and done plans, runs fix loop and self-review loop until APPROVE."
+description: "Whole-codebase review on the current branch (or branch given as argument). Reads all source files and the archive listing of completed plans, runs fix loop and self-review loop until APPROVE."
 disable-model-invocation: true
 argument-hint: "[branch-name]"
-allowed-tools: Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git branch:*), Bash(git log:*), Bash(ls:*), Bash(grep:*)
+allowed-tools: Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git branch:*), Bash(git log:*), Bash(ls:*), Bash(grep:*), Bash(mktemp:*), Bash(scripts/plan-archive.sh:*)
 ---
 
 Whole-codebase review workflow. Steps execute **strictly in sequence**.
@@ -43,7 +43,17 @@ git rev-parse HEAD
 
 ### Step 2: Spawn review Subagent
 
-Create the progress file: `ai-docs/plans/YYYY-MM-DD-project-review.progress.md`. Header fields per `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`: `**Branch:**`, `**base_commit:**`, `**Last build:**`, `**current_step:**`, `**last_passed_gate:**`, plus `## Decisions log`. Initialise `**current_step:** Phase 1 — review-findings`.
+**First, the archive listing — before the progress file exists.** Make a temporary file with `mktemp`, then run the listing into it as its own call:
+
+```bash
+${CLAUDE_PLUGIN_ROOT}/scripts/plan-archive.sh > <listing file>
+```
+
+It prints, for every completed plan under `ai-docs/plans/done/`, the plan's date, task key and document names, the spec's record of deliberate absence and the design's use cases — the only parts of a completed plan this review uses.
+
+**Anything but exit `0` stops the review here.** Tell the user the listing could not be produced in full and quote what the run printed on standard error: the trailer naming each document it could not list and why, or the reason on a run that could not start. Then end the invocation having written nothing. No progress file exists yet, so the next invocation finds no active review, starts at Step 1, and runs the listing again against the repaired archive. Never review without the listing or with part of it: a review without it raises what a completed spec records as intentional and loses the use cases it must cover, and a partial listing cannot say which code its unlisted plan governed.
+
+On `0`, create the progress file: `ai-docs/plans/YYYY-MM-DD-project-review.progress.md`. Header fields per `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`: `**Branch:**`, `**base_commit:**`, `**Last build:**`, `**current_step:**`, `**last_passed_gate:**`, plus `## Decisions log`. Initialise `**current_step:** Phase 1 — review-findings`.
 
 ```
 Agent(subagent_type="general-purpose", prompt="
@@ -52,10 +62,13 @@ Agent(subagent_type="general-purpose", prompt="
   base_commit: [base_commit]
   Module path to review: <module-path>
   Write progress file to: ai-docs/plans/YYYY-MM-DD-project-review.progress.md
+  Archive listing: [listing file]
 ")
 ```
 
-After the Subagent completes: read the progress file and report finding count + severity breakdown to the user.
+The listing file serves this one spawn and no later one. **A Phase 1 spawn on a resumed review — the progress file already exists — first runs the listing again into a new temporary file, with the same stop.** A stop there leaves the progress file in place, so the next invocation resumes here rather than starting at Step 1.
+
+After the Subagent completes, read the progress file. **If the reviewer recorded that its prompt named no listing, report that stop to the user instead of a finding count** — it raised nothing because it reviewed nothing, which is not a clean review — and end the invocation with `**current_step:**` left at Phase 1, so the next one resumes into a fresh listing and spawn. Otherwise report finding count + severity breakdown to the user.
 
 **Write progress:** rewrite `**current_step:**` to `Phase 1 — review-findings complete`; append a `## Decisions log` bullet recording the finding count.
 
@@ -76,7 +89,7 @@ After every 3 fixes (or when all findings in a subtask are resolved):
 4. Update `## Files touched` and mark subtask `[x]` in progress file.
 5. **Write progress:** rewrite `**current_step:**` to `Phase 2 — fix loop (after N fixes)`; rewrite `**last_passed_gate:**` to `<gate command> | <UTC timestamp> | <git rev-parse HEAD> | <tree digest>`.
 
-> **Spec/Design Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue? A spec sentence merely broader than what shipped, or one another spec sentence overrides, is not left untrue; only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts. It fires even when the fix lands entirely in code, and the finding is not closed until that sentence is re-read and either confirmed or amended. **(B)** The fix diff touches one under `ai-docs/plans/` (including `done/`). Either is an amendment, not an ordinary fix — STOP. Route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume the fix loop ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group)).
+> **Spec/Design Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave a sentence in a `*.spec.md` / `*.design.md` untrue? A spec sentence merely broader than what shipped, or one another spec sentence overrides, is not left untrue; only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts. It fires even when the fix lands entirely in code, and the finding is not closed until that sentence is re-read and either confirmed or amended. What the arm needs is any sentence of a completed plan, which the listing's four sections do not carry: search the completed plans for what the fix changes, and open in full only a document that search names. **(B)** The fix diff touches one under `ai-docs/plans/` (including `done/`). Either is an amendment, not an ordinary fix — STOP. Route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume the fix loop ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group)).
 
 > **The scouted fix plan does NOT run in this fix loop, and that is the current state rather than a pending change.** `/task` Step 11 routes every review-fix round through one: a fresh-context agent writes the round's plan, a checked-in gate decides whether it may be applied, and a second agent applies only the rows marked for a fix. This loop fixes in the current context. Whether the mechanism is extended here is **conditional on evidence**: it is attempted only if a like-for-like cost measurement on a real feature task shows the sequence paid for itself, and if no effect shows, the extension does not happen at all. Tracked in the harness repository as issue #98.
 

@@ -89,6 +89,10 @@ finding() { printf '%s|%s|%s\n' "$1" "$2" "$3"; findings=$((findings+1)); }
 
 TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT INT TERM
 
+# Archived plans are read whole here, not through the archive listing
+# (scripts/plan-archive.sh): a link or an anchor can sit anywhere in a file, and
+# the listing carries four sections of each plan.
+# [md-files]
 md_files() { find "$ROOT" -name '*.md' -not -path '*/.git/*' | sort; }
 
 # GitHub's slug: lower-case, drop everything outside [a-z0-9 _-], then map each
@@ -154,6 +158,9 @@ $(md_files)
 EOF
 
 # ---- L3 ----------------------------------------------------------------------
+# Archived plans are read whole here too, not through the archive listing: a
+# plugin-root path can sit anywhere in a file, and the listing carries four
+# sections of each plan.
 while IFS= read -r f; do
   rel=${f#"$ROOT"/}
   while IFS= read -r m; do

@@ -361,7 +361,10 @@ The trigger has **two independent arms**, and the second is the one that is easy
 - **Arm A — subject.** The finding asserts that something a `*.spec.md` / `*.design.md` states is false,
   stale, or unsupported. Test: *would closing this finding leave a sentence in the artefact untrue?*
   A spec sentence merely broader than what shipped stays true; only a genuine conflict (base
-  principles) counts. Fires **regardless of where the fix lands**.
+  principles) counts. Fires **regardless of where the fix lands**. For a completed plan the archive
+  listing is not enough: what the arm needs is any sentence of a completed plan, which the listing's four
+  sections do not carry, so search the completed plans for what the fix changes, and open in full only a
+  document that search names.
 - **Arm B — target.** The fix diff touches `ai-docs/plans/**/*.{spec,design}.md`.
 
 Either arm is a Spec/Design Amendment trigger — NOT an ordinary code-fix.

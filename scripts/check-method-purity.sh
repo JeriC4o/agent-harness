@@ -61,6 +61,9 @@ def listed(*extra):
                          capture_output=True, check=True).stdout
     return [p for p in raw.decode("utf-8", "replace").split("\0") if p]
 tracked = listed()
+# Archived plans are read whole here, not through the archive listing
+# (scripts/plan-archive.sh): a foreign identifier is refused wherever it sits.
+# [purity-paths]
 paths = tracked + listed("-o", "--exclude-standard")
 
 DENY = {(7, "724d2d2cd4ec219e"), (13, "a01969836d4acf19"),

@@ -14,8 +14,8 @@ re-run the gate after any edit here, and check the member COUNT it reports rathe
 >
 > | If you edit... | You MUST also check / update... |
 > |---|---|
-> | `${CLAUDE_PLUGIN_ROOT}/skills/project-review/SKILL.md` | `${CLAUDE_PLUGIN_ROOT}/agents/review-findings.md` AND `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` AND `${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` (Review group) |
-> | `${CLAUDE_PLUGIN_ROOT}/agents/review-findings.md` OR `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` OR `${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` | See *Review group* anchor row above. |
+> | `${CLAUDE_PLUGIN_ROOT}/skills/project-review/SKILL.md` | `${CLAUDE_PLUGIN_ROOT}/agents/review-findings.md` AND `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` AND `${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` AND `${CLAUDE_PLUGIN_ROOT}/scripts/plan-archive.sh` — the archive listing the reviewer reads, whose output shape the skill's stop and the reviewer's brief both depend on (Review group) |
+> | `${CLAUDE_PLUGIN_ROOT}/agents/review-findings.md` OR `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` OR `${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` OR `${CLAUDE_PLUGIN_ROOT}/scripts/plan-archive.sh` (its sections, framing, exit convention or trailer) | See *Review group* anchor row above. |
 > | `${CLAUDE_PLUGIN_ROOT}/skills/interview/SKILL.md` | `${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` (Interview group — pre-resolved-rule list mirrors live in `spec-writer.md`) |
 > | `${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` | `${CLAUDE_PLUGIN_ROOT}/skills/interview/SKILL.md` (Interview group) |
 > | `AGENTS.md` (rule add / exemption) | Run the [propagation sweep](${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md#propagation-sweep) and apply the same change to every match. |

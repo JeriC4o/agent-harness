@@ -344,11 +344,52 @@ run suppression "${S}/heading.md"
 check "control: a heading naming the directory confers nothing" "$RC" "0"
 has   "  and is dispositioned as such" "$OUT" "not-suppression"
 
-# The live reviewer brief, on the ENUMERATION rather than the verdict: the count
-# is what proves the pattern still reaches every instruction in it, and it holds
-# whether or not those instructions have yet been narrowed.
+printf '\n== suppression: the archive listing is a third spelling ==\n'
+# The listing carries a design's use cases beside the spec's record, so a line
+# naming it can hand a design suppression authority while matching neither of
+# the two path spellings. Each fixture is one line, for the reason above.
+{ printf '# Reviewer brief\n\n'
+  printf -- '- Skip anything the listing documents as intentional.\n'
+} > "${S}/listing-bare.md"
+check "the fixture carries neither path spelling" "$(grep -cE 'done/|design\.md' "${S}/listing-bare.md")" "0"
+run suppression "${S}/listing-bare.md"
+check "a line conferring suppression through the listing alone, naming no spec, is a finding" "$RC" "1"
+has   "  and says so" "$OUT" "names the archive listing without naming the spec"
+has   "  the printed pattern names the wider enumeration" "$OUT" 'pattern=done/|design\.md|(?i)plan-archive|(?i)\blisting\b'
+
+{ printf '# Reviewer brief\n\n'
+  printf -- '- Skip a finding the Archive Listing records as intentional for a specific reason.\n'
+  printf -- '- Do not raise anything plan-archive.sh shows was left out.\n'
+} > "${S}/listing-spellings.md"
+run suppression "${S}/listing-spellings.md"
+has   "any capitalisation of the word, and the script name, are enumerated" "$OUT" "enumerated=2"
+check "  a substring of the spec's name is not the spec: both are findings" \
+      "$(printf '%s\n' "$OUT" | grep -c 'without naming the spec')" "2"
+
+{ printf '# Reviewer brief\n\n'
+  printf -- '- Check the listing for a completed spec whose record documents it as intentional.\n'
+  printf -- '- Read the archive listing whole; no instruction here confers anything.\n'
+} > "${S}/listing-narrowed.md"
+run suppression "${S}/listing-narrowed.md"
+check "control: a listing line that names the spec is clean" "$RC" "0"
+has   "  both lines enumerated, one dispositioned suppression" "$OUT" "verdict=clean enumerated=2 findings=0"
+check "  the suppression line is dispositioned as such" "$(printf '%s\n' "$OUT" | grep -c ' suppression$')" "1"
+
+{ printf '# Reviewer brief\n\n'
+  printf -- '- Enlisting helpers or reading listings is not the archive word, and confers nothing intentional.\n'
+} > "${S}/listing-word.md"
+run suppression "${S}/listing-word.md"
+check "control: the word is matched whole, so neither longer word is enumerated" "$RC" "0"
+has   "  nothing enumerated" "$OUT" "enumerated=0"
+
+# The live reviewer brief, on its enumeration and its verdict. The count proves
+# the pattern still reaches every line in it that names the completed plans --
+# the instruction to read the listing, the design-conformance heading, the
+# coverage bullet, and the two lines conferring suppression; the verdict proves
+# both of those lines narrow the suppression to the spec.
 run suppression "${REPO}/agents/review-findings.md"
-has "the live reviewer brief enumerates four instructions" "$OUT" "enumerated=4"
+has "the live reviewer brief enumerates five lines" "$OUT" "enumerated=5"
+check "  and is clean" "$RC" "0"
 
 run suppression "${S}/nope.md"
 check "a missing file is exit 2" "$RC" "2"

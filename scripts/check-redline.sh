@@ -43,16 +43,24 @@
 # a quotation, so an absence proved from a fragment is a false positive.
 #
 # `suppression`'s PREDICATE IS CONTRACT TOO, and the disjunction is the whole of
-# it. The enumeration pattern is `done/` OR `design\.md`, because the narrower
-# `design\.md` alone was MEASURED to reach two of the four instructions in the
-# live reviewer brief and to miss the restatement that confers the same
-# authority by naming the completed-plans DIRECTORY -- the one that survives any
-# search for the filename. The disjunction reproduces all four. A criterion met
-# by the narrower pattern is a false green, so the wider one is part of the
-# check. The verb then asserts a per-line DISPOSITION rather than a count: of
-# the four the disjunction reaches in that file, two confer suppression and must
-# name the spec alone, one is the use-case coverage check and is retained
-# verbatim, and one is a heading. It prints the enumerated count beside the
+# it. The enumeration pattern is `done/` OR `design\.md` OR the archive
+# listing -- its script name, or the word `listing` matched case-insensitively
+# as a whole word. The narrower `design\.md` alone was MEASURED to miss the
+# restatement that confers the same authority by naming the completed-plans
+# DIRECTORY -- the one that survives any search for the filename. The listing is
+# a third way to name the same material, and it carries a design's use cases
+# beside the spec's record, so a line saying "skip anything the listing
+# documents as intentional" would hand a design suppression authority through a
+# spelling neither path matches. Matching the bare word reaches the listing
+# however a line qualifies it. A criterion met by a narrower pattern is a false
+# green, so the wider one is part of the check. The verb then asserts a per-line
+# DISPOSITION rather than a count: in the live reviewer brief the disjunction
+# reaches five lines -- the instruction to read the listing, the design-
+# conformance heading and the use-case coverage bullet, none conferring
+# suppression, and two that confer it and name the spec, one through the
+# directory and one through the listing alone. A line conferring suppression
+# through the listing alone must name the spec as a WORD, because a substring
+# match would accept "specific". It prints the enumerated count beside the
 # verdict, because an enumeration that silently narrowed its own input set is
 # the quietest false green there is.
 #
@@ -300,7 +308,12 @@ RESIDUE_MARKER='[REDLINE '
 
 # The spec's surviving payload: its record of DELIBERATE ABSENCE. The design has
 # no section that can carry this, so these three are retained verbatim while the
-# rest of the spec goes.
+# rest of the spec goes. THIS IS THE ONE LIST of that record, and it has three
+# readers besides `folded`: scripts/check-plan-invariants.py, retained_sections()
+# in scripts/check-plan-convergence-holding.py, and scripts/plan-archive.sh, each
+# parsing this assignment as text -- so a change that moves it moves every one of
+# them, and the listing reports a moved assignment as a cannot-run.
+# [retained-list]
 RETAINED='## Out of scope
 ## Deferred
 ## Key decisions'
@@ -326,6 +339,7 @@ FINDINGS=0
 finding() { FINDINGS=$((FINDINGS + 1)); printf '  finding: %s\n' "$1"; }
 verdict_word() { if [ "$FINDINGS" -eq 0 ]; then printf clean; else printf dirty; fi; }
 
+# [section-of]
 section_of() { # <heading line> <file> -> the heading and its body, verbatim
   awk -v want="$1" '
     /^## / { line = $0; sub(/[[:space:]]+$/, "", line); inside = (line == want); if (inside) print; next }
@@ -449,15 +463,21 @@ EOF
 }
 
 # --- suppression ------------------------------------------------------------
+# [do-suppression]
 do_suppression() {
-  local file=$1 line no body lower marker confers disp enumerated=0
+  local file=$1 line no rest body lower marker confers disp listing_only enumerated=0
   readable "$file" 'file'
-  printf 'check-redline: verb=suppression file=%s pattern=done/|design\\.md\n' "$file"
-  grep -nE -- 'done/|design\.md' "$file" > "${WORK}/enumerated"
+  printf 'check-redline: verb=suppression file=%s pattern=done/|design\\.md|(?i)plan-archive|(?i)\\blisting\\b\n' "$file"
+  awk '{ l = tolower($0) }
+       /done\/|design\.md/ { print NR ":0:" $0; next }
+       l ~ /plan-archive/ || l ~ /(^|[^a-z0-9_])listing([^a-z0-9_]|$)/ { print NR ":1:" $0 }' \
+    "$file" > "${WORK}/enumerated"
   while IFS= read -r line; do
     [ -n "$line" ] || continue
     no=${line%%:*}
-    body=${line#*:}
+    rest=${line#*:}
+    listing_only=${rest%%:*}
+    body=${rest#*:}
     enumerated=$((enumerated + 1))
     lower=$(printf '%s' "$body" | tr 'A-Z' 'a-z')
     confers=0
@@ -479,6 +499,10 @@ EOF
             *) finding "${file}:${no} confers suppression and names the completed-plans directory without narrowing to the spec" ;;
           esac ;;
       esac
+      if [ "$listing_only" = 1 ] \
+         && ! printf '%s\n' "$lower" | grep -qE '(^|[^a-z0-9_])spec([^a-z0-9_]|$)'; then
+        finding "${file}:${no} confers suppression and names the archive listing without naming the spec"
+      fi
     fi
     printf '  %s:%s %s\n' "$file" "$no" "$disp"
   done < "${WORK}/enumerated"
