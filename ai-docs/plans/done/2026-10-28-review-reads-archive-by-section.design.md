@@ -71,7 +71,7 @@ a listing has nothing to find:
 | Exit | Meaning |
 |---|---|
 | `0` | Complete: every plan listed. The trailer names the archive and counts plans and documents |
-| `2` | Not complete, which is never an empty archive. Run-level — no archive directory, an unreadable or unparseable method input, a missing tool — prints only the reason. Document-level — a document it cannot read, or one whose fenced block never closes, which would otherwise read every section after it as absent — still lists everything else, and the trailer names every document it could not list and why **[REDLINE R1.2]** |
+| `2` | Not complete, which is never an empty archive. Run-level — no archive directory, an unreadable or unparseable method input, a missing tool — prints only the reason. Document-level — a document it cannot read, or one whose fenced block never closes, which would otherwise read every section after it as absent — still lists everything else, and the trailer names every document it could not list and why. Output-level — a write to standard output that fails — stops the run at that write, names the failed write on standard error and never prints the complete trailer, since a listing cut short on a full volume or a closed descriptor would otherwise end as `0` |
 
 An archive directory that exists and holds no plan is complete, with a plan count of zero.
 
@@ -92,8 +92,13 @@ and runs the listing again against the repaired archive. A review without the li
 completed spec records as intentional and lose use cases it must cover, and a partial listing cannot say
 which code its missing plan governed, so no partial review is safe to run (AC12). On `0` the skill
 creates the progress file and the spawn prompt names the listing's file, which serves that one spawn and
-no later one. The skill's description stops saying it reads done plans, and its allowed tools gain the
-listing script and `mktemp`. **[REDLINE R1.7]**
+no later one. A Phase 1 spawn on a resumed review, the progress file already in place, first runs the
+listing again into a new temporary file under the same stop; a stop there leaves the progress file where
+it is, so the next invocation resumes into the Phase 1 spawn rather than starting at Step 1. After the
+spawn, a reviewer that recorded its prompt naming no listing has reviewed nothing: the skill reports that
+stop to the user instead of a finding count and leaves `**current_step:**` at Phase 1, so the next
+invocation resumes into a fresh listing and spawn. The skill's description stops saying it reads done
+plans, and its allowed tools gain the listing script and `mktemp`.
 
 **`agents/review-findings.md` reads the listing whole as its view of the archive, and opens an archived
 document in full only to settle a specific finding (AC10).**
@@ -309,21 +314,7 @@ sentence, is reached by link and is outside the class the size rule caps.
 | 2 | **The review reads the listing.** In the project-review skill: the description, the allowed tools, Step 2 opening with the listing before the progress file exists, the stop on anything but `0` that writes nothing and leaves the next invocation to start at Step 1, the file named in the spawn prompt, and arm (A)'s sentence stating its need and its search. In the reviewer's brief: step 2, Checklist 0's heading and coverage bullet, the suppression bullet and the Rules bullet, each line kept clear of the shapes § Staying outside the refusal's page set names and of any presence word. In the fold gate: the enumeration in `do_suppression` widened to the listing's script name and the word "listing", its narrowing rule, the pattern it prints, its header comment re-derived against the rewritten brief, the readers sentence on the `RETAINED` comment, and the ids `[do-suppression]`, `[retained-list]` and `[section-of]` marked on their entities. Of the group sweeps this edit owes, Spec-Amendment finds arm (A) in the bug-fix workflow, the shared reviewer and the workflow page, which row 5 carries; Review, Redline and Plan-Invariants find no sibling stating what these three files change | `skills/project-review/SKILL.md`, `agents/review-findings.md`, `scripts/check-redline.sh` | AC10, AC11, AC12, AC13, AC14 | 1 |
 | 3 | **The sixth principle's reason and its restatements.** Rewrite the reason on the principles page and in `PINNED` in the same change, marking `PINNED` with `[pinned-principles]` and `EXCLUDED_SURFACES` with `[excluded-surfaces]`; restate it in the design author's bullet on pre-approval corrections and in the design reviewer's bullet on revision accounts; give the design author's fold section its true reason for keeping the frozen sections. The two agent files are protected pages; every edit to them here is prose inside an existing section, which the armed refusal passes | `docs/plan-invariants.md`, `scripts/check-plan-invariants.py`, `agents/design.md`, `agents/design-review.md` | AC14 | 1 |
 | 4 | **The other readers state their need.** Beside each of the five reads, in the four scripts the members table names, one comment saying what it needs that the listing does not give it, marked with the id the table gives that entity; bump the plugin's patch version | `skills/pr-merged/scripts/cleanup-progress.sh`, `scripts/check-references.sh`, `scripts/check-method-purity.sh`, `scripts/check-plan-convergence-reporting.py`, `.claude-plugin/plugin.json` | AC13 | 1 |
-| 5 | **The amendment trigger's subject arm states its read in every workflow that reaches the archive.** Beside arm (A) in the bug-fix workflow's Step 5 and in `agents/self-review.md` § Findings that require Design/Spec Amendment, not a code fix, one sentence stating the arm's need and its bound in the wording project-review's arm (A) takes in row 2, the reviewer's worded for a completed plan rather than for a caller and held to the estimate § Size budget gives; the same sentence in `docs/workflow.md` § Spec-Amendment group, as the group's sibling **[REDLINE S8.1]** | `skills/bugfix/SKILL.md`, `agents/self-review.md`, `docs/workflow.md` | AC13 | 2 |
-
-## Handoff plan
-
-- **Entry into Group A:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`; the parent `/task` begins Group A in that fresh
-  context.
-- **Group A:** subtasks 1–3 — the listing, the review that reads it, and the principle whose reason it
-  changes.
-- **Handoff after Group A:** spawn `/context-reset` per
-  `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. The parent `/task` resumes in Group B with fresh
-  context.
-- **Group B:** subtasks 4–5 — terminal group, two subtasks, within the `1..3` range: the other readers'
-  statements and the arm (A) sentence in the bug-fix workflow, the shared reviewer and the workflow page.
-  It completes Step 8 in its own `/context-reset` subagent.
+| 5 | **The amendment trigger's subject arm states its read in every workflow that reaches the archive.** Beside arm (A) in the bug-fix workflow's Step 5 and in `agents/self-review.md` § Findings that require Design/Spec Amendment, not a code fix, one sentence carrying the need and bound clauses project-review's arm (A) takes in row 2 behind a lead-in naming the archive listing — "For a completed plan the archive listing is not enough:" — because neither site produces the listing, so a bare "the listing" there would point at nothing; the reviewer's sentence worded for a completed plan rather than for a caller and held to the estimate § Size budget gives; the same sentence, lead-in included, in `docs/workflow.md` § Spec-Amendment group, as the group's sibling, which produces no listing either | `skills/bugfix/SKILL.md`, `agents/self-review.md`, `docs/workflow.md` | AC13 | 2 |
 
 ## Risks
 
@@ -367,8 +358,9 @@ sentence, is reached by link and is outside the class the size rule caps.
   that search names.
 - **Interruption.** The listing writes nothing but standard output. A run killed mid-way leaves a partial
   temporary file and no `0`, and the skill acts on the exit status, never on the file's presence. A stop
-  leaves no progress file, so re-entry after the archive is repaired is an ordinary first invocation.
-  **[REDLINE R2.3]**
+  on the opening listing leaves no progress file, so re-entry after the archive is repaired is an
+  ordinary first invocation. A stop on the listing a resumed Phase 1 spawn runs leaves the progress file
+  in place, and re-entry resumes into a fresh listing and spawn.
 - **A published interface.** The suppression verb's enumeration widens, so a file that was clean can
   report a line conferring suppression through the listing without naming the spec; that is the intended
   catch. The pattern it prints beside its verdict changes with it. The verb's set, exit convention and
@@ -396,7 +388,3 @@ sentence, is reached by link and is outside the class the size rule caps.
   against recording superseded material; compared by the plan-invariants check with its pinned copy.
 - The readers' comments — read by whoever next changes one of those readers, to see why it reads more
   than the listing.
-
-## Open questions
-
-None.
