@@ -30,20 +30,22 @@ nothing.
    builds is used in. *Because every sentence a design could write about a test is a promise about
    something that does not exist when the document is authored, and each narrowed version of this rule
    regrew — first a per-criterion command, then an intent line, then a suite total.*
-4. **The design is frozen at the design-review GO verdict.** After it, a divergence that does not break
-   the agreed approach is a marker plus a log row, never a rewrite. *Because re-verifying an unchanged
-   document every round is the cost this replaced.*
-5. **A changed requirement goes to the spec; a changed artefact goes to the log; nothing is recorded in
+4. **The design is frozen by a commit at the design-review GO verdict and corrected in place after it.**
+   A divergence that does not break the agreed approach is corrected in the item it falsifies, after the
+   code it describes exists and only as far as the shipped work needs; one that breaks the approach is a
+   new design, a new review and a new freeze. *Because the change since the freeze is then computed from
+   the repository rather than reported by the party that made it, so every edit to the agreed plan, an
+   unintended one included, reaches the review that rules on it.*
+5. **A changed requirement goes to the spec; a changed artefact goes to the design; nothing is recorded in
    both places.** *Because two records of one fact is the drift the mechanism exists to reduce.*
 6. **Neither document carries a record of superseded material, and no verdict may require one.** *Because
    every later reader of the document pays for every such passage — the record of deliberate absence and
    the use cases on every whole-repository review, the rest whenever the document is opened — and none of
    it describes the system.*
-7. **The closing fold runs once, after approval.** It applies the correction log's rows to the design
-   items that diverged, collapses the spec to its record of deliberate absence, and leaves the rest of the
-   frozen document alone. *Because an untouched sentence is now either caught mechanically — a number
-   whose provenance is gone, an identity that no longer pairs in either direction — or it is prose stating
-   neither, which is accepted as unnoticed rather than re-derived against the chance that it rotted.*
+7. **A plan is archived as it stands, and nothing rewrites it on its task's behalf after the merge.** The
+   spec keeps every section and the design keeps every section, its process sections included. *Because a
+   pass after the merge lands as a change of its own with a review of its own, and until it lands the
+   archive says one thing while the record of its correction says another.*
 8. **A required element of a spec or a design must be knowable at the time the document is authored, and
    so must the origin of every number either document states.** An element whose content is only
    determined later is forbidden. A stated number names, in the same sentence, which kind it is — a
@@ -65,9 +67,9 @@ nothing.
     acceptance criterion requires, with no other sentence of the same spec requiring it; a spec that is
     general or silent where the design is specific is breadth, and a departure another sentence of the spec
     requires is stated once, among the design's risks, and is not a spec finding either. *Because a spec
-    narrowed to match its design states the design's detail a second time, costs an approval and a fresh
-    planning round, and is deleted when the closing fold collapses the spec, so the narrowing is paid for
-    and then discarded.*
+    narrowed to match its design states the design's detail a second time and costs an approval and a
+    fresh planning round, and the archived spec then keeps that detail for good, so every later correction
+    of the design leaves the spec to be amended with it.*
 
 **All but three are prohibitions; the remaining three are tests, and each hands a reader a question rather
 than a boundary.** The prohibitions say what may not happen. The eighth asks of a proposed element: can
@@ -153,12 +155,11 @@ a template alone names an element the record does not carry. Either direction is
 keeps this page out of the refusal set — it mandates nothing, so an edit here cannot quietly make
 anything mandatory.
 
-**Three headings in the spec's record of deliberate absence survive the closing fold byte-identically** —
-`## Out of scope`, `## Deferred` and `## Key decisions`. Two headings are the fold's opposite case: it
-must REMOVE `## Handoff plan` and `## Open questions` from the design. That removal list is a
-prohibition, not an element source. Both of its entries happen also to be template elements today, which
-is coincidence rather than structure, so a widening of it is reported as a prohibition arriving and
-named — never absorbed into the set above.
+**Three headings make up the spec's record of deliberate absence** — `## Out of scope`, `## Deferred`
+and `## Key decisions`: the sections the archive listing extracts from every completed spec, and all that
+a collapsed spec in the archive still carries. The list is held as data in
+`${CLAUDE_PLUGIN_ROOT}/scripts/deliberate-absence.sh`, which the element derivation reads as spec
+elements.
 
 ## The protected page set
 
@@ -169,18 +170,17 @@ acquires such a rule joins the set rather than becoming the unguarded route.
 | Page | What about it defines or enforces a required element |
 |---|---|
 | `${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` | Enumerates the spec's required sections as a template, and separately states what a criterion may and may not contain. Both are composition |
-| `${CLAUDE_PLUGIN_ROOT}/agents/design.md` | Enumerates the design's required sections as a template; mandates one further element in its rules rather than in that template; and names which spec sections survive the closing fold. Three loci in one file, and the measured damaging edit was of exactly this class. **It was four until the per-criterion verification line was removed as an element** — recorded because a locus count that only ever grows is the shape this row warns about |
+| `${CLAUDE_PLUGIN_ROOT}/agents/design.md` | Enumerates the design's required sections as a template, and mandates one further element in its rules rather than in that template. Two loci in one file, and the measured damaging edit was of exactly this class. **It was four until the per-criterion verification line was removed as an element, and three until the closing fold's retained spec sections left it** — recorded because a locus count that only ever grows is the shape this row warns about |
 | `${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` | Makes the absence of named elements a blocking finding under its own severity rubric. The quieter of the two routes to a new requirement: an element becomes mandatory here with no template changing anywhere |
-| `${CLAUDE_PLUGIN_ROOT}/skills/redline-fold/SKILL.md` | Names the spec sections retained byte-identically and the design headings allowed to survive, so it defines what both documents contain after the fold |
 | `${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` | Its binding step rule requires the design's handoff-plan section to exist in order to operate at all |
 | `${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` | Its step-gate checklists assert the presence of individual sections before a step may close; an element asserted there is required in practice whatever the templates say |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh` | Carries the retained-spec-section list, the surviving-design-heading list and the criterion-content rule as data. Widening a list here adds a required element without touching one word of prose. **It carried a fourth, the per-criterion verification-line requirement, until that element was removed**; the verb asserting it was deleted with it |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/deliberate-absence.sh` | Carries the spec's record of deliberate absence — the sections a collapsed spec keeps and the archive listing extracts — as a shell assignment of section names, which the element derivation reads as spec elements. Widening it adds a required element without touching one word of prose |
 
 **The refusal is armed by learning mode, and while armed it asks only about a section change.** The
 measured damage came from a self-improvement pass, so the refusal fires only in a session that ran one of
 the automated learning passes — `/improve`, `/improve-global`, or `/ai-audit`, whose escalation audit
 edits instruction files on its own — read from that session's transcript by structure: a mention of the
-name is not a run. While armed, an edit to one of these seven is judged by the page before it against the
+name is not a run. While armed, an edit to one of these six is judged by the page before it against the
 page after it, and put to the author when it adds, removes or renames a heading of level two or deeper, or
 adds or drops a name from the required-element record above; a typo fix in an unrelated paragraph passes.
 A shell write to one of them is put to the author whenever it is recognised, because its content is not
@@ -209,6 +209,7 @@ which the sweep does read, but not for the guard or the seven `hooks/lib/test-*.
 | `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` | Defines the composition of the round record that deliberately sits OUTSIDE the frozen base, and is the sanctioned home for the identifiers the third principle keeps out of the design. Protecting it would guard the relief valve, not the documents |
 | `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` | Measured, and it reproduces: a sweep of the whole method-documentation directory for any section name of either document returns only this page, whose record table spells all thirteen element tokens as data and mandates nothing for the reason given under that table. This row's page is not among the hits, so it defines no element — and it is the single most-edited file in the tree. The pointer it carries to this page names the document and its authority, and restates no element mandate; a pointer that restated one would make that file element-defining |
 | `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` and the shared code under `${CLAUDE_PLUGIN_ROOT}/hooks/lib/` | Out of the REFUSAL set, and out of that set only. Neither mandates an element today, and this is where the refusal itself registers — so refusing edits here would make the protection unable to arrive without authorising its own arrival. The text this layer writes into an agent's context as a session or a tool use begins is instruction material, so it is INSIDE the detection |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh` | Carries the criterion-content rule as data, and that rule is composition — what a criterion may say — while the refusal asks only about headings and element names. **It was a protected page while it carried the design headings a closing pass had to remove**, and it left the table when that list went |
 | `${CLAUDE_PLUGIN_ROOT}/scripts/test-check-redline.sh` and its siblings | They reproduce both documents' section names as fixture text. A fixture asserts nothing about what a real document must contain, and the fixtures move with every change to the checks |
 | `${CLAUDE_PLUGIN_ROOT}/skills/interview/SKILL.md` and `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` | Measured: neither enumerates a section of either document; both point at the contracts instead |
 
@@ -219,7 +220,7 @@ describes ship either way.
 
 | Surface | What it covers |
 |---|---|
-| The refusal | The seven pages above, in a session that ran `/improve`, `/improve-global` or `/ai-audit` — nothing else |
+| The refusal | The six pages above, in a session that ran `/improve`, `/improve-global` or `/ai-audit` — nothing else |
 | The detection | The instruction material on five named surfaces — the project profile, the method pages, the scaffolding a consuming project receives, the text the enforcement layer writes into context as a session or a tool use begins, and the checks and suites where element lists live as data. Not everything an agent reads: a tracked file outside all five is outside the detection, which is what the three named exclusions and the report's own count of unaccounted files exist to say out loud |
 
 **Being outside the refusal is never being outside the detection — for every surface the detection

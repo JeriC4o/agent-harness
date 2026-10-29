@@ -7,7 +7,7 @@
 #       stdout. Never 1: a ref that cannot be shown current is no comparand, so
 #       no caller may turn it into a finding.
 #
-# Used by: check-redline.sh (pending, ref form) and check-release.sh (its base).
+# Used by: check-release.sh (its base).
 #
 # A remote-tracking ref that RESOLVES is only the last fetch's copy, so a
 # caller that skipped the fetch would read an old tree and report on it. Only
@@ -18,7 +18,7 @@
 #
 # The name carries no `check-` prefix on purpose: run-checks.sh derives every
 # tracked check-*.sh as a gate that must be a member or exempted, and this is
-# a dependency of two gates, not a gate.
+# a dependency of a gate, not a gate.
 
 set -uo pipefail
 

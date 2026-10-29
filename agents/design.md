@@ -38,92 +38,39 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 6. **Produce updated artifact** — full Design Document (not a diff)
 7. **Run the exit check** — § Rules; an amended artifact owes it exactly as a first one does
 
-## Redline marking
+## Correcting the design in place
 
 A third invocation mode, and the only one in which this subagent writes to an AGREED design rather than
-authoring one. Invoked by `/task` wherever a divergence between the design and what shipped is found after
-the freeze — during implementation, or in a review-and-fix round whose findings carry one — and by the route
-of a spec amendment that keeps the approach, in whichever workflow entered it, where the plan has a
-correction log ahead of its closing fold.
+authoring one. The design is agreed at the design-review GO, once the GO's notes are worked in, and frozen
+by a commit ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze));
+from then on a divergence that does not break the agreed approach is corrected here, in the item it
+falsifies. The orchestrator never writes the design: it spawns this mode once per occasion, with that
+occasion's list of diverged items.
 
-**The contract for this mode is [`${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md`](${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md)
-— read it in full before writing a marker.** It holds the freeze point, the marker's form and placement, how
-a log row is derived or authored, extensions, the mode choice, and the exit check. In short: one invocation
-per review round or implementation step that carries divergences, and per spec amendment whose re-read
-leaves a false design item or a non-silent declared link; a `**[REDLINE <key>]**` marker appended
-to each diverged item and a row under the same key in `ai-docs/plans/<spec-base>.redline.md`; and, whenever
-the pass wrote a marker or the log exists, hand back only on a clean 0 from
-`${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh paired <design> <log>`.
+| Occasion | When the pass runs | Its input |
+|---|---|---|
+| Implementation | once per handoff group that recorded a divergence, after the group's code is written | the group's divergences from the progress file's decisions log — the design item by its heading, and what shipped |
+| A review-and-fix round | once per round carrying a `correction:` row, after the apply and the post-apply micro-loop, before the round's review | the round's `correction:` rows |
+| A follow-up round on the task's open pull request | after the round's fix is written, before its review | each design item that round's fix made untrue |
+| A bug fix run inside any of those, its trace carrying `**parent_skill:**` | after the fix, within the enclosing round | the design items the fix leaves stating something that no longer ships |
+| A spec amendment that keeps the approach, in any workflow | the recipe's fifth act | the false design items the re-read ruled on |
 
-## The redline fold
+**What the pass does.** It rewrites each named item so it states what shipped and nothing else, in place,
+carrying no account of what the item said before — the change since the freeze, computed from the
+repository, is the record of that. The admission rule in § Rules decides what may be written: an extension
+goes into the item whose scope it falls within, and work no item contains is a missing whole, which takes
+the breaking route rather than this pass. It rewrites every declared-link row whose design end it changed,
+with grounds naming the corrected item. It writes by targeted edits, section by section, verifies on disk,
+and ends with the exit checks of § Rules, as every write of the design does.
 
-The closing pass, invoked by `/redline-fold` once the PR is approved, producing the as-built design as a
-separate commit. It runs only when the log carries at least one row; with none, the frozen plan already
-describes what shipped and there is nothing to correct.
+**Whose plan.** On the first four occasions the pass corrects the task's own design and no other: a
+sentence of another plan's design takes the amendment route with the user's approval, and a spec sentence
+left untrue is a changed requirement, which takes the Spec Amendment recipe. On the fifth it corrects the
+design of whichever plan the user-approved amendment changed — in a standalone bug fix or project review,
+another task's archived design — and that approval is what admits the correction there.
 
-**Two WINDOWS, and you are told which rather than deciding it.** EARLY: the PR is still open and the
-commit joins it. LATE: the merge already happened and a log survived it, so the pass runs on a fresh
-branch off the default one. Which one it is, why the late one exists rather than being a repair for
-carelessness, what the interval costs, and the gate's ordering inside it are the invoking skill's and are
-stated in full on
-[`${CLAUDE_PLUGIN_ROOT}/skills/redline-fold/SKILL.md`](${CLAUDE_PLUGIN_ROOT}/skills/redline-fold/SKILL.md),
-which establishes the window before spawning you. *Window* and not *régime* on purpose: this file already
-uses *régime* for the pre-GO / post-GO freeze axis and the correction MODE is a third axis again, and one
-name over three axes makes every sweep ambiguous.
-
-**It KEEPS the frozen design and applies the log's rows to the items that diverged.** It does not author
-the document afresh, and the reason the re-authoring existed is answered rather than dropped: an untouched
-sentence is now either caught mechanically — a number whose provenance is gone, an identity that no longer
-pairs in either direction — or it is prose stating neither, which is accepted as unnoticed. The output
-path is unchanged: `ai-docs/plans/done/` holds one design per task, so the corrected document replaces the
-old content in place, never as a second file.
-
-**The strip set is unchanged, closed and short:** `## Handoff plan`, `## Open questions`, every marker,
-amendment residue, and any record of superseded material. The first three are patterns a check can search
-for; the last two are not, and are the judgement step below. **Nothing else is dropped and nothing else is
-re-derived** — the approach, the decomposition, the risks, the rejected alternatives and the use cases
-stay as the frozen document states them except where a row says otherwise, because the design that
-survives is what a later reader opens to settle a finding, and its use cases reach every whole-repository
-review through the archive listing.
-
-**Write it SECTION BY SECTION, never in one call — and that instruction survives on its own terms**,
-having never depended on the re-authoring. § Patterns records the hazard: a full-file rewrite of a large
-design is the highest-risk moment for a transport drop, with two observed attempts dying before the write
-landed. The fold's input is a document of that size class whatever its content is derived from. Only the
-derived-from half changed; "section by section" constrains how the bytes are DELIVERED and is untouched.
-
-Then, in this order:
-
-1. **Verify on disk** — mtime plus a search for an expected new string. The harness does not retry on a
-   socket close, so an unverified write is an unknown one.
-2. **Read the corrected ITEMS and vouch for them** — the items a row was recorded against, never every
-   section. This is a judgement step and is named as one. It cannot be done by searching for superseded
-   wording: a document that records its own corrections holds that wording inside a quotation, so an
-   absence proved from a fragment is a false positive rather than a weak result. The bounded scan for the
-   phrases that introduce a revision account is a **spot-check** beside it, never a substitute. **Over
-   everything else no reader asserts anything** — a stale sentence carrying neither a number nor an
-   identity is accepted as unnoticed.
-3. **Run the residue check AFTER that verification**, so a partial write is caught as a residue failure
-   rather than passing as a fold.
-
-**The spec is collapsed, not deleted, and its own subagent writes it.** Its surviving payload is its
-record of *deliberate absence* — `## Out of scope`, `## Deferred`, `## Key decisions`, **byte-identical**
-to their pre-fold text — because the design has no section that can carry it: a design describes what was
-built, never the boundary of what was deliberately not built. That write belongs to the spec's owner, not
-to this subagent and not to the orchestrator.
-
-**The log is removed from the tree.** Nothing downstream reads it, the post-merge reading list naming the
-spec and the design, and the commit history preserves it. A surviving log is therefore the unambiguous
-mechanical signal that the fold never ran, which is what lets the merge-time workflow refuse on one. **The
-plan's record of excused findings stays**: the archived plan still has a reader in the convergence check,
-and removing the record would un-excuse every waiver in it permanently. **So does its record of declared
-links**, which the declared-link check still reads over the archived pair.
-
-**The whole output is gated**, by `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh folded <spec> <design>`:
-the three retained spec sections byte-compared against the previous commit, the design asserted free of
-all three residue patterns, and the log asserted gone. The comparand is version control deliberately — it predates the rewrite and therefore cannot BE
-the rewrite, which a copy captured by this same pass could not promise. Its three outcomes are this
-repository's: clean, findings, and cannot-run, where cannot-run is not a pass.
+**A divergence that BREAKS the agreed approach never comes here.** Work stops, the user is asked, this
+subagent amends the design as an iteration, design review runs, and its GO takes a new freeze.
 
 ## Quality checklist
 
@@ -208,7 +155,7 @@ it will be tested is not, and is not this document's business.
   reporting zero over a document with content examined nothing. One obligation falls out of it and is
   stated here because it is the author's: **every criterion the spec states is delivered by some
   decomposition row**, which is what that column is for. **Beside it, a second call that is a report and
-  never part of that refusal:** at the end of every pass but the redline fold, which carries its own gates,
+  never part of that refusal:** at the end of every pass, the in-place correction included,
   run `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-links.sh <spec_path> <design_path>`, act on its report as
   [`${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md` § Where a report leads](${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md#where-a-report-leads)
   says, run it again, and hand back its verdict line with each row you rewrote or removed and why, and each
@@ -221,12 +168,13 @@ it will be tested is not, and is not this document's business.
   Stage the record by name the first time you write it. What a link is, the empty record and the absent
   one, the states and how a row is cleared:
   [`${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md`](${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md).
+- **After the freeze, a correction is admitted only when it is needed to make the shipped thing correct.** Work that would widen what the task delivers is proposed in the hand-back as a separate ticket, never written into the design: the change since the freeze shows every line a correction writes, and one describing nothing the shipped work needed is a finding.
 - Each task in decomposition = one logically complete step.
 - Don't write code — only the plan. Code is written by `/task` Step 8.
 - If scope > 7 tasks in decomposition — propose splitting into multiple tickets.
 - If unsure about the codebase — investigate via a path-filtered search + Read; don't guess.
 - **Nothing in this document is proven by running it, because nothing here is run.** A design is written before the thing exists, so it pins no command, quotes no probe, and puts nothing forward as a gate. Where the approach rests on how something existing behaves, say what it does and name the entity it is true of — that is a claim a reader can check, and it needs no execution to write down. The duty that used to live here, that a pinned gate must be shown able to come back non-empty, binds in full where such a command is actually recorded: the round's own working record during implementation. It was re-pointed there, not dropped.
-- **A pre-approval correction is a REWRITE, and the document carries no account of what an earlier draft said.** While the design is being authored or reviewed, the way to correct it is to rework the affected sections (§ Workflow → Iteration): nothing has shipped for a base to diverge from, so there is nothing to mark. The document therefore carries no revision account at any stage — no narration of what a previous round found or argued, no quoted superseded wording, no sentence whose subject is an earlier draft rather than the system. Every later reader of the document pays for every such passage — the whole-repository review for the use cases on every run, whoever opens the document to settle a finding for the rest — and none of it describes the system. A correction's reasoning belongs in the review round's own findings table, which is where a reviewer can already see it and which no later review reads.
+- **A correction is a REWRITE, and the document carries no account of what an earlier draft said.** While the design is being authored or reviewed, the way to correct it is to rework the affected sections (§ Workflow → Iteration); after the freeze, a divergence that keeps the approach is corrected by § Correcting the design in place, and the wording it replaced survives only in the change since the freeze. Neither leaves a revision account in the document at any stage — no narration of what a previous round found or argued, no quoted superseded wording, no sentence whose subject is an earlier draft rather than the system. Every later reader of the document pays for every such passage — the whole-repository review for the use cases on every run, whoever opens the document to settle a finding for the rest — and none of it describes the system. A correction's reasoning belongs in the review round's own findings table, which is where a reviewer can already see it and which no later review reads.
 - **Handoff-grouping requirement.** The `/task` workflow's Step 8 binds a `/context-reset` handoff at the start of **every** design-defined group, including the first and including single-subtask designs. The design must pre-compute boundaries in a `## Handoff plan` section. Four mandatory sub-points (every M ≥ 1):
   - **(a) When grouping is required** — `every M ≥ 1`.
   - **(b) Maximum group size** — `3 consecutive subtasks`. Non-terminal groups MUST be exactly 3. **The NUMBER of groups is unbounded**, and follows from `M` and this sub-point rather than being chosen: a cap of three groups stood in the handoff skill and was removed as unsupported, not least because it was arithmetically incompatible with this very sub-point — three non-terminal groups of 3 plus a terminal group of at most 3 put the largest admissible task at 12 subtasks, so any larger decomposition could satisfy one of the two rules only by breaking the other. Size is governed by the propose-a-split duty above, which the user answers.

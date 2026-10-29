@@ -15,7 +15,7 @@ trap 'rm -rf "$D"' EXIT
 
 P="$D/plugin"
 mkdir -p "$P/scripts" "$P/agents"
-cp "$HERE/review-ledger.sh" "$HERE/tree-digest.sh" "$P/scripts/"
+cp "$HERE/review-ledger.sh" "$HERE/tree-digest.sh" "$HERE/plan-freeze.sh" "$P/scripts/"
 cat > "$P/agents/self-review.md" <<'EOF'
 # Reviewer
 ## Checklist
@@ -199,9 +199,6 @@ has "and the diff row resets on the moved path set" "$out" "sweep scope-changed 
 rm src/c.sh new.sh
 
 printf '\n== plan digest ==\n'
-printf '# Design\nItem one. **[REDLINE S8.1]**\n' > plans/x.design.md
-out=$(plan --plan plans/x.spec.md --plan plans/x.design.md)
-has "a redline marker leaves the plan digest" "$out" "whole list reset: no"
 printf '# Design\nItem one, amended.\n' > plans/x.design.md
 out=$(plan --plan plans/x.spec.md --plan plans/x.design.md)
 has "an amendment sweeps every row" "$out" "3 swept"
@@ -310,6 +307,61 @@ same "an unknown verb exits 2" "$?" 2
 cp progress.md "$D/out.md"
 (cd "$D" && bash "$RL" plan out.md --base "$BASE" 2>/dev/null)
 same "outside a repository exits 2" "$?" 2
+
+printf '\n== the plan digest over the frozen plan ==\n'
+R2="$D/frozen-repo"
+mkdir -p "$R2/src" "$R2/ai-docs/plans/done"
+cp rules.md "$R2/rules.md"
+cd "$R2" || exit 2
+git init -q
+git config user.email t@t
+git config user.name t
+printf 'progress.md\n' > .gitignore
+printf 'a\n' > src/a.sh
+printf 'b\n' > src/b.sh
+FS=ai-docs/plans/x.spec.md
+FD=ai-docs/plans/x.design.md
+printf '# Spec\nCriterion one.\n' > "$FS"
+printf '# Design\nItem one.\n' > "$FD"
+git add -A
+git commit -q -m base
+BASE=$(git rev-parse HEAD)
+git commit -q --allow-empty -m freeze -m 'Plan-Freeze: x'
+printf 'a changed\n' > src/a.sh
+printf 'b changed\n' > src/b.sh
+: > progress.md; round 1
+out=$(seal --plan "$FS" --frozen "$FS" --frozen "$FD"); rc=$?
+same "seal over the frozen plan exits 0" "$rc" 0
+out=$(plan --plan "$FS" --frozen "$FS" --frozen "$FD")
+has "an untouched plan carries" "$out" "whole list reset: no"
+printf '# Design\nItem one, as shipped.\n' > "$FD"
+out=$(plan --plan "$FS" --frozen "$FS" --frozen "$FD")
+has "a design corrected in place leaves the digest" "$out" "whole list reset: no"
+printf '# Spec\nCriterion one, amended.\n' > "$FS"
+out=$(plan --plan "$FS" --frozen "$FS" --frozen "$FD")
+has "an approved spec change moves the live half" "$out" "whole list reset: yes (plan digest changed)"
+git checkout -q -- "$FS"
+git add "$FD"
+git commit -q -m work
+git mv "$FS" ai-docs/plans/done/
+git mv "$FD" ai-docs/plans/done/
+git commit -q -m archive
+AS=ai-docs/plans/done/x.spec.md
+AD=ai-docs/plans/done/x.design.md
+out=$(plan --plan "$AS" --frozen "$AS" --frozen "$AD")
+has "the move into the archive leaves the digest" "$out" "whole list reset: no"
+git commit -q --allow-empty -m refreeze -m 'Plan-Freeze: x'
+out=$(plan --plan "$AS" --frozen "$AS" --frozen "$AD")
+has "a new freeze moves the frozen half" "$out" "whole list reset: yes (plan digest changed)"
+printf '# Design\n' > ai-docs/plans/y.design.md
+bash "$RL" plan progress.md --base "$BASE" --frozen ai-docs/plans/y.design.md > "$D/nf" 2>&1
+same "a frozen document with no freeze is a cannot-run" "$?" 2
+has "  naming the document" "$(cat "$D/nf")" "could not resolve the frozen text of ai-docs/plans/y.design.md"
+: > progress.md; round 1
+cp progress.md "$D/pre-nf"
+bash "$RL" seal progress.md --frozen ai-docs/plans/y.design.md > "$D/nf" 2>&1
+same "and a seal filling the digest from it cannot run either" "$?" 2
+same "  writing nothing" "$(cmp -s "$D/pre-nf" progress.md && echo same)" same
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

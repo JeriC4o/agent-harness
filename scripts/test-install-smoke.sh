@@ -81,7 +81,7 @@ else bad "installed version matches the manifest (want [$VERSION], recorded [$re
 printf '\n== every component is present, not just the plugin ==\n'
 det=$(claude plugin details "$NAME" 2>&1)
 has "reports the manifest version" "$det" "$VERSION"
-SKILLS=(task bugfix interview context-reset project-review pr-merged redline-fold improve improve-global ai-audit harness-init inspect report-defect)
+SKILLS=(task bugfix interview context-reset project-review pr-merged improve improve-global ai-audit harness-init inspect report-defect)
 for comp in "${SKILLS[@]}"; do
   case "$det" in *"$comp"*) ok "skill: $comp" ;; *) bad "skill: $comp missing from the inventory" ;; esac
 done

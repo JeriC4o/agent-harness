@@ -86,7 +86,6 @@ Kept here so the audit can compare both sides without grepping the whole tree on
 - `improve-global` (cross-project sweep over promotion candidates)
 - `inspect` (session analysis for workflow loops)
 - `report-defect`
-- `redline-fold`
 
 ### Project-defined Hooks
 

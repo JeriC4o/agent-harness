@@ -89,10 +89,12 @@ mkfix() { # -> a repository whose progress file holds one open round-1 finding
 
 prog() { printf '%s/ai-docs/plans/t.progress.md' "$1"; }
 
+# **Design:** names the ACTIVE path while the fixture's design sits in done/, so
+# every own-design leg crosses the archive move the spec-base comparison exists for.
 review() { # <fixture> <findings-table row...>
   d=$1; shift
   {
-    printf '# Progress\n\n## Self-Review (Round 1)\n\n**Verdict:** REJECT\n\n'
+    printf '# Progress\n\n**Design:** ai-docs/plans/t.design.md\n\n## Self-Review (Round 1)\n\n**Verdict:** REJECT\n\n'
     printf '| # | File:line | Severity | Finding | Status |\n|---|---|---|---|---|\n'
     for row in "$@"; do printf '%s\n' "$row"; done
   } > "$(prog "$d")"
@@ -1371,50 +1373,29 @@ check "a missing answer is exit 2, on the lane the two figures already use" "$RC
 has   "  and names the argument it could not read" "$OUT" "answer"
 check "  and no refused call wrote a row" "$(grep -c . "$VJ5")" "2"
 
-printf '\n== T1-ZO the sixth disposition: a closed three-member type vocabulary ==\n'
-# The three patterns are literal, so the type set is enforced by the pattern
-# itself rather than by a parse of the token -- and each type is asserted on its
-# own, because a `case` carrying one arm and two typos accepts one type and
-# refuses two while a single-type leg stays green.
+printf '\n== T1-ZO the sixth disposition: correction: <what shipped instead> ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN"
-plan "$F" x 'the suite' 0 '| 1 | redline: added — a beat the shipped step text carries | docs/workflow.md:10 | 0 | none |'
+plan "$F" x 'the suite' 0 '| 1 | correction: the arm keys on the suffix pair | docs/workflow.md:10 | 0 | none |'
 gate plan "$(prog "$F")"
-check "redline: added with a payload passes" "$RC" "0"
+check "correction: with a payload passes" "$RC" "0"
 has   "  decision" "$OUT" "decision=PASS"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
-plan "$F" x 'the suite' 0 '| 1 | redline: modified — the arm keys on the suffix pair | docs/workflow.md:10 | 0 | none |'
+plan "$F" x 'the suite' 0 '| 1 | correction: | docs/workflow.md:10 | 0 | none |'
 gate plan "$(prog "$F")"
-check "redline: modified likewise" "$RC" "0"
+check "a bare correction: is refused, as object: and resolved: are" "$RC" "1"
+has   "  the message names the sixth member" "$OUT" "correction: <what shipped instead>"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
-plan "$F" x 'the suite' 0 '| 1 | redline: removed — the second ignore glob went | docs/workflow.md:10 | 0 | none |'
+plan "$F" x 'the suite' 0 '| 1 | redline: modified — the as-built step text | docs/workflow.md:10 | 0 | none |'
 gate plan "$(prog "$F")"
-check "redline: removed likewise, so all three types are live" "$RC" "0"
+check "the retired redline: token is refused" "$RC" "1"
+has   "  as outside the vocabulary" "$OUT" "disposition [redline: modified — the as-built step text] is outside the vocabulary"
 
-F=$(mkfix); review "$F" "$ONE_OPEN"
-plan "$F" x 'the suite' 0 '| 1 | redline: renamed — a fourth type nobody declared | docs/workflow.md:10 | 0 | none |'
-gate plan "$(prog "$F")"
-check "a fourth type is refused -- the vocabulary is closed" "$RC" "1"
-has   "  quotes the token" "$OUT" "disposition [redline: renamed — a fourth type nobody declared] is outside the vocabulary"
-
-F=$(mkfix); review "$F" "$ONE_OPEN"
-plan "$F" x 'the suite' 0 '| 1 | redline: modified | docs/workflow.md:10 | 0 | none |'
-gate plan "$(prog "$F")"
-check "a type with no payload is refused, as object: and resolved: are" "$RC" "1"
-has   "  and says why" "$OUT" "is outside the vocabulary"
-
-F=$(mkfix); review "$F" "$ONE_OPEN"
-plan "$F" x 'the suite' 0 '| 1 | redline: | docs/workflow.md:10 | 0 | none |'
-gate plan "$(prog "$F")"
-check "and a bare redline: with neither type nor payload is refused" "$RC" "1"
-has   "  the message names the sixth member and its three types" "$OUT" "redline: added|modified|removed — <what shipped instead>"
-
-printf '\n== T1-ZP A7 redline-accounting: a fix row whose Arm A names a plan artefact ==\n'
+printf '\n== T1-ZP A7 correction-accounting: a fix row whose Arm A names a plan artefact ==\n'
 # THE FIRST LEG IS THE PRE-MANDATE CONTROL, and it was observed passing before
 # this arm existed: the code fix is right, the design sentence it leaves untrue
-# is named in the Arm A cell, and every arm reported pass. That is the whole gap
-# -- a divergence from the frozen base shipping with nothing recording it.
+# is named in the Arm A cell, and every arm reported pass.
 DIVERGED='the design asserts a sentence the shipped code diverges from'
 diverge_at() { # <fixture> <repo-relative path> -> the line DIVERGED now sits on
   printf '%s\n' "$DIVERGED" >> "${1}/${2}"
@@ -1423,10 +1404,11 @@ diverge_at() { # <fixture> <repo-relative path> -> the line DIVERGED now sits on
 arma_cell() { # <path> <line> -> an Arm A cell citing DIVERGED at that line
   printf '`%s:%s` — "%s"' "$1" "$2" "$DIVERGED"
 }
-a7line() { printf '%s\n' "$1" | grep 'redline-accounting'; }
+a7line() { printf '%s\n' "$1" | grep 'correction-accounting'; }
 
 DESIGNED='ai-docs/plans/done/t.design.md'
 SPECED='ai-docs/plans/t.spec.md'
+OTHER_DESIGN='ai-docs/plans/done/u.design.md'
 
 F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$DESIGNED")
 plan "$F" x 'the suite' 12 "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell "$DESIGNED" "$L") |"
@@ -1435,18 +1417,15 @@ check "a fix row leaving a design sentence untrue is refused" "$RC" "1"
 has   "  decision" "$OUT" "decision=REFUSE reason=arma-unaccounted"
 has   "  and the arm names the sentence's own anchor" "$(a7line "$OUT")" "${DESIGNED}:${L}"
 
-# THE TRUTHFUL CELL, PERMITTED WHEN THE FINDING CARRIES ITS ACCOUNTING. Without
-# this the arm refuses the honest plan and passes the evasive one: a scout that
-# names the at-stake sentence on its `fix` row is refused, while one that writes
-# `none` and ships no redline row at all is not. The arm's own comment calls a
-# `redline:` row the remedy and says the arm is what makes it unavoidable; this
-# is the leg that makes both sentences true.
+# Without this leg the arm refuses the honest plan and passes the evasive one: a
+# scout naming the at-stake sentence on its `fix` row is refused, while one
+# writing `none` and no `correction:` row is not.
 F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$DESIGNED")
 plan "$F" x 'the suite' 12 \
   "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell "$DESIGNED" "$L") |" \
-  "| 1 | redline: modified — the as-built step text | docs/workflow.md:10 | 0 | none |"
+  "| 1 | correction: the as-built step text | docs/workflow.md:10 | 0 | none |"
 gate plan "$(prog "$F")"
-check "a fix row's truthful Arm A passes when the finding carries a redline row" "$RC" "0"
+check "a fix row's truthful Arm A passes when the finding carries a correction row" "$RC" "0"
 has   "  decision" "$OUT" "decision=PASS"
 has   "  A7 passes" "$(a7line "$OUT")" "pass"
 
@@ -1456,6 +1435,32 @@ gate plan "$(prog "$F")"
 check "the spec suffix fires the same arm, so the pair is covered" "$RC" "1"
 has   "  decision" "$OUT" "decision=REFUSE reason=arma-unaccounted"
 
+F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$SPECED")
+plan "$F" x 'the suite' 12 \
+  "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell "$SPECED" "$L") |" \
+  "| 1 | correction: the as-built step text | docs/workflow.md:10 | 0 | none |"
+gate plan "$(prog "$F")"
+check "a correction row does not account for a spec sentence" "$RC" "1"
+has   "  decision" "$OUT" "decision=REFUSE reason=arma-unaccounted"
+
+F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$SPECED")
+plan "$F" x 'the suite' 12 \
+  "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell "$SPECED" "$L") |" \
+  "| 1 | amendment: spec | ${SPECED}:${L} | 0 | none |"
+gate plan "$(prog "$F")"
+check "amendment: spec is what accounts for one, and it routes" "$RC" "1"
+has   "  decision" "$OUT" "decision=ROUTE-SPEC reason=spec-amendment"
+has   "  A7 passes" "$(a7line "$OUT")" "pass"
+
+F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$OTHER_DESIGN")
+plan "$F" x 'the suite' 12 \
+  "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell "$OTHER_DESIGN" "$L") |" \
+  "| 1 | correction: the as-built step text | docs/workflow.md:10 | 0 | none |"
+gate plan "$(prog "$F")"
+check "a correction row does not account for another plan's design" "$RC" "1"
+has   "  decision" "$OUT" "decision=REFUSE reason=arma-unaccounted"
+has   "  and the arm names that design's anchor" "$(a7line "$OUT")" "${OTHER_DESIGN}:${L}"
+
 F=$(mkfix); review "$F" "$ONE_OPEN"; quotefix "$F"
 plan "$F" x 'the suite' 12 "| 1 | fix | docs/workflow.md:10 | 12 | \`docs/quoted.md:10\` — \"${SENTENCE}\" |"
 gate plan "$(prog "$F")"
@@ -1463,9 +1468,6 @@ check "control: a fix row whose Arm A names an ordinary file passes" "$RC" "0"
 has   "  decision" "$OUT" "decision=PASS"
 has   "  A7 passes" "$(a7line "$OUT")" "pass"
 
-# The suffix-not-directory discriminator, the same one the exclusion legs draw:
-# a tracked non-routing path under the plan prefix is not a frozen artefact, so
-# a sentence of its own is not a divergence this arm accounts for.
 F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" ai-docs/plans/t.design-evidence.md)
 plan "$F" x 'the suite' 12 "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell ai-docs/plans/t.design-evidence.md "$L") |"
 gate plan "$(prog "$F")"
@@ -1476,9 +1478,9 @@ has   "  because the arm keys on the two suffixes, not on the directory" "$OUT" 
 # representative reads as applied to all of them, and only the member that lacks
 # it can show otherwise.
 F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$DESIGNED")
-plan "$F" x 'the suite' 0 "| 1 | redline: modified — the as-built step text | docs/workflow.md:10 | 0 | $(arma_cell "$DESIGNED" "$L") |"
+plan "$F" x 'the suite' 0 "| 1 | correction: the as-built step text | docs/workflow.md:10 | 0 | $(arma_cell "$DESIGNED" "$L") |"
 gate plan "$(prog "$F")"
-check "a redline: row is the accounting, so it is exempt" "$RC" "0"
+check "a correction: row is the accounting, so it is exempt" "$RC" "0"
 has   "  decision" "$OUT" "decision=PASS"
 has   "  A7 passes" "$(a7line "$OUT")" "pass"
 
@@ -1502,136 +1504,71 @@ check "an amendment row routes rather than being refused for want of accounting"
 has   "  decision" "$OUT" "decision=ROUTE-DESIGN reason=design-amendment"
 has   "  and A7 itself passes, because the breaking path accounts for the round" "$(a7line "$OUT")" "pass"
 
-# The arm's own bound, asserted as behaviour: it reads a field the scout writes,
-# so a cell declaring its own absence is unfalsifiable from here.
 F=$(mkfix); review "$F" "$ONE_OPEN"
 plan "$F" x 'the suite' 12 "$ONE_FIX"
 gate plan "$(prog "$F")"
 check "a none cell cannot fire the arm, which is its documented bound" "$RC" "0"
 has   "  A7 passes" "$(a7line "$OUT")" "pass"
 
-printf '\n== T1-ZQ A8 redline-undelivered: the marker and the log row ==\n'
-# Both halves are WORKTREE content, not diff content, so these legs plant the
-# marker and the log BEFORE the round's baseline: arm (a) then sees no change at
-# all and A8 is the only arm that can decide. A leg that writes them after the
-# baseline measures arm (a) as well, and a leg measuring two rules measures
-# neither.
-mklog() { # <fixture> <key>
-  { printf '| Key | Type | Artefact sentence diverged from | What shipped instead |\n'
-    printf '|---|---|---|---|\n'
-    printf '| %s | modified | `%s:4` — "d4" | the as-built step text |\n' "$2" "$DESIGNED"
-  } > "${1}/ai-docs/plans/t.redline.md"
+printf "\n== T1-ZQ a correction: row corrects the task's own design and routes any other ==\n"
+F=$(mkfix); review "$F" "$ONE_OPEN"
+cp "${F}/${DESIGNED}" "${F}/ai-docs/plans/t.design.md"; L=$(diverge_at "$F" ai-docs/plans/t.design.md)
+plan "$F" x 'the suite' 0 "| 1 | correction: the as-built step text | docs/workflow.md:10 | 0 | $(arma_cell ai-docs/plans/t.design.md "$L") |"
+gate plan "$(prog "$F")"
+check "the task's own design at its active path passes" "$RC" "0"
+has   "  decision" "$OUT" "decision=PASS"
+
+F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$OTHER_DESIGN")
+plan "$F" x 'the suite' 0 "| 1 | correction: the as-built step text | docs/workflow.md:10 | 0 | $(arma_cell "$OTHER_DESIGN" "$L") |"
+gate plan "$(prog "$F")"
+check "another plan's design routes the round" "$RC" "1"
+has   "  decision" "$OUT" "decision=ROUTE-DESIGN reason=design-amendment"
+has   "  and A3 names the finding and the anchor" "$OUT" "finding 1 corrects another plan's design at ${OTHER_DESIGN}:${L}"
+
+F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$SPECED")
+plan "$F" x 'the suite' 0 "| 1 | correction: the as-built step text | docs/workflow.md:10 | 0 | $(arma_cell "$SPECED" "$L") |"
+gate plan "$(prog "$F")"
+check "a spec sentence routes to the spec amendment" "$RC" "1"
+has   "  decision" "$OUT" "decision=ROUTE-SPEC reason=spec-amendment"
+has   "  and A2 names the finding and the anchor" "$OUT" "finding 1 corrects a spec sentence at ${SPECED}:${L}"
+
+nodesign() { # <fixture> -> its progress file without the **Design:** line
+  awk '!/^\*\*Design:\*\*/' "$(prog "$1")" > "${1}/p.tmp" && mv "${1}/p.tmp" "$(prog "$1")"
 }
-markdesign() { # <fixture> <key> <repo-relative design path>
-  printf '| 7 | a decomposition row | one file | **[REDLINE %s]** |\n' "$2" >> "${1}/${3}"
-}
-a8line() { printf '%s\n' "$1" | grep 'redline-undelivered'; }
-RED_ROW='| 1 | redline: modified — the as-built step text | ai-docs/plans/done/t.design.md:4 | 0 | none |'
+F=$(mkfix); review "$F" "$ONE_OPEN"; nodesign "$F"; L=$(diverge_at "$F" "$DESIGNED")
+plan "$F" x 'the suite' 0 "| 1 | correction: the as-built step text | docs/workflow.md:10 | 0 | $(arma_cell "$DESIGNED" "$L") |"
+gate plan "$(prog "$F")"
+check "with no **Design:** field a design anchor cannot be placed, which is exit 2" "$RC" "2"
+has   "  and says which field it needed" "$OUT" "**Design:**"
 
-F=$(mkfix); review "$F" "$ONE_OPEN"
-mklog "$F" R1.1; markdesign "$F" R1.1 "$DESIGNED"; B=$(baseline_of "$F")
-plan "$F" "$B" 'the suite' 0 "$RED_ROW"
-gate applied "$(prog "$F")"
-check "a redline row with both its marker and its log row is OK" "$RC" "0"
-has   "  decision" "$OUT" "decision=OK"
-has   "  A8 passes" "$(a8line "$OUT")" "pass"
-has   "  and says how many rows it accounted for" "$(a8line "$OUT")" "1 redline row"
+F=$(mkfix); review "$F" "$ONE_OPEN"; nodesign "$F"
+plan "$F" x 'the suite' 12 "$ONE_FIX"
+gate plan "$(prog "$F")"
+check "control: a plan no design anchor reaches does not need the field" "$RC" "0"
 
-F=$(mkfix); review "$F" "$ONE_OPEN"
-markdesign "$F" R1.1 "$DESIGNED"; B=$(baseline_of "$F")
-plan "$F" "$B" 'the suite' 0 "$RED_ROW"
-gate applied "$(prog "$F")"
-check "a marker with no log at all is refused" "$RC" "1"
-has   "  decision" "$OUT" "decision=FINDING reason=redline-undelivered"
-has   "  and names the file it looked for" "$(a8line "$OUT")" "t.redline.md"
-
-F=$(mkfix); review "$F" "$ONE_OPEN"
-mklog "$F" R1.1; B=$(baseline_of "$F")
-plan "$F" "$B" 'the suite' 0 "$RED_ROW"
-gate applied "$(prog "$F")"
-check "a log row with no marker beside the item is refused" "$RC" "1"
-has   "  decision" "$OUT" "decision=FINDING reason=redline-undelivered"
-has   "  and names the marker it looked for" "$(a8line "$OUT")" "[REDLINE R1.1]"
-
-F=$(mkfix); review "$F" "$ONE_OPEN"
-mklog "$F" R1.2; markdesign "$F" R1.2 "$DESIGNED"; B=$(baseline_of "$F")
-plan "$F" "$B" 'the suite' 0 "$RED_ROW"
-gate applied "$(prog "$F")"
-check "a marker and a row under ANOTHER key are not this row's accounting" "$RC" "1"
-has   "  decision" "$OUT" "decision=FINDING reason=redline-undelivered"
-
-# R1.1 is a PREFIX of R1.10, so a containment search reports finding 1 as marked
-# because finding 10 was. Both halves carry the longer key here, so a prefix
-# match would pass this leg twice over.
-F=$(mkfix); review "$F" "$ONE_OPEN"
-mklog "$F" R1.10; markdesign "$F" R1.10 "$DESIGNED"; B=$(baseline_of "$F")
-plan "$F" "$B" 'the suite' 0 "$RED_ROW"
-gate applied "$(prog "$F")"
-check "R1.10 does not satisfy R1.1 -- the key is matched whole" "$RC" "1"
-has   "  decision" "$OUT" "decision=FINDING reason=redline-undelivered"
-
+printf '\n== T1-ZR applied: unplanned-file is the one finding arm ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
-plan "$F" "$B" 'the suite' 3 '| 1 | fix | docs/workflow.md:10 | 3 | none |'
-printf 'edit\n' >> "${F}/docs/workflow.md"
-gate applied "$(prog "$F")"
-check "a round carrying no redline row is OK and the arm still reports" "$RC" "0"
-has   "  A8 passes" "$(a8line "$OUT")" "pass"
-has   "  on nothing to account for" "$(a8line "$OUT")" "0 redline rows"
-
-# THE LIVE LOCATION WINS, and the pair is what pins the order: during a round
-# the design sits in ai-docs/plans/ and only reaches done/ at the task's close,
-# so a stale copy in done/ must not answer for it.
-F=$(mkfix); review "$F" "$ONE_OPEN"
-cp "${F}/${DESIGNED}" "${F}/ai-docs/plans/t.design.md"
-mklog "$F" R1.1; markdesign "$F" R1.1 ai-docs/plans/t.design.md; B=$(baseline_of "$F")
-plan "$F" "$B" 'the suite' 0 "$RED_ROW"
-gate applied "$(prog "$F")"
-check "a marker in the active plan directory is found" "$RC" "0"
-has   "  A8 passes" "$(a8line "$OUT")" "pass"
-
-F=$(mkfix); review "$F" "$ONE_OPEN"
-cp "${F}/${DESIGNED}" "${F}/ai-docs/plans/t.design.md"
-mklog "$F" R1.1; markdesign "$F" R1.1 "$DESIGNED"; B=$(baseline_of "$F")
-plan "$F" "$B" 'the suite' 0 "$RED_ROW"
-gate applied "$(prog "$F")"
-check "while a marker only in done/ does not answer for the active copy" "$RC" "1"
-has   "  decision" "$OUT" "decision=FINDING reason=redline-undelivered"
-
-printf '\n== T1-ZR the redline log is excluded like the other two plan artefacts ==\n'
-# Arm (a) is the reason this matters, not the measurement: `is_ignored`
-# short-circuits the MEMBERSHIP test, so a path that is not excluded is charged
-# to arm (a) even when no `fix` row could ever name it -- `planned` admits fix
-# rows only, and a `redline:` row is not one. The marker itself lands in the
-# design, already excluded by suffix; the log it points into is a third artefact,
-# so without this exclusion every marking round reports its own log as unplanned.
-F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
-if git -C "$F" check-ignore -q ai-docs/plans/t.redline.md
-then bad "the fixture's log is gitignored, so this leg measures the other exclusion"
-else ok  "the fixture's log is excluded by the suffix alone, not by .gitignore"; fi
-printf 'edit\n' >> "${F}/docs/workflow.md"
-awk 'BEGIN { for (i = 1; i <= 4; i++) print "| R1.1 | added | row " i " |" }' > "${F}/ai-docs/plans/t.redline.md"
 plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |'
+printf 'edit\n' >> "${F}/docs/workflow.md"
+printf 'd5, as the approved amendment wrote it\n' >> "${F}/${DESIGNED}"
 gate applied "$(prog "$F")"
-check "a round that writes the redline log fires no arm" "$RC" "0"
+check "a round in which an approved amendment wrote the design is OK" "$RC" "0"
 has   "  decision" "$OUT" "decision=OK"
-has   "  arm (a) does not name the log" "$OUT" "(a)  unplanned-file       pass"
-has   "  and the exclusion is counted" "$OUT" "ignored=1"
+hasnt "  and no arm keyed on a marker or a log reports" "$OUT" "A8"
 EXCL=$(printf '%s\n' "$OUT" | grep 'excluded-in-round')
-has   "  the excluded-in-round line NAMES the log, so the write stays visible" "$EXCL" "ai-docs/plans/t.redline.md"
-has   "  the measurement charges the briefed file alone" "$OUT" "actual_changed_lines=1"
+has   "  the design edit is named for the orchestrator to account for" "$EXCL" "$DESIGNED"
 
-# The control: the exclusion is a SUFFIX under the plans prefix, not the prefix.
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 printf 'edit\n' >> "${F}/docs/workflow.md"
-printf 'notes\n' > "${F}/ai-docs/plans/t.redline-notes.md"
+printf '| R1.1 | added | row |\n' > "${F}/ai-docs/plans/t.redline.md"
 plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |'
 gate applied "$(prog "$F")"
-check "control: a neighbouring name under the same prefix is still a finding" "$RC" "1"
+check "a *.redline.md is an ordinary path" "$RC" "1"
 has   "  decision" "$OUT" "decision=FINDING reason=unplanned-file"
 ARMA=$(printf '%s\n' "$OUT" | grep -F '(a)')
-has   "  named on arm (a) by itself" "$ARMA" "ai-docs/plans/t.redline-notes.md"
+has   "  named on arm (a)" "$ARMA" "ai-docs/plans/t.redline.md"
 
-printf '\n== T1-ZS the declared-link record is excluded like the redline log ==\n'
+printf '\n== T1-ZS the declared-link record is excluded ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 printf 'edit\n' >> "${F}/docs/workflow.md"
 printf '| L1 | design § A | a | design § B | b | grounds |\n' > "${F}/ai-docs/plans/t.links.md"

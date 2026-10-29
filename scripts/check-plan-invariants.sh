@@ -17,8 +17,7 @@
 #      DIFFERENCE. Different findings, because a vanished principle protects
 #      nothing while a reworded one still says something.
 #   2  addition -- the required-element set derived from three loci and compared
-#      against the record in the principles document in BOTH directions, with
-#      the fold's heading prohibition read on its own arm.
+#      against the record in the principles document in BOTH directions.
 #   3  refusal agreement -- the live covered set against the protected-page
 #      table, in both directions.
 #

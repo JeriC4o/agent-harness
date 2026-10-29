@@ -2,7 +2,7 @@
 name: pr-merged
 description: "After a PR merge: switch to the default branch, pull, delete the merged branch's local progress files, delete the local PR branch, and prune the stale remote-tracking ref it leaves behind."
 when_to_use: "Activate once a PR is CONFIRMED merged — the user says 'merged', or `gh pr view` reports state MERGED — while still standing on that PR's branch. Not on 'approved', not on 'pushed', and never on an inference from `git log`: a squash-merge and a never-merged branch look alike there. Confirm the merge before the first command; on any doubt, ask instead."
-allowed-tools: Bash(git checkout:*), Bash(git pull:*), Bash(git fetch:*), Bash(git ls-remote:*), Bash(git push:*), Bash(git branch:*), Bash(git status:*), Bash(gh pr view:*), Bash(rm -f ai-docs/plans/*), Bash(scripts/cleanup-progress.sh:*), Bash(scripts/check-redline.sh:*)
+allowed-tools: Bash(git checkout:*), Bash(git pull:*), Bash(git fetch:*), Bash(git ls-remote:*), Bash(git push:*), Bash(git branch:*), Bash(git status:*), Bash(gh pr view:*), Bash(rm -f ai-docs/plans/*), Bash(scripts/cleanup-progress.sh:*)
 ---
 
 > Near-stateless: no `.progress.md` discipline applies; re-entry consists of re-invoking the skill.
@@ -20,25 +20,7 @@ If the current branch is the default branch (`main`), stop and tell the user thi
 
 If `git status --porcelain` shows any modified, staged, or untracked entries, stop and ask the user how to proceed (commit, stash, discard, ignore). Do not run any further commands until the user answers.
 
-**Refuse while an unprocessed redline log is on the branch.** Before step 1, and before anything is deleted or moved:
-
-```bash
-git fetch origin --quiet
-${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh pending ai-docs/plans origin/<default-branch>
-```
-
-**Read the DEFAULT BRANCH's tree, not the worktree, and the reason is a trap this guard would otherwise
-set for itself.** A merged task branch keeps its own copy of the log in its tree forever. Ask the worktree
-while standing on that branch and the answer is "present" permanently — so the refusal would fire for
-good, naming a remedy that may already have been performed on a separate fold PR, and the cleanup this
-workflow exists to do could never run through it. A fold lands on the default branch in either window, so
-that is where the question has an answer that changes.
-
-**Refuse on anything that is not a clean 0, and say which of the two you got.** Either a log is present — the closing redline fold never ran, so stop and tell the user that `/redline-fold` is owed and which régime it is now in: **early** while the PR is still open, **late** on a fresh branch off the default if the merge already happened — or the check could not run at all, which is **not** a pass and leaves the question unanswered rather than answered favourably. A stale or unreachable remote is that second case: the check asks the remote whether `origin/<default-branch>` is its current tip, and a ref the fetch above did not bring current, or a remote it cannot reach, is a cannot-run naming the `git fetch` to run. The check never fetches itself, which is why the fetch line stays. Reading a non-zero status as "nothing to refuse" is the one mistake this guard cannot afford: the log is committed on the branch, so the moment `git checkout main` runs the file is no longer in the worktree and the evidence it carried is gone.
-
-**The sequencing, stated here rather than left to be discovered.** This workflow runs *after* the window the EARLY fold wants — that fold's commit belongs on the open PR, and by the time a merge is confirmed that PR is closed. **That is why the late régime exists rather than why the omission is unrepairable:** a human who approves a PR usually merges it in the same action, so the early window is the one most often missed, and the material the fold consumes is committed precisely so it survives the merge. This refusal therefore hands the work to the late régime instead of recording a loss. What it cannot do is repair anything itself — it refuses, names the régime, and stops.
-
-Otherwise, run in order. **Capture `<previous-branch>` from the `Current branch:` value above before step 1** — once `git checkout main` runs, that value is no longer the current branch.
+Then run in order. **Capture `<previous-branch>` from the `Current branch:` value above before step 1** — once `git checkout main` runs, that value is no longer the current branch.
 
 1. `git checkout main`
 2. `git pull`
@@ -48,7 +30,7 @@ Otherwise, run in order. **Capture `<previous-branch>` from the `Current branch:
    ${CLAUDE_SKILL_DIR}/scripts/cleanup-progress.sh <previous-branch>
    ```
 
-   The script finds the progress file by its own `**Branch:** <previous-branch>` line, which survives the closing fold. Only when no progress file names the branch does it fall back to ticket linkage (branch name → ticket key → spec lookup → progress-file path), with two skip cases:
+   The script finds the progress file by its own `**Branch:** <previous-branch>` line. Only when no progress file names the branch does it fall back to ticket linkage (branch name → ticket key → spec lookup → progress-file path), with two skip cases:
 
    - **Branch name doesn't match `KEY-NNN-<slug>`** (e.g. a manual branch): prints a one-line note and skips the spec-driven cleanup.
    - **No matching `/task` spec** (manual PR without `/task`): skips the `/task`-progress-file deletion.

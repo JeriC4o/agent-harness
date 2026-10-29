@@ -67,10 +67,9 @@ set -ufo pipefail
 PROTECTED='agents/spec-writer.md
 agents/design.md
 agents/design-review.md
-skills/redline-fold/SKILL.md
 skills/task/SKILL.md
 skills/task/reference.md
-scripts/check-redline.sh'
+scripts/deliberate-absence.sh'
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd) || exit 0
 "${HERE}/harness-managed.sh" || exit 0
@@ -127,7 +126,7 @@ reason_for() { # <lead> <pages> <what was seen>
   r="${CLAUDE_PLUGIN_ROOT:-}"
   a=$("${HERE}/plugin-ref.sh" docs/plan-invariants.md 2>/dev/null)
   [ -n "$a" ] || a="${r:+$r/}docs/plan-invariants.md — correct operation of the plugin requires read access to the plugin directory${r:+ $r}"
-  printf '%s -- %s. That page defines or enforces a required element of a spec or a design, and this session ran /improve, /improve-global or /ai-audit, so a change to what a spec or a design must contain is put to you rather than made by the learning pass alone. %s ALLOWING this call lets the edit proceed, which is the authorisation route rather than a way round it. What makes a page a member, the seven members with a reason each, and the near misses deliberately left out: %s.' \
+  printf '%s -- %s. That page defines or enforces a required element of a spec or a design, and this session ran /improve, /improve-global or /ai-audit, so a change to what a spec or a design must contain is put to you rather than made by the learning pass alone. %s ALLOWING this call lets the edit proceed, which is the authorisation route rather than a way round it. What makes a page a member, the six members with a reason each, and the near misses deliberately left out: %s.' \
     "$1" "$2" "$3" "$a"
 }
 

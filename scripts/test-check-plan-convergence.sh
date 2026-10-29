@@ -35,8 +35,9 @@ cp "${ROOT}/docs/plan-invariants.md" "$T/docs/plan-invariants.md"
 # The real file, not a stub: the minimum fragment length is BORROWED from it,
 # so a fixture carrying an invented assignment would test the fixture.
 cp "${ROOT}/skills/task/scripts/check-fix-plan.sh" "$T/skills/task/scripts/"
-# The same for the sections a folded spec keeps, borrowed from the fold's gate.
-cp "${ROOT}/scripts/check-redline.sh" "$T/scripts/"
+# The same for the sections a folded spec keeps, borrowed from the record of
+# deliberate absence.
+cp "${ROOT}/scripts/deliberate-absence.sh" "$T/scripts/"
 # All three payloads, because the entry point preflights each one by name and
 # the core loads the two siblings from its own directory: a sandbox carrying
 # only the core would make every leg below a cannot-run.
@@ -257,12 +258,12 @@ out=$(run)
 has "a row claiming a criterion the spec does not state is reported" "$out" 'claims to deliver AC9'
 
 printf '\n== a folded spec: the criterion leg has nothing to check, and says so ==\n'
-# The kept sections are read out of the copied gate, for the reason tok() reads
-# the record: a suite that spelled them would be the second place they live.
-KEPT=$(sed -n "/^RETAINED='/,/'\$/p" "$T/scripts/check-redline.sh" | sed "s/^RETAINED='//; s/'\$//")
+# The kept sections are read out of the copied record, for the reason tok()
+# reads the record: a suite that spelled them would be the second place they live.
+KEPT=$(sed -n "/^RETAINED='/,/'\$/p" "$T/scripts/deliberate-absence.sh" | sed "s/^RETAINED='//; s/'\$//")
 [ "$(printf '%s\n' "$KEPT" | grep -c .)" -ge 2 ] \
-  && ok "the kept sections were derived from the fold's gate" \
-  || bad "the kept sections were derived from the fold's gate"
+  && ok "the kept sections were derived from the record of deliberate absence" \
+  || bad "the kept sections were derived from the record of deliberate absence"
 write_folded() { # [extra spec text]
   { printf '%s\n' "$KEPT" | while IFS= read -r h; do printf '%s\n\n- Kept.\n\n' "$h"; done
     [ -z "${1:-}" ] || printf '%s\n' "$1"; } > "$T/plans/a.spec.md"
@@ -293,11 +294,11 @@ Still a plan."
 out=$(run)
 has "control: one heading beyond the kept ones and the spec is read as a plan" "$out" 'claims to deliver AC1, which the spec does not state'
 hasnt "and the roster does not call it folded" "$out" 'the spec is folded'
-mv "$T/scripts/check-redline.sh" "$T/scripts/gone-redline.sh"
+mv "$T/scripts/deliberate-absence.sh" "$T/scripts/gone-absence.sh"
 out=$(run); rc=$?
 check "an unreadable source for the kept sections -> rc 2" "$rc" "2"
 has "and says they are borrowed rather than named here" "$out" 'borrowed from it rather than named here'
-mv "$T/scripts/gone-redline.sh" "$T/scripts/check-redline.sh"
+mv "$T/scripts/gone-absence.sh" "$T/scripts/deliberate-absence.sh"
 
 printf '\n== section references, resolved against the document that makes them ==\n'
 write_pair 'Nothing.' "$COMPLETE
@@ -622,7 +623,7 @@ cp "$CHECK" "${HERE}/check-plan-convergence.py" \
    "${HERE}/check-plan-convergence-reporting.py" "$P/scripts/"
 cp "${ROOT}/docs/plan-invariants.md" "$P/docs/"
 cp "${ROOT}/skills/task/scripts/check-fix-plan.sh" "$P/skills/task/scripts/"
-cp "${ROOT}/scripts/check-redline.sh" "$P/scripts/"
+cp "${ROOT}/scripts/deliberate-absence.sh" "$P/scripts/"
 XSUB="$P/scripts/check-plan-convergence.sh"
 git -C "$P" rev-parse >/dev/null 2>&1 \
   && bad "the copy is outside any git work tree" || ok "the copy is outside any git work tree"
@@ -713,7 +714,7 @@ git -C "$P" add -A >/dev/null 2>&1
 out=$(xrun); rc=$?
 check "a copy that is its own work tree with every method input staged -> rc 0" "$rc" "0"
 hasnt "  and the plugin's own tracked files are not swept" "$out" 'plugin-only.md'
-for input in docs/plan-invariants.md skills/task/scripts/check-fix-plan.sh scripts/check-redline.sh; do
+for input in docs/plan-invariants.md skills/task/scripts/check-fix-plan.sh scripts/deliberate-absence.sh; do
   git -C "$P" rm -q --cached "$input" >/dev/null 2>&1
   out=$(xrun); rc=$?
   check "that copy with ${input} unstaged -> rc 2" "$rc" "2"

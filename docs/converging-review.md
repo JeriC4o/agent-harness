@@ -57,8 +57,10 @@ script). One row per **(item, scope)**:
 - **State** — `swept` or `carried`.
 - **Trigger** — empty for a carried row; for a swept row, one token from the closed set below.
 
-**Plan digest** is a digest of the spec and the design with every redline marker removed, or `none` when
-the caller passed no plan documents.
+**Plan digest** is a digest of the plan documents the caller passed: each `--frozen` document as it stood
+at the plan's latest freeze, read through `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh`, and each
+`--plan` document as it stands; `none` when the caller passed neither. Text is hashed, never a path or a
+commit id, so the plan's move into the archive and a rebase of the branch leave it where it was.
 
 ## Triggers
 
@@ -76,34 +78,36 @@ the caller passed no plan documents.
 file-local items reach it; the `diff` row itself resets through `scope-changed` when the change's path set
 moves.
 
-**The full reset is the plan digest, and only the task workflow passes plan documents.** A spec or design
-changes mid-review only through that workflow's amendment recipes, so an amendment is what makes the next
-round sweep every item. A non-breaking correction appends redline markers only, which the digest strips:
-it leaves the plan digest alone, while the code fix it carries resets the rows covering the files it
-touched. The bug-fix workflow, the whole-branch review and a post-push round pass no plan documents,
-record `none`, and never reset on this ground.
+**The full reset is the plan digest, and only the task workflow passes plan documents.** Its rounds and
+its follow-up rounds on the open pull request pass `--plan <spec> --frozen <spec> --frozen <design>`. The
+frozen half moves when a new freeze is taken at a design-review GO, and the live half when an approved
+amendment changes the spec, so either sends the next round to sweep every item. A design corrected in
+place after the freeze moves neither half; the code change the correction describes resets the rows
+covering the files it touched. The bug-fix workflow and the whole-branch review pass no plan documents, record `none`,
+and never reset on this ground.
 
 ## The script
 
 `${CLAUDE_PLUGIN_ROOT}/scripts/review-ledger.sh` does all the hashing and comparing; the reviewer computes
 no digest by hand. Invoke it as its own call, like any other shell script.
 
-- **`plan <findings-file> --base <rev> [--plan <path>]…`** — at the start of every round after the first.
-  It reads the latest round's ledger and that round's findings table, recomputes every row from the tree,
-  and prints one line per row — `carry <item> <scope>` or `sweep <trigger> <item> <scope>` — then one
-  `new-file <path>` per uncovered path, then a verdict line with the totals and whether the whole list was
-  reset. With no ledger in the latest round it prints `sweep record-invalid <item>` for every item.
-  Exit 0 on a computed plan, 2 when it cannot run.
-- **`seal <findings-file> [--plan <path>]…`** — after the round's ledger is written. It fills every blank
-  Digest cell from the tree as it stands, writes `—` into a blank `objections` cell, and fills a blank Plan
-  digest from the plan paths given, or `none`. It refuses — exit 1, nothing written — a malformed row, a
-  state other than `swept` / `carried`, a trigger outside the closed set or on a carried row, an
-  unresolvable rule, a missing or unknown base, and a typed digest that differs from the recomputed one.
-  Sealing from the tree is what keeps a carried claim from ever being a bare assertion. Exit 2 when it
-  cannot run.
+- **`plan <findings-file> --base <rev> [--plan <path>]… [--frozen <path>]…`** — at the start of every
+  round after the first. It reads the latest round's ledger and that round's findings table, recomputes
+  every row from the tree, and prints one line per row — `carry <item> <scope>` or
+  `sweep <trigger> <item> <scope>` — then one `new-file <path>` per uncovered path, then a verdict line
+  with the totals and whether the whole list was reset. With no ledger in the latest round it prints
+  `sweep record-invalid <item>` for every item. Exit 0 on a computed plan, 2 when it cannot run.
+- **`seal <findings-file> [--plan <path>]… [--frozen <path>]…`** — after the round's ledger is written. It
+  fills every blank Digest cell from the tree as it stands, writes `—` into a blank `objections` cell, and
+  fills a blank Plan digest from the plan documents given, or `none`. It refuses — exit 1, nothing written
+  — a malformed row, a state other than `swept` / `carried`, a trigger outside the closed set or on a
+  carried row, an unresolvable rule, a missing or unknown base, and a typed digest that differs from the
+  recomputed one. Sealing from the tree is what keeps a carried claim from ever being a bare assertion.
+  Exit 2 when it cannot run.
 
-Pass the same `--plan` documents to both verbs; the task workflow passes its spec and design, every other
-caller passes none.
+Pass the same `--plan` and `--frozen` documents to both verbs. A `--frozen` document whose frozen text
+cannot be resolved — no freeze of its plan, or a freeze that does not hold it — is a cannot-run of either
+verb.
 
 ## A round after the first
 
@@ -117,7 +121,6 @@ caller passes none.
 re-run before the verdict is returned.
 
 **What stays as it is.** Every earlier finding's status is still evaluated each round — fixed, objected,
-still open. That is finding-level work, not a checklist sweep, and it is small. A design item carrying a
-redline marker stays settled.
+still open. That is finding-level work, not a checklist sweep, and it is small.
 
 A whole-repository review reads this page when it judges a ledger.

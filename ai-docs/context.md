@@ -52,41 +52,30 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 - **Identity.** The round number. One section per round, highest round is the one gated; a second
   section for the same round is refused rather than appended.
 - **Code.** `skills/task/scripts/check-fix-plan.sh` — four verbs (`baseline`, `plan`, `applied`,
-  `record`), **eleven reason tokens under `plan`: nine refusals and two routings** (the pair is spelled
-  out because "ten refusal reasons" previously covered both kinds and read two ways), **two findings under
-  `applied`**, and the single `THRESHOLD_CHANGED_LINES=150` that its ONE firing site reads — the pre-apply
-  gate, on the plan's declared total. The disposition vocabulary is **six**; the sixth, `redline:`, is the
-  one that records a divergence instead of routing one. The post-apply size arm is withdrawn; `record` persists the post-apply micro-loop's
+  `record`), **twelve reason tokens under `plan`: nine refusals, one escalation and two routings** (the
+  kinds are spelled out because "ten refusal reasons" once covered more than one and read two ways), **one
+  finding under `applied`**, `unplanned-file`, and the single `THRESHOLD_CHANGED_LINES=150` that its ONE
+  firing site reads — the pre-apply gate, on the plan's declared total. The disposition vocabulary is
+  **six**; the sixth, `correction:`, sends a divergence from the task's own design to the round's in-place
+  correction instead of routing it. The post-apply size arm is withdrawn; `record` persists the post-apply micro-loop's
   iteration count, its cost in orchestrator tool calls and the bounded question's answer.
 - **Invariant.** It lives in the progress file, which is gitignored and deleted by `/pr-merged`, so no
   new artefact type and no new deletion path. The gate decides on its TEXT — never on an agent's
   report of it — and a plan the gate refuses never reaches `agents/fix-apply.md`.
 
-## Redline log
+## Plan freeze
 
-- **What it is.** A committed `ai-docs/plans/<spec-base>.redline.md` holding one row per SURVIVING
-  divergence between the frozen design and what shipped: its key, its type (`added` / `modified` /
-  `removed` relative to the frozen base), the design sentence it diverged from quoted with its
-  `file:line`, and what shipped instead. Each row is paired with a pointer marker appended in place on
-  the item it corrects, which carries the key and nothing else — so a reviewer reading the design sees
-  which items are settled and skips them.
-- **Why it exists.** The design is frozen at the design-review GO verdict and is NOT rewritten during the
-  work. A divergence that does not break the agreed approach is marked and logged instead of reopening
-  the planning chain, and one closing fold after the PR is approved applies the log's rows to the items that diverged.
-- **Identity.** The spec base name. Its head carries four required fields — `**Tracked in:**`,
-  `**Spec:**`, `**Design:**`, `**Mode:**` — of which `Mode` is the one with a consumer: `R&D` or
-  `Hybrid`, chosen once per task at the task's first divergence, with grounds that must cite the design.
-- **Code.** `scripts/check-redline.sh` — six verbs (`pending`, `folded`, `suppression`,
-  `revision`, `paired`, `specform`) on the `0 clean / 1 findings / 2 cannot run` convention. `paired` is the pairing
-  half for every key form and the marking pass's own exit check; `check-fix-plan.sh`'s `A7` and `A8` are
-  the in-round halves. `skills/redline-fold/SKILL.md` is the closing fold; `/pr-merged` refuses on an
-  unprocessed log.
-- **Invariant.** It is COMMITTED, as the spec, the design, `<spec-base>.excuses.md` and
-  `<spec-base>.links.md` are — the plan family's gitignored files are the progress file and the interview
-  state alone — because the fold runs after a human review and a gitignored file does not survive that
-  far. It is excluded from the fix-plan gate's
-  measured diff by `IGNORE_GLOB_REDLINE` and named on the `excluded-in-round` line instead. It is removed
-  by the fold, so a surviving log is an unambiguous signal the fold never ran.
+- **What it is.** A commit holding a plan's spec and design as approved, taken at each design-review GO
+  once the GO's notes are worked in, its message ending in the trailer `Plan-Freeze: <spec-base>`. After it
+  a divergence that keeps the approach is corrected in the design in place; one that breaks it ends in a
+  new freeze.
+- **Identity.** The trailer's value, the spec base. The plan's freeze is the latest such commit reachable
+  from the branch head, so a rebase, which replays the trailer, keeps it.
+- **Code.** `scripts/plan-freeze.sh` — `find`, `show`, `diff`; exit `0` when computed, changed or
+  unchanged, `2` when not, never `1`, since it judges nothing. `scripts/review-ledger.sh` hashes each
+  `--frozen` document from `show`. Contract: `docs/workflow.md` § The plan freeze.
+- **Invariant.** The change since the freeze is compared by content wherever the document sits, so the
+  move into the archive is no change, and a could-not-compute is never read as unchanged.
 
 ## Declared links
 
@@ -103,16 +92,16 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   `0 clean / 1 findings / 2 cannot run` convention: a row is silent, `moved`, `re-confirm` or `ambiguous`,
   and a folded spec is `skipped`, never clean. The contract is `docs/declared-links.md`; the format is
   `docs/templates/progress-format.md` § The record of declared links (committed).
-- **Invariant.** It reports and stops nothing: no site refuses on it. It survives the closing fold as the
-  excuse record does and moves to `ai-docs/plans/done/` with the plan; the fix-plan gate's measured diff
-  excludes it through `IGNORE_GLOB_LINKS`.
+- **Invariant.** It reports and stops nothing: no site refuses on it. It moves to `ai-docs/plans/done/`
+  with the plan, as the excuse record does, and stays there; the fix-plan gate's measured diff excludes it
+  through `IGNORE_GLOB_LINKS`.
 
 ## Plan invariants
 
 - **What it is.** The base principles of what a spec and a design are, the record of the elements each
   one is required to be composed of, and the set of pages that define or enforce one. A numbered
   sentence per principle, each carrying its own one-clause reason; thirteen elements keyed by document
-  and token together; seven protected pages with a reason each, and seven documented near misses with
+  and token together; six protected pages with a reason each, and eight documented near misses with
   why each one is out.
 - **Why it exists.** Measured damage: a self-improvement pass made a required element out of something
   that cannot be known at the time the document is authored, which bought invented content at authoring
@@ -142,7 +131,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   is a cannot-run and never the findings code. Its verdict line carries the principle, element, surface,
   page, unaccounted and finding counts followed by a per-surface roster.
   `hooks/lib/plan-invariants-guard.sh` is the edit-time refusal, registered on two `PreToolUse` matchers
-  so both the editing tools and the shell route reach it; it covers the seven protected pages and nothing
+  so both the editing tools and the shell route reach it; it covers the six protected pages and nothing
   else, through the one list the refusal-agreement leg compares against the table. It is armed only in a
   session whose transcript records a run of `/improve`, `/improve-global` or `/ai-audit`, and while armed
   an edit asks only when it changes a heading or a required-element name on the page; a shell write asks
@@ -165,11 +154,11 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | Path | Role |
 |---|---|
 | `.claude-plugin/` | `plugin.json` (manifest) + `marketplace.json` (this repo as its own marketplace). **Declare a component key only for a NON-default location** — `hooks/hooks.json`, `skills/`, `agents/` are auto-discovered, and re-declaring one makes the plugin refuse to load it twice (`scripts/test-plugin-manifest.sh` guards this) |
-| `skills/<name>/SKILL.md` | The 13 workflow skills — re-derive with `ls -d skills/*/ \| wc -l` rather than trusting this line; the install smoke gate asserts the installed skill list covers every one the tree ships, so a stale count here is invisible to it |
+| `skills/<name>/SKILL.md` | The 12 workflow skills — re-derive with `ls -d skills/*/ \| wc -l` rather than trusting this line; the install smoke gate asserts the installed skill list covers every one the tree ships, so a stale count here is invisible to it |
 | `agents/<name>.md` | The 10 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
 | `hooks/hooks.json` | **24** hook entries in 13 matcher groups, running **20** distinct guards — four are registered twice: three of them on two EVENTS each, and the plan-invariants refusal on two MATCHERS of one event, which is why "how many hooks" has three defensible answers and this row gives all three. Re-derive from the manifest with `jq` over `.hooks[][].hooks[]` (length, and the length of its unique `.command` set) rather than trusting this line; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
-| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `check-plan-invariants.sh`, `check-plan-convergence.sh`, `check-method-purity.sh`, `check-instruction-size.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `ref-current.sh` as the remote-currency helper `check-redline.sh` and `check-release.sh` both call, `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
+| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `check-plan-invariants.sh`, `check-plan-convergence.sh`, `check-method-purity.sh`, `check-instruction-size.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `ref-current.sh` as the remote-currency helper `check-release.sh` calls, `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |

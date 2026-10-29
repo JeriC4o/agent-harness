@@ -15,8 +15,8 @@ VS16=$'\xef\xb8\x8f'
 US=$'\037'
 
 usage() {
-  printf 'usage: %s plan <findings-file> --base <rev> [--plan <path>]...\n' "$PROG" >&2
-  printf '       %s seal <findings-file> [--plan <path>]...\n' "$PROG" >&2
+  printf 'usage: %s plan <findings-file> --base <rev> [--plan <path>]... [--frozen <path>]...\n' "$PROG" >&2
+  printf '       %s seal <findings-file> [--plan <path>]... [--frozen <path>]...\n' "$PROG" >&2
   exit 2
 }
 cannot() { printf '%s: cannot run: %s\n' "$PROG" "$1" >&2; exit 2; }
@@ -26,10 +26,12 @@ VERB=$1; FILE=$2; shift 2
 case $VERB in plan|seal) ;; *) usage ;; esac
 BASE_ARG=
 PLANS=()
+FROZEN=()
 while [ $# -gt 0 ]; do
   case $1 in
     --base) [ $# -ge 2 ] || usage; BASE_ARG=$2; shift 2 ;;
     --plan) [ $# -ge 2 ] || usage; PLANS+=("$2"); shift 2 ;;
+    --frozen) [ $# -ge 2 ] || usage; FROZEN+=("$2"); shift 2 ;;
     *) usage ;;
   esac
 done
@@ -66,15 +68,20 @@ is_item() {
 PLAN_DIGEST=
 compute_plan_digest() {
   local p h
-  if [ ${#PLANS[@]} -eq 0 ]; then PLAN_DIGEST=none; return; fi
+  if [ ${#PLANS[@]} -eq 0 ] && [ ${#FROZEN[@]} -eq 0 ]; then PLAN_DIGEST=none; return; fi
   : > "$T/planhashes"
-  for p in "${PLANS[@]}"; do
+  for p in ${PLANS[@]+"${PLANS[@]}"}; do
     [ -f "$p" ] && [ -r "$p" ] || cannot "cannot read plan document ${p}"
-    # Markers are appended by the marking pass for corrections that keep the agreed
-    # approach, so stripping them keeps such a correction from resetting every row.
-    h=$(LC_ALL=C awk '{ gsub(/ ?\*\*\[REDLINE [A-Za-z0-9._-]+\]\*\*/, ""); print }' "$p" | hash) \
-      || cannot "cannot hash ${p}"
+    h=$(hash < "$p") || cannot "cannot hash ${p}"
     printf '%s\n' "$h" >> "$T/planhashes"
+  done
+  # A document's text at the plan's freeze, so a correction made in place after it
+  # leaves the digest alone while a new freeze moves it.
+  for p in ${FROZEN[@]+"${FROZEN[@]}"}; do
+    bash "$HERE/plan-freeze.sh" show "$p" > "$T/frozen" \
+      || cannot "plan-freeze.sh show could not resolve the frozen text of ${p}"
+    h=$(hash < "$T/frozen") || cannot "cannot hash the frozen text of ${p}"
+    printf 'frozen %s\n' "$h" >> "$T/planhashes"
   done
   h=$(LC_ALL=C sort "$T/planhashes" | hash) || cannot 'cannot hash the plan documents'
   PLAN_DIGEST=${h:0:$PREFIX}

@@ -72,7 +72,7 @@ is the same commands.
    `scripts/test-check-readme-update.sh`, `scripts/test-loop-metrics.sh`,
    `scripts/test-bin-of.sh`, `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh`,
    `scripts/test-tree-digest.sh`, `scripts/test-review-ledger.sh`, `scripts/test-human-findings.sh`,
-   `scripts/test-plan-archive.sh`,
+   `scripts/test-plan-archive.sh`, `scripts/test-plan-freeze.sh`,
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
    `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-ledger-write.sh`,
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
@@ -195,8 +195,9 @@ at that heading.
 | `AGENTS.md` § Build & Test, or a `test-*.sh` added or removed | `gate-inventory`, `scripts/test-run-checks.sh` |
 | `hooks/lib/loop-*`, `scripts/bin-of.jq`, `ai-docs/fixtures/loop-corpus/` | `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh` |
 | `scripts/tree-digest.sh` | `scripts/test-review-ledger.sh`, `hooks/lib/test-gate-record.sh` |
+| `scripts/plan-freeze.sh` | `scripts/test-review-ledger.sh` |
 | `scripts/check-plan-convergence-holding.py` | `scripts/test-check-plan-links.sh` |
-| `scripts/check-redline.sh` | `scripts/test-check-plan-links.sh`, `scripts/test-check-plan-convergence.sh`, `scripts/test-plan-archive.sh` |
+| `scripts/deliberate-absence.sh` | `scripts/test-check-plan-links.sh`, `scripts/test-check-plan-convergence.sh`, `scripts/test-plan-archive.sh` |
 | `docs/plan-invariants.md`, `ai-docs/plans/done/` | `scripts/test-plan-archive.sh` |
 | `hooks/lib/gate-pattern.sh` | `hooks/lib/test-gate-record.sh`, `scripts/test-hook-behaviour.sh`, `hooks/lib/test-harness-managed.sh` |
 | any tracked text file — the foreign-identifier leg reads the whole tree | `method-purity` |

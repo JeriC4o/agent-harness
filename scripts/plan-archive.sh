@@ -19,9 +19,9 @@
 # WHAT IT READS. The project's ai-docs/plans/done/, as it stands on every run,
 # and two method inputs resolved from this script's own directory, so an
 # installed copy lists the consuming project's archive: the spec's three
-# section names, parsed from the RETAINED assignment in check-redline.sh so the
-# record of deliberate absence stays one list, and the required-element record
-# on docs/plan-invariants.md.
+# section names, parsed from the RETAINED assignment in deliberate-absence.sh so
+# the record of deliberate absence stays one list, and the required-element
+# record on docs/plan-invariants.md.
 #
 # WHY THE DESIGN'S SECTION NAME IS A STRING INSIDE THE AWK PROGRAM, and why no
 # comment here names a section beside a presence word. The plan-invariants
@@ -56,7 +56,7 @@ for tool in awk sort mktemp dirname cat rm; do
 done
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
-ENFORCER="${HERE}/check-redline.sh"
+ABSENCE_RECORD="${HERE}/deliberate-absence.sh"
 RECORD="${HERE}/../docs/plan-invariants.md"
 
 if [ $# -eq 1 ]; then
@@ -189,8 +189,8 @@ extract() {
   ' "$5"
 }
 
-[ -f "$ENFORCER" ] && [ -r "$ENFORCER" ] \
-  || cannot "${ENFORCER} cannot be read, and the spec's sections are read from its RETAINED assignment"
+[ -f "$ABSENCE_RECORD" ] && [ -r "$ABSENCE_RECORD" ] \
+  || cannot "${ABSENCE_RECORD} cannot be read, and the spec's sections are read from its RETAINED assignment"
 spec_headings=$(awk -v q="'" '
   !on {
     if (index($0, "RETAINED=" q) != 1) next
@@ -205,10 +205,10 @@ spec_headings=$(awk -v q="'" '
     if (c) { closed = 1; exit }
   }
   END { if (!closed) exit 3 }
-' "$ENFORCER")
+' "$ABSENCE_RECORD")
 st=$?
 [ "$st" -eq 0 ] && [ -n "$spec_headings" ] \
-  || cannot "${ENFORCER} carries no readable RETAINED assignment, so there is no list of the spec's sections to extract"
+  || cannot "${ABSENCE_RECORD} carries no readable RETAINED assignment, so there is no list of the spec's sections to extract"
 export PLAN_ARCHIVE_SPEC_HEADINGS="$spec_headings"
 
 [ -f "$RECORD" ] && [ -r "$RECORD" ] \

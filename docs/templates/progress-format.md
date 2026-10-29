@@ -1,16 +1,11 @@
 # Progress-file format (canonical)
 
-Used by `/task`, `/project-review`, `/bugfix`, and the `review-findings` / `self-review` agents. It also
-defines the row format of the **committed** redline log, which is not a progress file but is derived from
-one of its sections — § The redline log (committed) below says why the two are documented together.
+Used by `/task`, `/project-review`, `/bugfix`, and the `review-findings` / `self-review` agents.
 
 Path: `ai-docs/plans/YYYY-MM-DD-name.progress.md` (for `/task` and `/project-review`); `ai-docs/bugfix/trace-*.md` (the `/bugfix` trace file, which IS the progress file).
 
 All these paths are **gitignored**. Progress files live in the working tree across compaction events but
-never enter the commit. **The one exception is the redline log**, `ai-docs/plans/<spec-base>.redline.md`,
-which sits beside the progress file and IS committed — it has to survive from the round that wrote it to a
-fold that runs after a human review, which a gitignored file cannot do. That contrast is the mechanism's
-load-bearing fact, which is why it is stated here rather than only where the format is defined.
+never enter the commit.
 
 ## Template
 
@@ -110,7 +105,7 @@ the pass that folds the note in, so a blank there is an unfolded note. -->
 | 1 | fix | <path>:<line> | 12 | none |
 | 2 | object: <reason> | <path>:<line> | 0 | none |
 | 3 | amendment: spec | <spec-path>:40 | 6 | `<spec-path>:40` — "<the quoted sentence, at least 24 characters>" |
-| 4 | redline: modified — <what shipped instead> | <design-path>:120 | 0 | `<design-path>:120` — "<the quoted sentence, at least 24 characters>" |
+| 4 | correction: <what shipped instead> | <design-path>:120 | 0 | `<design-path>:120` — "<the quoted sentence, at least 24 characters>" |
 ```
 
 `<line>` is re-derived from `grep -n '<the actual token>' <file>`, never computed by adding a delta to a pre-edit number (${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Tooling). A line number recorded here goes stale as soon as the file is edited again — prefer recording the token alongside it, and when handing an anchor that post-dates an edit to a subagent, mark it "re-derive, do not trust".
@@ -209,8 +204,8 @@ Appended by the `self-review` Subagent. Count existing `## Self-Review` sections
 One per review round carrying at least one `⬜ Open` finding. The heading, the three header fields and the table heading are appended by the gate script's `baseline` verb; the `fix-scout` agent fills the table and the two empty header fields; the gate then parses the section and decides whether it may be applied. `N` matches the `## Self-Review (Round N)` the findings come from, and the section with the highest `N` is the one the gate reads.
 
 - **`#` is the finding's own number from that round's findings table**, copied and never renumbered. **A finding may occupy more than one row** — one per file its remedy touches, since the `Target` cell holds a single path — and the gate measures the applied diff against the union of a finding's rows. What the `#` still decides is the two refusing directions: a plan missing an open finding is refused, and so is a row whose number matches no open finding, the latter because it would otherwise pre-authorise a file the review never raised.
-- **`Disposition` is a closed vocabulary of six:** `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design`, `redline: <type> — <what shipped instead>`. Every reason-carrying token refuses an empty reason, because the reason is part of the value. **`redline:`'s type is a closed three-value set** — `added`, `modified`, `removed`, relative to the frozen base — enforced by the pattern itself rather than by a parse, so a fourth type is refused like any other token outside the vocabulary. It is the disposition for a divergence between the design and what shipped that does **not** break the agreed approach: the code fix proceeds in the same round, and the row is promoted into the committed redline log by that round's single marking pass (§ The redline log (committed)). It declares **0**, because it briefs the fix agent with nothing to do — the marking pass makes its own writes. A `redline:` row may name a spec or design artefact as its `Target` without routing the round, because the routing arms key on a row that proposes a fix; and a `fix` row whose `Arm A` cell names a spec or design sentence with no `redline:` row accounting for it is refused, which is what makes the accounting unavoidable rather than advisable. `resolved:` asserts that the tree already satisfies the finding, that no edit is owed this round, and that this is not a dispute — the case `object:` would otherwise be stretched to cover. A round whose every row plans no edit is a legitimate plan whose declared total is 0, and it still fires the whole sequence.
-- **The counting basis rides in the column heading** rather than in prose beside it, so it travels with every plan: per file, `max(added, removed)`, summed across files, and a modified line counts once. A new file contributes its line count; a deleted file the count it had at the baseline; a rename counts as a delete plus an add, so an N-line rename is declared as 2N; a binary file contributes 0 and is named in the verdict; and a path `.gitignore` excludes contributes 0, on the declared side and the measured side alike, because the two totals are comparable only while both count the same way. The gitignored case is why the plan itself — which lives in this gitignored file — never charges against the round it describes, and it is a different exclusion from the short in-round list of **tracked** paths the verdict counts out loud. That list holds the learnings archive, the per-branch learnings files, the redline log `ai-docs/plans/*.redline.md`, the record of declared links `ai-docs/plans/*.links.md`, and the two routing suffixes `ai-docs/plans/*.spec.md` and `ai-docs/plans/*.design.md` — the last because **two** legitimate parties write those artefacts mid-round: an approved amendment, which rewrites one and then resumes the round against a baseline taken before it, and the **marking pass**, which appends a redline pointer to the design beside each item the round found diverged. Those are different parties with different remedies, and a diff cannot tell them apart, which is why each excluded path is named rather than merely counted. **It is those suffixes and NOT the whole directory**, because the two routing ones are exactly what the routing arms key on and no `fix` row names the log or the record: a tracked path under `ai-docs/plans/` that is none of the four *can* be briefed by a passing plan, and excluding it would drop briefed lines from the measured total while they still counted on the declared side. Those paths are excluded from the applied diff only; a plan can never brief an **edit** to one of the two suffixes, since a `fix` row naming a spec or design artefact routes the round instead of passing — and a row proposing no edit may name one but briefs nothing, so every change there is unbriefed either way. Each excluded path is **named** on the verdict's `excluded-in-round` line, which the orchestrator reads and accounts for.
+- **`Disposition` is a closed vocabulary of six:** `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design`, `correction: <what shipped instead>`. Every reason-carrying token refuses an empty reason, because the reason is part of the value. `correction:` is the disposition for a divergence between the task's own design — the one `**Design:**` names, matched by file name so its archived path matches too — and what shipped that does **not** break the agreed approach: the code fix proceeds in the same round, and once the round's micro-loop closes its single correction pass rewrites the item the row's `Arm A` cell quotes. It declares **0**, because it briefs the fix agent with nothing to do — the correction pass makes its own writes. A `correction:` row may name the design as its `Target` without routing the round, because the routing arms key on a row that proposes a fix; one whose `Arm A` cell cites a spec sentence or another plan's design routes the round instead, since the in-place correction reaches the task's own design alone. A `fix` row whose `Arm A` cell names a sentence of the task's own design with no `correction:` row for the same finding is refused, and so is one naming a spec sentence or another plan's design with no amendment row — which is what makes the accounting unavoidable rather than advisable. `resolved:` asserts that the tree already satisfies the finding, that no edit is owed this round, and that this is not a dispute — the case `object:` would otherwise be stretched to cover. A round whose every row plans no edit is a legitimate plan whose declared total is 0, and it still fires the whole sequence.
+- **The counting basis rides in the column heading** rather than in prose beside it, so it travels with every plan: per file, `max(added, removed)`, summed across files, and a modified line counts once. A new file contributes its line count; a deleted file the count it had at the baseline; a rename counts as a delete plus an add, so an N-line rename is declared as 2N; a binary file contributes 0 and is named in the verdict; and a path `.gitignore` excludes contributes 0, on the declared side and the measured side alike, because the two totals are comparable only while both count the same way. The gitignored case is why the plan itself — which lives in this gitignored file — never charges against the round it describes, and it is a different exclusion from the short in-round list of **tracked** paths the verdict counts out loud. That list holds the learnings archive, the per-branch learnings files, the record of declared links `ai-docs/plans/*.links.md`, and the two routing suffixes `ai-docs/plans/*.spec.md` and `ai-docs/plans/*.design.md` — the last because an approved amendment writes those artefacts mid-round: it rewrites one and then resumes the round against a baseline taken before it. A diff cannot tell that write from a fix agent's unbriefed edit to the same file, which is why each excluded path is named rather than merely counted. **It is those suffixes and NOT the whole directory**, because the two routing ones are exactly what the routing arms key on and no `fix` row names the record: a tracked path under `ai-docs/plans/` that is none of the three *can* be briefed by a passing plan, and excluding it would drop briefed lines from the measured total while they still counted on the declared side. Those paths are excluded from the applied diff only; a plan can never brief an **edit** to one of the two suffixes, since a `fix` row naming a spec or design artefact routes the round instead of passing — and a row proposing no edit may name one but briefs nothing, so every change there is unbriefed either way. Each excluded path is **named** on the verdict's `excluded-in-round` line, which the orchestrator reads and accounts for.
 - **The `Target` cell opens with its anchor, unquoted** — `path` or `path:line` — and anything after the first space is guidance for the fix agent. Every gate arm reads the anchor alone: the plan arm resolves it, the routing arms test it for a spec or design path, and the applied arm matches the round's changed paths against its path.
 - **The Arm A cell is never blank** — either the literal `none`, written deliberately, or a quoted sentence carrying its own backticked `file:line`. The gate resolves that anchor **and** checks that the quoted sentence is at it, within a window of three lines either side on whitespace-normalised text, with `…` elision honoured while every retained fragment is at least 24 characters and in order. So the cell records a sentence copied from the file, not a plausible one: a resolvable anchor whose quote is nowhere near it is refused, which is what a file-exists-plus-line-in-range check could not do.
 - **A literal `|` inside either free-text column is written `\|`.** A raw pipe shifts every later field; the parser normalises the escaped form and refuses a row whose cell count is wrong rather than misreading it.
@@ -226,10 +221,8 @@ One per review round carrying at least one `⬜ Open` finding. The heading, the 
 ## Anchors and measurements in this file go stale while it is being written
 
 This file's sections cite `file:line` anchors and record measurements, and the files they point at are the
-ones the task is editing. **The scope is those sections and nothing past them.** The committed redline log
-documented below carries no position to re-derive — its quoting field names an entity — and the duty
-covering what that log does carry is stated in `${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md`,
-so no single rule spans both records. Two rules, both learned by paying for them twice in one task.
+ones the task is editing. **The scope is those sections and nothing past them.** Two rules, both learned
+by paying for them twice in one task.
 
 **A pass that touches an EXISTING row re-derives every `file:line` and every measurement in it**, not only
 the fields it came to change. A row is a claim about a tree that later rounds are free to edit, so a figure
@@ -237,8 +230,8 @@ correct when written describes a tree that no longer exists. On the task that in
 pass that WROTE it moved four lines and so falsified an open finding's freshly re-derived anchor set inside
 the same pass — the duty is not a precaution, it is the normal case.
 
-**Prefer a SECTION reference over a line number when citing a file this task is editing.** `§ Redline
-marking (the Step-8 route)` cannot drift; `:144-145` drifts the next time anything above it grows. Reserve
+**Prefer a SECTION reference over a line number when citing a file this task is editing.** `§ Correcting
+the design in place` cannot drift; `:144-145` drifts the next time anything above it grows. Reserve
 a line number for a file the task does not touch, for a quoted sentence the reader must find exactly, and
 for an anchor naming an EDIT TARGET in the base the task started from — that last class is a HEAD anchor
 and must NOT be renumbered to working-tree lines, which is the easy way to "fix" a correct citation into a
@@ -248,84 +241,11 @@ wrong one.
 wrap is invisible to a single-line search; a fragment, or `grep -c` on a distinctive token, is what
 settles it.
 
-## The redline log (committed)
-
-`ai-docs/plans/<spec-base>.redline.md` — **committed**, as the spec, the design and the two records below
-are, and the reason is lifecycle: the fold that consumes it runs after the PR is approved, which is well past the point a
-gitignored file survives to.
-
-It is documented here, beside the `Fix Plan (Round N)` section, because every one of its cells is
-**derived** from a row of that table rather than recorded independently. Two records of one divergence is
-the drift this mechanism exists to reduce, so the derivation is visible in a single read:
-
-| Column | Holds | Derived from |
-|---|---|---|
-| `Key` | `R<round>.<finding #>` for a divergence a review round found, `S<step>.<ordinal>` for one implementation found or a design item a spec amendment's re-read ruled false | the round and number from the plan row; or, where no plan row exists, the step whose work the item belongs to and the order of discovery |
-| `Type` | `added` \| `modified` \| `removed`, relative to the frozen base | the `redline:` disposition's type token |
-| `Artefact sentence diverged from` | the quoted sentence plus the entity it sits in — the named file and a heading or numbered item inside it, which is a declared identity and so needs no id comment (`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`) | the plan row's `Arm A` cell, **transformed and not copied** — that cell carries a position because the fix-plan gate requires one of it, so the promotion resolves the position to the entity holding the sentence, and only the sentence travels verbatim |
-| `What shipped instead` | what the shipped artefact does instead | the disposition's reason text, **verbatim** |
-
-```markdown
-| Key | Type | Artefact sentence diverged from | What shipped instead |
-|---|---|---|---|
-| R2.4 | modified | `<design-path>` § `<heading or numbered item>` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
-| S8.1 | added | `<design-path>` § `<heading or numbered item>` — "<the quoted sentence, at least 24 characters>" | <what shipped instead> |
-```
-
-**The head above the table prescribes FIELDS, not layout** — the writer may arrange and expand them, and
-usually should, because a log is read by a human looking for why a design says what it says. Four fields
-are required, spelled as below so a reader can grep for them: `**Tracked in:**` (the same spelling the
-spec header uses), `**Spec:**`, `**Design:**`, and `**Mode:**`.
-
-```markdown
-# Redline log: <task name>
-
-**Tracked in:** <TICKET-KEY>
-**Spec:** <spec-path>
-**Design:** <design-path>
-**Mode:** R&D | Hybrid — <the one line of evidence the recommendation rested on>
-```
-
-`Mode` is the one field with a consumer. It records the choice the task's first divergence with no plan
-row put to the user — one implementation found, or a design item a spec amendment's re-read ruled false,
-whose route puts the question before its marking pass — which governs every later divergence in the same task, and it lives HERE rather than in
-this file's own sections for a lifecycle reason: a progress file is gitignored and deleted at merge, while
-the log is committed and is what the closing fold reads. It is also what tells a later reader why the log
-holds the number of rows it holds — a long log under `R&D` is the mechanism working, and the same log under
-`Hybrid` is a scope question. Carry the evidence line with it, so the mode can be disagreed with on what it
-rested on rather than as a preference.
-
-- **A row records a SURVIVING divergence**, not a decision taken along the way and not a discarded
-  experiment: an experiment that left no divergence leaves no row. That ties the log's volume to the
-  result rather than to the process.
-- **Every row is paired with a marker on the item it corrects**, appended in place and carrying only this
-  row's key: `**[REDLINE R<round>.<finding #>]**`, or `**[REDLINE S<step>.<ordinal>]**` for a divergence
-  implementation found or a design item a spec amendment's re-read ruled false. The marker says the item is settled; this row says what changed. The pairing is
-  checked both ways — a row with no marker and a marker with no row are each a finding — so a reviewer can
-  skip a marked item without reading the log at all. **Two checkers cover it between them, and which one
-  covers which form is not interchangeable:** `check-fix-plan.sh`'s `A8` arm reads the keys off a round's
-  fix-plan table and so reaches the `R` form only, while
-  `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh paired <design> <log>` compares the two sets directly and
-  reaches both. A key is admitted by SHAPE, so a document that quotes the token to explain it is not a
-  marked document.
-- **One writer.** Every marking pass — a review round's, an implementation step's, or the one inside an
-  amendment that keeps the approach — promotes or authors the rows and appends the markers in the same
-  invocation, so the two cannot diverge. None of the parties that originate a row writes to the log: the
-  reviewer for a round's row, which writes only to the gitignored progress file and so keeps the other
-  review surfaces that share its brief unchanged; the step that surfaced the divergence for an
-  implementation step's; and the convergence re-read the orchestrator ruled on for an amendment's.
-- **Lifecycle.** Created by the first marking pass of the task. Moved to `ai-docs/plans/done/` with the
-  spec and the design when the task closes, so the fold, the merge-time refusal and any later reader have
-  one location rather than two. Reset to empty when a breaking divergence forces a rebuild, because its
-  rows described a base that no longer exists. **Removed by the fold** — which is what makes a surviving
-  log an unambiguous signal that the fold never ran, and the merge-time workflow refuses on one. It is
-  not matched by the ignore rules and not deleted by the merge-time progress-file cleanup; nothing else
-  removes it.
-
 ## The record of excused findings (committed)
 
-`ai-docs/plans/<spec-base>.excuses.md` — named by the same construction as the redline log above and
-committed for the same lifecycle reason. **The suffix is not matched by the ignore rules**, which is
+`ai-docs/plans/<spec-base>.excuses.md` — named by the spec base, the spec's file name without `.spec.md`,
+as the plan's other documents are, and **committed**, because it is read by every later run over the
+archived pair, long after the gitignored progress file is gone. **The suffix is not matched by the ignore rules**, which is
 confirmed rather than assumed: `git check-ignore -v` on both reports the working record ignored and this
 one not. Each row waives **one** finding of the plan-convergence check, for **this plan and no other**.
 
@@ -354,10 +274,10 @@ one not. Each row waives **one** finding of the plan-convergence check, for **th
   the key, which is correct, because the two sites then no longer say the same thing.
 - **Removing a row is an act of the same kind as granting one**, done by hand, which is why this is a table
   a reader can find a row in. **Lifecycle:** created by the task's first grant act, moved to
-  `ai-docs/plans/done/` with the spec and the design at the task's close, and **kept by the fold**. The
-  folded plan still has readers — the fold's own convergence call, and any later run over the archived
-  pair — and removing the record would un-excuse every waiver in it permanently, against a plan nobody
-  will act on. Its rows stay scoped to this plan; nothing inherits them.
+  `ai-docs/plans/done/` with the spec and the design at the task's close, and **kept in the archive**. A
+  later run over the archived pair still reads it, and removing the record would un-excuse every waiver in
+  it permanently, against a plan nobody will act on. Its rows stay scoped to this plan; nothing inherits
+  them.
 
 ## The record of declared links (committed)
 
@@ -395,7 +315,7 @@ What a link is, the states the check reports, where each leads and how a row is 
   clone's.
 - **Lifecycle:** created by the design author's first write of the design, moved to `ai-docs/plans/done/`
   with the spec and the design at the task's close, brought back with them when the full run after review
-  fails, and **kept by the fold**. A later run over the archived pair still examines every link with both
+  fails, and **kept in the archive**. A later run over the archived pair still examines every link with both
   ends in the design against the as-built design, and reports every link with a spec end skipped, never
   clean.
 

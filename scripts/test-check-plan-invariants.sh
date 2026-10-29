@@ -165,8 +165,8 @@ printf '\n== the fixture: the tracked tree, copied and STAGED ==\n'
 build_base
 INDEX=$(git -C "$BASE" ls-files)
 for p in docs/plan-invariants.md hooks/lib/plan-invariants-guard.sh agents/spec-writer.md \
-         agents/design.md agents/design-review.md scripts/check-redline.sh hooks/hooks.json \
-         scripts/check-plan-invariants.py; do
+         agents/design.md agents/design-review.md \
+         scripts/deliberate-absence.sh hooks/hooks.json scripts/check-plan-invariants.py; do
   has "the index carries $p, so its own text is swept and not merely read" "$INDEX" "$p"
 done
 
@@ -363,11 +363,18 @@ check "  while the element COUNT is exactly what it was, so only a set compariso
       "$(figure elements)" "$BASE_ELEM"
 
 fresh
-tweak scripts/check-redline.sh "\^## Open questions'" "^## Open questions|^$ARRIVED'"
+tweak scripts/check-redline.sh "^SUPPRESSION_MARKERS=" "KEPT='$ENUM_ELEM'\nSUPPRESSION_MARKERS="
 run
-check "the fold's removal list widened -> rc 1" "$RC" "1"
-has "  reported as a prohibition arriving rather than joining the element set" \
-    "$OUT" "finding leg2-prohibition: the fold is now required to REMOVE \`$ARRIVED\`"
+check "a plan heading list arriving in the near-miss script -> rc 1" "$RC" "1"
+has "  reported as an unguarded route" \
+    "$OUT" "finding leg3-unguarded: scripts/check-redline.sh carries an element-defining locus"
+
+fresh
+tweak scripts/deliberate-absence.sh "^## Key decisions'" "## Key decisions\n$ARRIVED'"
+run
+check "the record of deliberate absence widened -> rc 1" "$RC" "1"
+has "  reported as a spec element arriving" \
+    "$OUT" "finding leg2-arrival: a page mandates the spec element \`$ARRIVED\`"
 
 printf '\n== leg 3: the refusal against the table, in both directions ==\n'
 fresh
@@ -391,17 +398,17 @@ hasnt "  and the two sets agree, so the comparison says nothing" \
     "$OUT" "finding leg3-uncovered: the protected-page table names skills/task/reference.md"
 
 fresh
-tweak hooks/lib/plan-invariants-guard.sh "scripts/check-redline.sh'" \
-  "scripts/check-redline.sh\ndocs/considerations-link-reading.md'"
-tweak docs/plan-invariants.md '\| `\$\{CLAUDE_PLUGIN_ROOT\}/scripts/check-redline.sh` \| Carries the retained' \
-  '| `${CLAUDE_PLUGIN_ROOT}/docs/considerations-link-reading.md` | Added by hand, defining nothing |\n| `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh` | Carries the retained'
+tweak hooks/lib/plan-invariants-guard.sh "scripts/deliberate-absence.sh'" \
+  "scripts/deliberate-absence.sh\ndocs/considerations-link-reading.md'"
+tweak docs/plan-invariants.md '\| `\$\{CLAUDE_PLUGIN_ROOT\}/scripts/deliberate-absence.sh` \| Carries the spec' \
+  '| `${CLAUDE_PLUGIN_ROOT}/docs/considerations-link-reading.md` | Added by hand, defining nothing |\n| `${CLAUDE_PLUGIN_ROOT}/scripts/deliberate-absence.sh` | Carries the spec'
 run
 check "a page covered AND tabled that defines no element -> rc 1" "$RC" "1"
 has "  reported as a surplus interruption, which the set comparison agrees about" \
     "$OUT" "finding leg3-no-locus: docs/considerations-link-reading.md is in the protected-page table"
 
 fresh
-tweak hooks/lib/plan-invariants-guard.sh "scripts/check-redline.sh'" "scripts/check-redline.sh\ndocs/workflow.md'"
+tweak hooks/lib/plan-invariants-guard.sh "scripts/deliberate-absence.sh'" "scripts/deliberate-absence.sh\ndocs/workflow.md'"
 run
 check "the refusal widened past the table -> rc 1" "$RC" "1"
 has "  every surplus member is named, because each one is a recurring interruption" \
@@ -417,7 +424,7 @@ has "  nor on the shell matcher" \
     "$OUT" "finding leg3-registration: the refusal is not registered on the Bash matcher"
 
 fresh
-tweak hooks/lib/plan-invariants-guard.sh "scripts/check-redline.sh'" "scripts/check-redline.sh\nagents/self-review.md'"
+tweak hooks/lib/plan-invariants-guard.sh "scripts/deliberate-absence.sh'" "scripts/deliberate-absence.sh\nagents/self-review.md'"
 run
 check "a documented near miss that the refusal covers anyway -> rc 1" "$RC" "1"
 has "  the near-miss control reports it" \
@@ -426,9 +433,9 @@ has "  and the set comparison reports it too, while they still disagree" \
     "$OUT" "finding leg3-surplus: the refusal covers agents/self-review.md"
 
 fresh
-tweak hooks/lib/plan-invariants-guard.sh "scripts/check-redline.sh'" "scripts/check-redline.sh\nagents/self-review.md'"
-tweak docs/plan-invariants.md '\| `\$\{CLAUDE_PLUGIN_ROOT\}/scripts/check-redline.sh` \| Carries the retained' \
-  '| `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` | Added by hand, and still a documented near miss |\n| `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh` | Carries the retained'
+tweak hooks/lib/plan-invariants-guard.sh "scripts/deliberate-absence.sh'" "scripts/deliberate-absence.sh\nagents/self-review.md'"
+tweak docs/plan-invariants.md '\| `\$\{CLAUDE_PLUGIN_ROOT\}/scripts/deliberate-absence.sh` \| Carries the spec' \
+  '| `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` | Added by hand, and still a documented near miss |\n| `${CLAUDE_PLUGIN_ROOT}/scripts/deliberate-absence.sh` | Carries the spec'
 run
 check "that near miss added to the guard AND the table -> rc 1" "$RC" "1"
 has "  the page set is reported as contradicting itself" \
@@ -452,6 +459,13 @@ run
 check "a template that MOVED -> rc 2, not an empty element set" "$RC" "2"
 has "  the empty extraction is reported rather than read as agreement" \
     "$OUT" "yielded no bare section line inside a markdown-tagged fence"
+
+fresh
+tweak scripts/deliberate-absence.sh "^RETAINED='" "OTHER='"
+run
+check "the record of deliberate absence with no list -> rc 2, not an empty requirement set" "$RC" "2"
+has "  naming the record" \
+    "$OUT" "cannot run: scripts/deliberate-absence.sh carries no readable RETAINED assignment"
 
 fresh
 git -C "$W" rm --cached -q docs/plan-invariants.md

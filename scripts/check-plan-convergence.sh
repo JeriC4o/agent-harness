@@ -17,11 +17,6 @@
 # the record beside the plan. An ordinary run writes nothing, ever. The key is
 # copied off a finding line, which carries it, so neither half is retyped.
 #
-# WHY IT IS ITS OWN CHECK rather than a verb of the plan-document gate. The
-# plan-document gate is a protected page because it carries element data, which
-# is the one thing this check must not acquire: a check that must stay OUT of
-# that set cannot be grown inside one that is in it.
-#
 # IT IS EXEMPT FROM THE GATE RUNNER'S MEMBER LIST, by name, for the reason
 # scripts/check-redline.sh is: a member is invoked with no arguments and both of
 # the paths below are required, so a documented member would report cannot-run

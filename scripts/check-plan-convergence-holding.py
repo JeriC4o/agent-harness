@@ -242,24 +242,24 @@ SECTION_REFS = 0
 QUALIFIED_REFS = 0
 DELIVERY_COLUMN = 'absent'
 
-# A FOLDED SPEC IS RECOGNISED, NOT REPORTED. The closing fold collapses the spec
-# to its record of deliberate absence, so no criterion survives for a delivery
-# cell to name, and every row of a correctly-folded plan read as claiming a
-# requirement the spec does not state. The criterion leg has nothing to check in
+# A FOLDED SPEC IS RECOGNISED, NOT REPORTED. A spec the closing fold collapsed
+# keeps only its record of deliberate absence, so no criterion survives for a
+# delivery cell to name, and every row of a correctly-folded plan read as
+# claiming a requirement the spec does not state. The criterion leg has nothing to check in
 # that state and says so in the roster instead. The sign is the spec's own
 # headings at the depth the fold keeps: exactly the kept set, every kept one
 # present and nothing else. A spec carrying any other heading at that depth, or
 # missing a kept one, is read as a plan however few criteria it has. Requiring
-# every kept section costs no correctly folded plan, because the fold's own gate
-# reports a missing one; it is what keeps a draft that so far holds only one of
-# them from reading as folded.
+# every kept section costs no correctly folded plan, because a fold that dropped
+# one was refused by the fold's own gate; it is what keeps a draft that so far
+# holds only one of them from reading as folded.
 #
-# THE KEPT SECTIONS ARE BORROWED, NOT NAMED, from the assignment the fold's own
-# gate states them in -- the same list the plan-invariants check derives from
-# there. Naming them here would put section tokens in this file, which the
-# header rules out, and an unreadable source is a cannot-run, because falling
-# back to a default IS choosing one.
-RETAINED_SOURCE = 'scripts/check-redline.sh'
+# THE KEPT SECTIONS ARE BORROWED, NOT NAMED, from the one record of deliberate
+# absence, which the plan-invariants check derives spec elements from too.
+# Naming them here would put section tokens in this file, which the header rules
+# out, and an unreadable source is a cannot-run, because falling back to a
+# default IS choosing one.
+RETAINED_SOURCE = 'scripts/deliberate-absence.sh'
 RETAINED_NAME = 'RETAINED'
 RETAINED = None
 FOLDED = False
