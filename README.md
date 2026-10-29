@@ -129,8 +129,9 @@ Its `gates` block counts the gate record's two signals for the session: a check 
 tree, and one check answering both ways about one unchanged artefact.
 
 `scripts/human-findings.sh` counts what a person raised after the automated review passed — each comment
-posted on the pull request and each fix commit pushed after it opened, the closing fold, version bumps and
-merge commits excluded. Push times come from the hosting site's push-activity record, never from commit
+posted on the pull request and each fix commit pushed after it opened. Version bumps and merge commits are
+excluded, and so is the closing-fold commit that a pull request merged before that pass was retired still
+carries. Push times come from the hosting site's push-activity record, never from commit
 dates, and a pull request older than that record's reach is reported as not computable rather than as
 zero. `/harness:inspect` runs it for the session's branch; it also runs on demand:
 
@@ -269,7 +270,6 @@ ai-docs/                   this repo's own profile + plan/learning data
 | `/harness:ai-audit [global\|project]` | Audits an instruction surface: `global` checks the harness method files; `project` checks your profile — unresolved placeholders, commands that do not resolve, registry coherence, candidate hygiene, gitignore coverage. Detects the surface if you omit it. |
 | `/harness:harness-init` | Scaffolds the project profile and registers the repo. Run once per project; idempotent. |
 | `/harness:report-defect` | Files a defect in the *harness* from the project that hit it: drafts a report into `ai-docs/feedback/`, runs it through `check-candidate.sh --mode report`, shows it to you, and only then files it against the repository named in the installed manifest — so a fork files against itself. A local ledger stops the same defect being filed twice. |
-| `/harness:redline-fold` | Run after a PR is approved: applies the task's redline corrections log to the design items that diverged, collapses the spec to its record of deliberate absence, and removes the log. The one step that makes the planning documents describe what shipped. |
 | `/harness:inspect` | Reads a finished session and reports where the harness wasted effort — loops, gates re-run without a state change, review rounds that burned their cap. Proposes learning entries; never edits an instruction file. |
 
 Subagents, all ten: `spec-writer`, `design`, `design-review`, `self-review`, `review-findings`,
@@ -290,19 +290,19 @@ flowchart TD
     S7 -->|"ITERATE · cap 3"| S6
     S7 -->|STOP| OUT1["surface the verdict · do not start work"]
     S7 -->|"GO + notes"| WB["notes written back INTO the design<br/>before any implementation diff"]
-    WB --> S8["Step 8 · implement<br/>one agent per group, each entered<br/>through /harness:context-reset"]
+    WB --> FZ["plan freeze<br/>spec + design committed<br/>with a Plan-Freeze trailer"]
+    FZ --> S8["Step 8 · implement<br/>one agent per group, each entered<br/>through /harness:context-reset"]
     S8 --> S9["Step 9 · verify<br/>gates + a covering check per criterion"]
     S9 --> S95["Step 9.5 · documentation"]
     S95 --> S10{"Step 10 · self-review"}
     S10 -->|APPROVE| S12["Step 12 · plans to done/<br/>gates → commit → push → PR"]
     S10 -->|"REJECT · cap 3"| S11["Step 11 · fix round"]
     S11 --> S10
-    S12 --> FOLD["/harness:redline-fold<br/>runs after the PR is approved"]
 
-    S8 -.->|"divergence does NOT<br/>break the approach"| RL["redline marker + log row<br/>mode chosen once per task"]
-    RL -.-> S8
-    S8 -.->|"author asks for<br/>the rebuild"| AMD["design amendment"]
-    S11 -.->|"finding's subject is<br/>a design sentence"| AMD
+    S8 -.->|"divergence does NOT<br/>break the approach"| CIP["design corrected in place<br/>after the group's code exists"]
+    CIP -.-> S8
+    S8 -.->|"divergence breaks the approach,<br/>user approves the rebuild"| AMD["design amendment"]
+    S11 -.->|"design sentence: breaks the approach,<br/>or another plan's design"| AMD
     AMD -.-> S6
     S11 -.->|"finding's subject is<br/>a spec sentence"| AMS["spec amendment<br/>author approves it"]
     AMS -.->|"approach changed"| S6
@@ -315,10 +315,10 @@ Three things the one-line description leaves out.
 the open findings go to the author and the loop ends — but fixes made afterwards still get one review pass.
 So three rounds means "three rounds, then a human decides, then one more pass", never "stop checking".
 
-**The dotted edges are the only places the flow turns**, and each one is a human decision: whether a
-divergence from the frozen design breaks the agreed approach, and whether a finding's subject is a sentence
-in the spec. A finding is routed by its **subject**, not by where its fix would land — choosing the remedy
-first is what defeats that routing.
+**The dotted edges are the only places the flow turns.** A divergence from the frozen design that keeps the
+agreed approach is corrected in the design in place, and nobody is asked; one that breaks it, and a finding
+whose subject is a sentence in the spec, stop for a human decision. A finding is routed by its **subject**,
+not by where its fix would land — choosing the remedy first is what defeats that routing.
 
 **Step 11 is not a step.** It is a six-beat sequence with a mechanical gate in the middle, and the
 orchestrator never applies a fix in its own context:
@@ -331,16 +331,16 @@ flowchart LR
     G -->|ESCALATE| AU["author decides<br/>on the declared size"]
     AU --> G
     G -->|"ROUTE-SPEC<br/>ROUTE-DESIGN"| AM["amendment<br/>no fix agent runs"]
-    G -->|PASS| M["marking pass<br/>once per round, BEFORE the apply"]
-    M --> AP["fix-apply<br/>fix rows only"]
+    G -->|PASS| AP["fix-apply<br/>fix rows only"]
     AP --> ML["micro-loop · mechanical check,<br/>one bounded question, record"]
     ML -->|DIVERGE| AP
-    ML -->|MATCH| R["back to the review pass"]
+    ML -->|MATCH| C["design corrected in place<br/>once per round, skipped when<br/>no row asks for a correction"]
+    C --> R["back to the review pass"]
 ```
 
-The marking pass runs **before** the apply because its verb asserts the design carries each divergence's
-marker and the log its row — asserted after the apply, it would be measured against a tree that does not
-hold it yet.
+The correction runs **after** the apply and the micro-loop because it describes code that exists — written
+first, it would be false again one re-fix later. One pass corrects every design item the round's
+`correction:` rows name, and the round's review then rules on that change against the plan's freeze.
 
 ## Releasing
 

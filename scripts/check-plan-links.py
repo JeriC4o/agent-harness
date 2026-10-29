@@ -20,7 +20,6 @@ HEADING_LINE = re.compile(r'^(#{1,6})\s+(\S.*?)\s*$')
 FENCE = re.compile(r'^\s*(?:```|~~~)')
 QUOTE_MARK = re.compile(r'^\s*(?:>\s?)+')
 
-MARKER = re.compile(r'\[REDLINE [A-Za-z0-9][A-Za-z0-9._-]*\]')
 UNESCAPED_PIPE = re.compile(r'(?<!\\)\|')
 SEPARATOR_CELL = re.compile(r'^:?-+:?$')
 END = re.compile(r'^(spec|design)\s+§\s+(\S.*)$')
@@ -37,7 +36,7 @@ def norm(text):
 
 
 def normalise(text):
-    return norm(MARKER.sub('', text.replace('\\|', '|')).replace('*', ''))
+    return norm(text.replace('\\|', '|').replace('*', ''))
 
 
 def read_path(path):

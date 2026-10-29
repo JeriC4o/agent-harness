@@ -517,7 +517,8 @@ SEPARATOR_CELL = re.compile(r'^[-: ]+$')
 
 
 def excuse_path():
-    """Beside the plan, by the construction the correction log is named by."""
+    """Derived from the spec's own path, so the record moves into the archive with
+    the pair and a later run over the archived pair still finds it."""
     if not SPEC.endswith(SPEC_SUFFIX):
         blocked('the spec at %s does not end in %s, so the record beside it cannot be named and this run cannot know what is excused'
                 % (SPEC, SPEC_SUFFIX))

@@ -200,7 +200,7 @@ CORPUS_PATHS = set(p for p, _b in CORPUS)
 # list because they are on the verification surface and therefore ARE corpus.
 for _needed in ('docs/plan-invariants.md', 'hooks/lib/plan-invariants-guard.sh',
                 'agents/spec-writer.md', 'agents/design.md', 'agents/design-review.md',
-                'scripts/check-redline.sh', 'hooks/hooks.json',
+                'scripts/deliberate-absence.sh', 'hooks/hooks.json',
                 'scripts/check-plan-invariants.py',
                 'scripts/check-plan-invariants-refusal.py'):
     if _needed not in CORPUS_PATHS:
@@ -225,13 +225,13 @@ PINNED = [
     "**One writer per artefact.** The orchestrator writes neither a spec nor a design; each is written only by its owning subagent. *Because a party that both writes a document and reports on it can close a finding by editing the evidence.*",
     "**A spec is a behaviour contract, not an implementation plan.** A criterion may not spell a command, script, tool or test identifier. *Because a criterion naming its instrument asserts which instrument ran, not what the system does, and cannot survive a change of instrument.*",
     "**A design says NOTHING about tests**, and the furthest it goes is naming the cases each object it builds is used in. *Because every sentence a design could write about a test is a promise about something that does not exist when the document is authored, and each narrowed version of this rule regrew — first a per-criterion command, then an intent line, then a suite total.*",
-    "**The design is frozen at the design-review GO verdict.** After it, a divergence that does not break the agreed approach is a marker plus a log row, never a rewrite. *Because re-verifying an unchanged document every round is the cost this replaced.*",
-    "**A changed requirement goes to the spec; a changed artefact goes to the log; nothing is recorded in both places.** *Because two records of one fact is the drift the mechanism exists to reduce.*",
+    "**The design is frozen by a commit at the design-review GO verdict and corrected in place after it.** A divergence that does not break the agreed approach is corrected in the item it falsifies, after the code it describes exists and only as far as the shipped work needs; one that breaks the approach is a new design, a new review and a new freeze. *Because the change since the freeze is then computed from the repository rather than reported by the party that made it, so every edit to the agreed plan, an unintended one included, reaches the review that rules on it.*",
+    "**A changed requirement goes to the spec; a changed artefact goes to the design; nothing is recorded in both places.** *Because two records of one fact is the drift the mechanism exists to reduce.*",
     "**Neither document carries a record of superseded material, and no verdict may require one.** *Because every later reader of the document pays for every such passage — the record of deliberate absence and the use cases on every whole-repository review, the rest whenever the document is opened — and none of it describes the system.*",
-    "**The closing fold runs once, after approval.** It applies the correction log's rows to the design items that diverged, collapses the spec to its record of deliberate absence, and leaves the rest of the frozen document alone. *Because an untouched sentence is now either caught mechanically — a number whose provenance is gone, an identity that no longer pairs in either direction — or it is prose stating neither, which is accepted as unnoticed rather than re-derived against the chance that it rotted.*",
+    "**A plan is archived as it stands, and nothing rewrites it on its task's behalf after the merge.** The spec keeps every section and the design keeps every section, its process sections included. *Because a pass after the merge lands as a change of its own with a review of its own, and until it lands the archive says one thing while the record of its correction says another.*",
     "**A required element of a spec or a design must be knowable at the time the document is authored, and so must the origin of every number either document states.** An element whose content is only determined later is forbidden. A stated number names, in the same sentence, which kind it is — a threshold the task handed down, an estimate derived in place with its derivation shown, or a measurement of something that already exists — and how it was obtained; a figure whose only honest origin would be a measurement of the artefact the document describes is forbidden with it, that measurement being one nobody can take while the document is still being written. *Because it guarantees two failures at once: invented content at authoring time, and a review loop at the end that cannot converge — the document is corrected against reality, reality moves on, and the correction reopens.*",
     "**A question left open must be one whose answer would change neither the chosen approach, nor the requirements, nor how the work breaks up.** A gap failing that test is closed before the plan is agreed; a gap passing it that later turns out to have changed any of the three re-enters the full design-and-review cycle rather than being patched in place. *Because the gap is paid for either way, and the cheaper-looking price — note it and carry on — is the one that falls due as a rewrite of an agreed plan at the moment the work is most committed to it.*",
-    "**A spec broader than its design is not a contradiction, and only a genuine conflict changes the spec.** A genuine conflict is a design that does what the spec explicitly rules out, or drops a behaviour an acceptance criterion requires, with no other sentence of the same spec requiring it; a spec that is general or silent where the design is specific is breadth, and a departure another sentence of the spec requires is stated once, among the design's risks, and is not a spec finding either. *Because a spec narrowed to match its design states the design's detail a second time, costs an approval and a fresh planning round, and is deleted when the closing fold collapses the spec, so the narrowing is paid for and then discarded.*",
+    "**A spec broader than its design is not a contradiction, and only a genuine conflict changes the spec.** A genuine conflict is a design that does what the spec explicitly rules out, or drops a behaviour an acceptance criterion requires, with no other sentence of the same spec requiring it; a spec that is general or silent where the design is specific is breadth, and a departure another sentence of the spec requires is stated once, among the design's risks, and is not a spec finding either. *Because a spec narrowed to match its design states the design's detail a second time and costs an approval and a fresh planning round, and the archived spec then keeps that detail for good, so every later correction of the design leaves the spec to be amended with it.*",
 ]
 
 PRINCIPLE_COUNT = 0
@@ -286,27 +286,23 @@ else:
 # the three: an enumeration has to be re-measured every time the corpus acquires
 # a fourth way of saying it, and a missing spelling is silent.
 #
-# ROUTE 3 READS THE ENFORCER'S PINNED DATA, because it carries element lists as
-# data where a sweep of prose cannot see them. It has TWO targets now: one is a
-# requirement list and one is a PROHIBITION read on its own arm -- both of that
-# list's entries happen also to be template elements today, which is coincidence
-# rather than structure, so merging it into the element set would agree by
-# accident. There were three until the per-criterion verification line stopped
-# being an element; the assignment that carried it, and the verb that asserted
-# it, were deleted from that file together. The reason the count is recorded
-# here rather than left implicit: a route that silently reads fewer targets than
-# the enforcer holds derives fewer elements and reports no arrival for the ones
-# it stopped seeing.
+# ROUTE 3 READS PINNED SCRIPT DATA, because element lists held as data are
+# where a sweep of prose cannot see them. Its one target is the record of
+# deliberate absence, a requirement list. There were three until the
+# per-criterion verification line stopped being an element, and two until the
+# closing fold's removal list went with the fold. The reason the count is
+# recorded here rather than left implicit: a route that silently reads fewer
+# targets than its files hold derives fewer elements and reports no arrival for
+# the ones it stopped seeing.
 # ---------------------------------------------------------------------------
 SPEC_CONTRACT = 'agents/spec-writer.md'
 DESIGN_CONTRACT = 'agents/design.md'
 REVIEW_CONTRACT = 'agents/design-review.md'
-ENFORCER = 'scripts/check-redline.sh'
+ABSENCE_RECORD = 'scripts/deliberate-absence.sh'
 # [severity]
 SEVERITY = r'(?:is a `(?:major|minor|blocker)` finding|=\s*`(?:major|minor|blocker)`|is `(?:major|minor|blocker)`)'
 
 DERIVED = set()
-PROHIBITED_HEADINGS = set()
 
 
 def fenced_sections(rel):
@@ -352,32 +348,24 @@ else:
         blocked('%s yielded no line carrying both an element-shaped token and a severity verdict, and an empty extraction must not read as agreement'
                 % REVIEW_CONTRACT)
 
-_enf = read(ENFORCER)
-if _enf is None:
-    blocked('%s is unreadable, so route 3 cannot be read' % ENFORCER)
+# ROUTE 3 DERIVES SPEC ELEMENTS ONLY, and that is now the whole of it. It used
+# to read a per-criterion verification line out of a check script as its one
+# DESIGN element. That line is gone from the design contract and from that
+# script: a design says nothing about tests, so there is no per-criterion
+# verification to assert the presence of. A design element arriving by this
+# route again would mean a mechanical check had started asserting one, which is
+# the thing the route exists to notice -- so the absence is recorded here rather
+# than left as a silent gap.
+_abs = read(ABSENCE_RECORD)
+if _abs is None:
+    blocked('%s is unreadable, so route 3 cannot read the record of deliberate absence' % ABSENCE_RECORD)
 else:
-    m = re.search(r"(?ms)^RETAINED='(.*?)'", _enf)
+    m = re.search(r"(?ms)^RETAINED='(.*?)'", _abs)
     if not m or not m.group(1).strip():
-        blocked("%s carries no readable RETAINED assignment, which is a cannot-run rather than an empty requirement set" % ENFORCER)
+        blocked("%s carries no readable RETAINED assignment, which is a cannot-run rather than an empty requirement set" % ABSENCE_RECORD)
     else:
         for t in [x.strip() for x in m.group(1).split('\n') if x.strip()]:
             DERIVED.add(('spec', t))
-    # ROUTE 3 DERIVES SPEC ELEMENTS ONLY, and that is now the whole of it. It
-    # used to read a per-criterion verification line out of this enforcer as its
-    # one DESIGN element. That line is gone from the design contract and from
-    # this enforcer: a design says nothing about tests, so there is no
-    # per-criterion verification to assert the presence of. A design element
-    # arriving by this route again would mean a mechanical check had started
-    # asserting one, which is the thing the route exists to notice -- so the
-    # absence is recorded here rather than left as a silent gap.
-    m = re.search(r"(?m)^RESIDUE_HEADINGS='(.*?)'", _enf)
-    if not m or not m.group(1).strip():
-        blocked("%s carries no readable RESIDUE_HEADINGS assignment, so the fold's prohibition arm cannot be read" % ENFORCER)
-    else:
-        for t in m.group(1).split('|'):
-            t = t.strip().lstrip('^')
-            if t:
-                PROHIBITED_HEADINGS.add(t)
 
 # The record on the principles document, read as a set and compared in BOTH
 # directions. Widening the record alone names an element no page mandates;
@@ -408,12 +396,6 @@ for doc, tok in sorted(RECORDED_ELEMENTS - DERIVED):
     finding('leg2-departure',
             'the record in %s carries the %s element `%s`, which no page mandates -- an element has DEPARTED, or the record was widened on its own'
             % (PRINCIPLES_DOC, doc, tok), surface_of(PRINCIPLES_DOC))
-
-for h in sorted(PROHIBITED_HEADINGS):
-    if not any(t == h for _d, t in DERIVED):
-        finding('leg2-prohibition',
-                'the fold is now required to REMOVE `%s`, which no template mandates -- that is a prohibition ARRIVING and it is reported as one rather than joining the element set'
-                % h, surface_of(ENFORCER))
 
 # ---------------------------------------------------------------------------
 # Leg 3. Refusal agreement -- the live covered set of the edit-time refusal

@@ -96,8 +96,8 @@ reviewer-nit fixes — passes `self-review` before push. The bar is the same as 
 | Step 1 — open progress section | `## Fix cycle round M` appended to the active progress file |
 | Step 2 — classify | class ∈ {`lint` / `build` / `test` / `flake` / `other`} |
 | Step 3 — reproduce locally | run the mapped local reproducer; on no-reproduce, STOP and surface |
-| Step 4 — diagnose + fix | inline-fix classes apply edits; a real defect routes to `/bugfix` with `**parent_skill:** post-push`, so it runs no full list |
-| Step 5 — `self-review` | APPROVE or REJECT (loop cap 3) |
+| Step 4 — diagnose + fix | inline-fix classes apply edits; a real defect routes to `/bugfix` with `**parent_skill:** post-push`, so it runs no full list; then the design author corrects in place each design item the fix made untrue ([§ Spec-Amendment group](#spec-amendment-group)) |
+| Step 5 — `self-review` | APPROVE or REJECT (loop cap 3); the prompt names the spec and the design at their archived paths, so the review rules on the design's change since the freeze |
 | Step 6 — commit | touched-scope checks green in the loop, and `%FULL_CHECK_CMD%` passed once after the Step 5 approval over the tree as it stands ([check scope](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md)); single commit per invocation |
 | Step 7 — user pushes; the iteration ends | read the ticket and rewrite the PR description in place, once for the round ([§ The ticket and the PR description at the end of an iteration](#the-ticket-and-the-pr-description-at-the-end-of-an-iteration)) |
 
@@ -312,9 +312,7 @@ their own: `/task`, which ends every pass at item 9 of Step 12, and the post-pus
 the last row of its table in [§ Post-push fix commits get self-review too](#post-push-fix-commits-get-self-review-too),
 a `/bugfix` reached from that round returning to it. Any other workflow that runs such a pass — a
 standalone `/bugfix` on a branch with an open PR among them — owes the act at the pass's end with no step
-of its own. **The closing fold is not a correction pass:** it applies corrections the review already
-approved and changes neither the problem, the reason, nor what to look at in review, so its commit to an
-open PR triggers neither act. **A push that ends no iteration triggers nothing** — no reminder, no re-read
+of its own. **A push that ends no iteration triggers nothing** — no reminder, no re-read
 and no reconciliation with the diff.
 
 **The orchestrator reads, as it writes the description, with no reader spawned.** It is a judgement of
@@ -339,9 +337,16 @@ meaning: it stops nothing, and no check reads the ticket or the description.
   the closing trailer the project's profile names, when it names one, for the issue the PR resolves and
   under the profile's condition, and every in-place rewrite keeps it. Markdown renders, so bullets, inline
   code and links are fine.
-- **Keep a small, self-contained PR to the files the user asked to change.** Workflow artefacts
-  (`*.spec.md` / `*.design.md`, even once moved to `ai-docs/plans/done/`) go in only when the user asks or
-  they carry lasting engineering value.
+- **The design's change since approval, in one line, each time the description is written.** When
+  `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh diff` over the design says `changed`, the line links the
+  design document's own entry in the review surface's comparison of the freeze commit with the branch
+  head; where the surface cannot address one file's entry, it links the comparison and names the design's
+  path at the branch head. No such line when it says `unchanged`. When it could not compute, one line
+  saying the change since approval could not be computed and why, because no line at all would read as
+  unchanged ([§ The plan freeze](#the-plan-freeze)).
+- **Keep a small, self-contained PR to the files the task changes.** The plan's spec and design are among
+  them: the freeze commits them, and the task's closing step moves them into `ai-docs/plans/done/` in the
+  same PR.
 - **In a tracker-integrated repo, writing an identifier is an ACTION, not a reference.** A bare ticket key
   in a PR title/body can create a remote link and transition that ticket's status. So a PR title or
   description names no ticket but the one the PR implements: no other key appears in it, wrapped in
@@ -353,6 +358,40 @@ meaning: it stops nothing, and no check reads the ticket or the description.
 
 After generating or moving a markdown file with relative links, trace one link via `realpath` before
 staging. Catches the common mistake where a moved file's `../foo` link no longer resolves.
+
+## The plan freeze
+
+**A plan is frozen by a commit.** At each design-review GO, once the design author has worked the GO's
+notes into the design, the spec and the design — with the record of declared links, and the record of
+excused findings when the task wrote one — are committed in one commit whose message ends with the
+trailer `Plan-Freeze: <spec-base>`, `<spec-base>` being the spec's file name without `.spec.md`. The commit
+is surfaced to the user once, staged list and message, under the ordinary consent rule for commits.
+Nothing about the freeze lives in a local file, and a rebase keeps it: a rebase replays a commit's message
+with its trailers, and the change since the freeze is computed from text rather than from commit ids.
+
+**When it is taken.** At every GO of the plan: the first, a GO after a design amendment that a breaking
+divergence caused, and a GO after a spec amendment that changed the approach. A spec amendment that keeps
+the approach takes none — the review's breadth fingerprint reads the spec as it stands, so the next round
+still sweeps every item ([`${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md`](${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md#triggers)).
+Implementation does not begin on a plan with no freeze, and the implementation step's first action checks
+for one.
+
+**The change since the freeze** is computed by `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh`: `find` names
+the plan's latest freeze — the latest commit reachable from the branch head whose trailers carry
+`Plan-Freeze` with exactly the plan's spec base, so another plan's freeze on the same branch is never
+matched; `show` prints a document's text at it; `diff` prints each named document's change since it, then
+a verdict line. A document is compared wherever it now sits, so the move into the archive is no change,
+and uncommitted corrections count, because a review runs before its round is committed. **Three outcomes,
+and the third is never the second:** `changed`, `unchanged`, and could-not-compute — no freeze reachable,
+a freeze that does not hold the document, no work tree, a tool missing — which every party reading the
+change reports with its reason and none reads as unchanged.
+
+**Who reads it.** Every review round of the task, follow-up rounds included, rules on each changed design
+hunk ([`${CLAUDE_PLUGIN_ROOT}/agents/self-review.md`](${CLAUDE_PLUGIN_ROOT}/agents/self-review.md#instructions),
+step 5). A GO after the first rules on what its freeze would absorb: the re-entry design review, from
+either amendment recipe, is handed `diff` over the design since the previous freeze and rules on each hunk
+outside the sections the amendment changed. The pull-request description carries the design's change in
+one line ([§ PR title + body shape](#pr-title--body-shape)).
 
 ## Spec-Amendment group
 
@@ -373,57 +412,44 @@ Either arm is a Spec/Design Amendment trigger — NOT an ordinary code-fix.
 the agreed approach?** The two answers go different ways.
 
 - **Breaking → the full amendment route**, exactly as it always ran — the recipe at the bottom of this
-  section.
-- **Non-breaking → one marker on the diverged item, one row in the task's committed redline log, and the
-  code fix lands in the same round.** The design is not rewritten mid-task; it is corrected once, after
-  the PR is approved, by `/redline-fold`, which applies the log's rows. Who marks, what the
-  marker carries and what a row holds:
-  [`${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md`](${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md).
+  section — and its GO takes a new freeze ([§ The plan freeze](#the-plan-freeze)).
+- **Non-breaking → the design is corrected in place, and the code fix lands in the same round.** The
+  design author rewrites each diverged item so it states what shipped and nothing else, after the code it
+  describes exists, carrying no account of what the item said before; nothing re-runs and nobody is asked.
+  The round's review rules on the correction through the design's change since the freeze. A correction is
+  admitted only when it is needed to make the shipped thing correct; work that would widen what the task
+  delivers is proposed as a separate ticket. The pass itself:
+  [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Correcting the design in place](${CLAUDE_PLUGIN_ROOT}/agents/design.md#correcting-the-design-in-place).
 
 **Why the question is about the approach rather than about the document.** The reviewer's rule used to
 reject correct code because a design sentence had gone stale, so the expensive path fired on every stale
 sentence instead of on the rare divergence that actually invalidates the plan — and the planning chain
-re-ran before the code fix was allowed to land. The row's type vocabulary is three tokens, `added` /
-`modified` / `removed` relative to the frozen base, and `added` covers the common case of a base that was
-simply SILENT about something, so no fourth token is owed.
+re-ran before the code fix was allowed to land.
 
-**Only `/task` has the cheap path. `/bugfix`, `/project-review` and the post-push fix round keep today's
-behaviour**, and that is a constraint rather than an omission: `agents/self-review.md` is shared by all
-four callers, while the marker, the committed log and the closing redline fold exist in `/task` alone. A
-divergence one of those three finds therefore routes exactly as it did before. Extending the cheap path to
-them is the same conditional-on-evidence question as the scouted plan below, and it is not in scope here.
-**One exception: a spec amendment that keeps the approach**, from any of the three, is followed by a re-read
-of the amended pair whose one design pass marks a falsified design item where the amended plan still has a
-correction log ahead of its closing fold — a `/task` plan whose fold has not run — and corrects it directly
-where it has none. Which form each workflow takes:
+**Whose design, and which workflows.** The in-place correction covers the task's own design on four
+occasions: its implementation, its review-and-fix rounds, the follow-up rounds on its open pull request,
+and a bug fix run inside any of those, whose trace carries `**parent_skill:**`. A sentence of another
+plan's design — an archived plan later work makes untrue — still takes the amendment route with the user's
+approval inside the later work's own pull request, and a spec sentence left untrue is a changed
+requirement, which always takes the Spec Amendment recipe. **A standalone `/bugfix` or `/project-review`
+keeps the full route** for every divergence it finds and is not given the change since the freeze: its
+review prompt names no design. Extending the in-place correction to them is the same
+conditional-on-evidence question as the scouted plan below, and it is not in scope here. The one thing
+they see change is the fifth act of a spec amendment that keeps the approach, which corrects a falsified
+design item directly in every workflow:
 [`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict),
 step 5.
 
-### The implementation step takes no route by itself
+### The implementation step corrects after each group
 
 A divergence found while the code is being written has no round number and no finding number, because no
-review has run. **It restarts nothing on its own account.** The step stops at the FIRST such divergence in
-the task — unless the log's head already carries a mode, which a spec amendment's route can have put
-first and which is not asked again — leads with a recommended correction mode and the grounds for it in one line, and the user's
-single word settles it — for the whole task, because a question re-asked at every divergence is the cost
-this mechanism exists to remove. The grounds **quote** a signal read off the design under implementation:
-a non-empty open-questions section and risks deferred to a later task point one way, decisions carried as
-measured — anchors pinned to real output, probes already run — the other. The recommendation is checked on
-its evidence, never on being right.
-
-The breaking / non-breaking test still informs that choice; what it no longer does is decide it. At the
-review-and-fix round the test is mechanical and routes the finding; here it is one input to a call the
-user makes. The modes, the rubric and the marker's spelling are in
-[`${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md`](${CLAUDE_PLUGIN_ROOT}/docs/redline-marking.md),
-and the chosen mode is written into the log's HEADER rather than the progress file: the progress file is
-gitignored and is deleted at merge, while the log is committed and is what the closing pass reads.
-
-**Two consequences for the amendment route.** Its trigger is unchanged in substance and narrowed in
-reach: from the review-and-fix round it fires on a divergence that breaks the agreed approach, and from
-the implementation step only when the user asks for the rebuild. And when that rebuild runs on a branch
-that already carries redline rows, **it must be handed every accumulated marker and row** — they describe
-a base that will no longer exist, so a rebuild not told them loses them; after the new approval the log is
-empty and the rebuilt document is the new frozen base.
+review has run. The handoff group that meets it records it in the progress file's decisions log — the
+design item by its heading, and what shipped — and **the orchestrator applies the one test to the group's
+hand-back: does it break the agreed approach?** Not breaking → once the group's code is written, the
+design author's in-place correction pass runs once for the group, given the group's recorded divergences;
+nothing restarts and nobody is asked. Breaking → work stops and the user is asked; on approval the Design
+Amendment recipe runs, and its GO takes a new freeze. Either way the review rounds that follow rule on
+the design's change since the freeze, the group's corrections among it.
 
 
 **Arm B alone is not enough, and the gap is structural.** A diff-keyed rule hands the routing decision to
@@ -435,7 +461,7 @@ sentence is re-read in its file and either confirmed true of the post-fix state 
 
 | Fires in skill | At step | Routed through a scouted fix plan? |
 |---|---|---|
-| `/task` | Step 11 (review fixes) | **Yes.** The round's plan is gated before any fix is applied, and a plan whose row **proposes an edit** to a `*.spec.md` / `*.design.md` target — or carries an `amendment:` disposition, whatever its target — routes here instead of reaching the fix agent. A row proposing no edit records a finding an approved amendment already closed, and does not route on its target alone. |
+| `/task` | Step 11 (review fixes) | **Yes.** The round's plan is gated before any fix is applied, and a plan whose row **proposes an edit** to a `*.spec.md` / `*.design.md` target — or carries an `amendment:` disposition, whatever its target — routes here instead of reaching the fix agent, as does a `correction:` row whose quoted sentence is a spec's or another plan's design's. A row proposing no edit records a finding an approved amendment already closed, and does not route on its target alone. |
 | `/bugfix` | Step 5 (fix) | No. |
 | `/project-review` | fix loop | No. |
 
@@ -470,7 +496,7 @@ routing table is in [`${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` § Spec Amendm
 
 **Both wrong answers cost something, and they are not symmetric.** Re-deriving a design because a criterion
 lost an over-promise re-runs the whole planning chain over a document nothing read in between — the cost
-the redline mechanism exists to remove, and on a large design it is the most expensive round in the
+correcting the design in place exists to remove, and on a large design it is the most expensive round in the
 workflow. Skipping the chain on a genuine approach change is worse in kind rather than in degree: it ships
 an implementation built against a requirement nobody re-planned for, and the divergence is invisible
 because the document that would have shown it was never rewritten.
@@ -484,37 +510,35 @@ and **stated to be reproduced rather than trusted**: the form check over that co
 a command roughly doubles it, given without a figure because no command reproduces a judgement. By
 section that spec was **68%**
 acceptance criteria, scope and technical constraints, against **23%** for the three sections the closing
-fold retains and **4%** for the record of deliberate absence. An amendment to a
+fold retained and **4%** for the record of deliberate absence. An amendment to a
 criterion naming an instrument is an amendment about mechanism, and mechanism is what the design, not the
 spec, is for.
 
-**The log's fate follows from the same question, and is not a separate decision.** A rebuild replaces the
-agreed base, so the redline log resets — its rows described a base that no longer exists. An amendment
-that leaves the approach intact is not a divergence at all, so nothing resets and the accumulated rows
-survive to the closing fold. The fold applies those rows and nothing else, so it authors nothing from the
-amended spec: a design item the amendment made false, and a predating design-side contradiction the
-amended pair's re-read finds, are logged where the plan has a log and corrected directly by the design
-author where it has none, rather than left to the fold.
+**The freeze follows from the same question, and is not a separate decision.** A rebuild replaces the
+agreed base, so its GO takes a new freeze — one that absorbs every correction made in place since the
+previous freeze, which is why the re-entry review rules on those corrections before granting it. An
+amendment that leaves the approach intact is not a divergence at all, so it takes no freeze: the review's
+fingerprint reads the spec as it stands, so the next round still sweeps every item, and the corrections
+the amended pair's re-read makes stay in the change since the freeze for that round to rule on. A design
+item the amendment made false, and a predating design-side contradiction the re-read finds, are corrected
+directly by the design author.
 
-## Why five path classes are excluded from the unplanned-file arm
+## Why four path classes are excluded from the unplanned-file arm
 
 The learnings archive and the per-branch learnings files are excluded because the in-flow capture exception
 permits appending to them mid-round. `ai-docs/plans/*.spec.md` and `ai-docs/plans/*.design.md` are excluded
 because the amendment recipes write to a spec or design artefact and then send the round back, while
 `baseline` refuses a second stub — so the round keeps a `round_base` taken before the amendment, and
 without the exclusion the arm would fire by construction on every amendment-then-resume round,
-permanently. `ai-docs/plans/*.redline.md` is excluded for the same reason one step on: the marking pass
-writes the log mid-round, no `fix` row can name it, and the arm's ignore test short-circuits its
-membership check — so an unexcluded log is reported as unplanned on every round that marks a divergence.
-`ai-docs/plans/*.links.md`, the record of declared links, is excluded for the same reason again: the design
-author writes it mid-round — on a design amendment, on the Step 6 re-entry of an amendment that changes the
-approach, and in the pass of an amendment that keeps it — and no `fix` row can name it. The verdict
-still names it on the `excluded-in-round` line, which the orchestrator accounts for against the design
-author's pass it knows it ran.
+permanently. `ai-docs/plans/*.links.md`, the record of declared links, is excluded for the same reason
+one step on: the design author writes it mid-round — on a design amendment, on the Step 6 re-entry of an
+amendment that changes the approach, and in the pass of an amendment that keeps it — no `fix` row can
+name it, and the arm's ignore test short-circuits its membership check. The verdict still names it on the
+`excluded-in-round` line, which the orchestrator accounts for against the amendment it knows it ran.
 
 **The two plan suffixes and not the directory.** The routing arms key on the suffixes, so a
 directory-wide exclusion would be wider than its own justification: it would drop the briefed lines of a
 tracked non-routing path under that directory from the measured total while they still counted on the
-declared side. The redline glob and the declared-link glob are variables of their own, read by the ignore
-test alone and by no arm, which is what keeps that correspondence intact.
+declared side. The declared-link glob is a variable of its own, read by the ignore test alone and by no
+arm, which is what keeps that correspondence intact.
 

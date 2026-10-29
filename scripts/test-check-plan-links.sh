@@ -17,7 +17,7 @@ command -v git >/dev/null 2>&1 || { printf 'cannot run: git absent\n' >&2; exit 
 T=$(mktemp -d); X=$(mktemp -d); trap 'rm -rf "$T" "$X"' EXIT INT TERM
 mkdir -p "$T/scripts" "$T/plans"
 cp "${HERE}/check-plan-links.sh" "${HERE}/check-plan-links.py" \
-   "${HERE}/check-plan-convergence-holding.py" "${HERE}/check-redline.sh" "$T/scripts/"
+   "${HERE}/check-plan-convergence-holding.py" "${HERE}/deliberate-absence.sh" "$T/scripts/"
 git -C "$T" init -q
 git -C "$T" add -A >/dev/null 2>&1
 SUB="$T/scripts/check-plan-links.sh"
@@ -128,9 +128,9 @@ check "a re-wrapped quote is still found" "$rc" "0"
 pair "" "${DESIGN_TEXT/forty rounds/**forty** rounds}"
 out=$(run); rc=$?
 check "a change of emphasis is still found" "$rc" "0"
-pair "" "${DESIGN_TEXT/window forty/window forty **[REDLINE S8.1]**}"
+pair "" "${DESIGN_TEXT/window forty/window forty **[NOTE S8.1]**}"
 out=$(run); rc=$?
-check "a redline marker inside the quoted words is still found" "$rc" "0"
+check "a bracketed note inside the quoted words is a change, emphasis stripped or not" "$rc" "1"
 pair "" "$DESIGN_TEXT
 
 The cap | floor pair holds."
@@ -221,17 +221,17 @@ out=$(run); rc=$?
 check "an unparseable holding sibling -> rc 2, never rc 1" "$rc" "2"
 has "  and the message names it" "$out" 'check-plan-convergence-holding.py could not be loaded'
 cp "$X/holding.py" "$T/scripts/check-plan-convergence-holding.py"
-mv "$T/scripts/check-redline.sh" "$T/scripts/gone-redline.sh"
+mv "$T/scripts/deliberate-absence.sh" "$T/scripts/gone-absence.sh"
 out=$(run); rc=$?
 check "an unreadable source for the kept sections -> rc 2" "$rc" "2"
 has "  and says they are borrowed" "$out" 'borrowed'
-mv "$T/scripts/gone-redline.sh" "$T/scripts/check-redline.sh"
+mv "$T/scripts/gone-absence.sh" "$T/scripts/deliberate-absence.sh"
 
 printf '\n== a folded spec is skipped, never clean ==\n'
-KEPT=$(sed -n "/^RETAINED='/,/'\$/p" "$T/scripts/check-redline.sh" | sed "s/^RETAINED='//; s/'\$//")
+KEPT=$(sed -n "/^RETAINED='/,/'\$/p" "$T/scripts/deliberate-absence.sh" | sed "s/^RETAINED='//; s/'\$//")
 [ "$(printf '%s\n' "$KEPT" | grep -c .)" -ge 2 ] \
-  && ok "the kept sections were derived from the fold's gate" \
-  || bad "the kept sections were derived from the fold's gate"
+  && ok "the kept sections were derived from the record of deliberate absence" \
+  || bad "the kept sections were derived from the record of deliberate absence"
 FOLDED=$(printf '%s\n' "$KEPT" | while IFS= read -r h; do printf '%s\n\n- Kept.\n\n' "$h"; done)
 pair "$FOLDED"; record "$L1
 $L2"

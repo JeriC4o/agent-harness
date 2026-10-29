@@ -9,9 +9,9 @@
 #   1. The progress file's own `**Branch:** <branch>` line. Every
 #      ai-docs/plans/*.progress.md whose Branch field is exactly the merged
 #      branch is deleted. This route is first because it reads the file
-#      being deleted rather than a document beside it: the closing fold
-#      collapses the spec and drops its `**Tracked in:**` header, so after a
-#      fold the spec no longer leads anywhere.
+#      being deleted rather than a document beside it: an archived spec in
+#      the collapsed shape carries no `**Tracked in:**` header and leads
+#      nowhere.
 #   2. Ticket linkage, only when no progress file names the branch:
 #      branch name KEY-NNN-<slug> -> KEY-NNN -> the spec carrying
 #      `**Tracked in:** KEY-NNN` in ai-docs/plans/done/ or ai-docs/plans/ ->

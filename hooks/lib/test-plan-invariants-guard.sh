@@ -8,7 +8,7 @@
 # observable from the other. A refusal that fires on a write to a protected page
 # is worthless if it also fires on a READ of it: this repository's ambient style
 # reads through the shell, so that surplus lands on nearly every orientation
-# read of the seven most-read pages, and a refusal that loud is the kind that
+# read of the most-read pages it protects, and a refusal that loud is the kind that
 # gets switched off -- which costs the whole protection rather than one prompt.
 # So each write assertion is paired with a read of the SAME page, and the pair is
 # what discriminates rather than either half.
@@ -90,16 +90,16 @@ NEWHEAD=$'## Approach\n## Verification'
 PROTECTED_PAGES='agents/spec-writer.md
 agents/design.md
 agents/design-review.md
-skills/redline-fold/SKILL.md
 skills/task/SKILL.md
 skills/task/reference.md
-scripts/check-redline.sh'
+scripts/deliberate-absence.sh'
 
 NEAR_MISSES='agents/self-review.md
 agents/review-findings.md
 docs/templates/progress-format.md
 docs/agents-method.md
 hooks/hooks.json
+scripts/check-redline.sh
 scripts/test-check-redline.sh
 skills/interview/SKILL.md
 docs/workflow.md'
@@ -226,7 +226,7 @@ printf '\n== while armed, an Edit asks only when it changes the page element sig
 printf '%s\n' '## Approach' 'a typo teh' '## Risks' 'old text' \
   'the Handoff plan section must exist' 'blocking when absent' \
   'a missing `## Risks` is blocking' > "$P"
-R="${PROJ}/scripts/check-redline.sh"
+R="${PROJ}/scripts/deliberate-absence.sh"
 printf '%s\n' '# old note' "RETAINED='## Out of scope'" > "$R"
 silent "a prose fix touching no heading and no element name is silent" \
        "$(ed_payload "$P" 'a typo teh' 'a typo the')"
