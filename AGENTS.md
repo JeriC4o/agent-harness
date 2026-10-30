@@ -215,6 +215,7 @@ at that heading.
 | Ticket key format | `GH-<issue number>` |
 | Review surface | GitHub PR via `gh` |
 | Diagram form | `mermaid` — Mermaid, which GitHub renders in a PR description and in a committed Markdown file |
+| File link form | `https://github.com/JeriC4o/agent-harness/blob/<ref>/<path>` — GitHub's address of a file at a branch or a commit; a pull request's commits stay reachable under its own `refs/pull/<N>/head` after its branch is deleted |
 
 **GitHub Issues have no key prefix** — an issue is a bare `#N`, and PRs share the same counter, so the
 numbering is contiguous across both. `GH-` is a *local* prefix this repo adds so an issue number can ride

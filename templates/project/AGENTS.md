@@ -47,6 +47,7 @@ test) go in [`ai-docs/context.md`](ai-docs/context.md) § Build & test commands.
 | Ticket key format | `%TICKET_PREFIX%-NNN`, or `none` if the project has no tracker |
 | Review surface | GitHub PR via `gh` |
 | Diagram form | Mermaid — a default; change it to the form your review surface renders in a PR description and in a committed Markdown file. Its first backticked span, or else its first word in lower case, is the fence tag the diagram is written under |
+| File link form | `none` — set it to your review surface's address of a file at a ref, `<ref>` and `<path>` marking where the branch or commit and the file's path go (GitHub: `https://github.com/<owner>/<repo>/blob/<ref>/<path>`); with `none` the confirmation question names the design's path instead |
 
 ## Permissions — project specifics
 
