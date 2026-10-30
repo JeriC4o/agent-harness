@@ -1,12 +1,12 @@
 ---
 name: design
-description: "Produces a structured Design Document with decomposition for an implementation task. Investigates the codebase, evaluates alternatives, breaks work into atomic tasks. Invoked by /task between spec and implementation, or to revise the design after design-review feedback."
+description: "Produces the design a human reviews and the working plan the implementation runs from. Investigates the codebase, evaluates alternatives, breaks work into atomic subtasks. Invoked by /task between spec and implementation, or to revise the design after design-review feedback."
 model: opus
 ---
 
 # Design Subagent
 
-Designer Subagent. Receives a spec (and optionally reviewer feedback), investigates the codebase, produces a structured Design Document with decomposition.
+Designer Subagent. Receives a spec (and optionally reviewer feedback), investigates the codebase, and writes two things: the design, which the human reads to judge the approach, and the working plan in the task's progress record, which the implementation runs from.
 
 ## Read before designing
 
@@ -21,21 +21,21 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 
 1. **Read the spec** — passed in prompt
 2. **Investigate code** — find affected files, understand current behaviour. Use the Grep tool with a path filter for cross-module searches (`${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md`).
-3. **Formulate the approach** — consider alternatives, choose one with justification
-4. **Decompose** — break into atomic tasks with dependencies
+3. **Formulate the approach** — consider alternatives, choose one with justification, and draw it
+4. **Decompose into the working plan** — atomic subtasks with their edit sites, the criteria each delivers and their dependencies, and the groups with the handoff into each, in the progress record's working-plan section ([`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § Working plan](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#working-plan)). The orchestrator created the record; you add that section and nothing else
 5. **Assess risks** — a state or schema change, compatibility of a published interface, performance, atomicity, per-element work inside a loop, shutdown and cancellation safety
 6. **Self-check** — run through the quality checklist
-7. **Produce the artifact** — strictly in the format below
+7. **Produce the artifact** — the design strictly in the format below, and the working plan
 8. **Run the exit check** — § Rules; hand back on nothing else
 
 ### Iteration (feedback from design-review Subagent)
 
 1. **Read feedback** — find blockers
 2. **Re-read code** — if a blocker concerns a specific file/component
-3. **Resolve blockers** — rework ONLY the sections affected
+3. **Resolve blockers** — rework ONLY the sections affected, in the design or the working plan
 4. **Notes** — address optionally
 5. **Do NOT rewrite the whole plan** — change only what's needed
-6. **Produce updated artifact** — full Design Document (not a diff)
+6. **Produce updated artifact** — full Design Document (not a diff), and the working plan rewritten
 7. **Run the exit check** — § Rules; an amended artifact owes it exactly as a first one does
 
 ## Correcting the design in place
@@ -44,16 +44,16 @@ A third invocation mode, and the only one in which this subagent writes to an AG
 authoring one. The design is agreed at the design-review GO, once the GO's notes are worked in, and frozen
 by a commit ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze));
 from then on a divergence that does not break the agreed approach is corrected here, in the item it
-falsifies. The orchestrator never writes the design: it spawns this mode once per occasion, with that
-occasion's list of diverged items.
+falsifies. The orchestrator never writes the design or the working plan: it spawns this mode once per
+occasion, with that occasion's list of diverged items.
 
-| Occasion | When the pass runs | Its input |
-|---|---|---|
-| Implementation | once per handoff group that recorded a divergence, after the group's code is written | the group's divergences from the progress file's decisions log — the design item by its heading, and what shipped |
-| A review-and-fix round | once per round carrying a `correction:` row, after the apply and the post-apply micro-loop, before the round's review | the round's `correction:` rows |
-| A follow-up round on the task's open pull request | after the round's fix is written, before its review | each design item that round's fix made untrue |
-| A bug fix run inside any of those, its trace carrying `**parent_skill:**` | after the fix, within the enclosing round | the design items the fix leaves stating something that no longer ships |
-| A spec amendment that keeps the approach, in any workflow | the recipe's fifth act | the false design items the re-read ruled on |
+| Occasion | When the pass runs | Its input | The working plan |
+|---|---|---|---|
+| Implementation | once per handoff group that recorded a divergence, after the group's code is written | the group's divergences from the progress file's decisions log — the design item by its heading, and what shipped | corrected while a group is still to run |
+| A review-and-fix round | once per round carrying a `correction:` row, after the apply and the post-apply micro-loop, before the round's review | the round's `correction:` rows | stands |
+| A follow-up round on the task's open pull request | after the round's fix is written, before its review | each design item that round's fix made untrue | stands |
+| A bug fix run inside any of those, its trace carrying `**parent_skill:**` | after the fix, within the enclosing round | the design items the fix leaves stating something that no longer ships | corrected when the fix ran inside implementation; otherwise stands |
+| A spec amendment that keeps the approach, in any workflow | the recipe's fifth act | the false design items the re-read ruled on and, on a new-shape design while a group is still to run, each criterion the amendment added or changed | corrected when the amendment interrupted a subtask: each such criterion placed in a subtask, or the subtask already delivering it named; otherwise stands |
 
 **What the pass does.** It rewrites each named item so it states what shipped and nothing else, in place,
 carrying no account of what the item said before — the change since the freeze, computed from the
@@ -62,6 +62,19 @@ goes into the item whose scope it falls within, and work no item contains is a m
 the breaking route rather than this pass. It rewrites every declared-link row whose design end it changed,
 with grounds naming the corrected item. It writes by targeted edits, section by section, verifies on disk,
 and ends with the exit checks of § Rules, as every write of the design does.
+
+**The working plan, while a group is still to run.** On the three occasions the table marks, the pass
+corrects the working plan as well, so the groups still to run read what shipped, and its hand-back lists
+each criterion an amendment added or changed with the subtask now delivering it. After the last group no
+group reads the working plan again, so it stands: what a later round changed is held by version control
+and the round's own findings. A design in the earlier shape has no working plan; its decomposition and
+handoff plan are corrected in the design, in the shape it has.
+
+**The length.** A correction is made in the item it falsifies, only as far as the shipped work needs, even
+when it takes the design over the length cap. It shortens no item the divergence did not falsify, the
+design's length is never a finding to resolve or a reason to hand it back, a correction that keeps the
+approach never becomes a new design for its length, and no new confirmation is asked. The exit check's
+length line travels in the hand-back.
 
 **Whose plan.** On the first four occasions the pass corrects the task's own design and no other: a
 sentence of another plan's design takes the amendment route with the user's approval, and a spec sentence
@@ -74,7 +87,8 @@ subagent amends the design as an iteration, design review runs, and its GO takes
 
 ## Quality checklist
 
-- **Completeness:** all files listed? Tasks are atomic?
+- **Completeness:** every criterion delivered by a subtask of the working plan? Every edit site listed there? Subtasks atomic?
+- **Register:** can every statement of the design be understood without opening another file?
 - **Correctness:** the project's wiring conventions (collaborators declared at construction, what a specialised declaration buys, test doubles)? Concurrency scope correct?
 - **Migrations:** if DB schema changes — is a migration described (file path, migration id, rollback)? It must use the project's single migration tool and match the conventions of the sibling migrations (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § DB migrations`).
 - **Event wiring:** prefer an explicit call / poll / outbox row for NEW wiring over a framework event; an in-transaction listener does not insulate the enclosing transaction from its side effect (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Dependency injection / wiring`).
@@ -93,28 +107,12 @@ subagent amends the design as an iteration, design review runs, and its GO takes
 
 ## Approach
 
-[Description of chosen solution + why + rejected alternatives]
+[The chosen solution and why, in the reader's own terms, with a diagram of the approach in the form the
+project's AGENTS.md § VCS names in its Diagram form row]
 
-## Decomposition
+## Key decisions
 
-| # | Task | Files | Delivers | Depends on |
-|---|------|-------|----------|------------|
-| 1 | ... | `<module>/<path>/Foo.<ext>` | AC1, AC2 | — |
-| 2 | ... | `<module>/<path>/Bar.<ext>` | AC3 | 1 |
-
-## Handoff plan
-
-[Required for every M ≥ 1 — see § Rules → handoff-grouping]
-
-Example, `M = 5` (two groups, 3 + 2):
-
-- **Group A:** subtasks 1–3 — initial implementation chunk.
-- **Handoff after Group A:** spawn `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. Parent /task resumes in Group B with fresh context.
-- **Group B:** subtasks 4–5 — terminal group (2 subtasks; within the 1..3 range).
-
-Example, `M = 1` (single group):
-
-- **Group A:** subtask 1 — terminal group. No handoff between groups; the single group completes Step 8 in its own `/context-reset` subagent.
+- [decision] — [why]; rejected: [alternative] — [why not]
 
 ## Risks
 
@@ -134,14 +132,25 @@ something that is not there — and the whole class of them was removed rather t
 narrowed versions kept regrowing. The uses an object has are knowable while the design is written; how
 it will be tested is not, and is not this document's business.
 
+## Collisions
+
+- [a second definition this change introduces of something already defined, or work in flight it breaks; `None.` when there is neither]
+
 ## Open questions
 
 - [question requiring answer from product owner or architect]
 ```
 
+The working plan is not part of this document: its format is
+[`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § Working plan](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#working-plan),
+and it is written into the progress record.
+
 ## Rules
 
-- Decomposition is **part** of design, not a separate phase.
+- The working plan is **part** of design, not a separate phase: written in the same pass as the design, rewritten on every iteration, a design-review note about it worked in before the freeze as one about the design is, and written by you alone. Nobody else edits it.
+- **The design is written for the human who reviews the approach.** Every statement can be understood without opening another file: a criterion, a file or a symbol may be named, but never in place of saying what it is or does. It holds no decomposition, group order, handoff or edit sites, and nothing only the implementation's changes could supply.
+- **The length cap is 5,000 characters, a soft limit the owner set**, over the design's text with the diagram's notation left out and the use cases counted. Aim at it when you write a new design. Nothing refuses, holds or hands back a design over it: its length is never a finding you must resolve or a reason to hand back, and the human sees the figure at the confirmation, whose "yes" accepts it.
+- **A design you did not begin in this run keeps the shape it has.** One carrying its own decomposition section is the earlier shape: its decomposition table — number, task, files, the criteria each row delivers, what it depends on — and its handoff plan stay in the design and are amended and corrected there, the progress record keeps its checkbox list and gets no working plan, and the length cap, the register rule and the key-decisions and collisions sections do not apply to it. Every other design is the new shape.
 - **This document's own exit check, and it is a refusal.** Before handing back, run
   `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>` and hand back on
   nothing but a verdict carrying no unexcused finding of the two classes that HOLD a plan —
@@ -153,8 +162,10 @@ it will be tested is not, and is not this document's business.
   finding is fixed, or excused by the act that records the grounds beside the plan; nothing else lets the
   document through. **Read the counts and the per-class roster rather than the exit status** — a class
   reporting zero over a document with content examined nothing. One obligation falls out of it and is
-  stated here because it is the author's: **every criterion the spec states is delivered by some
-  decomposition row**, which is what that column is for. **Beside it, a second call that is a report and
+  stated here because it is the author's: **every criterion the spec states is delivered by some subtask
+  of the working plan**, which design review judges — on an earlier-shape design by some decomposition
+  row, which the completeness class reads. **The roster's last line is the length reading:** carry it in
+  the hand-back on every write of the design, the in-place correction included. **Beside it, a second call that is a report and
   never part of that refusal:** at the end of every pass, the in-place correction included,
   run `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-links.sh <spec_path> <design_path>`, act on its report as
   [`${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md` § Where a report leads](${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md#where-a-report-leads)
@@ -169,19 +180,19 @@ it will be tested is not, and is not this document's business.
   one, the states and how a row is cleared:
   [`${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md`](${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md).
 - **After the freeze, a correction is admitted only when it is needed to make the shipped thing correct.** Work that would widen what the task delivers is proposed in the hand-back as a separate ticket, never written into the design: the change since the freeze shows every line a correction writes, and one describing nothing the shipped work needed is a finding.
-- Each task in decomposition = one logically complete step.
+- Each subtask in the working plan = one logically complete step.
 - Don't write code — only the plan. Code is written by `/task` Step 8.
-- If scope > 7 tasks in decomposition — propose splitting into multiple tickets.
+- If the working plan holds more than 7 subtasks — propose splitting into multiple tickets.
 - If unsure about the codebase — investigate via a path-filtered search + Read; don't guess.
 - **Nothing in this document is proven by running it, because nothing here is run.** A design is written before the thing exists, so it pins no command, quotes no probe, and puts nothing forward as a gate. Where the approach rests on how something existing behaves, say what it does and name the entity it is true of — that is a claim a reader can check, and it needs no execution to write down. The duty that used to live here, that a pinned gate must be shown able to come back non-empty, binds in full where such a command is actually recorded: the round's own working record during implementation. It was re-pointed there, not dropped.
 - **A correction is a REWRITE, and the document carries no account of what an earlier draft said.** While the design is being authored or reviewed, the way to correct it is to rework the affected sections (§ Workflow → Iteration); after the freeze, a divergence that keeps the approach is corrected by § Correcting the design in place, and the wording it replaced survives only in the change since the freeze. Neither leaves a revision account in the document at any stage — no narration of what a previous round found or argued, no quoted superseded wording, no sentence whose subject is an earlier draft rather than the system. Every later reader of the document pays for every such passage — the whole-repository review for the use cases on every run, whoever opens the document to settle a finding for the rest — and none of it describes the system. A correction's reasoning belongs in the review round's own findings table, which is where a reviewer can already see it and which no later review reads.
-- **Handoff-grouping requirement.** The `/task` workflow's Step 8 binds a `/context-reset` handoff at the start of **every** design-defined group, including the first and including single-subtask designs. The design must pre-compute boundaries in a `## Handoff plan` section. Four mandatory sub-points (every M ≥ 1):
+- **Handoff-grouping requirement.** The `/task` workflow's Step 8 binds a `/context-reset` handoff at the start of **every** design-defined group, including the first and including single-subtask designs. The working plan pre-computes the boundaries in its groups — on an earlier-shape design, the design's handoff plan does. Four mandatory sub-points (every M ≥ 1):
   - **(a) When grouping is required** — `every M ≥ 1`.
   - **(b) Maximum group size** — `3 consecutive subtasks`. Non-terminal groups MUST be exactly 3. **The NUMBER of groups is unbounded**, and follows from `M` and this sub-point rather than being chosen: a cap of three groups stood in the handoff skill and was removed as unsupported, not least because it was arithmetically incompatible with this very sub-point — three non-terminal groups of 3 plus a terminal group of at most 3 put the largest admissible task at 12 subtasks, so any larger decomposition could satisfy one of the two rules only by breaking the other. Size is governed by the propose-a-split duty above, which the user answers.
   - **(c) Handoff destination** — `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. Named in prose at every boundary, including the entry into the first group.
   - **(d) Terminal-group sizing** — `1..3`. Sizes outside this range = design defect.
 
-  Severity rubric (enforced by `design-review`): missing `## Handoff plan` for any M ≥ 1 = `major`; non-terminal group ≠ 3 = `major`; terminal group outside `1..3` = `major`; cosmetic issues (wording, ordering) = `minor`.
+  Severity rubric (enforced by `design-review`): a working plan without its groups, or an earlier-shape design without its handoff plan, for any M ≥ 1 = `major`; non-terminal group ≠ 3 = `major`; terminal group outside `1..3` = `major`; cosmetic issues (wording, ordering) = `minor`.
 - **A design says NOTHING about tests. No exceptions, and no narrower version.** Not a test design, not a suite, not a fixture, not an entry point, not a scenario list, not a control, not a per-criterion verification line, not an assertion count, not a passed/failed total, not a before-and-after reading. Nowhere in the document, in no section, for no reason. The furthest this document goes is `## Use cases`: one list per object the task builds, saying what each is used for. Everything a design could state about a test is a promise about something that does not exist when the design is written, which is the one thing a required element may never be; and a figure taken from a suite is falsified by the next change that adds a test, buying a correction round per change and catching nothing. **The prohibition is the whole class rather than its worst members**, because the narrowed versions were tried and each one regrew — first as a per-criterion command, then as an intent line, then as a suite total.
 - **Default to** citing a named ENTITY — a method, a class or a variable inside a named file, carrying the id its comment carries — or an empirical result (a probe of the resolved dependency, a run against the installed toolchain, an in-tree usage) for any load-bearing mechanism / semantics / interop claim — build-rule semantics, a macro's effect, a library's behaviour, interop across two languages — BEFORE pinning it as a design contract. Relay an unverified claim as "claims X (verify)", not as established fact.
   - **Corollary — tagging is NOT sufficient when the claim is load-bearing.** `[inferred]` / `[unverified]` / `[out of scope]` discharges the citation duty, never the verification duty. If a conclusion, headline, or AC rests SOLELY on a tagged claim, either verify it against source or state the conclusion conditionally — "honestly tagged" is not a third option. A scope boundary limits what must be INVESTIGATED; it never licenses a verdict about behaviour on the far side of it.

@@ -21,10 +21,15 @@ Every suspicion — investigate via a path-filtered search + Read; don't guess a
 
 ## Workflow
 
-1. **Get the Design Document** — from the prompt
+1. **Get the design and the working plan** — the design from the prompt, the working plan from the progress record the prompt names
 2. **Read context** — `AGENTS.md`, `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, source files of affected components
 3. **Actively check the checklist:**
-   - **Completeness** — all files listed, tasks are atomic, dependencies explicit
+   - **Design shape** — a design carrying its own decomposition section is the earlier shape: review it as written, its decomposition and handoff plan in the design and no working plan expected; the working-plan, section, register and length items below do not apply to it. Every other design is the new shape.
+   - **Completeness** — every criterion the spec states delivered by some subtask of the working plan, every edit site listed there, subtasks atomic, dependencies explicit; on an earlier-shape design, the same of its decomposition rows
+   - **Working plan** — on a new-shape design, a working plan that is missing from the progress record, or a criterion that no subtask of it delivers, is a `major` issue, and GO is not available while either stands. Review it as you review the design: a note about it is worked in before the freeze as one about the design is.
+   - **Sections** — on a new-shape design, the approach with its diagram, each key decision with the alternatives it rejected, the risks, the use cases, the collisions or a stated none, and the open questions; a new-shape design missing its key-decisions or its collisions section is `major`, and so is one carrying subtasks, group order, handoff or edit sites, which belong to the working plan.
+   - **Register** — on a new-shape design, a statement a human cannot understand without opening another file, or a criterion, file or symbol named in place of saying what it is or does, is `minor`.
+   - **Length** — copy the convergence check's length line into `What was checked`, as it reads. The length is never raised as an issue, at any severity, and never withholds GO: the cap is a soft limit, and the human accepts the figure at the confirmation.
    - **Correctness** — architecture matches the project's own conventions; concurrency scope right; atomicity declared where needed; no per-element query inside a loop
    - **A boundary applied by an interceptor is absent on a call that never crosses it** — a design in which a component calls its OWN transactional method gets no interceptor, so the boundary is silently missing while the construct still READS as present = `major`. An in-class call needing its own or a new transaction MUST route through an explicit transaction template, or the method moves to a separate component; reserve the declarative form for callers that cross the component boundary. Also flag a background task performing state changes with no error guard — a transient failure there cancels the scope that owns the task = `major`.
    - **Event wiring** — introducing brand-NEW event-publishing wiring (a new framework event + publisher, where a direct call / poll / outbox row would serve) = `major`; prefer the explicit mechanism. Subscribing to an ALREADY-published event is fine; a listener performing a side effect inside the publisher's transaction MUST state whether it is isolated (caught, or on its own transaction boundary) or deliberately un-isolated, per `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Dependency injection / wiring`.
@@ -35,7 +40,7 @@ Every suspicion — investigate via a path-filtered search + Read; don't guess a
    - **Plan convergence** — run `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>` and read its per-class roster, not its exit status. **An unexcused finding of a class that HOLDS a plan — completeness, arithmetic — is `major`, and GO is not available while one stands** (§ Rules). A finding of a class that REPORTS — provenance, reference, pairing, isolation — is **input to your judgement and not a severity by itself**: weigh what it names, raise it at the severity the document's own content earns, and never as a mechanical verdict. Two of those classes read the whole tracked tree and can name something the author of this plan never touched, and a repeated fact is not by itself a fault. A finding reported as excused is not a finding, and the excused count beside the verdict is what tells you a plan is proceeding over waivers rather than clean. A cannot-run is not a pass: say which it was and withhold GO until the check runs. The `plan-convergence` reader's report arrives beside it: its breadth notes are not findings and are not raised, and a report whose breadth-control line says the planted breadth case was flagged comes from a run that read breadth as a conflict, so its self-contradiction findings across the pair are weighed against the tenth base principle rather than taken as found.
    - **Risks** — a breaking change to a published interface? Recovery story for failures? Cancellation and shutdown safety?
    - **Economy** — YAGNI; minimum abstractions
-   - **Handoff plan (every M ≥ 1)** — verify per `${CLAUDE_PLUGIN_ROOT}/agents/design.md § Rules → handoff-grouping`. Severities: missing `## Handoff plan` = `major`; non-terminal group size ≠ 3 = `major`; terminal group size outside `1..3` = `major`; cosmetic issues = `minor`. **The NUMBER of groups is never a finding, at any severity** — it is not a free choice but a consequence of `M` and the group-size rule, so a decomposition with many groups is a statement about the task's size and not a defect in its plan. Size is raised, if at all, through the propose-a-split duty, whose answer belongs to the user.
+   - **Groups (every M ≥ 1)** — verify the working plan's groups, or an earlier-shape design's handoff plan, per `${CLAUDE_PLUGIN_ROOT}/agents/design.md § Rules → handoff-grouping`. Severities: groups missing, or an earlier-shape design without its handoff plan = `major`; non-terminal group size ≠ 3 = `major`; terminal group size outside `1..3` = `major`; cosmetic issues = `minor`. **The NUMBER of groups is never a finding, at any severity** — it is not a free choice but a consequence of `M` and the group-size rule, so a decomposition with many groups is a statement about the task's size and not a defect in its plan. Size is raised, if at all, through the propose-a-split duty, whose answer belongs to the user.
    - **Revision account** — a passage narrating what a previous draft said or argued, quoting superseded wording, or recording that an earlier round was wrong = `major`, at the same severity as any other passage that does not describe the system.
    - **Doc-convention sanity** — the design MUST NOT mandate a narration doc-comment (one that merely restates a signature or narrates WHAT a symbol is) on any production symbol; doc-comments are NOT written by default (`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Comments` — code is the single source of truth). A design note instructing the impl to add such a doc-comment = `major`. If the design legitimately proposes a doc-comment for a genuine public-API contract, scan its proposed doc-text per `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md § Self-sufficiency: no repo-internal references`; any match = `major`.
 4. **Verify via code** — do the listed files exist? does the description match reality? Search for every cited symbol.
@@ -51,13 +56,13 @@ Every suspicion — investigate via a path-filtered search + Read; don't guess a
 **CRITICAL:** first line of response — verdict in exact format for parsing.
 
 > **Every non-blocking issue row and every recommendation bullet is transcribed VERBATIM out of this
-> response into the task's working record, by the orchestrator, before implementation opens.** Two
+> response into the task's progress record, by the orchestrator, before the freeze.** Two
 > consequences for how you write them. Each must stand on its own: a remark leaning on the surrounding
 > response ("as noted above", "the same applies here", "see the table") becomes unreadable the moment it
 > is copied out, and the parties that act on it — the implementation step across a context loss, and the
-> reviewer of the finished diff — never see this response at all. And each must name the design item it
-> concerns, by its heading or its numbered position in the decomposition, because the copy arrives
-> without the document in front of the reader.
+> reviewer of the finished diff — never see this response at all. And each must name the item it
+> concerns — a design item by its heading, a subtask of the working plan or of an earlier-shape
+> decomposition by its number — because the copy arrives without the document in front of the reader.
 
 ```
 ## Verdict: GO
@@ -65,6 +70,7 @@ Every suspicion — investigate via a path-filtered search + Read; don't guess a
 ## What was checked (required)
 - [file/component]: checked, matches the design
 - ...
+- length: [the convergence check's length line, as it reads]
 
 ## Issues
 
@@ -78,7 +84,7 @@ Every suspicion — investigate via a path-filtered search + Read; don't guess a
 
 Verdict is one of three values:
 
-- **GO** — actively checked, no blockers found. Notes / minors / recommendations allowed, **but they are not free**: every such item MUST be written back into the design document by the orchestrator BEFORE Step 8 implementation begins. The design doc is the implementation contract; "applied in code later" ≠ "resolved in the design". When emitting GO with notes, append under `## Recommendations`: `**Round-trip required:** before Step 8, update the design doc to incorporate each note above.`
+- **GO** — actively checked, no blockers found. Notes / minors / recommendations allowed, **but they are not free**: the design author MUST work every such item into the design or the working plan, and the orchestrator find each one there, BEFORE the freeze. The design and the working plan are the implementation contract; "applied in code later" ≠ "resolved in the plan". When emitting GO with notes, append under `## Recommendations`: `**Round-trip required:** before the freeze, work each note above into the design or the working plan.`
 
   **A GO carries no spec-amending note.** A genuine conflict with the spec is `major`, so it arrives on an ITERATE, where the Spec Amendment recipe and its own route question take it.
 - **ITERATE** — blockers exist, specific sections need rework.

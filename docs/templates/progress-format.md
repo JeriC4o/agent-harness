@@ -16,7 +16,7 @@ _Updated: YYYY-MM-DD_
 > Read THIS FIRST → orchestrator state for compaction recovery.
 
 **Branch:** <output of `git branch --show-current` — the current feature branch>
-**base_commit:** <`git rev-parse HEAD` at task start>
+**base_commit:** <`git rev-parse HEAD` at implementation start — absent before it>
 **Last build:** <PASS | FAIL | not run>
 
 <!-- Compaction-recovery / re-entry fields (required for code-side orchestrators): -->
@@ -31,6 +31,7 @@ _Updated: YYYY-MM-DD_
 **Issue:** <TICKET-KEY>   <!-- omit when the task has no ticket -->
 **Spec:** ai-docs/plans/<YYYY-MM-DD-name>.spec.md
 **Design:** ai-docs/plans/<YYYY-MM-DD-name>.design.md
+**confirmation:** <yes <freeze commit id> | no>                 <!-- new-shape design only: the human's latest answer, written by the orchestrator; a no's reason goes in the Decisions log -->
 **PR:** #<id>                                                  <!-- OMIT the line entirely until the PR exists (like parent_skill above) — never emit the literal `#<id>` placeholder: it is neither a match nor "absent", so the readers below take the Mismatch branch and refuse to append. -->
 <!-- Write **PR:** the moment the branch's PR is opened (`gh pr create`, or the first push that opens it); keep it in sync if the PR is ever recreated. A post-push fix round resolves the PR id by matching `**Branch:**` against the current branch and reading THIS line first, falling back to `gh pr view --json number` only when it is missing; it doubles as the cross-check that a progress file found the other way round (PR → ticket → spec → progress) belongs to the PR in hand — a mismatch means the wrong file was matched, not that the field is stale. `/pr-merged` works from the branch name and does not read it. -->
 
@@ -38,7 +39,26 @@ _Updated: YYYY-MM-DD_
 
 <one-paragraph description of the exact next step the orchestrator should take>
 
+## Working plan
+
+<!-- Written by the design author alone, at the design step; rewritten on every design-review iteration
+and corrected after the freeze while a group is still to run. Nobody else edits it. -->
+
+| # | Subtask | Edit sites | Delivers | Depends on |
+|---|---|---|---|---|
+| 1 | <subtask> | `<module>/<path>/Foo.<ext>` | AC1, AC2 | — |
+| 2 | <subtask> | `<module>/<path>/Bar.<ext>` | AC3 | 1 |
+
+- **Group A:** subtasks 1–2 — <what the group does>. Entered through `/context-reset` per `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md`. Terminal group (2 subtasks; within the 1..3 range).
+
+## Completed subtasks
+
+- 1 — <commit id>
+
 ## Subtasks
+
+<!-- A record begun under the earlier design shape only. A new-shape record carries none: the working
+plan's table is the one subtask list, and the completion lines above record progress. -->
 
 - [x] 1. <Completed subtask>
 - [ ] 2. <Pending subtask>
@@ -70,21 +90,30 @@ flow's own row in the table below does not list the field its skill mandates. --
 
 <anything non-obvious learned while reading the code — facts that would force a re-read on a fresh spawn>
 
+## Design-review issues (Round 1)
+
+<!-- An ITERATE verdict's issues, verbatim, written by the orchestrator before it marks that round done. -->
+
+<the verdict's Issues table and Recommendations, as the response gave them>
+
 ## Design-review notes
 
-<!-- Written by the orchestrator at Step 7's CLOSE, the moment a GO verdict is in hand and BEFORE Step 8
-opens. The verdict is a subagent RESPONSE and nothing else persists it, so this section is the only
-durable copy: the response text is gone at the next compaction, and BOTH parties that enforce the
-fold-in read it afterwards — Step 8's opening action, which after a compaction-resumed entry has no
-other source, and the `self-review` agent, which is spawned fresh and never saw the response at all.
-One row per `note` / `minor` row of the verdict's Issues table and per bullet of its Recommendations
-section. A verdict that carried neither is recorded as `(none)` rather than by omitting the section,
-because an absent section cannot be told apart from an unrecorded one. The last column is filled by
-the pass that folds the note in, so a blank there is an unfolded note. -->
+<!-- Written by the orchestrator the moment a GO verdict is in hand, BEFORE the freeze. The verdict is a
+subagent RESPONSE and nothing else persists it, so this section is the only durable copy: the response
+text is gone at the next compaction, and BOTH parties that enforce the fold-in read it afterwards —
+Step 8's opening action, which after a compaction-resumed entry has no other source, and the
+`self-review` agent, which is spawned fresh and never saw the response at all. One table per approval,
+under a line naming the round that approved, appended below any earlier approval's; readers take the
+last. One row per `note` / `minor` row of the verdict's Issues table and per bullet of its
+Recommendations section. A verdict that carried neither is recorded as `(none)` rather than by omitting
+the table, because an absent table cannot be told apart from an unrecorded one. The last column is
+filled by the orchestrator as it finds each note worked in, so a blank there is an unfolded note. -->
 
-| # | Severity | The note, verbatim | Folded into the design as |
+Round 2 approved:
+
+| # | Severity | The note, verbatim | Folded in as |
 |---|---|---|---|
-| 1 | note | <the verdict's own words, not a paraphrase> | <the design item it became, or `withdrawn — <reason>`> |
+| 1 | note | <the verdict's own words, not a paraphrase> | <the design item or working-plan item it became, or `withdrawn — <reason>`> |
 
 ## Self-Review (Round 1)
 
@@ -114,13 +143,16 @@ the pass that folds the note in, so a blank there is an unfolded note. -->
 
 | Surface | Required | Optional |
 |---|---|---|
-| `/task` | Branch, base_commit, Last build, current_step, last_passed_gate, entry_args, Issue, Spec, Design, Next action, Subtasks, Decisions log, **PR** (from Step 12 onward — absent before the PR exists), **Fix Plan (Round N)** (one per Step 11 round carrying an open finding), **Criterion checks (Round N)** (written as the tests are written), **Design-review notes** (from Step 7's close — `(none)` when the GO verdict carried no note, never omitted) | parent_skill |
+| `/task` | Branch, base_commit (from implementation start), Last build, current_step, last_passed_gate, entry_args, Issue, Spec, Design, Next action, Decisions log; on a new-shape design **Working plan** (from the design step), **Completed subtasks** (from the first subtask's close) and **confirmation** (from the human's answer); on an earlier-shape record **Subtasks**; **Design-review issues (Round N)** (one per ITERATE round), **PR** (from Step 12 onward — absent before the PR exists), **Fix Plan (Round N)** (one per Step 11 round carrying an open finding), **Criterion checks (Round N)** (written as the tests are written), **Design-review notes** (from Step 7's close — `(none)` when the GO verdict carried no note, never omitted) | parent_skill |
 | `/project-review` | Branch, base_commit, Last build, current_step, last_passed_gate, Next action, Subtasks, AC Status table | parent_skill, entry_args |
 
-**Three of those are REWRITTEN AT EVERY BOUNDARY, not once:** `current_step`, `last_passed_gate` and
-`## Next action`, plus a `## Subtasks` box ticked whenever one closes. A skill's per-step instruction
-names only the step-specific value for `current_step`; the other three are owed at every one of them,
-and an instruction that enumerates fewer is naming its own variable, not closing the set.
+**Three of those are REWRITTEN AT EVERY BOUNDARY from implementation start, not once:** `current_step`,
+`last_passed_gate` and `## Next action`, plus a `## Completed subtasks` line written whenever a subtask
+closes — a `## Subtasks` box ticked on an earlier-shape record. A skill's per-step instruction names only
+the step-specific value for `current_step`; the other three are owed at every one of them, and an
+instruction that enumerates fewer is naming its own variable, not closing the set. **Before
+implementation a boundary rewrites `current_step` alone:** `last_passed_gate` stays `(none yet)` and
+`## Next action` stays empty, and resumption of a record without `base_commit` reads neither.
 | post-push fix round (CI fix / reviewer nit on an open PR) | All `/task` fields PLUS a per-round `## Fix cycle round M` section, and **PR** | — |
 | `/bugfix` | current_step, last_passed_gate, parent_skill (when nested: `/task` or `post-push`), entry_args, Actual behaviour, Expected behaviour, Confirmed by user, Decisions log | — |
 
@@ -128,7 +160,11 @@ and an instruction that enumerates fewer is naming its own variable, not closing
 
 ### `Branch` / `base_commit`
 
-Written once at file creation. Never edited. The base reference for `git diff` operations.
+`Branch` is written at file creation, which is the design step's first action when no record exists, so
+the post-merge cleanup finds the record from then on. `base_commit` is written at implementation start,
+after the confirmed freeze — a record carries none before it, and that absence is how re-entry tells a
+record that never reached implementation. Neither is edited afterwards. `base_commit` is the base
+reference for `git diff` operations.
 
 ### `Last build`
 
@@ -137,6 +173,11 @@ Written at task start (`not run`), `PASS` after a successful `%BUILD_CMD%` / `%T
 ### `current_step`
 
 The fail-loud step gate. Every step boundary REWRITES this field. Subagents reading it on re-entry know exactly where the orchestrator was. Format: `Step N — <one-line summary>` or `Phase N — <one-line summary>` or `Round M Step N — <one-line summary>` for multi-round skills.
+
+**Before implementation it names the last step marked done**, as its `subtask N of M complete` value
+does during implementation, and a step is marked done only after the outputs it writes are in the
+record, so the field never runs ahead of its data. The steps, their outputs and how resumption validates
+them backwards are on the task skill's reference page, `${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md`.
 
 ### `last_passed_gate`
 
@@ -163,17 +204,49 @@ Written when the file is owned by a nested skill (`/bugfix` called from `/task` 
 
 ### `Next action`
 
-Rewritten at **every** boundary the owning skill writes progress at, to the move actually next — not to
-the step name, which `current_step` already carries. It is the one thing in this file that cannot be
+Rewritten at **every** boundary the owning skill writes progress at from implementation start — empty
+before it — to the move actually next, not to the step name, which `current_step` already carries. It is the one thing in this file that cannot be
 derived from anywhere else: version control holds what changed, `current_step` holds where the flow is,
 and only this holds what the author of the last write intended to do next. A compaction-recovered
 orchestrator jumps straight to it, so a stale paragraph here does not read as stale — it reads as an
 instruction.
 
+### `Working plan`
+
+The executor's plan: the subtask table — number, subtask, edit sites, the criteria it delivers, what it
+depends on — and the groups, one line each, naming the subtasks in the group and the handoff into it, by
+the grouping rule of the design contract. Written by the design author alone at the design step,
+rewritten on every design-review iteration, and corrected by its in-place pass on the occasions inside
+implementation; the orchestrator, the group agents and the fix-round planner never edit it. It is never
+committed, frozen or archived. On a new-shape design it is the task's one subtask list. Read by design
+review, by the orchestrator to fan out the groups, by each group's agent for its subtasks, by
+`self-review` for the edit sites, and by resumption. A task re-entered without it, its design in the new
+shape, returns to the design step.
+
+### `Completed subtasks`
+
+One line per closed subtask, its number and the commit that closed it, written by whoever closes it —
+the orchestrator or the group's agent. Resumption takes the first subtask of the working plan, in its
+order, with no line here; `current_step`'s `subtask N of M` is a cross-check and not the record, because
+two groups the working plan shows independent may run at once.
+
+### `confirmation`
+
+The human's latest answer to the confirmation question on a new-shape design: `yes` with the id of the
+freeze commit it answered, or `no`, its reason in the Decisions log. Written by the orchestrator on the
+answer and replaced by the next. Step 8's first action requires a `yes` naming the freeze
+`${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find` names.
+
+### `Design-review issues (Round N)`
+
+An ITERATE verdict's issues, verbatim, written by the orchestrator before it marks the round done. Read
+by the design author when it revises the design, a revision resumed after a crash included, and by
+resumption to validate the round.
+
 ### `Subtasks`
 
-The box is ticked at the boundary that closes the subtask, in the same write as `current_step`. The list
-itself comes from the design's decomposition and is not re-derived afterwards: a renumbering mid-task
+An earlier-shape record only. The box is ticked at the boundary that closes the subtask, in the same write
+as `current_step`. The list itself comes from the design's decomposition and is not re-derived afterwards: a renumbering mid-task
 makes every earlier `Decisions log` bullet prefixed `subtask N` point at a different row. When the
 design is re-authored and the decomposition changes, the old list is kept beside the new one as a record
 of what was done rather than edited in place.
@@ -184,14 +257,15 @@ Append-only. Each step boundary appends ≥0 lines (one line per non-trivial dec
 
 ### `Design-review notes`
 
-Written **once**, by the orchestrator, at Step 7's close on a GO verdict — before Step 8 opens, because
-the Step 7 → Step 8 boundary is this flow's most frequent compaction point and the verdict exists only
-as the response text that a compaction discards. If no progress file exists yet, this write CREATES it;
-Step 8 then fills the remaining header fields rather than creating it a second time. The note column is
-immutable once written — a note is never reworded to match what was done, which would make the record
-agree with the design by construction. Only the last column is filled later, by whichever pass folds
-the note in. Read by Step 8's opening action and by `self-review` § Design conformance; neither has any
-other source.
+Written by the orchestrator on every GO verdict, before the freeze, because the verdict exists only as
+the response text that a compaction discards. **One table per approval**, under a line naming the round
+that approved, appended below any earlier approval's, so a second approval after a "no" leaves the first
+one's record intact. The note column is immutable once written — a note is never reworded to match what
+was done, which would make the record agree with the plan by construction. Only the last column is
+filled later: the design author works each note into the design or the working plan, and the
+orchestrator fills the column with the item it finds the note in, a design item or a working-plan item,
+sending a note it cannot find back to the design author first. Read, the last table only, by Step 8's
+opening action and by `self-review` § Design conformance; neither has any other source.
 
 ### `Self-Review (Round N)` sections
 
@@ -363,7 +437,7 @@ are spec-side and untouched by that prohibition.
 
 ## Lifecycle by process
 
-- **Created** at task start by the orchestrator's first action.
+- **Created** by the orchestrator as the design step's first action, when no record exists; Step 8 creates it for a task begun before that rule, and writes `base_commit` either way.
 - **Extended** at every step boundary (rewrite `current_step`, possibly `last_passed_gate`; append to `Decisions log`).
 - **Read** at every re-entry (compaction recovery, lost-arguments path).
 - **Deleted** by `/pr-merged` after the PR merges (the `cleanup-progress.sh` script). The spec + design move to `ai-docs/plans/done/`; the progress file is removed.

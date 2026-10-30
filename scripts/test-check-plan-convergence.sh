@@ -61,9 +61,9 @@ tok() { # <spec|design> <ordinal, 1-based>
 SPEC_FIRST=$(tok spec 1)
 DESIGN_FIRST=$(tok design 1)
 DESIGN_SECOND=$(tok design 2)
-DESIGN_FIFTH=$(tok design 5)
+DESIGN_FOURTH=$(tok design 4)
 SPEC_FIRST_NAME=${SPEC_FIRST#\#\# }
-[ -n "$SPEC_FIRST" ] && [ -n "$DESIGN_FIRST" ] && [ -n "$DESIGN_SECOND" ] && [ -n "$DESIGN_FIFTH" ] \
+[ -n "$SPEC_FIRST" ] && [ -n "$DESIGN_FIRST" ] && [ -n "$DESIGN_SECOND" ] && [ -n "$DESIGN_FOURTH" ] \
   && ok "the fixtures' section names were derived from the record" \
   || bad "the fixtures' section names were derived from the record"
 # The heading that makes a design the earlier shape is read out of the core's
@@ -223,7 +223,7 @@ COMPLETE="$EARLIER_FIRST
 
 The check at \`scripts/new-thing.sh\` exists because nothing else answers the question.
 
-$DESIGN_FIFTH
+$DESIGN_FOURTH
 - \`scripts/new-thing.sh\` — run by the author, which refuses on a finding"
 SPEC_ONE='| AC1 | The thing holds. |'
 write_pair "| AC | Criterion |
@@ -326,7 +326,7 @@ hasnt "a reference qualified by a file name is not resolved here" "$out" 'refers
 has "but it is counted, so the figure says what this class did not carry" "$out" 'section-refs=0/1'
 
 printf '\n== the design shape: a design without its own decomposition is the new shape ==\n'
-NEW_SHAPE="$DESIGN_FIFTH
+NEW_SHAPE="$DESIGN_FOURTH
 - \`scripts/new-thing.sh\` — run by the author, which refuses on a finding
 
 The check at \`scripts/new-thing.sh\` exists because nothing else answers the question.
