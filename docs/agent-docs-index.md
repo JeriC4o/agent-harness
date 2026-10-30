@@ -111,9 +111,9 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 
 ### `ai-docs/plans/*.spec.md` / `*.design.md` / `*.progress.md`
 
-**Purpose.** Active task artefacts.
-**Writer.** `spec-writer` (spec), `design` (design), `/task` Step 8 (progress).
-**Lifecycle.** `*.progress.md` is gitignored, local-only; deleted by `/pr-merged`. `*.spec.md` + `*.design.md` move to `plans/done/` at Step 12.
+**Purpose.** Active task artefacts: the spec, for the model; the design, for the human who reviews the approach; the progress record, which from the design step on also holds the executor's working plan.
+**Writer.** `spec-writer` (spec), `design` (design, and the progress record's `## Working plan`), `/task` Step 6 (progress, when none exists; Step 8 for a task begun before the working plan moved there).
+**Lifecycle.** `*.progress.md` is gitignored, local-only; deleted by `/pr-merged` — its working plan is never committed, frozen or archived. `*.spec.md` + `*.design.md` move to `plans/done/` at Step 12.
 **When to read.** During the active task.
 
 ### `ai-docs/plans/done/`

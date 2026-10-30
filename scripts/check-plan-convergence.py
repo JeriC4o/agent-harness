@@ -12,15 +12,18 @@
 #
 # Tests: scripts/test-check-plan-convergence.sh
 #
-# THIS FILE HOLDS NO SECTION NAME OF A SPEC OR A DESIGN AS A LITERAL, and that
-# is a condition on which the check stays OUT of the edit-time refusal's page
-# set rather than a stylistic preference. A page joins that set by defining or
-# by enforcing a required element, so a script carrying a section token beside a
+# NO NAME THE REQUIRED-ELEMENT RECORD CARRIES APPEARS IN THIS FILE IN A SHAPE
+# THE COVERAGE SWEEP READS AS DEFINING OR ENFORCING AN ELEMENT, and that is a
+# condition on which the check stays OUT of the edit-time refusal's page set
+# rather than a stylistic preference. A page joins that set by defining or by
+# enforcing a required element, so a script carrying a section token beside a
 # presence word reads as enforcing one -- and a check in that set has any edit
 # that changes its section data put to the author during a learning pass. The
-# names it needs are derived from the
-# required-element record at run time, the way the propagation gate derives its
-# path classes from the table beside them.
+# names it needs are derived from the required-element record at run time, the
+# way the propagation gate derives its path classes from the table beside them.
+# The one set it holds is the earlier design shape's two section names, as data
+# in a plain assignment: a design begun before its working plan left the design
+# still carries them after the record stops naming them.
 #
 # WHAT IT NEVER REPORTS, for the same reason: that a derived section is ABSENT
 # from the document under examination. A finding naming the section would assert
@@ -212,6 +215,8 @@ if _record_body is not None:
 
 HEADING_LINE = re.compile(r'^(#{1,6})\s+(\S.*?)\s*$')
 
+EARLIER_SHAPE_SECTIONS = ('## Decomposition', '## Handoff plan')
+
 
 def region(body, token):
     """The slice of `body` under the heading whose whole text is `token`.
@@ -351,6 +356,116 @@ def spot_of(doc, statement):
 
 
 # ---------------------------------------------------------------------------
+# The design's shape, and the length reading of a design in the new shape.
+#
+# THE SHAPE IS READ FROM CONTENT, with no marker and no date: every design begun
+# before the working plan moved out carries its own decomposition section,
+# because the template it was written from had one. A marker an author can omit
+# leaves the same gap, and a date refuses an in-flight task in a project that
+# upgrades late.
+#
+# THE LENGTH READING IS NOT A CLASS. The cap is soft -- nothing refuses, holds or
+# hands back a design for running over it -- and a class raises findings, which
+# every reader weighs as findings. So the reading prints one roster line and
+# touches neither a count nor the exit status.
+# ---------------------------------------------------------------------------
+LENGTH_CAP = 5000
+PROFILE = 'AGENTS.md'
+DIAGRAM_ROWS = ('diagram form', 'pr-description diagram form')
+FENCE_OPEN = re.compile(r'^\s*(?:```|~~~)\s*([^\s`]*)')
+LEADING_WORD = re.compile(r'[A-Za-z0-9-]+')
+LABEL_PAIRS = tuple(re.compile(p) for p in (
+    r'"[^"]*"', r'\[[^\]]*\]', r'\([^)]*\)', r'\{[^}]*\}', r'\|[^|]*\|'))
+
+
+def design_shape(body):
+    if body is None:
+        return None
+    want = HEADING_LINE.match(EARLIER_SHAPE_SECTIONS[0])
+    in_fence = False
+    for line in body.split('\n'):
+        if FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        got = HEADING_LINE.match(line)
+        if not in_fence and got is not None and got.group(1) == want.group(1) \
+                and got.group(2) == want.group(2):
+            return 'earlier'
+    return 'new'
+
+
+def diagram_tag():
+    """The row's old name is read too, so a profile written before the rename
+    still has its diagram excluded."""
+    body = read_rel(PROFILE)
+    if body is None:
+        return None
+    for line in region(body, '## VCS').split('\n'):
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        if len(cells) < 2 or cells[0].lower() not in DIAGRAM_ROWS:
+            continue
+        ticked = re.search(r'`([^`]+)`', cells[1])
+        if ticked is not None:
+            return ticked.group(1).strip().lower()
+        word = LEADING_WORD.match(cells[1])
+        return word.group(0).lower() if word is not None else None
+    return None
+
+
+def label_length(line):
+    inside, delimiters = set(), set()
+    for pattern in LABEL_PAIRS:
+        for m in pattern.finditer(line):
+            delimiters.update((m.start(), m.end() - 1))
+            inside.update(range(m.start() + 1, m.end() - 1))
+    colon = next((i for i, ch in enumerate(line) if ch == ':' and i not in inside), None)
+    if colon is not None:
+        inside.update(range(colon + 1, len(line)))
+    return len(inside - delimiters)
+
+
+def design_length(body, tag):
+    """An unclosed block is counted whole: where the rule cannot tell, it counts."""
+    notation, blocks, held = 0, 0, None
+    for line in body.splitlines(True):
+        text = line.rstrip('\r\n')
+        if held is None:
+            opened = FENCE_OPEN.match(text)
+            if opened is not None and tag is not None and opened.group(1).lower() == tag:
+                held = [len(line)]
+            elif FENCE.match(text):
+                held = False
+            continue
+        if held is False:
+            if FENCE.match(text):
+                held = None
+            continue
+        if FENCE.match(text):
+            notation += sum(held) + len(line)
+            blocks += 1
+            held = None
+            continue
+        held.append(len(line) - label_length(text))
+    return len(body) - notation, blocks
+
+
+def length_line():
+    if DESIGN_SHAPE is None:
+        return 'length not measured -- the design could not be read'
+    if DESIGN_SHAPE == 'earlier':
+        return ('length not measured -- the design carries its own decomposition section, '
+                'the earlier shape, to which the cap does not apply')
+    tag = diagram_tag()
+    counted, blocks = design_length(DESIGN_BODY, tag)
+    if tag is None:
+        cause = 'the profile names no diagram form, so nothing was excluded'
+    else:
+        cause = "the notation of %d '%s' block%s not counted" % (blocks, tag, '' if blocks == 1 else 's')
+    return 'length %d characters against the cap of %d, %s (%s) -- reports only' % (
+        counted, LENGTH_CAP, 'over the cap' if counted > LENGTH_CAP else 'within it', cause)
+
+
+# ---------------------------------------------------------------------------
 # Numerals: which of them a document STATES as a figure.
 # ---------------------------------------------------------------------------
 NUMERAL = re.compile(
@@ -482,17 +597,21 @@ TOTAL_PHRASE = re.compile(r'\b(?:summing to|for a total of|which totals?|adding 
 BUILT_PATH = re.compile(r'`([^`]+)`\s*\*\(new\)\*')
 
 
-def built_paths(body, tokens):
-    """The paths a decomposition row marks as created by the task.
-
-    THE MARKING IS DECLARATIVE AND THAT IS THE WHOLE POINT. A test asking
+# [built-path-slice]
+def built_paths(body, tokens, shape):
+    """THE MARKING IS DECLARATIVE AND THAT IS THE WHOLE POINT. A test asking
     whether the path exists yet answers differently before and after the work,
     and the direction it moves loses a finding: a built path would stop being
     one the moment the file appeared. A marking in the cell is read from the
     cell and cannot move when the file comes into existence.
+
+    A design in the new shape yields none: its edit sites are in the working
+    plan, and no table of it is read as a decomposition.
     """
+    if shape != 'earlier':
+        return []
     out = []
-    for token in tokens:
+    for token in list(tokens) + [n for n in EARLIER_SHAPE_SECTIONS if n not in tokens]:
         # LINE BY LINE, because a backtick span matched across a hard wrap is
         # not a path: run over the whole region, the pattern opened on one
         # path's closing backtick and closed three paragraphs later, and the
@@ -604,10 +723,11 @@ def grant():
 # repository's hard thousand-line limit, so the six classes move out in the two
 # groups this check already states as data -- the ones that HOLD a plan into
 # one sibling, the ones that report into the other. What this file keeps is
-# what BOTH groups read: the section-name derivation, the segmenter, the numeral
-# readers, the three relation patterns, the built-path marking, the excuse route
-# and the report. No helper of any class is called from any other class, which
-# is what let the seam be drawn at the groups at all.
+# what BOTH groups read: the section-name derivation, the design's shape, the
+# segmenter, the numeral readers, the three relation patterns, the built-path
+# marking, the excuse route and the report, the length reading among it. No
+# helper of any class is called from any other class, which is what let the
+# seam be drawn at the groups at all.
 #
 # THE GUARD WRAPS THE MODULE EXECUTION, NOT THE SPEC LOOKUP, copied with its
 # reason from the verification payload's own loader beside this check: uncaught,
@@ -654,6 +774,7 @@ if SPEC_BODY is None:
     blocked('the spec at %s could not be read, so none of its statements was examined' % SPEC)
 if DESIGN_BODY is None:
     blocked('the design at %s could not be read, so none of its statements was examined' % DESIGN)
+DESIGN_SHAPE = design_shape(DESIGN_BODY)
 
 DOCUMENTS = []
 if SPEC_BODY is not None:
@@ -677,7 +798,7 @@ if not cannot:
     read_excuses(TRACKED_PATHS)
 
 if not cannot:
-    BUILT = built_paths(DESIGN_BODY, RECORDED['design'])
+    BUILT = built_paths(DESIGN_BODY, RECORDED['design'], DESIGN_SHAPE)
     all_units = {}
     for _kind, _body, _tokens in DOCUMENTS:
         REGIONS_DERIVED += len(_tokens)
@@ -689,6 +810,7 @@ if not cannot:
     # positional signature this wide is one transposed argument away from a
     # silent defect, which is the class of mistake this whole check exists to
     # make loud -- the same reason the verification's own sibling takes one.
+    # [convergence-context]
     CONTEXT = {
         'finding': finding, 'blocked': blocked, 'norm': norm, 'read_rel': read_rel,
         'read_method': read_method,
@@ -702,6 +824,7 @@ if not cannot:
         'bodies': dict((_k, _b) for _k, _b, _t in DOCUMENTS),
         'tokens': dict((_k, _t) for _k, _b, _t in DOCUMENTS),
         'tracked_paths': TRACKED_PATHS,
+        'design_shape': DESIGN_SHAPE, 'earlier_sections': EARLIER_SHAPE_SECTIONS,
     }
 
 # EACH GROUP IS ASKED IN TURN AND THE BLOCK IS RE-TESTED BETWEEN THEM, because
@@ -763,22 +886,30 @@ def criteria_reach():
     return '%d criteria' % tally(HOLDING_CLASSES, 'CRITERIA')
 
 
+# [convergence-roster]
 def roster():
     """What each class examined, so a run that narrowed its own input set is
     distinguishable from a clean one. A zero where a non-zero is expected is a
-    report about the run and never a clean verdict."""
+    report about the run and never a clean verdict. On a design in the new shape
+    the legs reading a decomposition say they did not apply, so an empty built
+    set does not read as a design that marks nothing."""
     minimum = tally(REPORTING_CLASSES, 'MINIMUM', None)
     entered = tally(HOLDING_CLASSES, 'ENTERED', set()) | tally(REPORTING_CLASSES, 'ENTERED', set())
     skipped = tally(REPORTING_CLASSES, 'SKIPPED', {})
-    for cls, examined in (('provenance', '%d numbers in %d documents'
-                           % (tally(REPORTING_CLASSES, 'NUMBERS'), len(DOCUMENTS))),
+    new_shape = DESIGN_SHAPE == 'new'
+    for cls, examined in (('provenance', '%d numbers in %d documents%s'
+                           % (tally(REPORTING_CLASSES, 'NUMBERS'), len(DOCUMENTS),
+                              ', the built-path leg not applicable (the design is in the new shape and marks no built path)'
+                              if new_shape else '')),
                           ('arithmetic', '%d relations, %d of them not evaluable'
                            % (tally(HOLDING_CLASSES, 'RELATIONS'),
                               tally(HOLDING_CLASSES, 'NOT_EVALUABLE'))),
-                          ('completeness', '%d objects, %s, %d own-document section references'
+                          ('completeness', '%d objects, %s, %d own-document section references%s'
                            % (tally(HOLDING_CLASSES, 'OBJECTS'),
                               criteria_reach(),
-                              tally(HOLDING_CLASSES, 'SECTION_REFS'))),
+                              tally(HOLDING_CLASSES, 'SECTION_REFS'),
+                              ', criterion delivery, stated place and built paths not applicable (the design is in the new shape and holds no decomposition)'
+                              if new_shape else '')),
                           ('isolation', '%d repeated literals at or above %s characters'
                            % (tally(REPORTING_CLASSES, 'REPEATS'),
                               minimum if minimum is not None else '-')),
@@ -802,6 +933,7 @@ def roster():
             state += ', %d excused' % len(waived)
         print('  class %-13s %s -- %s%s'
               % (cls, examined, state, '  HOLDS' if cls in HOLDING else '  reports'))
+    print('  %s' % length_line())
 
 
 for _cls, line in findings:

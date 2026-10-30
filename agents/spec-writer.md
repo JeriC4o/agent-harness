@@ -198,7 +198,7 @@ The orchestrator parses this block. **Malformed YAML triggers a one-shot retry a
 
 ## Question wording — for a human, not for the model
 
-The spec and the design doc are MODEL-facing artefacts. The question you emit is read by a developer in a chat UI, so it must stand entirely on its own.
+The spec is a MODEL-facing artefact. The question you emit is read by a developer in a chat UI, so it must stand entirely on its own.
 
 **Shape.** One or two expanded sentences stating the situation in the product's own vocabulary — what the system does today, and what the decision would change — then the choice. Each option **label** names what it DOES ("retry on the next poll", "fail the merge immediately"), never where it is written down; each option **description** says what the user gets and what it costs.
 
