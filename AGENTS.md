@@ -214,7 +214,7 @@ at that heading.
 | Branch naming | `<TICKET-KEY>-<slug>`, or `chore/<slug>` for work with no issue |
 | Ticket key format | `GH-<issue number>` |
 | Review surface | GitHub PR via `gh` |
-| PR-description diagram form | Mermaid, which GitHub renders in a PR description |
+| Diagram form | `mermaid` — Mermaid, which GitHub renders in a PR description and in a committed Markdown file |
 
 **GitHub Issues have no key prefix** — an issue is a bare `#N`, and PRs share the same counter, so the
 numbering is contiguous across both. `GH-` is a *local* prefix this repo adds so an issue number can ride

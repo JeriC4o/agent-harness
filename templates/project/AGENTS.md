@@ -46,7 +46,7 @@ test) go in [`ai-docs/context.md`](ai-docs/context.md) § Build & test commands.
 | Branch naming | `<TICKET-KEY>-<slug>` |
 | Ticket key format | `%TICKET_PREFIX%-NNN`, or `none` if the project has no tracker |
 | Review surface | GitHub PR via `gh` |
-| PR-description diagram form | Mermaid — a default; change it to the form your review surface renders |
+| Diagram form | Mermaid — a default; change it to the form your review surface renders in a PR description and in a committed Markdown file. Its first backticked span, or else its first word in lower case, is the fence tag the diagram is written under |
 
 ## Permissions — project specifics
 

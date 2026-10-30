@@ -62,11 +62,17 @@ SPEC_FIRST=$(tok spec 1)
 DESIGN_FIRST=$(tok design 1)
 DESIGN_SECOND=$(tok design 2)
 DESIGN_FIFTH=$(tok design 5)
-DESIGN_SECOND_NAME=${DESIGN_SECOND#\#\# }
 SPEC_FIRST_NAME=${SPEC_FIRST#\#\# }
 [ -n "$SPEC_FIRST" ] && [ -n "$DESIGN_FIRST" ] && [ -n "$DESIGN_SECOND" ] && [ -n "$DESIGN_FIFTH" ] \
   && ok "the fixtures' section names were derived from the record" \
   || bad "the fixtures' section names were derived from the record"
+# The heading that makes a design the earlier shape is read out of the core's
+# own data, for the reason tok() reads the record.
+EARLIER_FIRST=$(sed -n "s/^EARLIER_SHAPE_SECTIONS = ('\([^']*\)'.*/\1/p" "$T/scripts/check-plan-convergence.py")
+EARLIER_FIRST_NAME=${EARLIER_FIRST#\#\# }
+[ -n "$EARLIER_FIRST" ] \
+  && ok "the earlier shape's heading was read from the core" \
+  || bad "the earlier shape's heading was read from the core"
 
 run() { bash "$SUB" "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1; }
 
@@ -161,7 +167,7 @@ out=$(run)
 hasnt "a list item's own ordinal marker is structure" "$out" 'finding provenance'
 
 printf '\n== the provenance class reaches a figure only a measurement of the artefact could give ==\n'
-write_pair 'Nothing.' "$DESIGN_SECOND
+write_pair 'Nothing.' "$EARLIER_FIRST
 | # | Task | Files |
 |---|---|---|
 | 1 | Build it | \`scripts/new-thing.sh\` *(new)* |
@@ -170,7 +176,7 @@ The new check at \`scripts/new-thing.sh\` is 820 lines long, measured with \`wc 
 out=$(run)
 has "a figure beside a path the plan creates is reported" "$out" 'a path this plan creates'
 hasnt "and its provenance half is satisfied, so only the one finding stands" "$out" 'naming neither which kind'
-write_pair 'Nothing.' "$DESIGN_SECOND
+write_pair 'Nothing.' "$EARLIER_FIRST
 | # | Task | Files |
 |---|---|---|
 | 1 | Build it | \`scripts/new-thing.sh\` *(new)* |
@@ -178,7 +184,7 @@ write_pair 'Nothing.' "$DESIGN_SECOND
 The page it leaves behind is 820 lines long, measured with \`wc -l\`."
 out=$(run)
 hasnt "the same figure in a clause naming no created path is silent" "$out" 'a path this plan creates'
-write_pair 'Nothing.' "$DESIGN_SECOND
+write_pair 'Nothing.' "$EARLIER_FIRST
 | # | Task | Files | Notes |
 |---|---|---|---|
 | 1 | The page it leaves behind is 820 lines, measured with \`wc -l\` | \`scripts/new-thing.sh\` *(new)* | — |"
@@ -210,7 +216,7 @@ out=$(run)
 has "a hyphenated word is not an operator" "$out" 'relations=0'
 
 printf '\n== the completeness class, which HOLDS ==\n'
-COMPLETE="$DESIGN_SECOND
+COMPLETE="$EARLIER_FIRST
 | # | Task | Files | Delivers |
 |---|---|---|---|
 | 1 | Build it | \`scripts/new-thing.sh\` *(new)* | AC1 |
@@ -303,7 +309,7 @@ mv "$T/scripts/gone-absence.sh" "$T/scripts/deliberate-absence.sh"
 printf '\n== section references, resolved against the document that makes them ==\n'
 write_pair 'Nothing.' "$COMPLETE
 
-The reason is given in § $DESIGN_SECOND_NAME, which carries it."
+The reason is given in § $EARLIER_FIRST_NAME, which carries it."
 out=$(run)
 hasnt "a reference to a section the document has is silent" "$out" 'refers to a section'
 has "and own-document references are counted apart from qualified ones" "$out" 'section-refs=1/1'
@@ -318,6 +324,105 @@ The reason is given in \`other-file.md\` § Nowhere At All, which carries it."
 out=$(run)
 hasnt "a reference qualified by a file name is not resolved here" "$out" 'refers to a section'
 has "but it is counted, so the figure says what this class did not carry" "$out" 'section-refs=0/1'
+
+printf '\n== the design shape: a design without its own decomposition is the new shape ==\n'
+NEW_SHAPE="$DESIGN_FIFTH
+- \`scripts/new-thing.sh\` — run by the author, which refuses on a finding
+
+The check at \`scripts/new-thing.sh\` exists because nothing else answers the question.
+
+| # | Task | Files | Delivers |
+|---|---|---|---|
+| 1 | Build it | \`scripts/other.sh\` *(new)* | AC9 |
+
+The new check at \`scripts/other.sh\` is 820 lines long, measured with \`wc -l\`."
+TWO_CRITERIA="| AC | Criterion |
+|---|---|
+$SPEC_ONE
+| AC2 | A second thing holds. |"
+write_pair "$TWO_CRITERIA" "$NEW_SHAPE"
+out=$(run)
+hasnt "a criterion no table delivers is not reported on the new shape" "$out" 'the requirement AC2 is stated'
+hasnt "an ordinal table's delivery cell is not read as a decomposition" "$out" 'claims to deliver AC9'
+hasnt "an object is not reported for want of a place" "$out" 'no stated place'
+hasnt "a figure beside a marked path is not a built-path finding" "$out" 'a path this plan creates'
+has "no built set is collected" "$out" 'built=0 objects=1'
+has "the completeness roster says which legs did not apply" "$out" 'criterion delivery, stated place and built paths not applicable'
+has "the provenance roster says its built-path leg did not apply" "$out" 'the built-path leg not applicable'
+write_pair "$TWO_CRITERIA" "${NEW_SHAPE/The check at \`scripts\/new-thing.sh\` exists because nothing else answers the question./Nothing else mentions it.}"
+out=$(run)
+has "an object's reason is still checked on the new shape" "$out" 'no stated reason -- the document names it only in its bullet'
+write_pair "$TWO_CRITERIA" "\`\`\`
+$EARLIER_FIRST
+\`\`\`
+
+$NEW_SHAPE"
+out=$(run)
+hasnt "the earlier shape's heading inside a fence leaves the design in the new shape" "$out" 'the requirement AC2 is stated'
+write_pair "$TWO_CRITERIA" "$COMPLETE"
+out=$(run)
+has "control: the earlier shape reports a criterion no row delivers" "$out" 'the requirement AC2 is stated'
+hasnt "and its roster names no leg as not applicable" "$out" 'not applicable'
+cp "$T/docs/plan-invariants.md" "$X/record.md"
+EARLIER_SECOND=$(sed -n "s/^EARLIER_SHAPE_SECTIONS = ('[^']*', '\([^']*\)').*/\1/p" "$T/scripts/check-plan-convergence.py")
+grep -vF -e "| design | \`$EARLIER_FIRST\` |" -e "| design | \`$EARLIER_SECOND\` |" "$X/record.md" \
+  > "$T/docs/plan-invariants.md"
+[ -n "$EARLIER_SECOND" ] && ! grep -qF -e "\`$EARLIER_FIRST\`" -e "\`$EARLIER_SECOND\`" "$T/docs/plan-invariants.md" \
+  && ok "the sandbox record was stripped of the earlier shape's sections" \
+  || bad "the sandbox record was stripped of the earlier shape's sections"
+out=$(run)
+has "an earlier-shape design is still read by its own sections once the record drops them" "$out" 'the requirement AC2 is stated'
+has "  and its built path is still collected" "$out" 'built=1 objects=1'
+hasnt "  and its rows are still read for delivery" "$out" 'the requirement AC1 is stated'
+hasnt "  and for place" "$out" 'no stated place'
+cp "$X/record.md" "$T/docs/plan-invariants.md"
+
+printf '\n== the length reading, which reports and never holds ==\n'
+write_pair 'Nothing.' "$COMPLETE"
+out=$(run)
+has "an earlier-shape design is not measured, and the line says why" "$out" 'length not measured -- the design carries its own decomposition section'
+profile() { printf '# Profile\n\n## VCS\n\n| Setting | Value |\n|---|---|\n%s\n' "$1" > "$T/AGENTS.md"; }
+diagram_design() {
+  printf '# Design\n\n%s\n\nProse.\n\n```%s\nA["ab"] --> B\nB: hello\nA -->|yes| B\n%s' \
+    "$DESIGN_FIRST" "$1" "${2-\`\`\`
+}" > "$T/plans/a.design.md"
+}
+length_of() { printf '%s' "$1" | sed -n 's/.*  length \([0-9]*\) characters.*/\1/p'; }
+write_pair 'Nothing.' 'Nothing.'
+profile '| Diagram form | `flowtext` — a form nothing renders |'
+diagram_design flowtext
+WHOLE=$(wc -m < "$T/plans/a.design.md" | tr -d ' ')
+# Notation by hand: the two fence lines (12 + 4), and per line the characters
+# outside a label -- 14-2, 9-6 and 13-3.
+out=$(run); rc=$?
+check "a new-shape design is measured with the diagram's notation left out" "$(length_of "$out")" "$((WHOLE - 41))"
+has "  and the line names the block it excluded" "$out" "the notation of 1 'flowtext' block not counted"
+has "  and says it is within the cap" "$out" 'against the cap of 5000, within it'
+check "  and the reading leaves the exit status alone" "$rc" "0"
+has "  and raises no finding" "$out" 'findings=0'
+profile '| PR-description diagram form | Flowtext, an older profile row |'
+out=$(run)
+check "the row under its old name, the tag from its first word" "$(length_of "$out")" "$((WHOLE - 41))"
+profile '| Default branch | `main` |'
+out=$(run)
+check "a profile with no diagram-form row excludes nothing" "$(length_of "$out")" "$WHOLE"
+has "  and says so" "$out" 'the profile names no diagram form, so nothing was excluded'
+rm -f "$T/AGENTS.md"
+out=$(run)
+check "no profile at all excludes nothing" "$(length_of "$out")" "$WHOLE"
+profile '| Diagram form | `flowtext` — a form nothing renders |'
+diagram_design other
+WHOLE=$(wc -m < "$T/plans/a.design.md" | tr -d ' ')
+check "a block under another tag is counted whole" "$(length_of "$(run)")" "$WHOLE"
+diagram_design flowtext ''
+WHOLE=$(wc -m < "$T/plans/a.design.md" | tr -d ' ')
+check "an unclosed diagram block is counted whole" "$(length_of "$(run)")" "$WHOLE"
+write_pair 'Nothing.' "$(python3 -c "print('word ' * 1100)")"
+out=$(run); rc=$?
+has "a design over the cap says so" "$out" 'against the cap of 5000, over the cap'
+check "  and still exits on its findings alone" "$rc" "0"
+has "  and holds nothing" "$out" 'holding=0 reporting=0 findings=0'
+rm -f "$T/AGENTS.md"
 
 printf '\n== the isolation class, which REPORTS ==\n'
 write_pair 'The window is 40 rounds wide, a threshold handed down. The same 40 is the cap, a threshold handed down.' 'Nothing.'
@@ -734,7 +839,7 @@ done <<EOF
 $PAYLOADS
 EOF
 
-printf '\n== the check holds no section token of a spec or a design as a literal ==\n'
+printf '\n== no section token of a spec or a design is backticked in the check ==\n'
 # The condition on which this check stays out of the edit-time refusal's page
 # set. Asserted against the record's own rows rather than against a list here,
 # so widening the record cannot leave this leg testing a stale set.
