@@ -337,13 +337,25 @@ meaning: it stops nothing, and no check reads the ticket or the description.
   the closing trailer the project's profile names, when it names one, for the issue the PR resolves and
   under the profile's condition, and every in-place rewrite keeps it. Markdown renders, so bullets, inline
   code and links are fine.
+- **A design in the new shape — one without its own decomposition section — is linked, not restated.**
+  The description links it at the head commit it is written against, built from the `File link form` row
+  of `AGENTS.md` § VCS, or names its path at that commit where the row says `none` or is absent: a link
+  to the branch breaks once the merged branch is deleted, and the review surface keeps a pull request's
+  commits under the pull request's own ref. The design is the reviewer's source for the problem, the approach, the
+  decisions and the diagram, so the description restates none of them and adds only what happened during
+  implementation — where the work departed from the design and why — and what to look at in review. An
+  earlier-shape design, and a task with no design, keep the shape above, its process diagram included.
 - **The design's change since approval, in one line, each time the description is written.** When
   `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh diff` over the design says `changed`, the line links the
   design document's own entry in the review surface's comparison of the freeze commit with the branch
   head; where the surface cannot address one file's entry, it links the comparison and names the design's
   path at the branch head. No such line when it says `unchanged`. When it could not compute, one line
   saying the change since approval could not be computed and why, because no line at all would read as
-  unchanged ([§ The plan freeze](#the-plan-freeze)).
+  unchanged ([§ The plan freeze](#the-plan-freeze)). When a new-shape design is over the length cap, the line also states its measured length
+  beside the cap — the length line `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh` gives for the
+  design at the head the description is written against, which the correction pass's hand-back carries —
+  and asks for nothing: the cap is a soft limit, and this is where the human sees a correction's effect
+  on the length.
 - **Keep a small, self-contained PR to the files the task changes.** The plan's spec and design are among
   them: the freeze commits them, and the task's closing step moves them into `ai-docs/plans/done/` in the
   same PR.
