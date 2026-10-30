@@ -261,7 +261,7 @@ The `**entry_args:**` field is recorded ONCE, when the record is created, and **
 
 ## Step 8 — first-action GO-notes verification (detail)
 
-Verify both spec and design (with GO verdict) exist AND that **every note / minor / recommendation of the last approval's table in `## Design-review notes` was worked into the design or the working plan** — the orchestrator filled each row's last column as it found the note there before the freeze, so on such a task this finds every row filled, and a blank is a note to send back to the design author before anything else. "Applied in code later" ≠ "resolved in the plan". On a new-shape design `**confirmation:**` must be `yes` naming the freeze `plan-freeze.sh find` names; any other value is the confirmation step not yet done. Missing spec, missing design, missing GO verdict, OR unresolved GO-notes = previous steps incomplete.
+Verify both spec and design (with GO verdict) exist AND that **every note / minor / recommendation of the last approval's table in `## Design-review notes` was worked into the design or the working plan** — the orchestrator filled each row's last column as it found the note there before the freeze, so on such a task this finds every row filled, and a blank is a note to send back to the design author before anything else. "Applied in code later" ≠ "resolved in the design or the working plan". On a new-shape design `**confirmation:**` must be `yes` naming the freeze `plan-freeze.sh find` names; any other value is the confirmation step not yet done. Missing spec, missing design, missing GO verdict, OR unresolved GO-notes = previous steps incomplete.
 
 ## Step 8 — transport-drop backoff
 

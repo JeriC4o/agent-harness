@@ -121,7 +121,7 @@ Full recipe (spawn-prompts, and why no interview state file is involved): [refer
 
 ### Step 8: Implementation
 
-> First action: verify spec + design + GO verdict exist, that `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find <design>` names a freeze — a could-not-compute is a STOP — that on a new-shape design `**confirmation:**` is `yes` naming that freeze, AND that every row of the last table in the progress file's `## Design-review notes` has its last column filled — **read the notes there, never from the response text**. A section absent on a task that reached Step 7 is a STOP, not a clean pass. "Applied in code later" ≠ "resolved in the plan".
+> First action: verify spec + design + GO verdict exist, that `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find <design>` names a freeze — a could-not-compute is a STOP — that on a new-shape design `**confirmation:**` is `yes` naming that freeze, AND that every row of the last table in the progress file's `## Design-review notes` has its last column filled — **read the notes there, never from the response text**. A section absent on a task that reached Step 7 is a STOP, not a clean pass. "Applied in code later" ≠ "resolved in the design or the working plan".
 >
 > Transport-level drop: [reference.md § Step 8](reference.md#step-8--transport-drop-backoff).
 

@@ -261,7 +261,7 @@ Written by the orchestrator on every GO verdict, before the freeze, because the 
 the response text that a compaction discards. **One table per approval**, under a line naming the round
 that approved, appended below any earlier approval's, so a second approval after a "no" leaves the first
 one's record intact. The note column is immutable once written — a note is never reworded to match what
-was done, which would make the record agree with the plan by construction. Only the last column is
+was done, which would make the record agree with the design or the working plan by construction. Only the last column is
 filled later: the design author works each note into the design or the working plan, and the
 orchestrator fills the column with the item it finds the note in, a design item or a working-plan item,
 sending a note it cannot find back to the design author first. Read, the last table only, by Step 8's

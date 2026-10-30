@@ -340,10 +340,10 @@ meaning: it stops nothing, and no check reads the ticket or the description.
 - **A design in the new shape — one without its own decomposition section — is linked, not restated.**
   The description links it at the head commit it is written against, built from the `File link form` row
   of `AGENTS.md` § VCS, or names its path at that commit where the row says `none` or is absent: a link
-  to the branch breaks once the merged branch is deleted, and the review surface keeps a pull request's
+  to the branch breaks once the merged branch is deleted, and a link to a commit outlives it where the review surface keeps a pull request's
   commits under the pull request's own ref. The design is the reviewer's source for the problem, the approach, the
   decisions and the diagram, so the description restates none of them and adds only what happened during
-  implementation — where the work departed from the design and why — and what to look at in review. An
+  implementation: where the work departed from the design and why, and what to look at in review. An
   earlier-shape design, and a task with no design, keep the shape above, its process diagram included.
 - **The design's change since approval, in one line, each time the description is written.** When
   `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh diff` over the design says `changed`, the line links the

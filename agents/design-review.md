@@ -84,7 +84,7 @@ Every suspicion — investigate via a path-filtered search + Read; don't guess a
 
 Verdict is one of three values:
 
-- **GO** — actively checked, no blockers found. Notes / minors / recommendations allowed, **but they are not free**: the design author MUST work every such item into the design or the working plan, and the orchestrator find each one there, BEFORE the freeze. The design and the working plan are the implementation contract; "applied in code later" ≠ "resolved in the plan". When emitting GO with notes, append under `## Recommendations`: `**Round-trip required:** before the freeze, work each note above into the design or the working plan.`
+- **GO** — actively checked, no blockers found. Notes / minors / recommendations allowed, **but they are not free**: the design author MUST work every such item into the design or the working plan, and the orchestrator find each one there, BEFORE the freeze. The design and the working plan are the implementation contract; "applied in code later" ≠ "resolved in the design or the working plan". When emitting GO with notes, append under `## Recommendations`: `**Round-trip required:** before the freeze, work each note above into the design or the working plan.`
 
   **A GO carries no spec-amending note.** A genuine conflict with the spec is `major`, so it arrives on an ITERATE, where the Spec Amendment recipe and its own route question take it.
 - **ITERATE** — blockers exist, specific sections need rework.
