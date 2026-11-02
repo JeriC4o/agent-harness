@@ -15,9 +15,10 @@ and the two commit guards — none on the default branch, no attribution trailer
 Re-entry reads those commits. Before implementation only the orchestrator marks, one step at a time, and
 each mark records the branch head in the record's `step_commit` field; from implementation on, where two
 groups may run at once, each mark names its own commit instead, in a subtask's completion line or the
-orchestrator's decisions-log entry. A commit after that head, or one since `base_commit` that nothing
-names, closes the step whose files it carries — the freeze by its marker. A step writing only the record
-has finished when its outputs there are intact; files present but uncommitted are checked, and committed
+orchestrator's decisions-log entry. A commit after the recorded head, or one nothing names among those
+made since implementation started from the commit the record holds as `base_commit`, closes the step
+whose files it carries — the freeze by its marker. A step writing only the record has finished when its
+outputs there are intact; files present but uncommitted are checked, and committed
 when they hold or redone when they do not. Backward validation then checks the recorded step and each
 earlier one until one whose outputs hold, and resumes right after it. A record from before this change
 has no such field, and what its task left uncommitted is checked the same way.
@@ -25,8 +26,9 @@ has no such field, and what its task left uncommitted is checked the same way.
 The freeze stays one marked commit per approval, taken as an empty commit when the plan has not changed
 since its last write was committed. The confirmation question then asks only to push and to confirm.
 
-The `leftover-record check` stops reading the default branch's history: work counts as merged when a pull
-request from the record's branch has merged on the review surface. Work that never left the machine passes
+The `leftover-record check` decides by the review surface, and reads the default branch's history only in
+the one fallback below: work counts as merged when the pull request the record names, or, where it names
+none, one from the record's branch, has merged on the review surface. Work that never left the machine passes
 without a question. Only when the surface cannot answer does the project's `Merge style` matter:
 under `merge-commit` the default branch's history decides, under `squash` the user is told why and asked.
 
@@ -50,7 +52,7 @@ flowchart TD
 flowchart TD
     L["leftover record found at task start"] --> X{"work ever left<br/>the machine?"}
     X -->|no| P["passes, no question"]
-    X -->|yes| Q{"review surface: a pull request<br/>from its branch merged?"}
+    X -->|yes| Q{"review surface: the named pull request,<br/>else one from its branch, merged?"}
     Q -->|no| P
     Q -->|yes| O["offer delete, park, resume anyway"]
     Q -->|cannot say| MS{"declared merge style"}
@@ -62,7 +64,7 @@ flowchart TD
 
 - **The party ending a step commits it**: the orchestrator for plan documents once the author's write is on disk, the group agent for its subtasks. Rejected: each author commits — commit rules in every agent contract.
 - **A head is recorded only before implementation**, where the orchestrator alone marks, in order; the commit message is fixed by the requirements, and a file's state cannot tell a revision committed after a verdict from the write before it. Rejected: one head throughout — concurrent groups move it past each other's unmarked commits; one per group — fields repeating the completion lines.
-- **A review-fix round makes one commit, fix and correction together**; a correction after an implementation group commits alone. Rejected: a commit per beat, before the post-apply loop has accepted the fix.
+- **A review-fix round makes one commit, fix and correction together**; a correction after an implementation group commits alone. Rejected: a commit for each of the round's acts, made before the post-apply loop — the orchestrator's check of the applied fix against the round's plan, which re-runs the fix when it fails — has accepted the fix.
 - **The freeze is always its own commit**, one marker per approval. Rejected: marking the last write's commit when nothing changed — it rewrites a commit, and an earlier round's commit would read as a freeze.
 - **The interview commits the approved spec standalone too**: that is the spec-only run, and moving the spec into the deferred folder needs it tracked. Rejected: committing only inside a task run — the spec would wait uncommitted.
 - **`Merge style` is a row of the profile's version-control table**, `squash` or `merge-commit`; absent or unknown reads as `squash`, and the leftover check is its only reader. Rejected: a key in the host's settings — a second home for project facts.
@@ -72,9 +74,10 @@ flowchart TD
 ## Risks
 
 - **Two groups running at once in one tree** could commit each other's staged files: a group beside another commits naming its paths.
-- **Committing every tracked change still prompts**, where committing should not: staging every change at once still needs consent, and that form does it. A spelling a rule misses leaves the method's ban as the rule.
+- **Committing every tracked change still prompts**, where committing should not: staging every change at once still needs consent, and that form does it. A stage-everything or commit-everything spelling the ask list does not name runs with no prompt. That residual is forced: committing and staging named files must raise none, so the allow is a pattern, and the host matches a command's text against a finite list of asks — the double-star staging form cannot be listed at all, a star in a rule matching any text. The method's written ban still covers the staging forms; nothing written covers the commit forms.
 - **A record whose freeze was pushed is no longer passed locally**, as a record before implementation is today: under squash, with the review surface unreachable, the user is told why and asked, as the requirement for a review surface that cannot say demands.
-- **A task re-entered on its open pull request** pushes a commit per step, each counted by the human-findings measure; the fix round, the routine route then, keeps one commit per round. Accepted: a rework a human asked for.
+- **A record naming an open pull request is resumed even when an earlier pull request from its branch merged.** The requirements' decision on recognising merged work tests the pull request the record names before any from its branch; their criterion on a merged record holds whether or not the record names one. The two part only here, and the design follows the decision, the more specific of the two, so work reopened under a new pull request keeps its record.
+- **A task re-entered on its open pull request** pushes a commit per step, each counted by the human-findings measure, which counts each ordinary commit pushed after a pull request opened as one finding a human raised; the fix round, the routine route then, keeps one commit per round. Accepted: a rework a human asked for.
 - **A rebase rewrites the commits re-entry reads**: it then checks the step's files as for an uncommitted step.
 - **The freeze under squash** loses nothing: every reader of it runs while the branch is live, and the archive is read by its text.
 - **The task skill and the method file sit near the size warning**: detail goes to pages loaded by link.
