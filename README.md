@@ -285,13 +285,16 @@ loops plus re-entrant amendment paths**, and the paths are where a human decides
 ```mermaid
 flowchart TD
     S0["Step 0 · branch"] --> S15["Steps 1-5 · interview → spec"]
-    S15 --> S6["Step 6 · design"]
+    S15 --> S6["Step 6 · design<br/>the design, for you to review<br/>the working plan, for the agents"]
     S6 --> S7{"Step 7 · design-review"}
     S7 -->|"ITERATE · cap 3"| S6
     S7 -->|STOP| OUT1["surface the verdict · do not start work"]
-    S7 -->|"GO + notes"| WB["notes written back INTO the design<br/>before any implementation diff"]
-    WB --> FZ["plan freeze<br/>spec + design committed<br/>with a Plan-Freeze trailer"]
-    FZ --> S8["Step 8 · implement<br/>one agent per group, each entered<br/>through /harness:context-reset"]
+    S7 -->|"GO + notes"| WB["notes written back INTO the design<br/>or the working plan"]
+    WB --> Q["one question: commit the plan,<br/>push it, confirm the approach"]
+    Q --> FZ["plan freeze<br/>spec + design committed<br/>with a Plan-Freeze trailer"]
+    FZ --> ANS{"you read the design<br/>and answer"}
+    ANS -.->|"no, with the reason"| S6
+    ANS -->|yes| S8["Step 8 · implement<br/>one agent per group from the working plan,<br/>each entered through /harness:context-reset"]
     S8 --> S9["Step 9 · verify<br/>gates + a covering check per criterion"]
     S9 --> S95["Step 9.5 · documentation"]
     S95 --> S10{"Step 10 · self-review"}
@@ -309,7 +312,14 @@ flowchart TD
     AMS -.->|"approach unchanged"| S11
 ```
 
-Three things the one-line description leaves out.
+Four things the one-line description leaves out.
+
+**The design is written for you; the working plan is not.** The design carries the approach, the key
+decisions with the alternatives they rejected, a diagram, the risks and what the change builds, aimed at
+5,000 characters. The subtasks, their order and the files each one edits go into the task's local progress
+record and are never committed. After review approves, one question asks to commit and push the plan,
+links the design and states its measured length; implementation waits for your "yes", and a "no" with a
+reason sends the approach back to be redesigned. A task begun before this split keeps the shape it started in.
 
 **A cap bounds the loop, not the gate.** `ITERATE` and `REJECT` each stop at three rounds. When a cap burns,
 the open findings go to the author and the loop ends — but fixes made afterwards still get one review pass.
@@ -393,8 +403,8 @@ unnarrowed, after review approves.
 - **Fail-loud rules, soft patterns.** Prohibitions are AXIOMs with a trigger table; validated approaches
   are `## Patterns` blocks with soft verbs. [`docs/agent-writing-style.md`](docs/agent-writing-style.md)
   is the style contract for both.
-- **One writer per artefact.** The orchestrator never writes `*.spec.md` / `*.design.md` — the owning
-  subagent does. Violating that is how transcribed-instead-of-written docs drift.
+- **One writer per artefact.** The orchestrator never writes `*.spec.md` / `*.design.md`, or the working
+  plan in the progress record — the owning subagent does. Violating that is how transcribed-instead-of-written docs drift.
 - **Durable state survives compaction.** Every orchestrator carries a compaction-recovery callout at the
   top of its body and a `.progress.md` on disk, so a truncated session re-enters where it left off.
 - **The Learning Log is append-only, and per project.** Corrections go to

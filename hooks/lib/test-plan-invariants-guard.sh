@@ -224,7 +224,7 @@ printf '\n== while armed, an Edit asks only when it changes the page element sig
 # The page carries every text the cases below replace, so each one is judged by
 # the page before it against the page after it -- the route a real edit takes.
 printf '%s\n' '## Approach' 'a typo teh' '## Risks' 'old text' \
-  'the Handoff plan section must exist' 'blocking when absent' \
+  'the Collisions section must exist' 'blocking when absent' \
   'a missing `## Risks` is blocking' > "$P"
 R="${PROJ}/scripts/deliberate-absence.sh"
 printf '%s\n' '# old note' "RETAINED='## Out of scope'" > "$R"
@@ -239,7 +239,7 @@ asks   "a heading renamed by replacing only the words after the marker asks" \
 asks   "a removed heading asks" "$(ed_payload "$P" $'## Risks\nold text' 'old text')"
 asks   "a deeper heading added asks" "$(ed_payload "$P" 'old text' $'old text\n### Rollout')"
 asks   "an element name dropped from prose asks" \
-       "$(ed_payload "$P" 'the Handoff plan section must exist' 'the section must exist')"
+       "$(ed_payload "$P" 'the Collisions section must exist' 'the section must exist')"
 asks   "an element name added to prose asks" \
        "$(ed_payload "$P" 'blocking when absent' 'blocking when Use cases is absent')"
 asks   "a backticked heading added to a rubric asks" \

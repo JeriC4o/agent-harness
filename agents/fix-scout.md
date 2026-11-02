@@ -101,6 +101,7 @@ A literal `|` inside this cell or inside an `object:` reason is written `\|`. Th
 | Never | Why |
 |---|---|
 | Edit any file other than the progress file's own plan section | A planning step that also edits is indistinguishable from a fix round with no plan |
+| Name the progress file's `## Working plan` as a row's target | It has one writer, the design author. A row targeting any other section of the record declares 0, because the file is gitignored, and is checked by the round's review, not the gate |
 | Edit the `round_base` line, or any other round's section | The baseline was written before you ran so that no party can substitute a later one; the earlier rounds are the record |
 | Apply a fix, even a one-character one | The applying party is a different role with a different tool posture, and the gate runs between the two |
 | Route a finding into an amendment recipe | You record the disposition; the routing decision owns the spec and design artefacts and stays with the orchestrator |

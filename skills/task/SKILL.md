@@ -18,7 +18,7 @@ The task may originate from either:
 > If you are re-entering this skill after auto-compaction (summary block at top of context, or workflow context feels thin), STOP before any tool call and:
 >
 > 1. **Locate the durable-state file via this skill's active-state probe** — run the preamble glob (`ls ai-docs/plans/*.progress.md 2>/dev/null`) and apply the validation it documents.
-> 2. Once the probe identifies the correct durable-state file, read it **top-to-bottom in one pass** — every line, including older sections and the `## Decisions log`. Do not skim. Recorded `current_step` is a cross-check, never an instruction to skip the read.
+> 2. Once the probe identifies the correct durable-state file, read it **top-to-bottom in one pass** — every line, including older sections and the `## Decisions log`. Do not skim. Recorded `current_step` is where backward validation starts before implementation and a cross-check during it — never an instruction to skip the read.
 > 3. **Re-enter this skill from the top of its body** — let the preamble's probe / validation / RESUME sequence route control.
 >
 > If the probe finds no matching durable-state file, fresh invocation.
@@ -33,7 +33,7 @@ ls ai-docs/plans/*.progress.md 2>/dev/null
 
 > **Re-entry-after-compaction case (lost-arguments path).** If `$ARGUMENTS` is empty (lost to compaction) AND the glob finds a match with `**entry_args:**` recorded, treat recorded `entry_args` as the canonical entry reference. `⚡ Second` and `⚡ Third` preambles MUST NOT fire on the lost-arguments path. Only `⚡ First` may route.
 
-**If found → validate the match BEFORE jumping to RESUME** (gate — do NOT skip): branch matches `git branch --show-current`, `**base_commit:**` reachable, spec file exists, and the work is not already merged into the default branch. If validation fails, surface to user with **delete / park / RESUME anyway** options. Only after validation passes, run the **RESUME flow (skip Steps 1–7)**.
+**If found → validate the match BEFORE jumping to RESUME** (gate — do NOT skip): branch matches `git branch --show-current`, `**base_commit:**` reachable — a record without one is checked against the plan's freeze instead — spec file exists, and the work is not already merged into the default branch. If validation fails, surface to user with **delete / park / RESUME anyway** options. Only after validation passes, run the **RESUME flow** — from `## Next action`, or, with no `**base_commit:**`, from the recorded step, validated backwards.
 
 Validation checks (stale-merge + wrong-branch) and the RESUME-flow steps: [reference.md § ⚡ First — validation sequence (detail)](reference.md#-first--validation-sequence-detail).
 
@@ -47,13 +47,13 @@ Fires only when `$ARGUMENTS` is **non-empty** and looks like a ticket key (`^[A-
 
 ## ⚡ Second-bis: bare-ticket re-entry of an active (planned-but-unstarted) spec
 
-Fires when `$ARGUMENTS` is a ticket key AND `⚡ First` / `⚡ Second` found nothing. A `/task` can be **fully planned** — spec + design committed to the **active** `ai-docs/plans/` dir (NOT `deferred/`, NOT `done/`) — yet never started, so no `.progress.md` exists. Both routing preambles above miss this quadrant. Detect it BEFORE falling through to a fresh interview:
+Fires when `$ARGUMENTS` is a ticket key AND `⚡ First` / `⚡ Second` found nothing: spec + design committed to the **active** `ai-docs/plans/` dir, and no `.progress.md`. Detect it BEFORE falling through to a fresh interview:
 
 ```bash
 grep -rl "Tracked in:.*$ARGUMENTS" ai-docs/plans/*.spec.md 2>/dev/null
 ```
 
-A hit (confirm the sibling `*.design.md` exists too) means the spec/design already exist → surface to the user for confirmation and skip to Step 6/7 (design-review → implementation); do **NOT** re-interview (it would duplicate the approved spec). Only after this active-spec scan comes up empty is a fresh interview (Steps 1–5) correct.
+A hit (confirm the sibling `*.design.md` exists too) → surface to the user and do **NOT** re-interview: an earlier-shape design goes to Step 7, a new-shape one to Step 6 for a new design, review, freeze and confirmation — its working plan was local and is gone. Only after this scan comes up empty is a fresh interview (Steps 1–5) correct.
 
 ---
 
@@ -71,13 +71,14 @@ Run `git branch --show-current`. If it is the default branch (`main`), run `git 
 
 ### Step 6: Design Subagent
 
-First action: confirm the spec exists. Spawn `design`:
+First action: confirm the spec exists, and create `ai-docs/plans/YYYY-MM-DD-name.progress.md` when none exists ([schema](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)) with every header field but `**base_commit:**`, which Step 8 writes. A record that exists stands — after an ITERATE or a "no" it is neither recreated nor cleared. **Until Step 8, mark a step done in `**current_step:**` only after its outputs are written** ([reference.md § Re-entry before implementation](reference.md#re-entry-before-implementation)). Spawn `design`:
 
 ```
 Agent(subagent_type="general-purpose", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/design.md and follow it.
   Spec: ai-docs/plans/YYYY-MM-DD-name.spec.md
-  Research the codebase, produce Design Document with decomposition + Handoff plan.
+  Progress: ai-docs/plans/YYYY-MM-DD-name.progress.md
+  Research the codebase; write the design and the working plan.
 ")
 ```
 
@@ -85,31 +86,32 @@ Agent(subagent_type="general-purpose", prompt="
 
 ### Step 7: Design review
 
-**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the `plan-convergence` reader (`${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **The ordering is what satisfies the judgement class's obligation never to be the only check standing** — so neither half is optional and neither is run after the review. Both results go into the review spawn. Spawn prompt, what its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
+**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the `plan-convergence` reader (`${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **Neither half is optional and neither runs after the review:** the judgement class may never be the only check standing. Both results go into the review spawn. Spawn prompt, what its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
 
 ```
 Agent(subagent_type="general-purpose", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/design-review.md and follow it.
   Design doc: ai-docs/plans/YYYY-MM-DD-name.design.md
   Spec: ai-docs/plans/YYYY-MM-DD-name.spec.md
+  Progress: ai-docs/plans/YYYY-MM-DD-name.progress.md
 ")
 ```
 
 Verdict: GO / ITERATE / STOP.
 
-- **GO** → **transcribe the verdict's `note` / `minor` rows and recommendation bullets, verbatim, into the progress file's `## Design-review notes` section FIRST** (creating the file if absent; `(none)` when there are none). The verdict is a response and nothing else persists it, while both parties enforcing the fold-in read it after it is gone — [why, and the record's shape](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#design-review-notes). A GO carries no spec-amending note: a genuine conflict is `major` and arrives on an ITERATE. **Then the freeze:** the `design` subagent works the notes into the design, and the plan is surfaced once as a commit ending in the trailer `Plan-Freeze: <spec-base>` ([why and what it holds](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)). Step 8 waits for it.
-- **ITERATE** → back to Step 6 (max 3 rounds); a genuine-conflict row first takes the *Spec Amendment recipe*'s remedy question, and Step 6 follows the user's pick. **A round whose findings are only about the DOCUMENT's accuracy — stale counts, moved anchors, a representative written in a shape the code never receives — is not a reason to spend a round**, and repeated ones are a size signal rather than a rigour signal: fix them as text and split rather than iterate (`${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` § Rules). At the cap with a genuine DESIGN blocker still open the verdict stays ITERATE and the exhausted cap is surfaced to the user — a burned cap ends the loop, not the gate, and fixes applied after it still get one verification pass.
+- **GO** → **transcribe the verdict's `note` / `minor` rows and recommendation bullets, verbatim, as a new table of the progress file's `## Design-review notes` FIRST** (`(none)` when there are none) — [why, and its shape](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#design-review-notes). **Then the fold-in:** the `design` subagent works the notes into the design or the working plan, and you fill each row's last column as you find it there — one you cannot find goes back first. **Then the freeze**, a commit ending in the trailer `Plan-Freeze: <spec-base>` ([why](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)): on a new-shape design asked as the one confirmation question, whose "yes" Step 8 waits for ([reference.md § Step 7 — the confirmation question](reference.md#step-7--the-confirmation-question)); on an earlier-shape design surfaced once as a commit.
+- **ITERATE** → write its issues verbatim under `## Design-review issues (Round N)`, then back to Step 6 (max 3 rounds); a genuine-conflict row first takes the *Spec Amendment recipe*'s remedy question, and Step 6 follows the user's pick. **A round whose findings are only about the DOCUMENT's accuracy is not a reason to spend one**, and repeated ones are a size signal: fix them as text and split rather than iterate (`${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` § Rules). At the cap with a genuine DESIGN blocker still open the verdict stays ITERATE and the exhausted cap is surfaced to the user — a burned cap ends the loop, not the gate, and fixes applied after it still get one verification pass.
 - **STOP** → fundamental flaw with the approach. Surface verdict + `Issues` table; do not start Step 8.
 
 ### Design Amendment (re-entrant — triggered from Step 8 or Step 11)
 
-**From Step 11, when a self-review finding's divergence BREAKS the agreed approach; from Step 8, when a group's divergence breaks it and the user approves the rebuild** — nothing restarts on its own account. On either entry: stop the step, surface to user for approval, spawn the `design` subagent to apply the amendment (NEVER edit `*.design.md` inline), re-run Step 7 (max 3 rounds). On GO → its freeze, then resume. **A transport-level drop is not a returned amendment**: Step 8's backoff clause governs, and the write is verified on disk before the round counts as spent. **Deviating from the design without either triggering Design Amendment or — for a divergence that does not break the agreed approach — having it corrected in place — FORBIDDEN.** Full recipe (spawn-prompts, ITERATE/STOP handling): [reference.md § Design Amendment recipe (re-entrant — triggered from Step 8 or Step 11)](reference.md#design-amendment-recipe-re-entrant--triggered-from-step-8-or-step-11).
+**From Step 11, when a self-review finding's divergence BREAKS the agreed approach; from Step 8, when a group's divergence breaks it and the user approves the rebuild** — nothing restarts on its own account. On either entry: stop the step, surface to user for approval, spawn the `design` subagent to apply the amendment (NEVER edit `*.design.md` inline), re-run Step 7 (max 3 rounds). On GO → its freeze and, on a new-shape design, the confirmation, then resume. **A transport-level drop is not a returned amendment**: Step 8's backoff clause governs, and the write is verified on disk before the round counts as spent. **Deviating from the design without either triggering Design Amendment or — for a divergence that does not break the agreed approach — having it corrected in place — FORBIDDEN.** Full recipe (spawn-prompts, ITERATE/STOP handling): [reference.md § Design Amendment recipe (re-entrant — triggered from Step 8 or Step 11)](reference.md#design-amendment-recipe-re-entrant--triggered-from-step-8-or-step-11).
 
 ### Spec Amendment recipe
 
 If a self-review or reviewer-comment fix requires editing `ai-docs/plans/*.spec.md` (active or `done/`): stop the step, surface to user for approval, re-invoke `spec-writer` to apply the amendment (NEVER `Edit` `*.spec.md` inline). Detection: mechanical at the top of every fix round — `git diff` includes a `*.spec.md` path → trigger fires regardless of how small the doc edit appears. A declared-link report naming a possible spec amendment enters the recipe too, and its design-complying answer returns to the design author's pass that raised it.
 
-**After the amendment, ONE question decides the route — does it change the AGREED APPROACH?** Yes re-runs Step 6 → Step 7, whose GO takes a new freeze; no takes neither — no review round and no freeze, because a changed requirement is not a divergence — and the amended pair is re-read, each genuine finding routed by the side that is wrong, a design item the amendment made false corrected directly ([reference.md § Spec Amendment recipe](reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict), step 5). Answering it by reflex is the back door this change exists to close, so the recipe states both branches rather than defaulting.
+**After the amendment, ONE question decides the route — does it change the AGREED APPROACH?** Yes re-runs Step 6 → Step 7, whose GO takes a new freeze and confirmation; no takes neither — no review round and no freeze, because a changed requirement is not a divergence — and the amended pair is re-read, each genuine finding routed by the side that is wrong, a design item the amendment made false corrected directly, and on a new-shape design each criterion it added or changed placed in a subtask while a group is still to run ([reference.md § Spec Amendment recipe](reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict), step 5).
 
 Full recipe (spawn-prompts, and why no interview state file is involved): [reference.md § Spec Amendment recipe](reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict).
 
@@ -119,24 +121,24 @@ Full recipe (spawn-prompts, and why no interview state file is involved): [refer
 
 ### Step 8: Implementation
 
-> First action: verify spec + design + GO verdict exist, that `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find <design>` names a freeze — a could-not-compute is a STOP — AND that every `note` / `minor` / recommendation from the latest design-review GO has been written back into the design doc. **Read those notes from the progress file's `## Design-review notes` section, never from the response text**, and fill each row's last column as you confirm the fold-in. A section absent on a task that reached Step 7 is a STOP, not a clean pass. "Applied in code later" ≠ "resolved in the design"; the design doc is the implementation contract.
+> First action: verify spec + design + GO verdict exist, that `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find <design>` names a freeze — a could-not-compute is a STOP — that on a new-shape design `**confirmation:**` is `yes` naming that freeze, AND that every row of the last table in the progress file's `## Design-review notes` has its last column filled — **read the notes there, never from the response text**. A section absent on a task that reached Step 7 is a STOP, not a clean pass. "Applied in code later" ≠ "resolved in the design or the working plan".
 >
 > Transport-level drop: [reference.md § Step 8](reference.md#step-8--transport-drop-backoff).
 
-- **Confirm the Step-0 branch** — `git branch --show-current` must show `<TICKET-KEY>-<slug>`, not `main`. If Step 0 was skipped (resumed or legacy run), create it now off the default branch: `git checkout -b <TICKET-KEY>-<slug> main`. Record the branch name in the progress file. The gate is **any file edit**, not just code — the spec/design/state writes in Steps 1–7 already counted (AXIOM 1).
+- **Confirm the Step-0 branch** — `git branch --show-current` must show `<TICKET-KEY>-<slug>`, not `main`. If Step 0 was skipped (resumed or legacy run), create it now off the default branch: `git checkout -b <TICKET-KEY>-<slug> main`. The gate is **any file edit** — the writes in Steps 1–7 already counted (AXIOM 1).
 - **Before any `git commit`:** confirm the branch is not the default one, and check `git status` for `ai-docs/learnings.md` **and** `ai-docs/learnings/` (a first-write per-branch entry file is untracked, and `git status` collapses it to one `ai-docs/learnings/` line). Hook behaviour (`branch-protection`, `auto-stage-learnings`, `archive-protection-reminder`): [reference.md § Commit authorisation + hooks](reference.md#commit-authorisation--hooks).
-- Create `ai-docs/plans/YYYY-MM-DD-name.progress.md` at start — **or fill in the one Step 7 already created for the design-review notes, rather than overwriting it** — using canonical schema at [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md). Required fields: `**Branch:**`, `**base_commit:**`, `**Last build:**`, `**current_step:**`, `**last_passed_gate:**`, `**entry_args:**`, `## Decisions log` (for `/task` also `**Issue:**` / `**Spec:**` / `**Design:**`). Record `**entry_args:**` (original `$ARGUMENTS`) ONCE — read-only thereafter. Field-by-field template: [reference.md § Step 8 — progress-file creation template (detail)](reference.md#step-8--progress-file-creation-template-detail).
+- Write `**base_commit:**` (`git rev-parse HEAD`, after the confirmed freeze); create the progress record first only when none exists, for a task begun before Step 6 created it ([reference.md § Step 8 — progress-file creation template (detail)](reference.md#step-8--progress-file-creation-template-detail)).
 - After each subtask:
   1. `%BUILD_CMD% <module-path>` — PASS; the touched-scope checks, selection stated ([`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md)); `%FORMAT_CMD%` on changed files.
-  2. **Update `.progress.md`:** rewrite `**current_step:**` to `Step 8 — subtask N of M complete`; rewrite `**last_passed_gate:**` (`<gate command> | <UTC ts> | <git rev-parse HEAD> | <tree digest>`); **rewrite `## Next action` to the move actually next and tick the closed subtask's box**; append a `## Decisions log` bullet for any non-trivial choice (prefixed `Step 8 subtask N:`). **Every later *Write progress* in this skill names only its own `current_step` value — the other three are owed there too**, and a compaction-recovered orchestrator jumps straight to `## Next action`, where a stale paragraph reads as an instruction rather than as stale.
-  3. **Every-group handoff (binding).** During Step 8 the orchestrator NEVER executes subtask code in its own context — every group (including the first, including M=1) fans out through `/context-reset` at the start of each group per the design's `## Handoff plan`. Rationale: [reference.md § Every-group handoff (rationale)](reference.md#every-group-handoff-rationale).
+  2. **Update `.progress.md`:** rewrite `**current_step:**` to `Step 8 — subtask N of M complete`; rewrite `**last_passed_gate:**` (`<gate command> | <UTC ts> | <git rev-parse HEAD> | <tree digest>`); **rewrite `## Next action` to the move actually next and write the closed subtask's `## Completed subtasks` line** (its box, on an earlier-shape record); append a `## Decisions log` bullet for any non-trivial choice (prefixed `Step 8 subtask N:`). **Every later *Write progress* in this skill names only its own `current_step` value — the other three are owed there too** ([why](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#next-action)).
+  3. **Every-group handoff (binding).** During Step 8 the orchestrator NEVER executes subtask code in its own context — every group (including the first, including M=1) fans out through `/context-reset` at the start of each group per the working plan's groups (an earlier-shape design: its handoff plan). Rationale: [reference.md § Every-group handoff (rationale)](reference.md#every-group-handoff-rationale).
 - Unknown API → read sources → search the codebase (`${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md`) → ask user. Don't guess.
 - Bug report during impl → activate `/bugfix`, then return.
 - **Implementation diverges from the frozen design → the group records it; nothing restarts on its own account.** The group writes each divergence to the decisions log — the design item by its heading, and what shipped — and on its hand-back you ask one question: does it break the agreed approach? No → once the group's code is written, spawn the `design` subagent's in-place correction once, given those entries. Yes → stop and surface; on approval, *Design Amendment* above. [Why](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-implementation-step-corrects-after-each-group).
 
 ### Step 9: Verify
 
-Gates (all must PASS): `%BUILD_CMD% <module-path>`; the touched-scope checks per Step 8 (all green — and read the result per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Reading a test result`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result), not by exit code); `%FORMAT_CMD%` to format THEN `%LINT_CMD%` as the gate — must exit clean (the formatter is NOT the gate; see [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Linter posture`](${CLAUDE_PLUGIN_ROOT}/docs/code-style.md#linter-posture)). **If the change alters a published interface, or what a component requires of its collaborators, run the gate over its DEPENDENTS too** — both break a file the diff never touched and a module-scoped gate sees neither; find them by searching for the CHANGED name, not the new one. **For changed `.sh` files: `shellcheck <file>`.** Then a per-AC coverage check: locate the test for each AC and show a `| # | Criterion | Test / Verification | Status |` table (one row per AC). On ALL PASS → Step 9.5. Full list: [reference.md § Step 9 — verify list (full)](reference.md#step-9--verify-list-full).
+Gates (all must PASS): `%BUILD_CMD% <module-path>`; the touched-scope checks per Step 8 (all green — and read the result per [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Reading a test result`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result), not by exit code); `%FORMAT_CMD%` to format THEN `%LINT_CMD%` as the gate — must exit clean (the formatter is NOT the gate; see [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md § Linter posture`](${CLAUDE_PLUGIN_ROOT}/docs/code-style.md#linter-posture)). **If the change alters a published interface, or what a component requires of its collaborators, run the gate over its DEPENDENTS too** — both break a file the diff never touched and a module-scoped gate sees neither; find them by searching for the CHANGED name, not the new one. **For changed `.sh` files: `shellcheck <file>`.** Then the per-AC coverage table. On ALL PASS → Step 9.5. Full list: [reference.md § Step 9 — verify list (full)](reference.md#step-9--verify-list-full).
 
 **Write progress:** rewrite `**current_step:**` to `Step 9 — Verify (ALL PASS)`; rewrite `**last_passed_gate:**`; append a `## Decisions log` bullet.
 

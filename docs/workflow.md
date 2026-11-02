@@ -337,13 +337,25 @@ meaning: it stops nothing, and no check reads the ticket or the description.
   the closing trailer the project's profile names, when it names one, for the issue the PR resolves and
   under the profile's condition, and every in-place rewrite keeps it. Markdown renders, so bullets, inline
   code and links are fine.
+- **A design in the new shape — one without its own decomposition section — is linked, not restated.**
+  The description links it at the head commit it is written against, built from the `File link form` row
+  of `AGENTS.md` § VCS, or names its path at that commit where the row says `none` or is absent: a link
+  to the branch breaks once the merged branch is deleted, and a link to a commit outlives it where the review surface keeps a pull request's
+  commits under the pull request's own ref. The design is the reviewer's source for the problem, the approach, the
+  decisions and the diagram, so the description restates none of them and adds only what happened during
+  implementation: where the work departed from the design and why, and what to look at in review. An
+  earlier-shape design, and a task with no design, keep the shape above, its process diagram included.
 - **The design's change since approval, in one line, each time the description is written.** When
   `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh diff` over the design says `changed`, the line links the
   design document's own entry in the review surface's comparison of the freeze commit with the branch
   head; where the surface cannot address one file's entry, it links the comparison and names the design's
   path at the branch head. No such line when it says `unchanged`. When it could not compute, one line
   saying the change since approval could not be computed and why, because no line at all would read as
-  unchanged ([§ The plan freeze](#the-plan-freeze)).
+  unchanged ([§ The plan freeze](#the-plan-freeze)). When a new-shape design is over the length cap, the line also states its measured length
+  beside the cap — the length line `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh` gives for the
+  design at the head the description is written against, which the correction pass's hand-back carries —
+  and asks for nothing: the cap is a soft limit, and this is where the human sees a correction's effect
+  on the length.
 - **Keep a small, self-contained PR to the files the task changes.** The plan's spec and design are among
   them: the freeze commits them, and the task's closing step moves them into `ai-docs/plans/done/` in the
   same PR.
@@ -362,10 +374,15 @@ staging. Catches the common mistake where a moved file's `../foo` link no longer
 ## The plan freeze
 
 **A plan is frozen by a commit.** At each design-review GO, once the design author has worked the GO's
-notes into the design, the spec and the design — with the record of declared links, and the record of
+notes into the design or the working plan and the orchestrator has found each one there, the spec and the design — with the record of declared links, and the record of
 excused findings when the task wrote one — are committed in one commit whose message ends with the
-trailer `Plan-Freeze: <spec-base>`, `<spec-base>` being the spec's file name without `.spec.md`. The commit
-is surfaced to the user once, staged list and message, under the ordinary consent rule for commits.
+trailer `Plan-Freeze: <spec-base>`, `<spec-base>` being the spec's file name without `.spec.md`. On a
+design in the new shape — one without its own decomposition section — the commit is asked in the one
+confirmation question, beside pushing it and confirming the approach, and the human's "yes" is recorded
+in the progress record as `**confirmation:**` with the freeze's id
+([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Step 7 — the confirmation question](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#step-7--the-confirmation-question));
+on an earlier-shape design it is surfaced once, staged list and message, under the ordinary consent rule.
+The working plan is outside every freeze: it is never committed.
 Nothing about the freeze lives in a local file, and a rebase keeps it: a rebase replays a commit's message
 with its trailers, and the change since the freeze is computed from text rather than from commit ids.
 
@@ -373,8 +390,8 @@ with its trailers, and the change since the freeze is computed from text rather 
 divergence caused, and a GO after a spec amendment that changed the approach. A spec amendment that keeps
 the approach takes none — the review's breadth fingerprint reads the spec as it stands, so the next round
 still sweeps every item ([`${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md`](${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md#triggers)).
-Implementation does not begin on a plan with no freeze, and the implementation step's first action checks
-for one.
+Implementation does not begin on a plan with no freeze, nor on a new-shape plan whose recorded "yes" names
+another freeze, and the implementation step's first action checks both.
 
 **The change since the freeze** is computed by `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh`: `find` names
 the plan's latest freeze — the latest commit reachable from the branch head whose trailers carry
@@ -447,7 +464,8 @@ review has run. The handoff group that meets it records it in the progress file'
 design item by its heading, and what shipped — and **the orchestrator applies the one test to the group's
 hand-back: does it break the agreed approach?** Not breaking → once the group's code is written, the
 design author's in-place correction pass runs once for the group, given the group's recorded divergences;
-nothing restarts and nobody is asked. Breaking → work stops and the user is asked; on approval the Design
+nothing restarts and nobody is asked. While a group is still to run the pass corrects the working plan as
+well, so the groups after it read what shipped; nobody else edits it. Breaking → work stops and the user is asked; on approval the Design
 Amendment recipe runs, and its GO takes a new freeze. Either way the review rounds that follow rule on
 the design's change since the freeze, the group's corrections among it.
 

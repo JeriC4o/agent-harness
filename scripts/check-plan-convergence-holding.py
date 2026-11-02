@@ -90,7 +90,8 @@ def run(ctx):
         tokens = ctx['tokens']
         units_of = dict((doc, units) for doc, _b, units in documents)
         completeness(bodies['spec'], bodies['design'], tokens['spec'], tokens['design'],
-                     ctx['built'], units_of['design'])
+                     ctx['built'], units_of['design'], ctx['design_shape'],
+                     ctx['earlier_sections'])
 
 
 # ---------------------------------------------------------------------------
@@ -420,9 +421,17 @@ def headings_of(body):
     return out
 
 
-def completeness(spec_body, design_body, spec_tokens, design_tokens, built, units):
+# [completeness-slice]
+def completeness(spec_body, design_body, spec_tokens, design_tokens, built, units,
+                 shape, earlier_sections):
     global OBJECTS, CRITERIA, SECTION_REFS, QUALIFIED_REFS, FOLDED
-    rows = rows_of(design_body, design_tokens, DECOMP_ROW)
+    # A design in the new shape holds no decomposition, so no ordinal table of it
+    # is read as one and its delivery and place legs do not apply. An earlier one
+    # is read by its own section names as well as by the record's, because the
+    # record stops naming them while such a design is still in flight.
+    earlier = shape == 'earlier'
+    decomposition = list(design_tokens) + [n for n in earlier_sections if n not in design_tokens]
+    rows = rows_of(design_body, decomposition, DECOMP_ROW) if earlier else []
     bullets = use_case_bullets(design_body, design_tokens)
     objects = list(built)
     for item in bullets:
@@ -434,7 +443,7 @@ def completeness(spec_body, design_body, spec_tokens, design_tokens, built, unit
     for obj in objects:
         marked = '`%s`' % obj
         lacks = []
-        if marked not in row_text:
+        if earlier and marked not in row_text:
             lacks.append('no stated place -- no decomposition row names it')
         # The bullet is excluded by its CONTENT and not by its marker: the
         # segmentation strips a list marker before splitting, so a rule keyed on
@@ -442,10 +451,11 @@ def completeness(spec_body, design_body, spec_tokens, design_tokens, built, unit
         # mention elsewhere -- the finding-losing direction, and silent.
         own_bullet = re.compile(r'^(?:[-*+]\s+)?%s\s*[—–-]' % re.escape(marked))
         elsewhere = [s for s in units
-                     if marked in s and not DECOMP_ROW.match(s)
+                     if marked in s and not (earlier and DECOMP_ROW.match(s))
                      and not own_bullet.match(s)]
         if not elsewhere:
-            lacks.append('no stated reason -- the document names it only in its row and its bullet')
+            lacks.append('no stated reason -- the document names it only in %s'
+                         % ('its row and its bullet' if earlier else 'its bullet'))
         if obj not in bullets:
             lacks.append('no stated cases and no stated behaviour -- it has no use-case bullet')
         elif not bullets[obj].strip():
@@ -462,10 +472,10 @@ def completeness(spec_body, design_body, spec_tokens, design_tokens, built, unit
         stated.add(CRITERION_ROW.match(crit).group(1))
     CRITERIA = len(stated)
     delivered = set()
-    for cell in delivery_cells(design_body, design_tokens):
+    for cell in (delivery_cells(design_body, decomposition) if earlier else []):
         delivered |= cell
     FOLDED = is_folded(spec_body, RETAINED)
-    if not FOLDED:
+    if earlier and not FOLDED:
         for crit in sorted(stated - delivered, key=lambda c: int(c[2:])):
             finding('completeness', 'design', crit,
                     'the requirement %s is stated in the spec and no decomposition row delivers it' % crit)
