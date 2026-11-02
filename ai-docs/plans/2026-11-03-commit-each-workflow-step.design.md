@@ -12,11 +12,15 @@ the local progress record; a step writing only that record writes it, then marks
 workflows keep their commit points and lose only the ask. Pushing and opening a pull request stay asked,
 and the two commit guards — none on the default branch, no attribution trailer — are untouched.
 
-Every mark also records the branch head in the record's `step_commit` field, so re-entry can tell whether
-the step after the recorded one committed: commits since that head carrying its files mean it finished;
-its files present but uncommitted are checked, and committed when they hold or redone when they do not;
-backward validation then runs as today. A record from before this change has no such field, and what its
-task left uncommitted is checked the same way.
+Re-entry reads those commits. Before implementation only the orchestrator marks, one step at a time, and
+each mark records the branch head in the record's `step_commit` field; from implementation on, where two
+groups may run at once, each mark names its own commit instead, in a subtask's completion line or the
+orchestrator's decisions-log entry. A commit after that head, or one since `base_commit` that nothing
+names, closes the step whose files it carries — the freeze by its marker. A step writing only the record
+has finished when its outputs there are intact; files present but uncommitted are checked, and committed
+when they hold or redone when they do not. Backward validation then checks the recorded step and each
+earlier one until one whose outputs hold, and resumes right after it. A record from before this change
+has no such field, and what its task left uncommitted is checked the same way.
 
 The freeze stays one marked commit per approval, taken as an empty commit when the plan has not changed
 since its last write was committed. The confirmation question then asks only to push and to confirm.
@@ -29,14 +33,17 @@ under `merge-commit` the default branch's history decides, under `squash` the us
 ```mermaid
 flowchart TD
     W["a step writes its outputs"] --> S{"a file the pull<br/>request carries?"}
-    S -->|yes| C["commit, no ask"] --> M["mark done,<br/>recording the head"]
+    S -->|yes| C["commit, no ask"] --> M["mark done"]
     S -->|no| M
-    R["re-entry"] --> N{"commits since the recorded head<br/>carry the next step's files?"}
-    N -->|yes| F["finished"]
-    N -->|no| U{"its files present<br/>but uncommitted?"}
-    U -->|"they hold"| C2["commit"] --> F
-    U -->|"absent or broken"| RD["run the step again"]
-    F --> B["backward validation, as today"]
+    R["re-entry"] --> N{"an unmarked commit carries<br/>its files or marker?"}
+    N -->|yes| F["finished: mark it"]
+    N -->|no| U{"its outputs"}
+    U -->|"record only, intact"| F
+    U -->|"uncommitted, they hold"| C2["commit"] --> F
+    U -->|"absent or broken"| NF["not finished"]
+    F --> B["validate backwards"]
+    NF --> B
+    B --> RS["resume after the last step that passes"]
 ```
 
 ```mermaid
@@ -54,34 +61,35 @@ flowchart TD
 ## Key decisions
 
 - **The party ending a step commits it**: the orchestrator for plan documents once the author's write is on disk, the group agent for its subtasks. Rejected: each author commits — commit rules in every agent contract.
-- **The head is recorded in a progress-record field**, since the commit message is fixed by the requirements and a file's state cannot tell a revision committed after a verdict from the write before it. Rejected: counting the design's commits, which a rebase or an amendment breaks.
+- **A head is recorded only before implementation**, where the orchestrator alone marks, in order; the commit message is fixed by the requirements, and a file's state cannot tell a revision committed after a verdict from the write before it. Rejected: one head throughout — concurrent groups move it past each other's unmarked commits; one per group — fields repeating the completion lines.
 - **A review-fix round makes one commit, fix and correction together**; a correction after an implementation group commits alone. Rejected: a commit per beat, before the post-apply loop has accepted the fix.
-- **The freeze is always its own commit**, so each approval has one marker with no special case.
-- **The interview commits the approved spec standalone too**: that is the spec-only run, and moving the spec into the deferred folder needs it tracked.
-- **`Merge style` is a row of the profile's version-control table**, `squash` or `merge-commit`, beside rows the method already reads; absent or unknown reads as `squash`, and the leftover check is its only reader.
-- **"Never left the machine" is decided locally** — no pull request on the record, no upstream and no remote-tracking branch for its branch. It holds offline; this workflow always pushes with an upstream.
-- **The prompt goes through each `settings.json`**: committing and staging named files allowed, the stage-everything spellings and committing every tracked change kept on ask, which the host evaluates before allow; a skill's tool list grants for one turn only.
+- **The freeze is always its own commit**, one marker per approval. Rejected: marking the last write's commit when nothing changed — it rewrites a commit, and an earlier round's commit would read as a freeze.
+- **The interview commits the approved spec standalone too**: that is the spec-only run, and moving the spec into the deferred folder needs it tracked. Rejected: committing only inside a task run — the spec would wait uncommitted.
+- **`Merge style` is a row of the profile's version-control table**, `squash` or `merge-commit`; absent or unknown reads as `squash`, and the leftover check is its only reader. Rejected: a key in the host's settings — a second home for project facts.
+- **"Never left the machine" is decided locally** — no pull request on the record, no upstream and no remote-tracking branch; the workflow pushes with an upstream. It holds offline. Rejected: asking the review surface first — offline, a never-pushed record would be asked about.
+- **Permissions go through each `settings.json`**: committing and staging named files allowed, the stage-everything spellings and committing every tracked change kept on ask, which the host evaluates before allow. Rejected: a skill's tool list — it grants for one turn.
 
 ## Risks
 
 - **Two groups running at once in one tree** could commit each other's staged files: a group beside another commits naming its paths.
-- **A text permission rule misses unusual spellings**: the method's ban on staging everything stays the rule.
+- **Committing every tracked change still prompts**, where committing should not: staging every change at once still needs consent, and that form does it. A spelling a rule misses leaves the method's ban as the rule.
+- **A record whose freeze was pushed is no longer passed locally**, as a record before implementation is today: under squash, with the review surface unreachable, the user is told why and asked, as the requirement for a review surface that cannot say demands.
 - **A task re-entered on its open pull request** pushes a commit per step, each counted by the human-findings measure; the fix round, the routine route then, keeps one commit per round. Accepted: a rework a human asked for.
-- **A rebase makes the recorded head unreachable**: re-entry checks the step's files as for an uncommitted step.
+- **A rebase rewrites the commits re-entry reads**: it then checks the step's files as for an uncommitted step.
 - **The freeze under squash** loses nothing: every reader of it runs while the branch is live, and the archive is read by its text.
 - **The task skill and the method file sit near the size warning**: detail goes to pages loaded by link.
 
 ## Use cases
 
-- `step commit` — holds a step's shared outputs before the mark; read by re-entry; carried by the pushes the confirmation and the closing step ask for.
-- `step_commit` — written with every mark by the orchestrator or a group agent; read by re-entry, and by the leftover check under `merge-commit`.
+- `step commit` — holds a step's shared outputs before its mark; read by re-entry; carried by the pushes the confirmation and the closing step ask for.
+- `step_commit` — written by the orchestrator with each mark before implementation, then replaced by `base_commit`, the same commit; read by re-entry, and by the leftover check under `merge-commit`.
 - `Merge style` — declared per project, `squash` here and in the template; read by the leftover check when the review surface cannot answer.
 - `leftover-record check` — runs when a task starts and finds a record: passes it, offers delete, park or resume, or says why it cannot tell and asks.
 - `settings.json` — read by the host on each git command: committing and named staging unprompted, staging everything still prompting.
 
 ## Collisions
 
-- None.
+- `step_commit` repeats, at the confirmation, the freeze its answer names, until `base_commit` replaces it. From implementation on the record's last-passed-gate field can name a commit a completion line or decisions-log entry names; it records what a check last ran over, and re-entry does not read it.
 
 ## Open questions
 
