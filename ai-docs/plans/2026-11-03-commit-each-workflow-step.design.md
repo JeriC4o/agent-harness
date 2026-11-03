@@ -35,7 +35,9 @@ The `leftover-record check` decides by the review surface, and reads the default
 the one fallback below: work counts as merged when the pull request the record names, or, where it names
 none, one from the record's branch, has merged on the review surface. Work that never left the machine passes
 without a question. Only when the surface cannot answer does the project's `Merge style` matter:
-under `merge-commit` the default branch's history decides, under `squash` the user is told why and asked.
+under `merge-commit` the default branch's history decides, by whether it holds a commit of the task — one
+the record holds, else the plan's freeze; under `squash`, and under `merge-commit` when there is no such
+commit to look for, the user is told why and asked.
 
 ```mermaid
 flowchart TD
@@ -61,8 +63,10 @@ flowchart TD
     Q -->|no| P
     Q -->|yes| O["offer delete, park, resume anyway"]
     Q -->|cannot say| MS{"declared merge style"}
-    MS -->|merge-commit| H["default branch's history decides"]
     MS -->|"squash, none, unknown"| A["tell the user why, and ask"]
+    MS -->|merge-commit| T{"a task commit to look for:<br/>the record's, else the freeze?"}
+    T -->|yes| H["default branch's history decides"]
+    T -->|none| A
 ```
 
 ## Key decisions
