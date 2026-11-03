@@ -79,12 +79,12 @@ flowchart TD
 - **The interview commits the approved spec standalone too**: that is the spec-only run, and moving the spec into the deferred folder needs it tracked. Rejected: committing only inside a task run — the spec would wait uncommitted.
 - **`Merge style` is a row of the profile's version-control table**, `squash` or `merge-commit`; absent or unknown reads as `squash`, and the leftover check is its only reader. Rejected: a key in the host's settings — a second home for project facts.
 - **"Never left the machine" is decided locally** — no pull request on the record, no upstream and no remote-tracking branch; the workflow pushes with an upstream. It holds offline. Rejected: asking the review surface first — offline, a never-pushed record would be asked about.
-- **Permissions go through each `settings.json`**: committing and staging named files allowed, the stage-everything and commit-everything spellings the ask list can name kept on ask, which the host evaluates before allow. Rejected: a skill's tool list — it grants for one turn.
+- **Permissions go through each `settings.json`**: committing and staging named files allowed; on ask, which the host evaluates before allow, staging every change, and committing every tracked change by a leading flag or pathspec, as `git commit -a`, which stages every change at once and so needs consent. Rejected: a skill's tool list — it grants for one turn; asking for that flag or pathspec after other words — the host matches the whole command, so it prompted on ordinary commits whose message held ` -a`.
 
 ## Risks
 
 - **Two groups running at once in one tree** could commit each other's staged files: a group beside another commits naming its paths.
-- **Committing every tracked change still prompts**, where committing should not: staging every change at once still needs consent, and that form does it. A stage-everything or commit-everything spelling the ask list does not name runs with no prompt. That residual is forced: committing and staging named files must raise none, so the allow is a pattern, and the host matches a command's text against a finite list of asks — the double-star staging form cannot be listed at all, a star in a rule matching any text. The method's written ban still covers the staging forms; nothing written covers the commit forms.
+- **A stage-everything or commit-everything spelling outside the ask list runs unprompted**, such as a commit-everything flag or pathspec after other words, as `git commit -m x -a`, and the double-star staging form, unlistable since a star in a rule matches any text: the method's written ban covers the staging forms; nothing written covers the commit forms.
 - **A record whose freeze was pushed is no longer passed locally**, as a record before implementation is today: under squash, with the review surface unreachable, the user is told why and asked, as the requirement for a review surface that cannot say demands.
 - **A record naming an open pull request is resumed even when an earlier pull request from its branch merged.** The requirements' decision on recognising merged work tests the pull request the record names before any from its branch; their criterion on a merged record holds whether or not the record names one. The two part only here, and the design follows the decision, the more specific of the two, so work reopened under a new pull request keeps its record.
 - **A task re-entered on its open pull request** pushes a commit per step, each counted by the human-findings measure, which counts each ordinary commit pushed after a pull request opened as one finding a human raised; the fix round, the routine route then, keeps one commit per round. Accepted: a rework a human asked for.
@@ -101,7 +101,7 @@ flowchart TD
 - `approval stamp` — written by the design author once per approval; carried by the freeze commit; read by the human at the confirmation and on the review surface; read by re-entry, which commits a stamp naming the recorded approval, found uncommitted, as that approval's freeze.
 - `Merge style` — declared per project, `squash` here and in the template; read by the leftover check when the review surface cannot answer.
 - `leftover-record check` — runs when a task starts and finds a record: passes it, offers delete, park or resume, or says why it cannot tell and asks.
-- `settings.json` — read by the host on each git command: committing and staging named files unprompted; the stage-everything and commit-everything spellings the ask list names still prompting.
+- `settings.json` — read by the host on each git command: committing and staging named files unprompted; staging every change, and committing every tracked change by a leading flag or pathspec, still prompting.
 
 ## Collisions
 
