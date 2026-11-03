@@ -214,6 +214,7 @@ at that heading.
 | Branch naming | `<TICKET-KEY>-<slug>`, or `chore/<slug>` for work with no issue |
 | Ticket key format | `GH-<issue number>` |
 | Review surface | GitHub PR via `gh` |
+| Merge style | `squash` |
 | Diagram form | `mermaid` — Mermaid, which GitHub renders in a PR description and in a committed Markdown file |
 | File link form | `https://github.com/JeriC4o/agent-harness/blob/<ref>/<path>` — GitHub's address of a file at a branch or a commit; a pull request's commits stay reachable under its own `refs/pull/<N>/head` after its branch is deleted |
 

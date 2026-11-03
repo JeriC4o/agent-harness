@@ -17,7 +17,7 @@ Orchestrator for the spec-drafting interview. Drives the round loop, surfaces th
 >
 > 1. **Locate the durable-state file** — `ls ai-docs/plans/*.spec.md.state.md 2>/dev/null` (read both the matched `.state.md` AND its sibling `<spec_path>`). If exactly one in-flight artefact exists, that's the durable state. None → fresh invocation. Multiple → surface to user.
 > 2. Read it **top-to-bottom in one pass**. Recorded `round` is a cross-check, never an instruction to skip the read.
-> 3. **Re-enter this skill from the top of its body.** Resume from the round recorded in `.state.md`; do NOT restart at round 1.
+> 3. **Re-enter this skill from the top of its body.** Resume from the round recorded in `.state.md`; do NOT restart at round 1. **Except beside a committed, clean spec** (`git status --porcelain -- <spec_path>` empty, `git log -1 -- <spec_path>` naming a commit): the approval finished, so finish Step 4's remaining acts — the cross-link comment unless the ticket already carries it, then the state file's deletion — without re-running a round.
 >
 > See `${CLAUDE_PLUGIN_ROOT}/skills/context-reset/SKILL.md § Compaction recovery (re-entry)` for canonical rationale.
 
@@ -152,6 +152,7 @@ Execute the chosen action:
 2. Confirm — `AskUserQuestion`: "Approve the spec?" / { Approve, Tweak first }.
 3. On Approve:
    - Resolve the tracking ticket if not pinned (ticket-ref mode = already pinned; free-text mode = propose creating one, e.g. `gh issue create --title "<from spec>" --body-file <file>`), **after user approval**. Then **cause the key to be captured** into the spec's `**Tracked in:**` field **via the spec-writer** — re-invoke the spec-writer with the resolved key in `prior_qa` (e.g. an instruction "set Tracked in to <KEY>"). Do NOT `Edit` the spec from the orchestrator: the spec-writer owns ALL `*.spec.md` writes (see Anti-patterns; AGENTS.md AXIOM "the orchestrator NEVER writes to `*.spec.md` / `*.design.md`").
+   - **Commit the spec** by name, without asking, once that capture is on disk — standalone and inside `/task` alike ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Each step commits what it wrote](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#each-step-commits-what-it-wrote)).
    - Post the cross-link comment on the ticket when the project has a tracker (`gh issue comment <N> --body "Spec: \`<spec_path>\`"`); skip it otherwise.
    - Delete the state file.
 4. Skill exits. `/task` (the caller) resumes at Step 6 (`design` Subagent).
@@ -166,7 +167,7 @@ Execute the chosen action:
 
 If the user wants to stop after the interview:
 
-1. `git mv <spec_path> ai-docs/plans/deferred/`.
+1. `git mv <spec_path> ai-docs/plans/deferred/`, then commit the move without asking.
 2. Delete the state file.
 3. Do NOT proceed to Step 6 of `/task`. The spec can be picked up later via `/task`'s deferred-plan-activation preamble.
 

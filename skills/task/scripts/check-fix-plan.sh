@@ -47,9 +47,10 @@
 # every rename as an unplanned file. Two plain paths cost a 2N over-count and
 # err toward a human seeing the round.
 #
-# THE BASELINE IS A TEMP-INDEX TREE, because a round does not commit: on round 2
-# the worktree still carries round 1's edits, and every file the task itself
-# created is untracked for the whole task. `stash create` cannot see untracked
+# THE BASELINE IS A TEMP-INDEX TREE, because a round commits only after its
+# gates: `applied` measures a worktree still carrying the round's uncommitted
+# edits, a file the fix created untracked among them, and the baseline is taken
+# the same way so both sides count alike. `stash create` cannot see untracked
 # files, `stash create -u` returns empty on a clean tracked tree, and `add -N`
 # plus `stash create` fails at rc 128 with empty output. A tree written through
 # GIT_INDEX_FILE covers tracked and untracked alike, honours .gitignore, and

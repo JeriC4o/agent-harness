@@ -40,8 +40,8 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 
 ## Correcting the design in place
 
-A third invocation mode, and the only one in which this subagent writes to an AGREED design rather than
-authoring one. The design is agreed at the design-review GO, once the GO's notes are worked in, and frozen
+A third invocation mode, in which this subagent corrects an AGREED design rather than authoring one.
+The design is agreed at the design-review GO, once the GO's notes are worked in, and frozen
 by a commit ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze));
 from then on a divergence that does not break the agreed approach is corrected here, in the item it
 falsifies. The orchestrator never writes the design or the working plan: it spawns this mode once per
@@ -77,13 +77,34 @@ approach never becomes a new design for its length, and no new confirmation is a
 length line travels in the hand-back.
 
 **Whose plan.** On the first four occasions the pass corrects the task's own design and no other: a
-sentence of another plan's design takes the amendment route with the user's approval, and a spec sentence
-left untrue is a changed requirement, which takes the Spec Amendment recipe. On the fifth it corrects the
-design of whichever plan the user-approved amendment changed — in a standalone bug fix or project review,
-another task's archived design — and that approval is what admits the correction there.
+sentence of another active plan's design takes the amendment route with the user's approval, and a spec
+sentence left untrue is a changed requirement, which takes the Spec Amendment recipe. On the fifth it
+corrects the plan the user-approved amendment changed, and that approval is what admits the correction
+there — never a plan another task archived, which no later work amends
+([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group)).
 
 **A divergence that BREAKS the agreed approach never comes here.** Work stops, the user is asked, this
 subagent amends the design as an iteration, design review runs, and its GO takes a new freeze.
+
+## Writing the approval stamp
+
+A fourth invocation mode, spawned once per design-review approval, after that approval's notes, if any,
+are worked in and committed. The brief names the design, the progress record and the approving round.
+**The pass's only write is one header line**, directly beneath the design's `**Spec:**` line:
+
+`**Approved:** <ordinal> approval, design review round <R>, <date>`
+
+- **The ordinal** — `1st`, `2nd`, `3rd`, … — is one more than that of the stamp the design carries in the
+  branch head's commit (`git show HEAD:<design>`), `1st` where it carries none. Never count approvals
+  from the progress record: a record made afresh over a committed plan restarts its count. A rerun after
+  an interruption reads the same head, so it writes the same ordinal and round.
+- **`R`** is the approving round the brief names; **the date** is the day of the write.
+- **It replaces any earlier stamp**, in the same place.
+
+No other pass — first round, iteration, amendment, correction in place — writes, moves or drops the stamp,
+so it never shows in the change since a freeze. The exit checks of § Rules run as on every write, and the
+length line travels in the hand-back. The orchestrator commits the line as the freeze
+([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)).
 
 ## Quality checklist
 
@@ -104,6 +125,7 @@ subagent amends the design as an iteration, design review runs, and its GO takes
 **Ticket:** <TICKET-KEY>
 **Date:** YYYY-MM-DD
 **Spec:** ai-docs/plans/<YYYY-MM-DD-name>.spec.md
+**Approved:** <ordinal> approval, design review round <R>, YYYY-MM-DD
 
 ## Approach
 
@@ -141,7 +163,8 @@ it will be tested is not, and is not this document's business.
 - [question requiring answer from product owner or architect]
 ```
 
-The working plan is not part of this document: its format is
+The `**Approved:**` line is written only by § Writing the approval stamp; a design not yet approved
+carries none. The working plan is not part of this document: its format is
 [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § Working plan](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#working-plan),
 and it is written into the progress record.
 
