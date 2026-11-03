@@ -40,8 +40,9 @@ commit, so every step commit reaches it. A project with no such row, or with any
 
 **Its one reader is the leftover-record check** — whether a progress record found when a task starts
 belongs to work that already merged — and only when the review surface cannot say whether the record's
-pull request merged: under `merge-commit` the default branch's history decides, under `squash` the user is
-told why and asked
+pull request merged: under `merge-commit` the default branch's history decides, by whether it holds a
+commit of the task — one the record names, else the plan's freeze; under `squash`, and under
+`merge-commit` when there is no such commit to look for, the user is told why and asked
 ([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § ⚡ First — validation sequence (detail)](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#-first--validation-sequence-detail)).
 
 **Squash loses nothing the harness reads.** Every reader of a plan freeze — each review round and its
