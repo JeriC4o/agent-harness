@@ -25,10 +25,9 @@ set -uo pipefail
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(cd -- "${HERE}/.." && pwd)
-# [release-base]
-# The remote's default branch, read as the hooks read it; origin/main when the
-# clone records no origin/HEAD.
+# Derived as the hooks derive it.
 DEFAULT_BASE=$(git -C "$ROOT" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)
+# [release-base]
 BASE="${1:-${DEFAULT_BASE:-origin/main}}"
 MANIFEST=".claude-plugin/plugin.json"
 SHIPPED='^(skills/|agents/|rules/|hooks/|docs/|scripts/|templates/|\.claude-plugin/)'
