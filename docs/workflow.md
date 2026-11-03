@@ -29,13 +29,61 @@ precisely what makes it the right thing to read. Changing method rules is a rele
 
 ## Merge strategy
 
-PRs are merged by a human through the GitHub UI (or by the repo's merge queue); **Claude never merges**.
+A human merges a pull request on the review surface, or through its merge queue; **Claude never merges**.
 After the merge lands, `/pr-merged` cleans up the local branch and its progress files.
+
+**The merge style is declared, never inferred.** The `Merge style` row of the project's `AGENTS.md` § VCS
+says how that human merges: `squash` combines the branch's commits into one new commit on the default
+branch, so none of the branch's own commits reaches it; `merge-commit` joins the branch with a merge
+commit, so every step commit reaches it. A project with no such row, or with any other value, is read as
+`squash` — the reading that is right under both styles while the review surface answers.
+
+**Its one reader is the leftover-record check** — whether a progress record found when a task starts
+belongs to work that already merged — and only when the review surface cannot say whether the record's
+pull request merged: under `merge-commit` the default branch's history decides, under `squash` the user is
+told why and asked
+([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § ⚡ First — validation sequence (detail)](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#-first--validation-sequence-detail)).
+
+**Squash loses nothing the harness reads.** Every reader of a plan freeze — each review round and its
+ledger, the pull-request line on the design's change, the re-entry plan review, the implementation step's
+first check — runs while its task's branch is live; a plan another task archived is never amended
+([§ Spec-Amendment group](#spec-amendment-group)), so no route reads its freeze; and the archive of
+completed plans is read by its text. Under squash the step history lives on the branch and in the pull
+request.
+
+## Each step commits what it wrote
+
+**A commit on a task's branch is made without asking, in every workflow.** No question asks for consent to
+one, and no workflow leaves one for the user to make. Pushing and opening a pull request stay asked. The
+guards stay: no commit on the default branch (the `branch-protection` hook), no attribution trailer the
+user did not ask for (the `co-authored-by` hook), every path staged by name
+([§ Explicit-file staging](#explicit-file-staging)).
+
+**A task-workflow step is a write transaction.** A step that changes a file the pull request carries writes
+it, commits it, and only then is marked done in the progress record. A step that writes only the local
+record — the progress record or the interview's state file, neither ever committed — writes its outputs
+there, then marks. So the record never names as done a step whose shared outputs version control does not
+hold, and re-entry reads a commit no mark names as the step it carries having finished
+([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Re-entry before implementation](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#re-entry-before-implementation)).
+
+**The party that ends a step commits it.** The orchestrator commits the plan documents — the spec, the
+design, the record of declared links, the record of excused findings — once it has confirmed the author's
+write on disk; an author never commits its own write. A handoff group's agent commits each of its subtasks
+as it closes, before marking it, and a group running beside another stages only its own paths. From
+implementation on, a mark names the id its own commit printed, never the branch head, which a group
+running beside it may have moved.
+
+**The other committing workflows keep their commit points** — a standalone bug fix, the whole-branch
+review, a fix round on an open pull request, the instruction audit and improvement — and make them without
+asking; none of them commits per step.
+
+**A commit carrying only the plan's documents waits on no build** ([§ Build before commit](#build-before-commit)).
 
 ## Build before commit
 
-Before every commit, run the project build gate (`%BUILD_CMD%`, AGENTS.md § Build & Test) over the changed
-module so dependency-graph regressions surface locally rather than in CI.
+Before a commit that changes what the project's build reads, run the build gate (`%BUILD_CMD%`, AGENTS.md
+§ Build & Test) over the changed module so dependency-graph regressions surface locally rather than in CI.
+A commit carrying only the plan's documents, or other files no build reads, owes none.
 
 A module-scoped gate covers only that module and does **not** catch every downstream regression. Two
 classes break a file the diff never touched: an altered **published interface**, which can invalidate an
@@ -77,7 +125,7 @@ After every push (reviewer-comment fix, self-review fix, CI fix): if a learning 
 the last code commit landed, give it its own commit on the feature branch in the same turn — do not leave
 the entry file as an unstaged working-tree change waiting to be bundled with the next code change. Order:
 write learning → `git add ai-docs/learnings` (and `git add ai-docs/learnings.md` if the archive itself
-changed, e.g. an `/improve` fold) → `git commit` (Claude asks first) → push.
+changed, e.g. an `/improve` fold) → `git commit` → push, which is asked.
 
 ## No `--no-verify`
 
@@ -227,7 +275,7 @@ says to the **user** about work a Subagent returned.
 | Current revision | `git rev-parse HEAD` | |
 | Rewind the default branch | `git reset --soft origin/main` | Never `--hard`; always preserve uncommitted work. |
 | Delete a merged branch | `git branch -d <branch>` | Refuses to delete unmerged. |
-| Commit | `git commit` | **ASK-level for Claude** — Claude asks before running. Blocked on the default branch by the `branch-protection` hook. |
+| Commit | `git commit` | Made **without asking** on a task branch ([§ Each step commits what it wrote](#each-step-commits-what-it-wrote)). Blocked on the default branch by the `branch-protection` hook; a `Co-Authored-By` trailer the user did not ask for is blocked by the `co-authored-by` hook. |
 | Push | `git push -u origin <branch>` | **ASK-level for Claude** — Claude asks before running. Blocked on the default branch by the `branch-protection` hook, **except a LONE deletion of some other branch** (`--delete` / `-d`, or a push whose refspecs are ALL `:<branch>` deletions — one colon refspec standing beside a plain one pushes as well as deletes, while several deletions together are fine), which pushes nothing there. Deleting the default branch stays blocked, and so does any deletion carrying a shell metacharacter — send it as its own bare call. |
 | Stage everything | `git add -A` / `git add .` | **FORBIDDEN** — see § Explicit-file staging. |
 | Open a PR | `gh pr create --title … --body …` | **ASK-level for Claude.** Never `--fill` blindly; never auto-merge. |
@@ -357,8 +405,8 @@ meaning: it stops nothing, and no check reads the ticket or the description.
   and asks for nothing: the cap is a soft limit, and this is where the human sees a correction's effect
   on the length.
 - **Keep a small, self-contained PR to the files the task changes.** The plan's spec and design are among
-  them: the freeze commits them, and the task's closing step moves them into `ai-docs/plans/done/` in the
-  same PR.
+  them: the task's steps commit them as they are written, and the task's closing step moves them into
+  `ai-docs/plans/done/` in the same PR.
 - **In a tracker-integrated repo, writing an identifier is an ACTION, not a reference.** A bare ticket key
   in a PR title/body can create a remote link and transition that ticket's status. So a PR title or
   description names no ticket but the one the PR implements: no other key appears in it, wrapped in
@@ -374,17 +422,35 @@ staging. Catches the common mistake where a moved file's `../foo` link no longer
 ## The plan freeze
 
 **A plan is frozen by a commit.** At each design-review GO, once the design author has worked the GO's
-notes into the design or the working plan and the orchestrator has found each one there, the spec and the design — with the record of declared links, and the record of
-excused findings when the task wrote one — are committed in one commit whose message ends with the
-trailer `Plan-Freeze: <spec-base>`, `<spec-base>` being the spec's file name without `.spec.md`. On a
-design in the new shape — one without its own decomposition section — the commit is asked in the one
-confirmation question, beside pushing it and confirming the approach, and the human's "yes" is recorded
-in the progress record as `**confirmation:**` with the freeze's id
-([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Step 7 — the confirmation question](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#step-7--the-confirmation-question));
-on an earlier-shape design it is surfaced once, staged list and message, under the ordinary consent rule.
-The working plan is outside every freeze: it is never committed.
+notes, if any, into the design or the working plan, the orchestrator has found each one there and that
+change is committed, the design author writes the design's **approval stamp** in a pass of its own. The
+orchestrator then commits it, without asking and on either design shape, in one commit whose message ends
+with the trailer `Plan-Freeze: <spec-base>`, `<spec-base>` being the spec's file name without `.spec.md`,
+staging by name beside it any plan document still uncommitted — the spec, the design, the record of
+declared links, the record of excused findings when the task wrote one. **A freeze is always its own
+commit, never an empty one, and exactly one per approval:** the stamp is a real change even when nothing
+else moved since the last round's commit. It is never an amend of an earlier commit; the commits before it
+carry no trailer and are never read as one. The working plan is outside every freeze: it is never committed.
 Nothing about the freeze lives in a local file, and a rebase keeps it: a rebase replays a commit's message
 with its trailers, and the change since the freeze is computed from text rather than from commit ids.
+
+**The approval stamp** is one header line directly beneath the design's `**Spec:**` line:
+`**Approved:** <ordinal> approval, design review round <R>, <date>`. The ordinal is written `1st`, `2nd`,
+`3rd`, …, one more than that of the stamp the design carries in the branch head's commit, `1st` where it
+carries none — never counted from the progress record, which a record made afresh over a committed plan
+restarts. `R` is the approving round, and the date is the day the stamp is written. It replaces any
+earlier stamp. No other write of the design touches it, so it never appears in `plan-freeze.sh diff`, in
+the pull-request line on the design's change, or among the hunks a re-entry review rules on, and every
+new freeze moves the frozen half of the review ledger's plan digest, as
+[`${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` § Triggers](${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md#triggers)
+says.
+
+**The confirmation question follows the freeze.** On a design in the new shape — one without its own
+decomposition section — the orchestrator asks one question: push the freeze and confirm the approach, or,
+in a repository with no remote, confirm it only. It asks nothing about a commit. The human's "yes" is
+recorded in the progress record as `**confirmation:**` with the freeze's id
+([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Step 7 — the confirmation question](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#step-7--the-confirmation-question)).
+An earlier-shape design gets no question.
 
 **When it is taken.** At every GO of the plan: the first, a GO after a design amendment that a breaking
 divergence caused, and a GO after a spec amendment that changed the approach. A spec amendment that keeps
@@ -398,7 +464,7 @@ the plan's latest freeze — the latest commit reachable from the branch head wh
 `Plan-Freeze` with exactly the plan's spec base, so another plan's freeze on the same branch is never
 matched; `show` prints a document's text at it; `diff` prints each named document's change since it, then
 a verdict line. A document is compared wherever it now sits, so the move into the archive is no change,
-and uncommitted corrections count, because a review runs before its round is committed. **Three outcomes,
+and uncommitted corrections count. **Three outcomes,
 and the third is never the second:** `changed`, `unchanged`, and could-not-compute — no freeze reachable,
 a freeze that does not hold the document, no work tree, a tool missing — which every party reading the
 change reports with its reason and none reads as unchanged.
@@ -417,13 +483,19 @@ The trigger has **two independent arms**, and the second is the one that is easy
 - **Arm A — subject.** The finding asserts that something a `*.spec.md` / `*.design.md` states is false,
   stale, or unsupported. Test: *would closing this finding leave a sentence in the artefact untrue?*
   A spec sentence merely broader than what shipped stays true; only a genuine conflict (base
-  principles) counts. Fires **regardless of where the fix lands**. For a completed plan the archive
-  listing is not enough: what the arm needs is any sentence of a completed plan, which the listing's four
-  sections do not carry, so search the completed plans for what the fix changes, and open in full only a
-  document that search names.
-- **Arm B — target.** The fix diff touches `ai-docs/plans/**/*.{spec,design}.md`.
+  principles) counts. Fires **regardless of where the fix lands**. It reaches the running task's own
+  plan — the one its progress record names, wherever its closing step has moved it — and any plan still
+  in the active folder.
+- **Arm B — target.** The fix diff touches a `*.spec.md` / `*.design.md` of those plans: the task's own,
+  wherever it sits, or one in `ai-docs/plans/`.
 
 Either arm is a Spec/Design Amendment trigger — NOT an ordinary code-fix.
+
+**A plan another task archived in `ai-docs/plans/done/` is that task's history.** No later work amends
+it: neither arm fires on its sentences, and a fix never edits it — a finding whose closing would touch it
+is fixed in the work's own files. The base principles keep a plan's own task from rewriting it after the
+merge ([`${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md` § The base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles),
+principle 7); this keeps every later work from amending it.
 
 **Firing an arm is not the same as routing. One further question decides that: does the divergence break
 the agreed approach?** The two answers go different ways.
@@ -445,9 +517,10 @@ re-ran before the code fix was allowed to land.
 
 **Whose design, and which workflows.** The in-place correction covers the task's own design on four
 occasions: its implementation, its review-and-fix rounds, the follow-up rounds on its open pull request,
-and a bug fix run inside any of those, whose trace carries `**parent_skill:**`. A sentence of another
-plan's design — an archived plan later work makes untrue — still takes the amendment route with the user's
-approval inside the later work's own pull request, and a spec sentence left untrue is a changed
+and a bug fix run inside any of those, whose trace carries `**parent_skill:**`. A sentence of another plan's
+design not yet archived — one still in the active folder — takes the amendment route with the user's
+approval inside the later work's own pull request; a plan another task archived takes none (above). A
+spec sentence left untrue is a changed
 requirement, which always takes the Spec Amendment recipe. **A standalone `/bugfix` or `/project-review`
 keeps the full route** for every divergence it finds and is not given the change since the freeze: its
 review prompt names no design. Extending the in-place correction to them is the same
