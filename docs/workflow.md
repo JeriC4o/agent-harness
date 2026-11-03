@@ -36,7 +36,8 @@ After the merge lands, `/pr-merged` cleans up the local branch and its progress 
 says how that human merges: `squash` combines the branch's commits into one new commit on the default
 branch, so none of the branch's own commits reaches it; `merge-commit` joins the branch with a merge
 commit, so every step commit reaches it. A project with no such row, or with any other value, is read as
-`squash` — the reading that is right under both styles while the review surface answers.
+`squash` — the reading that is right under both styles while the review surface answers. The value is the
+first backticked span of the row's value cell; the rest of that cell is explanation.
 
 **Its one reader is the leftover-record check** — whether a progress record found when a task starts
 belongs to work that already merged — and only when the review surface cannot say whether the record's
@@ -70,7 +71,9 @@ hold, and re-entry reads a commit no mark names as the step it carries having fi
 **The party that ends a step commits it.** The orchestrator commits the plan documents — the spec, the
 design, the record of declared links, the record of excused findings — once it has confirmed the author's
 write on disk; an author never commits its own write. A handoff group's agent commits each of its subtasks
-as it closes, before marking it, and a group running beside another stages only its own paths. From
+as it closes, before marking it. A group running beside another names its paths on the commit
+(`git commit … -- <paths>`), any learning-log file it wrote among them: a plain commit carries the other
+group's staged files too, and leaves that group's subtask no commit of its own to name. From
 implementation on, a mark names the id its own commit printed, never the branch head, which a group
 running beside it may have moved.
 

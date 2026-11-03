@@ -46,7 +46,7 @@ test) go in [`ai-docs/context.md`](ai-docs/context.md) § Build & test commands.
 | Branch naming | `<TICKET-KEY>-<slug>` |
 | Ticket key format | `%TICKET_PREFIX%-NNN`, or `none` if the project has no tracker |
 | Review surface | GitHub PR via `gh` |
-| Merge style | `squash` — how a human merges a pull request: `squash`, or `merge-commit` to keep every commit; no row, or any other value, reads as `squash` |
+| Merge style | `squash` — how a human merges a pull request: `squash`, or `merge-commit` to keep every commit; no row, or any other value, reads as `squash`. Its first backticked span is the value |
 | Diagram form | Mermaid — a default; change it to the form your review surface renders in a PR description and in a committed Markdown file. Its first backticked span, or else its first word in lower case, is the fence tag the diagram is written under |
 | File link form | `none` — set it to your review surface's address of a file at a ref, `<ref>` and `<path>` marking where the branch or commit and the file's path go (GitHub: `https://github.com/<owner>/<repo>/blob/<ref>/<path>`); with `none` the confirmation question names the design's path instead |
 

@@ -40,8 +40,8 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 
 ## Correcting the design in place
 
-A third invocation mode, and the only one in which this subagent writes to an AGREED design rather than
-authoring one. The design is agreed at the design-review GO, once the GO's notes are worked in, and frozen
+A third invocation mode, in which this subagent corrects an AGREED design rather than authoring one.
+The design is agreed at the design-review GO, once the GO's notes are worked in, and frozen
 by a commit ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze));
 from then on a divergence that does not break the agreed approach is corrected here, in the item it
 falsifies. The orchestrator never writes the design or the working plan: it spawns this mode once per
