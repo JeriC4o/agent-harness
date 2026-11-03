@@ -17,6 +17,7 @@ _Updated: YYYY-MM-DD_
 
 **Branch:** <output of `git branch --show-current` — the current feature branch>
 **base_commit:** <`git rev-parse HEAD` at implementation start — absent before it>
+**step_commit:** <`git rev-parse HEAD` when `current_step` was last marked — before implementation only; replaced by `base_commit`>
 **Last build:** <PASS | FAIL | not run>
 
 <!-- Compaction-recovery / re-entry fields (required for code-side orchestrators): -->
@@ -143,7 +144,7 @@ Round 2 approved:
 
 | Surface | Required | Optional |
 |---|---|---|
-| `/task` | Branch, base_commit (from implementation start), Last build, current_step, last_passed_gate, entry_args, Issue, Spec, Design, Next action, Decisions log; on a new-shape design **Working plan** (from the design step), **Completed subtasks** (from the first subtask's close) and **confirmation** (from the human's answer); on an earlier-shape record **Subtasks**; **Design-review issues (Round N)** (one per ITERATE round), **PR** (from Step 12 onward — absent before the PR exists), **Fix Plan (Round N)** (one per Step 11 round carrying an open finding), **Criterion checks (Round N)** (written as the tests are written), **Design-review notes** (from Step 7's close — `(none)` when the GO verdict carried no note, never omitted) | parent_skill |
+| `/task` | Branch, step_commit (before implementation, from the record's creation), base_commit (from implementation start, replacing step_commit), Last build, current_step, last_passed_gate, entry_args, Issue, Spec, Design, Next action, Decisions log; on a new-shape design **Working plan** (from the design step), **Completed subtasks** (from the first subtask's close) and **confirmation** (from the human's answer); on an earlier-shape record **Subtasks**; **Design-review issues (Round N)** (one per ITERATE round), **PR** (from Step 12 onward — absent before the PR exists), **Fix Plan (Round N)** (one per Step 11 round carrying an open finding), **Criterion checks (Round N)** (written as the tests are written), **Design-review notes** (from Step 7's close — `(none)` when the GO verdict carried no note, never omitted) | parent_skill |
 | `/project-review` | Branch, base_commit, Last build, current_step, last_passed_gate, Next action, Subtasks, AC Status table | parent_skill, entry_args |
 
 **Three of those are REWRITTEN AT EVERY BOUNDARY from implementation start, not once:** `current_step`,
@@ -151,7 +152,7 @@ Round 2 approved:
 closes — a `## Subtasks` box ticked on an earlier-shape record. A skill's per-step instruction names only
 the step-specific value for `current_step`; the other three are owed at every one of them, and an
 instruction that enumerates fewer is naming its own variable, not closing the set. **Before
-implementation a boundary rewrites `current_step` alone:** `last_passed_gate` stays `(none yet)` and
+implementation a boundary rewrites `current_step` and `step_commit`:** `last_passed_gate` stays `(none yet)` and
 `## Next action` stays empty, and resumption of a record without `base_commit` reads neither.
 | post-push fix round (CI fix / reviewer nit on an open PR) | All `/task` fields PLUS a per-round `## Fix cycle round M` section, and **PR** | — |
 | `/bugfix` | current_step, last_passed_gate, parent_skill (when nested: `/task` or `post-push`), entry_args, Actual behaviour, Expected behaviour, Confirmed by user, Decisions log | — |
@@ -162,9 +163,20 @@ implementation a boundary rewrites `current_step` alone:** `last_passed_gate` st
 
 `Branch` is written at file creation, which is the design step's first action when no record exists, so
 the post-merge cleanup finds the record from then on. `base_commit` is written at implementation start,
-after the confirmed freeze — a record carries none before it, and that absence is how re-entry tells a
-record that never reached implementation. Neither is edited afterwards. `base_commit` is the base
-reference for `git diff` operations.
+after the confirmed freeze, and replaces `step_commit`, holding the same commit — a record carries none
+before it, and that absence is how re-entry tells a record that never reached implementation. Neither is
+edited afterwards. `base_commit` is the base reference for `git diff` operations.
+
+### `step_commit`
+
+The branch head when the recorded step was marked, written with every mark before implementation by the
+orchestrator alone, from the record's creation — the one party marking there, one step at a time, so the
+head it records is its own. Replaced by `base_commit` when implementation starts, so the two are never
+both kept; from then on, where two groups may run at once, each mark names its own commit instead, in a
+completion line or a decisions-log entry. Read by re-entry before implementation — a commit after it is
+the next step's — and by the leftover-record check, under the `merge-commit` merge style, when the review
+surface cannot answer. A record written before this field existed has none, and what its task left
+uncommitted is checked rather than sent back for a missing commit.
 
 ### `Last build`
 
@@ -176,7 +188,8 @@ The fail-loud step gate. Every step boundary REWRITES this field. Subagents read
 
 **Before implementation it names the last step marked done**, as its `subtask N of M complete` value
 does during implementation, and a step is marked done only after the outputs it writes are in the
-record, so the field never runs ahead of its data. The steps, their outputs and how resumption validates
+record and, where they are shared files, committed, so the field never runs ahead of its data. Each mark
+before implementation records the head in `step_commit` beside it. The steps, their outputs and how resumption validates
 them backwards are on the task skill's reference page, `${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md`.
 
 ### `last_passed_gate`
@@ -225,10 +238,16 @@ shape, returns to the design step.
 
 ### `Completed subtasks`
 
-One line per closed subtask, its number and the commit that closed it, written by whoever closes it —
-the orchestrator or the group's agent. Resumption takes the first subtask of the working plan, in its
-order, with no line here; `current_step`'s `subtask N of M` is a cross-check and not the record, because
-two groups the working plan shows independent may run at once.
+One line per closed subtask, its number and the id its own commit printed — never the branch head, which
+a group running beside it may have moved — written by whoever closes it, the orchestrator or the group's
+agent, after that commit. Resumption takes the first subtask of the working plan, in its order, with no
+line here; `current_step`'s `subtask N of M` is a cross-check and not the record, because two groups the
+working plan shows independent may run at once.
+
+**A commit since `base_commit` that no completion line and no decisions-log entry names**, touching an
+unrecorded subtask's edit sites, closes the earliest such subtask in working-plan order, and its line is
+then written. The order is safe: a group runs its subtasks in that order and marks each before starting the
+next, and two groups running at once have disjoint file sets.
 
 ### `confirmation`
 
@@ -253,7 +272,7 @@ of what was done rather than edited in place.
 
 ### `Decisions log`
 
-Append-only. Each step boundary appends ≥0 lines (one line per non-trivial decision, prefixed with the step name).
+Append-only. Each step boundary appends ≥0 lines (one line per non-trivial decision, prefixed with the step name). From implementation on, the entry of a step that committed names its commit — the id that commit printed.
 
 ### `Design-review notes`
 
@@ -438,7 +457,7 @@ are spec-side and untouched by that prohibition.
 ## Lifecycle by process
 
 - **Created** by the orchestrator as the design step's first action, when no record exists; Step 8 creates it for a task begun before that rule, and writes `base_commit` either way.
-- **Extended** at every step boundary (rewrite `current_step`, possibly `last_passed_gate`; append to `Decisions log`).
+- **Extended** at every step boundary (rewrite `current_step`, and `step_commit` before implementation, possibly `last_passed_gate`; append to `Decisions log`), each after the step's shared outputs are committed.
 - **Read** at every re-entry (compaction recovery, lost-arguments path).
 - **Deleted** by `/pr-merged` after the PR merges (the `cleanup-progress.sh` script). The spec + design move to `ai-docs/plans/done/`; the progress file is removed.
 

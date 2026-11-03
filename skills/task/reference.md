@@ -6,49 +6,66 @@ Reference material extracted from `SKILL.md`. SKILL body owns the workflow steps
 
 The ⚡ First preamble's glob `ls ai-docs/plans/*.progress.md` is a flat match — it ignores branch and merge state. Two failure modes:
 
-1. **Stale-merge.** Matched progress file's task already merged through the GitHub UI, bypassing `/pr-merged` (the gitignored `.progress.md` survived). RESUME-ing would point at a completed task.
+1. **Stale-merge.** Matched progress file's task already merged on the review surface, bypassing `/pr-merged` (the gitignored `.progress.md` survived). RESUME-ing would point at a completed task.
 2. **Wrong-branch parallel PR.** Matched progress file belongs to an unrelated in-flight PR on a different feature branch. RESUME-ing cross-contaminates flows.
 
 **Validation sequence (run before the RESUME jump):**
 
-1. Read `**Branch:**` and `**base_commit:**` from the matched `.progress.md`.
-2. **Stale-merge check.** `git merge-base --is-ancestor <base_commit> origin/main` — exit 0 means that base is already an ancestor of the default branch (the work merged). Stale candidate. **A record with no `**base_commit:**` never reached implementation** and is checked against the plan's freeze instead, when `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find <design>` names one. Only `find`'s no-freeze reason — no commit reachable from the head carries the plan's freeze trailer — reads as no freeze: nothing of the task can have merged, and only the branch is matched. Any other could-not-compute is a STOP put to the user. So a record created at the design step passes validation, and the delete option, offered only on a mismatch, never reaches its working plan.
+1. Read `**Branch:**`, `**PR:**`, `**base_commit:**` and `**step_commit:**` from the matched `.progress.md`.
+2. **Merged check — the review surface decides, whatever step the record names.**
+   - **Never left the machine → passes, nothing asked.** The record names no pull request, and its branch has no upstream (`git rev-parse --abbrev-ref <branch>@{upstream}` fails) and no remote-tracking branch (`git branch -r --list '*/<branch>'` is empty) — or the repository has no remote (`git remote` is empty). A merge happens only on the review surface, so this work cannot have merged, and the test holds offline.
+   - **Otherwise ask the review surface the profile names** (`AGENTS.md` § VCS) whether a pull request from the record's branch merged — the one `**PR:**` names, else any whose head is that branch. **Merged** → stale candidate. **Not merged** → passes.
+   - **The surface cannot say** (unreachable, its client absent, an error) → the `Merge style` row of `AGENTS.md` § VCS decides ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Merge strategy](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#merge-strategy)). Under `merge-commit`, a task commit the record names — `base_commit`, else `step_commit`, else the plan's freeze as `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find <design>` names it — being an ancestor of the default branch's remote-tracking tip (`git merge-base --is-ancestor <commit> origin/<default>`) reads as merged, and not an ancestor as not merged; a record naming no resolvable commit is asked, as below. Under `squash`, an absent row or an unknown value, tell the user why the check cannot say — the surface did not answer, and a squash merge leaves no task commit in the default branch's history — and ask before the record is resumed or removed.
 3. **Branch-match check.** Compare the progress file's `**Branch:**` against `git branch --show-current`. If they differ, the user is on a different branch from the progress file's owner. Wrong-branch candidate.
 4. If **either** check signals a mismatch, surface to user with three options and wait — do NOT jump to RESUME:
    - **delete** — `rm ai-docs/plans/<base>.progress.md`, then proceed with the new task.
    - **park** — `mv ai-docs/plans/<base>.progress.md ai-docs/plans/<base>.progress.md.parked`; the `.parked` suffix takes it out of the glob.
    - **RESUME anyway** — user explicitly chooses to ignore the mismatch (rare).
-5. If both checks pass (base_commit NOT yet merged AND branch matches), proceed to RESUME flow.
+5. If both checks pass (not merged AND branch matches), proceed to RESUME flow.
 
 **RESUME flow — only after validation passes.** A record with no `**base_commit:**` resumes from the step it records, validated backwards: [§ Re-entry before implementation](#re-entry-before-implementation). A record carrying one has reached implementation and skips Steps 1–7:
 
 1. Read the `.progress.md` file.
 2. Read spec — only `## Acceptance Criteria`.
 3. Read only the files `git diff --name-only <base_commit>` names — version control holds that set, and no hand-maintained copy of it exists in this file.
-4. Jump to `## Next action` — on a new-shape record, at the first subtask of the working plan with no `## Completed subtasks` line. A new-shape design whose record has no working plan returns to Step 6.
-5. Tell user: "Found active task [X], resuming from [subtask Y]".
+4. **Attribute every commit no mark names**, then settle uncommitted work (below), writing each missing completion line or decisions-log entry.
+5. Jump to `## Next action` — on a new-shape record, at the first subtask of the working plan with no `## Completed subtasks` line. A new-shape design whose record has no working plan returns to Step 6.
+6. Tell user: "Found active task [X], resuming from [subtask Y]".
+
+**Attributing a commit no mark names.** Each commit since `base_commit` (`git log --reverse <base_commit>..HEAD`) that no completion line and no decisions-log entry names is attributed by what it carries. Learning-log files — the archive and the per-branch entry files, which the `auto-stage-learnings` hook stages into any commit while either is dirty — and the excuse record are neutral: a commit is read by what it carries besides them, and one carrying nothing else closes no step.
+
+- **The freeze marker** (the `Plan-Freeze` trailer) → that freeze.
+- **The spec changed where it stands** → the amendment that interrupted the step.
+- **Only one plan's design and its link record** → a design amendment's write, when the decisions log holds an approved amendment of that design (the entry the Design Amendment recipe appends at the user's approval, naming it) that no entry naming its write follows; otherwise, on the task's own design, the in-place correction owed — the earliest returned group whose logged divergences no correction entry follows. Where both are owed, or neither, put it to the user with its id.
+- **An unrecorded subtask's edit sites** → the earliest such subtask in working-plan order ([`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § `Completed subtasks`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#completed-subtasks)).
+- **Any other** → after implementation, the step after the recorded one; during it, put to the user with its id.
+
+**Uncommitted work** is checked by its gates, committed when they hold, otherwise run again. A design differing from the head by an approval stamp alone, naming the round of the record's latest GO and the ordinal after the head's stamp, is committed as that approval's freeze. **A commit the record names that the head no longer reaches** — a rebase rewrote it — stops attribution, and the next step's files are checked as for an uncommitted step.
 
 ## Re-entry before implementation
 
-**The recorded step.** Before implementation `**current_step:**` names the last step marked done, and a step is marked done only after its outputs are written, so the record never runs ahead of its data. A boundary there rewrites `**current_step:**` alone.
+**The recorded step.** Before implementation `**current_step:**` names the last step marked done, and a step is marked done only after its outputs are written and, where they are shared files, committed, so the record never runs ahead of its data. The orchestrator alone marks there, one step at a time, and each mark rewrites `**current_step:**` and records the branch head in `**step_commit:**`.
 
 | Step marked done | `**current_step:**` | Its outputs, written first | The task goes on to |
 |---|---|---|---|
 | none yet | `Step 6 — record created` | — | the design step |
-| design | `Step 6 — design written` | the design; on the new shape the working plan | design review |
+| design | `Step 6 — design written` | the design with the link record, and the excuse record when one exists, committed; on the new shape the working plan | design review |
 | design review, round N, ITERATE | `Step 7 — round N ITERATE` | the verdict's issues, verbatim, under `## Design-review issues (Round N)` | the design step, which revises against them |
+| spec amended, round N | `Step 7 — round N spec amended` | the amended spec, committed | the design step |
 | design review, round N, GO | `Step 7 — round N GO` | the verdict's notes, as that approval's table in `## Design-review notes` | the design author working the notes in |
-| notes worked in | `Step 7 — notes worked in` | the last column of every row of that table, filled as the orchestrator finds each note in the design or the working plan; a note it cannot find goes back to the design author first | the confirmation question; on the earlier shape the freeze |
-| freeze | `Step 7 — plan frozen` | the freeze commit, and its push where the question asked for one | the answer, asking nothing about a commit; on the earlier shape implementation |
-| confirmation | `Step 7 — confirmation answered` | `**confirmation:**` `yes` with the freeze's id, or `no` with its reason in the decisions log | on `yes` implementation, which writes `**base_commit:**`; on `no` the design step, the reason carried to the design author |
+| notes worked in | `Step 7 — notes worked in` | the design's change, committed when the notes changed it; the last column of every row of that table, filled as the orchestrator finds each note in the design or the working plan — a note it cannot find goes back to the design author first | the approval stamp and the freeze |
+| freeze | `Step 7 — plan frozen` | the approval stamp, committed as the freeze commit | on the new shape the confirmation question; on the earlier shape implementation |
+| confirmation | `Step 7 — confirmation answered` | the push, where the question asked for one, and `**confirmation:**` `yes` with the freeze's id, or `no` with its reason in the decisions log | on `yes` implementation, which writes `**base_commit:**` in place of `**step_commit:**`; on `no` the design step, the reason carried to the design author |
 
-**Validated backwards.** Read the record end to end first. Then check the recorded step — it finished, and its outputs are present and intact — and on a failure the step before it, and so on back to the first step that passes; resume right after that step, and at the design step when none passes. The artefacts never carry the resume point past the step after the recorded one: they only refuse a resume point whose preconditions they do not show. A step passes only while the earlier outputs it depends on still hold:
+**The step after the recorded one is resolved first**, once the record is read end to end. A commit after the recorded head (`git log <step_commit>..HEAD`) carrying that step's files — the freeze recognised by its marker rather than by files — means it finished: its local outputs are completed and it is marked. For the freeze, a design differing from the head by its approval stamp alone, the stamp naming the recorded approval — the ordinal one more than the head's stamp, the round the recorded GO names — means the stamp pass finished: it is committed as the freeze and marked; otherwise the stamp pass is spawned, so an interrupted freeze is taken once and its stamp written once. A step writing only the record — a review verdict, the notes table's last column, the confirmation answer — whose outputs are present and intact is marked, with nothing to commit. Its files present but uncommitted are checked, committed when they hold, and otherwise run again. Learning-log files and the excuse record are neutral in a commit, as in the RESUME flow's attribution above.
+
+**Validated backwards.** Then check the recorded step — it finished, and its outputs are present and intact — and on a failure the step before it, and so on back to the first step that passes; resume right after that step, and at the design step when none passes. The artefacts never carry the resume point past the step after the recorded one: they only refuse a resume point whose preconditions they do not show. A step passes only while the earlier outputs it depends on still hold:
 
 - every step after the design step needs the design and, on the new shape, the working plan — so a missing working plan fails every step back to the design step;
 - a freeze, and a `yes`, pass only while `plan-freeze.sh diff` shows the plan unchanged since that freeze, and a `yes` only while it names the freeze `plan-freeze.sh find` names;
 - a `no` needs only its reason in the decisions log, because the redesign it starts changes the design.
 
-Where the step that passed is not the recorded one, tell the user which output was missing. A step whose outputs landed before a crash left it unmarked runs again over them: the fold-in finds each note already worked in, and the question finds the plan unchanged since a freeze and asks only for the push the freeze may lack, where one is asked, and for the answer. A record with no `**base_commit:**` naming none of these values was written under the earlier rules, by Step 7 for its notes, and is read as recording the approval.
+Where the step that passed is not the recorded one, tell the user which output was missing. A record with no `**step_commit:**` was written under the earlier rules: what it left uncommitted is checked and committed when it holds, and it is never sent back for a commit those rules did not require. A record with no `**base_commit:**` naming none of these values was written under the earlier rules, by Step 7 for its notes, and is read as recording the approval.
 
 ## ⚡ Second — bare-ticket activation sequence (full)
 
@@ -270,7 +287,7 @@ asks nothing about a commit. An earlier-shape design gets no question.
 
 ## Step 8 — progress-file creation template (detail)
 
-The record is created at Step 6's first action when none exists, using the canonical format at [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md), with every header field but `**base_commit:**`: `**Branch:**`, `**Last build:**`, `**current_step:**`, `**last_passed_gate:**` as `(none yet)`, `**entry_args:**`, `## Decisions log`, and for `/task` also `**Issue:**` / `**Spec:**` / `**Design:**`. Step 8 writes `**base_commit:**` either way, and creates the whole record only for a task begun before Step 6 created one:
+The record is created at Step 6's first action when none exists, using the canonical format at [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md), with every header field but `**base_commit:**`: `**Branch:**`, `**Last build:**`, `**current_step:**`, `**step_commit:**`, `**last_passed_gate:**` as `(none yet)`, `**entry_args:**`, `## Decisions log`, and for `/task` also `**Issue:**` / `**Spec:**` / `**Design:**`. Step 8 writes `**base_commit:**` either way, in place of `**step_commit:**`, and creates the whole record only for a task begun before Step 6 created one:
 
 ```
 **Branch:** <TICKET-KEY>-<slug>
