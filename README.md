@@ -52,6 +52,20 @@ Three things it does deliberately:
 Then fill in what only you know: the overview paragraph and the domain entities in `ai-docs/context.md`.
 Leave the rest as placeholders; `/harness:task` appends entities as it discovers them, which beats a cold guess.
 
+**Declare how you merge.** The `Merge style` row of `AGENTS.md` § VCS says how a human merges a pull
+request: `squash`, the default the setup writes, or `merge-commit`, which keeps every commit. No row, or any
+other value, reads as `squash`. It matters in one place: when a task starts on a leftover progress record
+and the hosting site cannot say whether that work merged, `merge-commit` lets the default branch's history
+answer, and `squash` has you asked.
+
+**Commits need no prompt; pushes do.** A workflow commits on the task branch without asking, and asks
+before pushing or opening a pull request. The scaffolded `.claude/settings.json` lets committing and
+staging named files run without a permission prompt; staging or committing everything at once still
+prompts wherever its ask list names the spelling. The host applies a project's own allow entries only once
+you have trusted the workspace. A project set up by an earlier version keeps the host's prompt before each
+commit until its own settings allow committing and staging named files — the setup never overwrites that
+file.
+
 Prefer to do it by hand? Copy `templates/project/` into the repo root, replace `%PROJECT_NAME%`, fill the
 `§ Build & Test` table in `AGENTS.md`, and append `gitignore.snippet` to your `.gitignore`.
 
@@ -280,7 +294,9 @@ every agent the tree ships, so a stale count here is invisible to it.
 ### What `/harness:task` actually looks like
 
 The table above calls it a loop with ordered steps, which is true and hides the shape. It is **two nested
-loops plus re-entrant amendment paths**, and the paths are where a human decides.
+loops plus re-entrant amendment paths**, and the paths are where a human decides. Each step that writes a
+file the pull request carries commits it, without asking, before it is marked done; under a squash merge
+that step history stays on the branch and in the pull request, and the default branch receives one commit.
 
 ```mermaid
 flowchart TD
@@ -290,9 +306,9 @@ flowchart TD
     S7 -->|"ITERATE · cap 3"| S6
     S7 -->|STOP| OUT1["surface the verdict · do not start work"]
     S7 -->|"GO + notes"| WB["notes written back INTO the design<br/>or the working plan"]
-    WB --> Q["one question: commit the plan,<br/>push it, confirm the approach"]
-    Q --> FZ["plan freeze<br/>spec + design committed<br/>with a Plan-Freeze trailer"]
-    FZ --> ANS{"you read the design<br/>and answer"}
+    WB --> FZ["plan freeze<br/>the design's approval stamp,<br/>committed with a Plan-Freeze trailer"]
+    FZ --> Q["one question: push the plan,<br/>confirm the approach"]
+    Q --> ANS{"you read the design<br/>and answer"}
     ANS -.->|"no, with the reason"| S6
     ANS -->|yes| S8["Step 8 · implement<br/>one agent per group from the working plan,<br/>each entered through /harness:context-reset"]
     S8 --> S9["Step 9 · verify<br/>gates + a covering check per criterion"]
@@ -317,9 +333,11 @@ Four things the one-line description leaves out.
 **The design is written for you; the working plan is not.** The design carries the approach, the key
 decisions with the alternatives they rejected, a diagram, the risks and what the change builds, aimed at
 5,000 characters. The subtasks, their order and the files each one edits go into the task's local progress
-record and are never committed. After review approves, one question asks to commit and push the plan,
-links the design and states its measured length; implementation waits for your "yes", and a "no" with a
-reason sends the approach back to be redesigned. A task begun before this split keeps the shape it started in.
+record and are never committed. After review approves, the plan is frozen in a commit of its own; then one
+question asks to push it and confirm the approach (with no remote, only to confirm), links the design and
+states its measured length. Implementation waits for your "yes"; a "no" with a reason sends the approach
+back to be redesigned, and the refused freeze stays in the branch's history. A task begun before this
+split keeps the shape it started in.
 
 **A cap bounds the loop, not the gate.** `ITERATE` and `REJECT` each stop at three rounds. When a cap burns,
 the open findings go to the author and the loop ends — but fixes made afterwards still get one review pass.
