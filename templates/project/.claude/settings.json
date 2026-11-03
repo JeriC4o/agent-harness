@@ -44,13 +44,7 @@
       "Bash(git commit -a*)",
       "Bash(git commit --all*)",
       "Bash(git commit . *)",
-      "Bash(git commit :/ *)",
-      "Bash(git commit * -a*)",
-      "Bash(git commit * --all*)",
-      "Bash(git commit * .)",
-      "Bash(git commit * . *)",
-      "Bash(git commit * :/)",
-      "Bash(git commit * :/ *)"
+      "Bash(git commit :/ *)"
     ],
     "deny": [
       "Edit(**/.env)",
