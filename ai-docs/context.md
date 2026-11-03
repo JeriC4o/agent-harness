@@ -66,7 +66,8 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 ## Plan freeze
 
 - **What it is.** A commit holding a plan's spec and design as approved, taken at each design-review GO
-  once the GO's notes are worked in, its message ending in the trailer `Plan-Freeze: <spec-base>`. After it
+  once the GO's notes are worked in, carrying the design's approval stamp so it is never empty, its
+  message ending in the trailer `Plan-Freeze: <spec-base>`. After it
   a divergence that keeps the approach is corrected in the design in place; one that breaks it ends in a
   new freeze.
 - **Identity.** The trailer's value, the spec base. The plan's freeze is the latest such commit reachable
