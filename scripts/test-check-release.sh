@@ -133,6 +133,19 @@ has   "  says so" "$OUT" "no longer has"
 has   "  and names the fetch" "$OUT" "git fetch origin"
 git -C "${W}/b.git" update-ref refs/heads/main "$SAVED"
 
+printf '\n== no argument: the base is the remote default branch, origin/main when unset ==\n'
+g "$C" push -q origin main:trunk 2>/dev/null; g "$C" fetch -q origin 2>/dev/null
+run origin/main;  AT_MAIN=$OUT
+run origin/trunk; AT_TRUNK=$OUT
+if [ "$AT_MAIN" != "$AT_TRUNK" ]; then ok "control: the two bases give different verdicts"
+else bad "control: origin/main and origin/trunk give one verdict, so the cases below measure nothing"; fi
+git -C "$C" symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/trunk
+run
+check "origin/HEAD at trunk: no argument reads origin/trunk" "$OUT" "$AT_TRUNK"
+git -C "$C" symbolic-ref --delete refs/remotes/origin/HEAD
+run
+check "no origin/HEAD: no argument reads origin/main" "$OUT" "$AT_MAIN"
+
 printf '\n== the helper is a dependency: its absence or failure is a cannot-run ==\n'
 run "$BASE_ID"
 check "control: the commit-id base passes with the helper in place" "$RC" "0"
