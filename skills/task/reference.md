@@ -69,7 +69,7 @@ Activation sequence (bare-ticket → matching deferred spec):
    git mv ai-docs/plans/deferred/YYYY-MM-DD-name.design.md ai-docs/plans/    # if exists
    mv ai-docs/plans/deferred/YYYY-MM-DD-name.progress.md ai-docs/plans/      # if exists; gitignored so plain mv
    ```
-5. Surface spec's existing `## Acceptance Criteria` to user verbatim, ask: *"Confirm these ACs, or revise before continuing?"* — wait. Any revisions applied to the spec file before Step 6 launches.
+5. Surface spec's existing `## Acceptance Criteria` to user verbatim, ask: *"Confirm these ACs, or revise before continuing?"* — wait. Any revisions applied to the spec file before Step 6 launches. **Once they are confirmed, commit the move** — the spec, and the design when one came along — by name, without asking ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Each step commits what it wrote](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#each-step-commits-what-it-wrote)).
 6. **Do NOT run the interview.** **Do NOT create an `*.state.md` interview state file.** **Do NOT re-resolve the tracking ticket** — the spec's `**Tracked in:** <KEY>` is authoritative.
 7. If a `.progress.md` came along (rare): take the RESUME flow above.
 8. Otherwise jump directly to **Step 6**.
@@ -79,7 +79,7 @@ Activation sequence (bare-ticket → matching deferred spec):
 **From Step 11 it fires on a divergence that BREAKS the agreed approach; from Step 8 when a group's divergence breaks it and the user approves the rebuild** — nothing restarts on its own account there.
 
 1. **Stop** the current step. Do not silently continue with the deviated approach.
-2. **Surface to user** — say what the system will now do differently and why, in the product's own terms, answerable without opening a file: **no** design-document or spec citation, **no** acceptance-criterion or decomposition-task id; restate the constraint inline ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)). Wait for approval.
+2. **Surface to user** — say what the system will now do differently and why, in the product's own terms, answerable without opening a file: **no** design-document or spec citation, **no** acceptance-criterion or decomposition-task id; restate the constraint inline ([`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Communication](${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md#communication)). Wait for approval. **On approval, append a `## Decisions log` entry recording the approved amendment and naming the design it amends, before the design author is spawned** — re-entry tells an amendment's write from an in-place correction by it.
 3. **Spawn the `design` subagent to apply the amendment** — do NOT edit `*.design.md` inline. Per AGENTS.md AXIOM "the orchestrator NEVER writes to `*.spec.md` / `*.design.md`":
    ```
    Agent(subagent_type="general-purpose", prompt="
@@ -90,6 +90,7 @@ Activation sequence (bare-ticket → matching deferred spec):
      Update the design doc to incorporate the amendment.
    ")
    ```
+   Once the amended design is confirmed on disk, commit it — with the link record, and the excuse record when one exists — by name, then mark the write; from implementation on, the mark is a decisions-log entry naming that commit.
 4. Re-run design review (max 3 rounds total across all design-review runs). **Its GO would take a freeze that absorbs every correction made in place since the previous one**, so first run `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh diff <design>` as its own call, output to a file, and hand that file to the review as an input of its own beside the sections the amendment changed — it rules on every hunk outside them ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)):
    ```
    Agent(subagent_type="general-purpose", prompt="
@@ -102,7 +103,7 @@ Activation sequence (bare-ticket → matching deferred spec):
      Progress: ai-docs/plans/YYYY-MM-DD-name.progress.md
    ")
    ```
-5. **On GO** → the new freeze — on a new-shape design asked as the confirmation question ([§ Step 7 — the confirmation question](#step-7--the-confirmation-question)), whose "yes" names the new freeze — then resume from the step that triggered the amendment. **The new freeze is what makes the next self-review round sweep every checklist item:** it moves the frozen half of the plan digest that round's ledger is compared against ([`${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` § Triggers](${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md#triggers)).
+5. **On GO** → the new freeze, taken as Step 7 takes one, the stamp pass included ([§ Step 7 — the freeze](#step-7--the-freeze)), its mark from implementation on a decisions-log entry naming the freeze commit; on a new-shape design the confirmation question follows ([§ Step 7 — the confirmation question](#step-7--the-confirmation-question)), whose "yes" names the new freeze — then resume from the step that triggered the amendment. **The new freeze is what makes the next self-review round sweep every checklist item:** it moves the frozen half of the plan digest that round's ledger is compared against ([`${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md` § Triggers](${CLAUDE_PLUGIN_ROOT}/docs/converging-review.md#triggers)).
 6. **On ITERATE** → re-spawn the `design` subagent with the iteration feedback and re-run review (counts against the 3-round limit). Never edit the design doc inline to "fix the blockers".
 7. **On STOP** → surface to user; do not proceed.
 
@@ -119,9 +120,10 @@ Entered from any Step 7 verdict carrying a genuine-conflict row, from a Step 11 
 4. **On user approval — re-invoke the `spec-writer` subagent to apply the amendment** — do NOT `Edit` `*.spec.md` inline. Per AGENTS.md AXIOM "the orchestrator NEVER writes to `*.spec.md` / `*.design.md`":
    - **Pass the amendment in the spawn prompt, as a `prior_qa` entry or as `extra_context`. There is no interview state file to update** — it is the orchestrator's bookkeeping for the multi-round interview loop, it is deleted at that skill's terminal exit, and on the deferred-spec activation route (⚡ Second step 6) creating one is forbidden outright. A late amendment is a single invocation with no loop, and `spec-writer` never reads that file anyway: it reads `AGENTS.md`, the ticket body and the current draft from paths in its prompt, and takes the history as a prompt field — its own contract names `prior_qa` **or** `extra_context` as the channel for exactly this kind of re-invocation.
    - Spawn `spec-writer` with that prompt. The spec-writer owns the `Write` to `*.spec.md`.
+   - **Commit the amendment, then mark it.** Before implementation — an ITERATE entry, or a declared-link report in a design author's hand-back — commit the amended spec by name, write `**current_step:**` `Step 7 — round N spec amended`, then go to the design step. From implementation on, in the task workflow: on the Yes branch of step 5 commit the amended spec before Step 6 re-enters; on the No branch the amendment commits with its correction, at the fifth act. Either way the mark follows the commit — `**current_step:**` `Step <N> — spec amended`, `## Next action` rewritten, a decisions-log entry naming the commit. Another workflow commits at its own commit point.
    - **Once it has applied the amendment, and whenever a design exists, run `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-links.sh <spec> <design>`** — the orchestrator's own call, in whichever workflow entered this recipe, read as a report that stops nothing. Its report is carried into the design author's next pass on the pair; a moved link whose unchanged end is in the spec — a link between two spec statements, one of which the amendment changed, among them — is a possible spec amendment and takes step 3's remedy question.
 5. **Ask the one question that decides the rest: does the amendment change the AGREED APPROACH?**
-   - **Yes** — scope, intent or the approach itself moved. Re-enter Step 6 (`design`) stating that the spec was amended, then Step 7 against the new pair (counts against the 3-round cap); its GO takes a new freeze, the review first ruling on the change since the previous one as the Design Amendment recipe's step 4 hands it, and on a new-shape design the confirmation question is asked again; then proceed.
+   - **Yes** — scope, intent or the approach itself moved. Re-enter Step 6 (`design`) stating that the spec was amended, then Step 7 against the new pair (counts against the 3-round cap); its GO takes a new freeze as Step 7 takes one, the stamp pass included, the review first ruling on the change since the previous one as the Design Amendment recipe's step 4 hands it, and on a new-shape design the confirmation question is asked again; then proceed.
    - **No** — a criterion restated, an over-promise withdrawn, a wording clarified. **No design re-derivation, no design-review round and no freeze**: a changed requirement is not a divergence. The amended pair is re-read instead, by six acts in order, in whichever workflow entered this recipe:
      1. **The spec writer applies the amendment and names what it amended** — each statement it changed, added or removed, by the heading it sits under and its words as they now stand, a removed one by its heading and the words it had, in the `amended` field of its final status block ([`${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` § Output contract](${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md#output-contract)). Step 4's declared-link run follows.
      2. **The amended pair is re-read before work resumes**: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec> <design>` as its own call, and the `plan-convergence` reader spawned as Step 7 spawns it ([§ Step 7 — the two convergence halves (detail)](#step-7--the-two-convergence-halves-detail)), so the reader is never the only check standing. Its prompt names two sets of design statements to read first, both drawn by the orchestrator: the design end of every declared link whose spec-end quote falls inside a statement the `amended` field names, even when the quote is intact — read off the link record and that field; and every design end of a link step 4's run reported `moved`. They narrow nothing: the whole pair is still read.
@@ -132,7 +134,7 @@ Entered from any Step 7 verdict carrying a genuine-conflict row, from a Step 11 
         - **a finding judged harmless**, whatever its origin, is recorded and nothing more, except that the fifth act rewrites the declared-link row of a harmless moved link;
         - **a moved link whose unchanged end is in the design is ruled from its two quotes**, with the reader's finding on that end as one input and the reader's silence as none — a model that raised nothing does not clear a deterministic report. The changed spec quote and the unchanged design quote are read side by side: a design end the change made false joins the first set, and one that still holds is ruled harmless, its row rewritten in the fifth act. A moved link whose unchanged end is in the spec takes the second set's question.
      4. **Wrong spec statements go first.** Each is put to the user through step 3, batched and led by a default. An approved one is applied by the spec writer and the route restarts at its first act over the new pair, with nothing written before it; a refused one leaves the spec as it stands, and its finding is ruled again between the other three sets.
-     5. **One pass of the `design` subagent**, spawned once when the first set holds an item or step 4's run left a non-silent row, and given those inputs only. **It corrects each false item directly**, places each criterion named to it in a subtask of the working plan or names the subtask already delivering it, and lists each with its subtask in its hand-back, in the same change as the amendment, by the in-place correction ([`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Correcting the design in place](${CLAUDE_PLUGIN_ROOT}/agents/design.md#correcting-the-design-in-place)), reworking only the items named and ending with the design author's own exit checks. No design-review round follows: the workflow's own self-review pass reads the correction with the rest of the change before it is committed — Step 10 of `/task`, Step 6.5 of `/bugfix`, Step 5 of `/project-review`, the review step of the post-push round.
+     5. **One pass of the `design` subagent**, spawned once when the first set holds an item or step 4's run left a non-silent row, and given those inputs only. **It corrects each false item directly**, places each criterion named to it in a subtask of the working plan or names the subtask already delivering it, and lists each with its subtask in its hand-back, in the same change as the amendment, by the in-place correction ([`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Correcting the design in place](${CLAUDE_PLUGIN_ROOT}/agents/design.md#correcting-the-design-in-place)), reworking only the items named and ending with the design author's own exit checks. No design-review round follows: the workflow's own self-review pass reads the correction with the rest of the change — Step 10 of `/task`, Step 6.5 of `/bugfix`, Step 5 of `/project-review`, the review step of the post-push round. In the task workflow the amendment and its correction commit at once, before the mark (step 4); elsewhere at that workflow's own commit point.
         - **It rewrites every non-silent row of the declared-link record**: a row whose design end it corrected gets grounds naming the corrected item, and a row whose design end still holds gets fresh grounds saying so.
      6. **Every finding judged harmless goes into the `## Decisions log` of the working record of the workflow that entered the route, with its reason, and nowhere else** — the one act beside it being the fifth act's rewrite of a harmless moved link's declared-link row. That record is the task's progress file, which a post-push round shares, the bug-fix trace, or the project review's progress file: one bullet each, prefixed with the step or round the amendment interrupted. Each is gitignored and deleted when its workflow closes, which is why a genuine defect never goes there alone: it would be lost. No finding of this route is carried into the pull-request description.
 
@@ -165,7 +167,7 @@ Skill(skill="interview", args="$ARGUMENTS")
 
 The interview handles entry-mode detection, scope confirmation, clarifying-question rounds (max 4, max 3 questions per round), ticket resolution, and spec writing.
 
-**Spec-only run.** If the user wants to stop after the interview, `git mv` the spec to `ai-docs/plans/deferred/`, and **do not proceed to Step 6**.
+**Spec-only run.** If the user wants to stop after the interview, `git mv` the spec to `ai-docs/plans/deferred/`, commit the move by name without asking, and **do not proceed to Step 6**.
 
 **Before Step 6:** confirm spec exists at `ai-docs/plans/YYYY-MM-DD-name.spec.md` and user has approved its `## Acceptance Criteria`.
 
@@ -210,40 +212,61 @@ figure cannot be told from a stable one.
 GO is unavailable while an unexcused holding finding stands. Granting an excuse is the design
 author's act and leaves a checkable record; it is not the reviewer's and not the orchestrator's.
 
+## Step 7 — the freeze
+
+At every GO, whether it carried notes or `(none)`, in this order — each shared write committed before its
+mark ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)):
+
+1. **The notes worked in.** The design author works each note into the design or the working plan. Find
+   each one there — one you cannot find goes back first — commit the design's change by name, then fill
+   each row's last column and mark `Step 7 — notes worked in`. A `(none)` table, or notes that landed only
+   in the working plan, leave nothing to commit.
+2. **The approval stamp.** Spawn the design author for that alone:
+   ```
+   Agent(subagent_type="general-purpose", prompt="
+     Read ${CLAUDE_PLUGIN_ROOT}/agents/design.md and follow § Writing the approval stamp.
+     Design: ai-docs/plans/YYYY-MM-DD-name.design.md
+     Progress: ai-docs/plans/YYYY-MM-DD-name.progress.md
+     Approving round: <N>
+   ")
+   ```
+   Confirm on disk that the design differs from the branch head by that one header line alone
+   (`git diff HEAD -- <design>`); a stamp you cannot find, or any other change, goes back to the author.
+3. **The freeze commit**, without asking: the stamped design, and any plan document still uncommitted, by
+   name, the message ending in the trailer `Plan-Freeze: <spec-base>`. Then mark `Step 7 — plan frozen`.
+4. **The confirmation question** on a new-shape design (below). An earlier-shape design's freeze is taken
+   the same way and asks nothing.
+
 ## Step 7 — the confirmation question
 
-On a new-shape design, once design review approves, the design author has worked the notes in and the
-orchestrator has found each of them in the design or the working plan, the orchestrator asks **one
-question**, once per approval that takes a freeze. In plain words it says that the agreed plan will be
-committed as the approved plan and pushed to the branch, gives the link to the design there, states the
-design's measured length beside the cap, and says what each answer does: "yes" confirms the approach, at
-that length, and lets implementation start; "no", with a reason, sends the approach back to be redesigned.
-An earlier-shape design gets no question: its freeze is surfaced once as a commit, as before.
+On a new-shape design the freeze already exists as a commit when the orchestrator asks **one question**,
+once per approval that takes a freeze. In plain words it says that the agreed plan is committed as the
+approved plan and asks to push it to the branch, gives the link to the design there, states the design's
+measured length beside the cap, and says what each answer does: "yes" confirms the approach, at that
+length, and lets implementation start; "no", with a reason, sends the approach back to be redesigned. It
+asks nothing about a commit. An earlier-shape design gets no question.
 
 - **The length** is the length line from the design author's last exit check, which ends every write of
   the design, or, when that hand-back is not at hand, from a run of
   `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh` over the design as it stands. It is stated
   whether or not the design is over the cap, and over the cap nothing more is asked: the "yes" accepts it.
-- **The link** is built from the `File link form` row of the project's `AGENTS.md` § VCS, with the branch
-  as the ref: the question is asked before the commit exists, and the branch's head is the freeze from
-  the push until the answer, because nothing is committed in between. Where the row says `none`, or the
+- **The link** is built from the `File link form` row of the project's `AGENTS.md` § VCS, with the freeze
+  commit as the ref, since the freeze exists before the question. Where the row says `none`, or the
   profile has no such row, the question names the design's path instead, for reading where the project's
   own viewer renders it.
 - **The push** is asked whenever the repository has a remote, whatever the row says; only the link needs
-  a link form. With no remote the question asks to commit and confirm.
-- **The usual reply consents to the commit and the push first** and gives the answer after reading the
-  design — on the review surface, which a human can do only after the push, or where the project's own
-  viewer renders it when there is none. Act on the commit and the push, mark the freeze done, and await
-  the answer without a second question.
+  a link form. With no remote the question asks only to confirm.
+- **The usual reply consents to the push first** and gives the answer after reading the design — on the
+  review surface, which a human can do only after the push, or where the project's own viewer renders it
+  when there is none. Act on the push and await the answer without a second question.
 - **The "yes"** is written as `**confirmation:**` `yes <freeze commit id>`. A new freeze — after a design
   amendment, or a spec amendment that changed the approach — names a different commit, so the question is
   asked again; a correction in place takes no freeze and asks nothing, and the working plan is outside
   every freeze, so changing it asks nothing either.
 - **A "no"** is written as `**confirmation:**` `no`, its reason in the decisions log, and goes to the
   design author as the reason the approach was refused: Step 6, Step 7 and a new question. The freeze it
-  follows stays in the branch's history; a "no" given before any consent to the commit commits nothing. It
-  does not count against design review's round cap: the cap stops two agents circling, and the human ruling
-  is not that.
+  follows stays in the branch's history. It does not count against design review's round cap: the cap
+  stops two agents circling, and the human ruling is not that.
 
 ## Step 8 — progress-file creation template (detail)
 
@@ -305,14 +328,14 @@ resolving, and because the gate list below reads this page's own section names a
 
 **Why only two `current_step` values pass the step-skip gate.** Both admissible values mean the review question is settled: one by a verdict, one by the user overriding it in writing. A compaction landing between Step 11's write and its return is exactly how the inadmissible state reaches this gate, so read the value rather than inferring the step from how far the work looks done.
 
-**The single full run** is item 6 of Step 12: after the plan files move to `done/` and the build passes, `%FULL_CHECK_CMD%` runs once, its output redirected to a file. Its passing record goes into `**last_passed_gate:**` with the tree digest from the gate record's line — or measured with `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh` straight after the run and marked as measured, when the full command is outside the gate vocabulary. Immediately before surfacing the commit, the field's digest is compared with a fresh `tree-digest.sh`; a difference owes the run again. The rule and its edge cases: [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md).
+**The single full run** is item 6 of Step 12: after the plan files move to `done/` and the build passes, `%FULL_CHECK_CMD%` runs once, its output redirected to a file. Its passing record goes into `**last_passed_gate:**` with the tree digest from the gate record's line — or measured with `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh` straight after the run and marked as measured, when the full command is outside the gate vocabulary. Immediately before the closing commit, the field's digest is compared with a fresh `tree-digest.sh`; a difference owes the run again. The rule and its edge cases: [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md).
 
 **On a failing full run:**
 
 1. **Move the plan files back** out of `done/` — spec, design, and the record of excused findings and the record of declared links if either moved — so routing, exclusions and review prompts see the paths they key on.
 2. **Write progress:** rewrite `**current_step:**` to `Step 12 — full run failed (Round N)`; rewrite `## Next action`.
 3. **Spawn the Step 10 reviewer** with the failing output's file named. It records one `major` finding per failing check. Every checklist row whose scope is unchanged carries, so the round is narrow.
-4. **Continue as an ordinary round** — Step 11 fixes, Step 10 reviews — and return to Step 12, which runs the full list again. The commit is surfaced only after a passing full run that followed the last approval.
+4. **Continue as an ordinary round** — Step 11 fixes, Step 10 reviews — and return to Step 12, which runs the full list again. The closing commit and the push wait for a passing full run that followed the last approval.
 
 ## Step 12 — PR-body template (detail)
 
@@ -347,16 +370,16 @@ Validated approaches `/task` should keep applying (carrot signals; soft verbs). 
 | Step 6 | Spec exists? ACs confirmed? Not a "spec-only / defer" run? Progress record created when none existed, or left standing? |
 | Step 8 | Design doc with GO? Plan frozen — `plan-freeze.sh find` names a freeze? Groups for every M ≥ 1 — the working plan's, or an earlier-shape design's handoff plan? **Every row of the last GO's notes table filled?** New shape: `**confirmation:**` `yes` naming that freeze? |
 | Step 8 start | Feature branch checked out? `git branch --show-current` is NOT the default branch? `base_commit` + `branch` recorded in progress file? |
-| Each subtask | Build ✅? Touched-scope checks run, selection stated? `.progress.md` updated, its completion line written? Group handoff via `/context-reset`? |
+| Each subtask | Build ✅? Touched-scope checks run, selection stated? Subtask committed, then `.progress.md` updated, its completion line naming that commit's id? Group handoff via `/context-reset`? |
 | Step 9 | Build + tests + lint clean? `## Criterion checks (Round N)` filled, `Shown non-empty by` included? (**No design-side verification line is asked for — a design says nothing about tests**, so the round record is where a criterion meets a check.) |
 | Step 9.5 | context.md updated? (spec/design NOT moved yet) |
 | Step 10 | Self-review APPROVE? (Progress file persists in the working tree — gitignored — until `/pr-merged`.) |
 | Step 11 | `major`/`blocker` objections confirmed by user? Breaking divergence → Amendment, non-breaking → `correction:` row, corrected in place after the micro-loop? |
-| Step 12 | Branch ≠ default? spec/design moved to done/? Build clean? Full list passed once, digest unchanged before surfacing? PR title prefixed? Ticket read, and the description written to the shape — the problem, why, where to look, no test details, counts or Summary/Test-plan sections? |
+| Step 12 | Branch ≠ default? spec/design moved to done/? Build clean? Full list passed once, digest unchanged before the closing commit? Closing commit made, its id in the decisions log? Push, then PR, asked? PR title prefixed? Ticket read, and the description written to the shape — the problem, why, where to look, no test details, counts or Summary/Test-plan sections? |
 
-## Commit authorisation + hooks
+## Commits and hooks
 
-Per AGENTS.md, `git commit` / `git push` / `gh pr create` are ASK-level for Claude. `/task` Step 12 prepares the staged file list + commit message, asks for confirmation, then runs the commit. Hook behaviour:
+A commit on the task's branch is made without asking, by the party that ends the step, before the step is marked done ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Each step commits what it wrote](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#each-step-commits-what-it-wrote)); `git push` and `gh pr create` are asked. Every commit stages by name and carries the `<TICKET-KEY>:` title prefix when the project uses ticket keys. Hook behaviour:
 
 - **`auto-stage-learnings`** — auto-stages `ai-docs/learnings.md` and the `ai-docs/learnings/` directory (`git add ai-docs/learnings`) when either has unstaged or untracked changes at `git commit`. The directory form is what covers a per-branch entry file on its **first** write, when it is still untracked.
 - **`archive-protection-reminder`** — advisory `Edit|Write` nudge when a write ADDS a `### ` header to `ai-docs/learnings.md`: new entries belong in `ai-docs/learnings/<username>-<branch>.md`. Exits 0, never blocks — the `/improve` fold and `Escalated?` / `Superseded by:` field edits pass untouched.
