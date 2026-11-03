@@ -3,13 +3,15 @@
 **Ticket:** GH-180
 **Date:** 2026-11-03
 **Spec:** ai-docs/plans/2026-11-03-commit-each-workflow-step.spec.md
+**Approved:** 1st approval, design review round 4, 2026-11-03
 
 ## Approach
 
 Each task-workflow step becomes a write transaction. A step changing a file the pull request carries
 writes it, makes its `step commit` on the task's branch without asking, and only then is marked done in
 the local progress record; a step writing only that record writes it, then marks. The other committing
-workflows keep their commit points and lose only the ask. Pushing and opening a pull request stay asked,
+workflows keep their commit points and lose the ask, and, like the task workflow, no longer amend a
+plan another task archived. Pushing and opening a pull request stay asked,
 and the two commit guards — none on the default branch, no attribution trailer — are untouched.
 
 Re-entry reads those commits. Before implementation only the orchestrator marks, one step at a time, and
@@ -69,11 +71,11 @@ flowchart TD
 - **A head is recorded only before implementation**, where the orchestrator alone marks, in order; the commit message is fixed by the requirements, and a file's state cannot tell a revision committed after a verdict from the write before it. Rejected: one head throughout — concurrent groups move it past each other's unmarked commits; one per group — fields repeating the completion lines.
 - **A review-fix round makes one commit, fix and correction together**; a correction after an implementation group commits alone. Rejected: a commit for each of the round's acts, made before the post-apply loop — the orchestrator's check of the applied fix against the round's plan, which re-runs the fix when it fails — has accepted the fix.
 - **The freeze is its own commit, carrying the approval stamp**, one marker per approval, at the cost of one more pass of the design author per approval. The stamp's ordinal is one more than that of the stamp the design carries in the branch's last commit, so a stamp never repeats the committed one, and one rewritten for the same approval names the same ordinal and round, whatever its date, and re-entry, which recognises a stamp by those two, takes an interrupted freeze once. Rejected: an empty commit — not every version-control system accepts one; amending the last write's commit to carry the marker — it rewrites history, which not every repository allows, and an earlier round's commit would read as a freeze; writing the stamp in the pass that works the notes in — the notes and the freeze would share one commit, so the notes could not be marked done before the freeze; the round alone as the stamp's key — nothing keeps two approvals' rounds apart; the number of approvals the progress record holds — a record made afresh over a committed plan counts from one again, so its stamp can repeat the committed one; one more than the stamp on disk — a rerun after an interruption would count one approval twice.
-- **A plan another task archived is never amended**: a spec or design in the completed-plans folder is the history of the task that built it, and what later work establishes goes into that work's own plan. The amendment routes reach the running task's own plan, wherever its closing step has moved it, and a plan not yet archived, so no route reads an archived plan's freeze. Rejected: amending the archive — it rewrites one task's record, and its review compares with that plan's freeze, which under squash never reaches the default branch.
+- **A plan another task archived is never amended**: a spec or design in the completed-plans folder is the history of the task that built it, and what later work establishes goes into that work's own plan. The amendment routes reach the running task's own plan, wherever its closing step has moved it, and a plan not yet archived, so no route reads the freeze of a plan another task archived. Rejected: amending the archive — it rewrites one task's record, and its review compares with that plan's freeze, which under squash never reaches the default branch.
 - **The interview commits the approved spec standalone too**: that is the spec-only run, and moving the spec into the deferred folder needs it tracked. Rejected: committing only inside a task run — the spec would wait uncommitted.
 - **`Merge style` is a row of the profile's version-control table**, `squash` or `merge-commit`; absent or unknown reads as `squash`, and the leftover check is its only reader. Rejected: a key in the host's settings — a second home for project facts.
 - **"Never left the machine" is decided locally** — no pull request on the record, no upstream and no remote-tracking branch; the workflow pushes with an upstream. It holds offline. Rejected: asking the review surface first — offline, a never-pushed record would be asked about.
-- **Permissions go through each `settings.json`**: committing and staging named files allowed, the stage-everything spellings and committing every tracked change kept on ask, which the host evaluates before allow. Rejected: a skill's tool list — it grants for one turn.
+- **Permissions go through each `settings.json`**: committing and staging named files allowed, the stage-everything and commit-everything spellings the ask list can name kept on ask, which the host evaluates before allow. Rejected: a skill's tool list — it grants for one turn.
 
 ## Risks
 
@@ -83,7 +85,7 @@ flowchart TD
 - **A record naming an open pull request is resumed even when an earlier pull request from its branch merged.** The requirements' decision on recognising merged work tests the pull request the record names before any from its branch; their criterion on a merged record holds whether or not the record names one. The two part only here, and the design follows the decision, the more specific of the two, so work reopened under a new pull request keeps its record.
 - **A task re-entered on its open pull request** pushes a commit per step, each counted by the human-findings measure, which counts each ordinary commit pushed after a pull request opened as one finding a human raised; the fix round, the routine route then, keeps one commit per round. Accepted: a rework a human asked for.
 - **A rebase rewrites the commits re-entry reads**: it then checks the step's files as for an uncommitted step.
-- **The freeze under squash** loses nothing: every reader of a freeze runs while its task's branch is live; archived plans are not amended, so none reads an archived freeze.
+- **The freeze under squash** loses nothing: every reader of a freeze runs while its task's branch is live; a plan another task archived is not amended, so none reads its freeze.
 - **A later fix no longer amends a completed plan whose sentence it makes untrue.** Today a standalone bug fix, a whole-branch review or a later task's review routes such a finding into the amendment recipes; after this change the sentence stays as its task wrote it, and the fix lands as ordinary work. Accepted: the archive records what each task built, not what is true now.
 - **Until the next approval the design keeps the last approval's stamp**, through a redesign after a refused confirmation or an amendment: the change since that freeze, which every reader computes, shows what moved.
 - **The task skill and the method file sit near the size warning**: detail goes to pages loaded by link.
