@@ -2,8 +2,8 @@
 
 Every loop that ends in a commit — the task workflow, the bugfix workflow, the whole-branch review and the
 fix round on an open pull request — runs two kinds of check at two different moments. **Inside the loop,
-only the checks a change touches. Once, after review approves and before the commit is surfaced, the full
-list.** This page states that rule once; each loop's step points here rather than restating it.
+only the checks a change touches. Once, after review approves and before the loop's last commit and the
+push after it, the full list.** This page states that rule once; each loop's step points here rather than restating it.
 
 The commands come from the project profile, `AGENTS.md § Build & Test`: `%TEST_CMD%` is the narrowing run
 and `%FULL_CHECK_CMD%` the full list. The full list is never reached through `%TEST_CMD%`.
@@ -31,7 +31,8 @@ checks the mapping for completeness.
 
 ## The single full run
 
-After review approves and before the commit is surfaced, `%FULL_CHECK_CMD%` runs **once**. Its passing
+After review approves and before the loop's last commit and the push after it, `%FULL_CHECK_CMD%` runs
+**once**. Its passing
 record is what the progress file's `last_passed_gate` field holds, the tree digest included
 ([`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)).
 The digest is copied from the gate record's line for that run.
@@ -42,7 +43,7 @@ marked `(measured)` rather than recorded.
 
 ## The tree-unchanged condition
 
-Immediately before surfacing the commit, compare the field's digest with
+Immediately before the loop's last commit, compare the field's digest with
 `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh` run over the current tree. A difference means a file the
 list examines changed after the passing run, so **the full run is owed again**. Edits only to ignored
 progress notes never cause one.
@@ -54,8 +55,8 @@ files before the final run, or run it again.
 ## A failing final run
 
 It returns the loop to an ordinary fix round: the scoped checks over the fix, a review round over it,
-approval. Then the full list runs again. **The commit is surfaced only after a passing full run that
-followed the last approval.** Each loop names where its failure route re-enters; the review round that
+approval. Then the full list runs again. **The loop's last commit and the push after it wait for a passing
+full run that followed the last approval.** Each loop names where its failure route re-enters; the review round that
 receives the failing output records one `major` finding per failing check.
 
 ## The nested case

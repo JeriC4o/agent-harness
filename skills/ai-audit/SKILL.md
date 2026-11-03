@@ -199,7 +199,7 @@ After edits:
 
 ## Step 3: Commit (if changes were made)
 
-> Per AGENTS.md, `git commit` is ASK-level for Claude. Prepare the staged file list + commit message, ask for explicit user approval, then run `git commit`. The `branch-protection` hook still blocks `git commit` on the default branch as a safety net.
+> The commit is made without asking ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Each step commits what it wrote](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#each-step-commits-what-it-wrote)): stage each changed path by name, then run `git commit`. The `branch-protection` hook still blocks `git commit` on the default branch as a safety net.
 
 If `ai-docs/learnings.md` or anything under `ai-docs/learnings/` was modified or newly created, ensure it's staged alongside other changes (`git add ai-docs/learnings.md` / `git add ai-docs/learnings` — the directory form is what catches a first-write untracked entry file).
 
