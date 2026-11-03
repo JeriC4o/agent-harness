@@ -151,8 +151,8 @@ walks an upgrade against a *pre-existing* install:
    refuses to load". Requires the `claude` CLI; **exits 2 when it cannot run, which is not a pass.**
 7. `bash scripts/check-release.sh` — refuses a branch that changed shipped content without bumping
    `.claude-plugin/plugin.json`. Catches "merged but never delivered", which a sandbox install cannot see
-   by construction. Run it before opening a PR. When its base is a remote-tracking ref — the default
-   `origin/main` is one — it **needs the remote reachable**: a base that is not the remote's current tip
+   by construction. Run it before opening a PR. When its base is a remote-tracking ref — the default, the remote's
+   default branch (`origin/main` here), is one — it **needs the remote reachable**: a base that is not the remote's current tip
    reads the default branch's own changes and bump as this branch's, so a stale or unreachable base
    **exits 2 naming the fetch, which is not a pass.** A commit id or a local branch as the base is read as
    given, with no remote contact.

@@ -156,7 +156,7 @@ Now open Edit.
 > ⛔ **`/bugfix` cannot report Step 6 as complete and proceed to commit until self-review issues APPROVE.** A `/bugfix` PR has the same bar as a `/task` PR — build/test/lint gates don't catch "this magic number should be a named constant", "this doc-comment contradicts the fix", "this fix touches a sibling concern that should be a separate PR".
 
 1. Determine the diff window:
-   - **Standalone `/bugfix`** (user bug report entry): `<base>` = `git merge-base origin/main HEAD` (no commits yet on branch) or `HEAD~N` against the pre-fix tip when N local commits exist.
+   - **Standalone `/bugfix`** (user bug report entry): `<base>` = `git merge-base origin/<default> HEAD`, `<default>` the `Default branch` row of `AGENTS.md` § VCS (no commits yet on branch) or `HEAD~N` against the pre-fix tip when N local commits exist.
    - **`/bugfix` invoked from `/task` Steps 8–12**: diff window is the bugfix's staged-but-not-pushed commits.
 
 2. Spawn `self-review` — full prompt: [reference.md § self-review subagent prompt (Step 6.5)](reference.md#self-review-subagent-prompt-step-65).

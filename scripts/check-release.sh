@@ -2,7 +2,8 @@
 #
 # Did this branch change what ships, without bumping the version?
 #
-# Run: bash scripts/check-release.sh [base-ref]      (default: origin/main)
+# Run: bash scripts/check-release.sh [base-ref]
+#      (default: the remote's default branch, origin/HEAD; origin/main when unset)
 # Exit: 0 fine, 1 a bump is required and missing, 2 usage/environment error or
 #       the base could not be shown to match its remote -- which is NOT a pass.
 #
@@ -25,7 +26,10 @@ set -uo pipefail
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(cd -- "${HERE}/.." && pwd)
 # [release-base]
-BASE="${1:-origin/main}"
+# The remote's default branch, read as the hooks read it; origin/main when the
+# clone records no origin/HEAD.
+DEFAULT_BASE=$(git -C "$ROOT" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null)
+BASE="${1:-${DEFAULT_BASE:-origin/main}}"
 MANIFEST=".claude-plugin/plugin.json"
 SHIPPED='^(skills/|agents/|rules/|hooks/|docs/|scripts/|templates/|\.claude-plugin/)'
 
