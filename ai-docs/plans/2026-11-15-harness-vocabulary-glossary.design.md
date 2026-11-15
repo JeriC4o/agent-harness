@@ -31,9 +31,11 @@ Five pieces of work surround the page.
    agent-starting tool appends the page to the brief of a start whose type or brief names one of the
    three.
 2. **One sweep renames.** Every other name and retired name on the covered surfaces becomes the canonical
-   name. A word with several senses keeps one, chosen below; the senses that were ordinary English — a
-   branch of a script, a guard switched on, whitespace collapsed, a starting measurement — are rewritten
-   in plain words and get no entry, as are the names of single parts of one check or one round. A page,
+   name of what it names at that place; a listed name that names several things is replaced, at each
+   place, by the name of the thing it names there, as the table of such names below says. A word with
+   several senses keeps one, chosen below; the senses that were ordinary English — a branch of a script,
+   a guard switched on, whitespace collapsed, a starting measurement — are rewritten in plain words and
+   get no entry, as are the names of single parts of one check, one round or one agent's run. A page,
    agent, script, flag or per-task file whose own name carries a listed name is renamed and every
    reference moves.
 3. **The `vocabulary check`** joins this repository's check list. It reads the listed names and every
@@ -57,8 +59,9 @@ Five pieces of work surround the page.
    every time. Chat text, already shown, makes the agent continue once and restate the
    affected sentences, asking nothing; the restatement is not read again. When the model or the names
    cannot be read, the text goes through and the person is told once per session that what the agent
-   writes to them is not being checked. Every reading leaves a `plain-words record` among the session's
-   hook records.
+   writes to them is not being checked. That notice reaches the person as a warning the host shows
+   them straight from the hook's answer, asking nothing of them. Every reading leaves a
+   `plain-words record` among the session's hook records.
 5. **The knowledge-base planning documents** kept outside the repository are rewritten with the canonical
    names when the task closes.
 
@@ -82,11 +85,13 @@ flowchart TD
 ### The glossary, entry by entry
 
 What the owner approves before the sweep. Each row is one entry; "Other names" are the names the sweep
-replaces and both checks refuse, with their plural and verb forms. A dash means none. Of the things the
-spec records as named by coinages in conversation, one setup among those compared in a measurement is the
-measurement setup; the version of the files the next review compares against is what the checklist
-ledger fingerprints; the helper agent that wrote down which statements must change together is the design
-author.
+replaces and both checks refuse, with their plural and verb forms. A dash means none. "What it is" is a
+gloss for this approval and may name another entry; the glossary page itself gives each entry two
+sentences, what it is and what it does, that name no file, script, command, section or other entry, so a
+person can follow them alone. Of the things the spec records as named by coinages in conversation, one
+setup among those compared in a measurement is the measurement setup; the version of the files the next
+review compares against is what the checklist ledger fingerprints; the helper agent that wrote down which
+statements must change together is the design author.
 
 #### Workflow and agents
 
@@ -96,7 +101,7 @@ author.
 | orchestrator | the main agent while it runs a workflow: it starts the other agents, commits, and keeps the progress file | — |
 | subagent | an agent started by another for one job, in a fresh context, which ends by handing back a report | — |
 | skill | a named workflow started by a slash command, by the person or by an agent | — |
-| spec workflow | the ordered steps a task runs today, from interview to pull request, with a spec of its own: interview, spec, design, design review, implementation, verification, self-review | "spec flow" |
+| spec workflow | the ordered steps a task runs today, from interview to pull request, with a spec of its own: interview, spec, design, design review, implementation, verification, self-review | "spec flow", "task workflow" |
 | interview | the questions put to the owner, a round at a time, before a spec is written | — |
 | spec writer | the agent drafting the spec from the interview's answers | — |
 | design author | the agent writing a task's design, its working plan and its record of declared links | "design subagent" |
@@ -139,9 +144,9 @@ author.
 | holding class | a kind whose finding stops the design being handed back or approved | — |
 | report-only | a check, or one kind of finding, that is shown and stops nothing | "advisory mode", "shadow mode" |
 | contradiction reader | the AI reviewer reading a spec and a design for statements contradicting each other or existing files | "plan-convergence reader", "convergence reader", "whole-pair reader", "judgement half", "judgement class" |
-| record of accepted findings | the committed list of convergence findings a plan accepts as they stand | "record of excused findings", "excuse record", "excused convergence findings" |
+| record of accepted findings | the committed list of convergence findings a plan accepts as they stand | "record of excused findings", "excuse record", "excused convergence findings", "excuse route" |
 | accepted finding | one row of that record: a finding kept visible with the reason it does no harm here | "excused finding", "waived finding" |
-| accepting act | the one way a row enters that record: the convergence check run with the finding and the grounds, showing the finding before it writes the row | "grant act", "excuse route" |
+| accepting act | the one way a row enters that record: the convergence check run with the finding and the grounds, showing the finding before it writes the row | "grant act" |
 | record of declared links | the committed list of statement pairs in a plan that must change together, written by the design author | "link record" |
 | declared link | one row of it: two quoted statements and why they move together | — |
 | link check | the script telling, for each declared link, whether both statements still stand | — |
@@ -158,7 +163,7 @@ author.
 
 | Canonical name | What it is | Other names |
 |---|---|---|
-| design review | the sceptical review of a design before any code | "plan review" |
+| design review | the sceptical review of a design before any code, made by an agent of its own | "plan review" |
 | design review verdict | GO approves, ITERATE sends back for rework, STOP rejects the approach | — |
 | self-review | the review of the finished change against the spec, the design and the rules | — |
 | self-review verdict | APPROVE: ready to push; REJECT: problems remain open | — |
@@ -172,6 +177,7 @@ author.
 | correction row | a fix-plan row saying the shipped code departs from the design without breaking the approach | — |
 | post-apply micro-loop | one question whether the applied change matches the plan, with a bounded number of re-fixes | — |
 | human finding | a review comment, or a fix pushed after a pull request opened, counted to see what review missed | — |
+| post-push fix round | a round fixing failing checks or reviewer comments once the pull request is open, in whichever workflow runs it | "post-push round", "post-push fix loop" |
 
 #### Keeping files in step
 
@@ -227,7 +233,7 @@ author.
 | consuming project | a project using the harness | — |
 | scaffolding | the starting files the harness writes into a project it is set up in, never overwriting one | — |
 | method | the half of the harness that holds in every project | — |
-| profile | a project's own half: its commands, language, permissions and facts | — |
+| profile | a project's own half: its commands, language, permissions and facts, among them which commands post to the review surface or the tracker | — |
 | project registry | the list of projects set up with the harness, kept in the user's home folder | — |
 | deployed configuration | files holding environment-specific settings, read only after asking | — |
 | instruction file | a file of rules the agents read; those loaded whole at every agent start are capped in size | — |
@@ -255,11 +261,12 @@ author.
 
 | Canonical name | What it is | Other names |
 |---|---|---|
-| glossary | the page holding one entry per harness concept | — |
+| glossary | the page holding one entry per harness concept, opening with the rule for text for a person; hooks put it into the agents' context, and both checks read its names through one shared reader | — |
 | listed name | an other name or a retired name the glossary lists, which the checks refuse | — |
 | vocabulary check | the check failing when a listed name appears in the harness's own files | — |
-| plain-words check | the hooks reading what the agent writes to a person for listed names and coined words | — |
+| plain-words check | the hooks reading what the agent writes to a person for listed names and coined words, recording each reading with the session's hook records | — |
 | internals mark | the comment marking a line of a script that must keep an old word | — |
+| model-call marker | the setting a harness hook puts in the environment of a model it calls, so the harness's own hooks inside that call do nothing | — |
 
 #### Retired names
 
@@ -288,7 +295,7 @@ that concept's entry:
 | post-apply micro-loop | its answers MATCH and DIVERGE, its iterations and the tool calls it cost |
 | amendment trigger | the Arm A cell and the reasons naming it |
 | checklist ledger | a row's digest, the plan digest, carried and swept rows, triggers, scope, the objections row, "seal", "whole list reset", the ledger's base, "checklist item" |
-| convergence check | "class" for its kinds, a finding's spot and subject, the counts on its verdict line, "built path", the criterion-delivery and use-case tests, the id marks the pairing kind reads |
+| convergence check | "class" for its kinds, a finding's spot and subject, the counts on its verdict line, "built path", the criterion-delivery and use-case tests, the ids that code comments carry, which the pairing kind matches against the plan's |
 | earlier-shape design | "decomposition", "decomposition row", "new shape" |
 | plan-invariants check | its legs and their finding labels, "pinned sentence", "one-clause reason", the three routes deriving the required elements, the corpus it reads, an element that arrived or departed |
 | plan-invariants guard | its coverage, registration and matcher, an unguarded route, a surplus member, an element-defining page, the protected-page and near-miss tables |
@@ -331,6 +338,46 @@ in plain words: "gate" for a permission prompt ("asks first"), "verdict line" fo
 writes, "ledger" alone, "member" for a protected page. A listed name a script prints is rewritten like any
 other.
 
+### Listed names that name several things
+
+Every listed name was looked up in every covered file on this branch on 2026-11-15, in its plural and
+verb forms and with a space or a hyphen between its words, and each line it is on was read for what it
+names there. The names below name more than one thing; each stays an other name of the entry it names
+most, and where it names something else the sweep writes that thing's own name:
+
+| Listed name | Kept by | Also names, and what the sweep writes there |
+|---|---|---|
+| "correction pass" | in-place correction | a round fixing a pull request already open, in the method page's rule on the end of an iteration and the workflow page's section on it: post-push fix round. The improvement agent's pass over the Learning Log's correction entries, in its own steps, the agent auditing the log's entries and the page giving an entry's format: "the pass over correction entries" |
+| "working record" | progress file | in the spec-amendment procedure, the record of whichever workflow is running, which is the progress file or a bug fix's trace: said in those words |
+| "scouted fix" | review-fix round | "scouted fix plan" where it names the plan a round's fix scout writes, in the workflow page's table of the skills the amendment trigger fires in: fix plan |
+
+Every use of "excuse route" names the record of accepted findings together with how the convergence check
+reads and writes it, never the accepting act alone, so it is listed under the record. "Task workflow" names the spec workflow wherever it occurs; it is listed under
+that entry rather than made its canonical name, because the planned knowledge-base workflow is a way of
+running a task too, so the name would come to mislead. The fix round on an open pull request, which
+"correction pass" also names, has its own entry, post-push fix round; "follow-up round", which names it
+too, is ordinary English and left to the sweep. Every other listed name names one thing wherever it
+occurs.
+
+### Names this task adds
+
+Every name this task puts into a covered file has an entry above — listed name, vocabulary check,
+plain-words check, internals mark, model-call marker — or is covered by the entry named beside it, so the
+owner sees every canonical name at this approval:
+
+| Entry | The new names it covers |
+|---|---|
+| glossary | the glossary page; the rule for text for a person and the terms it uses: canonical name, other name, retired name, plain description, mention, text for a person; the glossary name reader; the glossary loading hooks; a proposed glossary entry |
+| plain-words check | the plain-words record; the kinds of finding it reports; the notice that it cannot read; the setting naming its model, and its time limit; the measurement of its model reading against planted texts |
+| vocabulary check | its check-list member and its numbered place in the check list |
+| profile | the Posting commands row |
+| sync group | the Vocabulary sync group |
+| design review | the design reviewer, the agent making it |
+| accepting act | the convergence check's flag for accepting a finding |
+| accepted finding | the word marking one on a finding line |
+
+A renamed page, script, agent or per-task file takes the name of the entry its row below gives.
+
 ### What changes its name
 
 The list below comes from matching every tracked file name, check-list member, flag and agent name
@@ -350,6 +397,10 @@ history.
 | the per-task record of accepted findings, named after "excuse" | named after accepting; a record under the old name is still read | the same |
 | the result-masking hook's second name, in the table of hooks on the page listing every name the harness defines | its one name | two names for one hook |
 | headings and sync-group names carrying a listed name | the canonical name; every link to them moves | same |
+| the design author's agent page and agent name, "design", which is also the document's canonical name | kept | "design" is no listed name, so neither check reads it, and prose names the agent the design author; renaming the page would change two rows of the record of accounted positions beyond their file path — the plan-invariants guard's test quotes the page's path in two line-range reads that record accounts for — and the spec lets a row of that record change only its file path, when the file holding the position is renamed |
+
+The design review's and the self-review's agents keep their names: an agent named after the review it
+makes is covered by that review's entry.
 
 ## Key decisions
 
@@ -361,7 +412,11 @@ history.
   text as it stood then. *Card* is on no covered surface today, so all its senses go to knowledge-base
   entries. Rejected: retiring every such word — renames what scripts read in files written before the
   task, which changes what they do.
-- **Ordinary English gets plain words, not entries**, and a generic word that heads several names — gate,
+- **A listed name that names several things is kept by one entry**, the one it names most; wherever it
+  names something else the sweep writes that thing's own entry's name, or plain words where it has none,
+  and never the keeping entry's name. Rejected: replacing every use with the keeping entry's name — the
+  sentences about the other things turn false.
+- **Ordinary English gets plain words, not entries**, and a generic word that heads several names —
   record, ledger, archive, member — names nothing alone; the compound is the name. A spelling variant of a
   canonical name, such as "cannot run" for could-not-run, is that name. Rejected: entries for such uses —
   a page of non-concepts.
@@ -383,14 +438,14 @@ history.
 - **Script words are skipped by kind, not by file**: names the script gives its own variables and
   functions, the ids its comments carry for documents to cite, and marked lines. Rejected: a per-file allowance — it would hide a printed message
   in the same file; reading only comments and strings — misses unquoted shell text.
-- **Entries are short.** 123 entries (a count of the rows of the tables above) at about 245 characters
+- **Entries are short.** 125 entries (a count of the rows of the tables above) at about 245 characters
   each — name 15, other names 15, what it is 75, what it does 80, where it is defined 40, markup 20, an
-  estimate from the entry's fields — come to about 30,135 characters. The rest is estimated by part: the
+  estimate from the entry's fields — come to about 30,625 characters. The rest is estimated by part: the
   rule, six sentences at about 150 characters, 900; the five retired-name rows, estimated at about 110
   each, 550; the title, the opening line and the eleven group headings, estimated at about 30 each, 390;
   the three together, an estimated 1,840. The page comes to
-  about 31,975 characters, below the 35,000-character early warning (a threshold the method hands down),
-  with room for about 12 more entries ((35,000 − 31,975) / 245). Rejected: the
+  about 32,465 characters, below the 35,000-character early warning (a threshold the method hands down),
+  with room for about 10 more entries ((35,000 − 32,465) / 245). Rejected: the
   spec's estimate of about 410 characters an entry — the page then holds about 85 entries, fewer than the
   required list.
 - **Posting commands are declared in the project's profile**, as the deployed-configuration patterns are,
@@ -401,8 +456,9 @@ history.
   the interview and task skills start these three as general-purpose agents.
 - **The model is called through the host's command-line client**, as the turn-end loop detector's optional
   judging stage already does, with a small model by default, a setting to change it, and a time limit the
-  hook sets. Both calls — this check's and that judging stage's — carry a marker in their environment, and
-  the glossary loading hooks and the plain-words check do nothing in a session carrying it. Rejected: no
+  hook sets. Both calls — this check's and that judging stage's — carry the `model-call marker` in their
+  environment, and the glossary loading hooks and the plain-words check do nothing in a session carrying
+  it. Rejected: no
   marker — the child session would load the glossary and run the turn-end check on the model's own
   answer, calling the model again; a marker that silences every harness hook — changes what the existing
   hooks do in that child session.
@@ -427,9 +483,13 @@ history.
   than what it replaces where a shorter one exists; otherwise explanation moves to a page reached by link.
 - **The glossary itself sits near the warning** by the estimate above, leaving little room for later
   entries. Mitigation: a later entry for one part of a concept already present merges into that entry.
-- **The host's message cap, a denied question never being shown, and rewriting a brief at an agent's
-  start** are the host's documented behaviour, not yet observed here (verify): each is exercised in this
-  repository before the checks rely on it.
+- **These host behaviours are documented by the host and not yet observed here (verify)**: the cap on
+  one hook message, a denied question never reaching the person, a brief rewritten at an agent's start,
+  the final message the turn-end event carries, the flag the host sets on a turn end that follows a
+  hook's own continuation, and a warning in a hook's answer shown to the person without asking anything.
+  No hook in this repository relies on any of them yet (a search of its hooks for the host's fields
+  behind them, on this branch, 2026-11-15). Each is exercised in this repository before the checks rely
+  on it.
 - **A false model finding costs one rewrite or one restatement**, never a block: after each refusal made
   by the model's reading alone, the next question or post in that turn is exempt from that reading, chat
   is restated at most once, and every reading is recorded so the rate can be counted.
@@ -444,8 +504,9 @@ history.
 - **The spec gives every sense of a several-sense word its own entry; this design gives one to every sense
   that names a harness concept**, and rewrites in plain words, with no entry, the senses that were
   ordinary English — a branch of a script, a guard switched on, whitespace collapsed, a starting
-  measurement — and the names of single parts of one check or one round. The spec's limit on the refusal
-  leaves those forms to the sweep and review. Mitigation: review holds a covered file the sweep left with
+  measurement, a workflow's working record — and the names of single parts of one check, one round or
+  one agent's run, such as the improvement agent's pass over correction entries. The spec's limit on the
+  refusal leaves those forms to the sweep and review. Mitigation: review holds a covered file the sweep left with
   such a word in a harness sense, and the owner sees this choice at the approval.
 
 ## Use cases
@@ -467,7 +528,10 @@ history.
 - `plain-words check` — before a question: refuses on a finding, or lets it through; before a declared
   posting command: refuses on a finding, or lets it through; at the end of the main agent's turn: makes the
   agent continue once to restate, or ends the turn; on any could-not-run: lets the text through and tells
-  the person once per session.
+  the person once per session, through the warning the host shows from the hook's answer.
+- `model-call marker` — set in the environment of the plain-words check's model call and of the loop
+  detector's judging-stage call; read by the glossary loading hooks and the plain-words check, which do
+  nothing inside a call carrying it.
 - `Posting commands row` — declared in a project's profile; read by the plain-words check to know which
   commands post and where their text is.
 - `plain-words record` — written at every reading, finding or none; read by the check to know whether the
