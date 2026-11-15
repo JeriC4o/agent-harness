@@ -3,6 +3,7 @@
 **Ticket:** GH-166
 **Date:** 2026-11-15
 **Spec:** ai-docs/plans/2026-11-15-harness-vocabulary-glossary.spec.md
+**Approved:** 1st approval, design review round 2, 2026-11-15
 
 ## Approach
 
