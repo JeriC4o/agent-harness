@@ -143,6 +143,20 @@ out=$(post p1 'ticketctl post -F body.md')
 check "a short file flag is read" "$(decision "$out")" "deny"
 out=$(post p1 'ticketctl post -t"The gadget book is ready."')
 check "a short flag with its value attached is read" "$(decision "$out")" "deny"
+out=$(post p1 'ticketctl post --text "- the gadget book merges
+- a test covers it"')
+check "a text whose lines start with a dash is read as text, not as grouped flags" "$(decision "$out")" "deny"
+out=$(post p1 'ticketctl note -b "- the gadget book"')
+check "  so is a short flag's value starting with a dash" "$(decision "$out")" "deny"
+out=$(post p1 'ticketctl post --text \
+  "The gadget book is ready."')
+check "a value on the next line after a backslash is the flag's value" "$(decision "$out")" "deny"
+out=$(post p1 'ticketctl post \
+--text "The gadget book is ready."')
+check "a flag at the start of the next line after a backslash is a flag" "$(decision "$out")" "deny"
+out=$(post p1 'ticketctl post --text "The gadget \
+book is ready."')
+check "a backslash ending a line inside double quotes joins the lines" "$(decision "$out")" "deny"
 printf '| Setting | Value |\n|---|---|\n| Posting commands | none |\n' > "$W/proj/AGENTS.md"
 out=$(post p2 'ticketctl post --text "the gadget book"')
 check "a profile declaring none reads no post" "$out" ""
@@ -238,6 +252,65 @@ check "  with an unquoted delimiter it is a could-not-run" "$(lastrow c1l | jq -
 out=$(post c1m 'ticketctl post --text "the gadget book" -dt "all fine"')
 check "a declared one-letter flag grouped behind another letter lets the post through" "$(decision "$out")" ""
 check "  recorded as a could-not-run, the name the readable flag carried beside it" "$(lastrow c1m | jq -r '.outcome + " " + .names[0].name')" "could-not-run gadget book"
+cat > "$W/write-cmd" <<'EOF'
+cat > w.md <<'EOT'
+The gadget book is ready.
+EOT
+ticketctl post --text-file w.md
+EOF
+printf 'All is fine.\n' > "$W/w.md"
+out=$(post c1n "$(cat "$W/write-cmd")")
+check "a file the line writes before posting it lets the post through" "$(decision "$out")" ""
+check "  recorded as a could-not-run, never passed" "$(lastrow c1n | jq -r .outcome)" "could-not-run"
+has "  the reason naming the file" "$(lastrow c1n | jq -r .reason)" "w.md"
+printf 'The gadget book is stale.\n' > "$W/w.md"
+sed 's/The gadget book is ready./All is fine now./' "$W/write-cmd" > "$W/rewrite-cmd"
+out=$(post c1o "$(cat "$W/rewrite-cmd")")
+check "  an old copy with a listed name, rewritten clean in the line, is not refused" "$(decision "$out")" ""
+check "  recorded as a could-not-run" "$(lastrow c1o | jq -r .outcome)" "could-not-run"
+cat > "$W/stdin-cmd" <<'EOF'
+ticketctl post --text-file /dev/stdin <<'EOT'
+All is fine.
+EOT
+EOF
+post c1p "$(cat "$W/stdin-cmd")" >/dev/null
+check "a file flag naming /dev/stdin fed by a here-document is a could-not-run" "$(lastrow c1p | jq -r .outcome)" "could-not-run"
+post c1q 'ticketctl post -F /dev/fd/0' >/dev/null
+check "  so is /dev/fd/0" "$(lastrow c1q | jq -r .outcome)" "could-not-run"
+mkfifo "$W/pipe"; { printf 'All is fine.\n' > "$W/pipe"; } 2>/dev/null & feed=$!
+post c1r 'ticketctl post --text-file pipe' >/dev/null
+kill "$feed" 2>/dev/null; wait "$feed" 2>/dev/null
+check "  so is a named pipe, never opened" "$(lastrow c1r | jq -r .outcome)" "could-not-run"
+post c1s 'ticketctl post --text-file <(cat body.md)' >/dev/null
+check "  so is a process substitution" "$(lastrow c1s | jq -r .outcome)" "could-not-run"
+post c1t 'ticketctl post --text-file body.md > body.md' >/dev/null
+check "a file the line redirects into is a could-not-run" "$(lastrow c1t | jq -r .outcome)" "could-not-run"
+post c1u 'ticketctl post --text-file body.md | tee body.md' >/dev/null
+check "a file another command of the line names is a could-not-run" "$(lastrow c1u | jq -r .outcome)" "could-not-run"
+post c1v 'cd && ticketctl post --text-file body.md' >/dev/null
+check "a relative file after a cd with no directory is a could-not-run" "$(lastrow c1v | jq -r .outcome)" "could-not-run"
+out=$(post c1w 'ticketctl post -F body.md 2>&1')
+check "a descriptor copy writes no file: the file is read and refused" "$(decision "$out")" "deny"
+out=$(post c1x 'ticketctl post -F body.md > /dev/null 2>&1')
+check "  nor does a redirection to /dev/null" "$(decision "$out")" "deny"
+hidden() { # <session> <command> <leading words> <where>
+  local out; out=$(post "$1" "$2")
+  check "a declared command $4 lets the post through as a could-not-run" "$(decision "$out") $(lastrow "$1" | jq -r .outcome)" " could-not-run"
+  has "  the person told, naming it" "$(notice "$out")" "the line holds $3 where"
+}
+hidden c6a 'PR=$(ticketctl post --text "all fine")' 'ticketctl post' 'inside a command substitution'
+hidden c6b 'echo `ticketctl note --body hi`' 'ticketctl note' 'inside a backtick substitution'
+hidden c6c 'TICKET=7 ticketctl post --text "all fine"' 'ticketctl post' 'behind an assignment'
+hidden c6d '{ ticketctl post --text "all fine"; }' 'ticketctl post' 'inside a group'
+hidden c6e '(ticketctl post --text "all fine")' 'ticketctl post' 'inside a subshell'
+hidden c6f 'command ticketctl post --text "all fine"' 'ticketctl post' 'behind command'
+hidden c6g 'env ticketctl post --text "all fine"' 'ticketctl post' 'behind env'
+hidden c6h 'exec ticketctl post --text "all fine"' 'ticketctl post' 'behind exec'
+hidden c6i 'echo hi | xargs ticketctl note --body' 'ticketctl note' 'behind xargs'
+hidden c6j 'ticketctl post --text "all fine" && TICKET=7 ticketctl post --text x' 'ticketctl post' 'a second time, behind an assignment'
+hidden c6k "grep -n 'ticketctl post' notes.md" 'ticketctl post' 'inside another command'"'"'s argument'
+out=$(post c6l 'ticketctl note --body "run ticketctl post later on the gadget book"')
+check "a declared command named inside a text the check reads is that text: read and refused" "$(decision "$out")" "deny"
 answer 'Sure, looks fine to me.'
 out=$(question c2 'Shall I carry on?')
 check "an answer the hook cannot read is a could-not-run" "$(lastrow c2 | jq -r .outcome)" "could-not-run"

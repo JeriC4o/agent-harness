@@ -64,10 +64,17 @@ Five pieces of work surround the page.
 4. **The `plain-words check`** runs in every project using the harness, at the three moments the host
    allows: a question, before the question tool shows it; a text to post, before a posting command runs —
    which commands post, and which of their flags carry the text or name its file, is the project's
-   `Posting commands row` in its profile, and a declared command is read wherever it sits in the line
-   the agent runs, a `cd` earlier in the line setting where a relative file is looked up, with nothing
-   run; and the chat text of the main agent's turn, when the turn
-   ends. Each text is read twice side by side: the listed names are matched outside quotation and code marks, and a model reads it
+   `Posting commands row` in its profile; and the chat text of the main agent's turn, when the turn
+   ends. A declared command is read where it starts a command of the line the agent runs — first, or
+   after another command, a pipe or a line break — with nothing run; a `cd` earlier in the line sets
+   where a relative file is looked up, and a `cd` naming no single plain directory leaves that unknown.
+   A post is a could-not-run when the command's leading words stand anywhere else in the line, outside a
+   text the check reads — inside a substitution, a group or a subshell, behind an assignment or a wrapper
+   such as `command`, `env`, `exec` or `xargs`, or inside another command's argument — and when a file a
+   declared flag names could have been changed by the line or is not a regular file: that file is read
+   only when nothing but a `cd` comes before the command in the line, no redirection in the line writes a
+   file, no other word of the line names it, a relative one is looked up from a known directory, and it
+   is a readable regular file. Each text is read twice side by side: the listed names are matched outside quotation and code marks, and a model reads it
    with the glossary for three breaches — a name translated word for word and used as a term, a name
    invented for a concept, a harness name carrying the meaning with no plain description. A refused
    question or post names what was found, and the agent rewrites and retries. After each refusal made by
