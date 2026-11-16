@@ -208,6 +208,36 @@ check "  recorded as a could-not-run" "$(lastrow c1c | jq -r .outcome)" "could-n
 check "  and the model is not called" "$(calls)" "$before"
 post c1d 'ticketctl post --text "all fine" --text-file -' >/dev/null
 check "text from standard input is a could-not-run, never passed" "$(lastrow c1d | jq -r .outcome)" "could-not-run"
+before=$(calls)
+out=$(post c1e 'ticketctl post --text "$BODY"')
+check "a text flag's value the shell expands lets the post through" "$(decision "$out")" ""
+check "  recorded as a could-not-run, never passed" "$(lastrow c1e | jq -r .outcome)" "could-not-run"
+has "  tells the person, naming the flag" "$(notice "$out")" "the value of --text is changed by the shell"
+check "  and the model is not called" "$(calls)" "$before"
+post c1f 'ticketctl post --text "$(cat body.md)"' >/dev/null
+check "a command substitution in a text flag is a could-not-run" "$(lastrow c1f | jq -r .outcome)" "could-not-run"
+post c1g 'ticketctl post --text "`cat body.md`"' >/dev/null
+check "a backtick substitution in a text flag is a could-not-run" "$(lastrow c1g | jq -r .outcome)" "could-not-run"
+post c1h 'ticketctl post -t"$BODY"' >/dev/null
+check "an expansion in an attached short value is a could-not-run" "$(lastrow c1h | jq -r .outcome)" "could-not-run"
+post c1i 'ticketctl post --text Ready?' >/dev/null
+check "an unquoted pattern character is a could-not-run" "$(lastrow c1i | jq -r .outcome)" "could-not-run"
+out=$(post c1j "ticketctl post --text 'The gadget book costs \$5.'")
+check "a dollar inside single quotes is literal: the text is read and refused" "$(decision "$out")" "deny"
+cat > "$W/heredoc-cmd" <<'EOF'
+ticketctl post --text "$(cat <<'EOT'
+The gadget book's "owner tag" costs $5.
+EOT
+)"
+EOF
+out=$(post c1k "$(cat "$W/heredoc-cmd")")
+check "a cat of a here-document with a quoted delimiter is read as its body and refused" "$(decision "$out")" "deny"
+sed "s/<<'EOT'/<<EOT/" "$W/heredoc-cmd" > "$W/heredoc-open"
+post c1l "$(cat "$W/heredoc-open")" >/dev/null
+check "  with an unquoted delimiter it is a could-not-run" "$(lastrow c1l | jq -r .outcome)" "could-not-run"
+out=$(post c1m 'ticketctl post --text "the gadget book" -dt "all fine"')
+check "a declared one-letter flag grouped behind another letter lets the post through" "$(decision "$out")" ""
+check "  recorded as a could-not-run, the name the readable flag carried beside it" "$(lastrow c1m | jq -r '.outcome + " " + .names[0].name')" "could-not-run gadget book"
 answer 'Sure, looks fine to me.'
 out=$(question c2 'Shall I carry on?')
 check "an answer the hook cannot read is a could-not-run" "$(lastrow c2 | jq -r .outcome)" "could-not-run"

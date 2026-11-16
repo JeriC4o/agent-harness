@@ -63,8 +63,8 @@ see it, a pull request's description, an issue text or a comment before it is po
 turn ends — for harness names you would have to look up, and has the agent say the same thing in plain
 words. Which commands post text is the `Posting commands` row of `AGENTS.md` § VCS: the setup writes the
 `gh` commands that create, edit, comment on, review, close or reopen a pull request or an issue, each text
-flag in its long and its short spelling; list your own if you post elsewhere, or write `none`. Without the row — a project set up before it existed has none — posts go
-unchecked, and you are told so once a session.
+flag in its long and its short spelling; list your own if you post elsewhere, or write `none`. Without the
+row — a project set up before it existed has none — posts go unchecked, and you are told so once a session.
 
 **Commits need no prompt; pushes do.** A workflow commits on the task branch without asking, and asks
 before pushing or opening a pull request. The scaffolded `.claude/settings.json` lets committing and

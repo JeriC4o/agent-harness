@@ -19,9 +19,10 @@
 # refused every time, because the agent can always remove it. Chat is restated at most
 # once a turn.
 #
-# A COULD-NOT-RUN IS NEVER A PASS. When the names, the model or a file a declared flag
-# names cannot be read the text goes through, the record says could-not-run with any
-# listed name found beside it, and the person is told once a session.
+# A COULD-NOT-RUN IS NEVER A PASS. When the names, the model, a file a declared flag
+# names or a declared flag's value the shell changes before the command runs cannot be
+# read the text goes through, the record says could-not-run with any listed name found
+# beside it, and the person is told once a session.
 #
 # ITS OWN RECORDS ARE ITS MEMORY. Each hook run is its own process, so whether the
 # previous question was refused, whether this turn was restated and whether the person
@@ -212,6 +213,7 @@ refuse_or_pass() { # <question | post>
 # file that holds it; or the word none. Sets POSTING (undeclared | none | declared |
 # matched) and, on a match, writes the text to $WORK/text.
 SEP=$'\035'
+MARK=$'\037'
 posting_text() { # <command line> <directory a relative file is read from>
   local row s e nw base d
   local -a words
@@ -222,27 +224,64 @@ posting_text() { # <command line> <directory a relative file is read from>
   printf '%s' "$row" | grep -o '`[^`]*`' | tr -d '`' > "$WORK/entries"
   # Words the way the shell would quote them, without running anything inside: single
   # and double quotes and a backslash escape. An unquoted ;, &, | or line break ends a
-  # command, so a posting command is read wherever it sits in the line.
-  printf '%s' "$1" | LC_ALL=C awk 'BEGIN { RS = "\001" } {
-      s = $0; n = length(s); w = ""; inw = 0; q = ""
+  # command, so a posting command is read wherever it sits in the line. A word the shell
+  # would change before running the command is marked by a \037 after it: an expansion
+  # or a substitution outside single quotes, an unquoted pattern character or a leading
+  # ~. A substitution is taken whole into its word, so the words after it keep their
+  # bounds. Inside double quotes a cat of a here-document with a quoted delimiter is
+  # literal to the shell, so its body is the word's text, a quote inside it included.
+  printf '%s' "$1" | LC_ALL=C awk '
+    function flush() { if (inw) printf "%s%s\036", w, (mk ? "\037" : ""); w = ""; inw = 0; mk = 0 }
+    function subst(   j, d, x) {
+      if (substr(s, i, 1) == "`") {
+        for (j = i + 1; j <= n && substr(s, j, 1) != "`"; j++) if (substr(s, j, 1) == "\\") j++
+      } else {
+        for (j = i + 1; j <= n; j++) { x = substr(s, j, 1); if (x == "(") d++; else if (x == ")" && --d == 0) break }
+      }
+      w = w substr(s, i, j - i + 1); i = j; inw = 1; mk = 1
+    }
+    function heredoc(   t, p, dq, x, nl, line, body, sep) {
+      t = substr(s, i)
+      if (!match(t, /^\$\(cat[ \t]+<<[ \t]*/)) return 0
+      p = RLENGTH + 1; dq = substr(t, p, 1)
+      if (dq != "\047" && dq != "\"") return 0
+      nl = index(substr(t, p + 1), dq); x = substr(t, p + 1, nl - 1)
+      if (nl < 2 || index(x, "\n") || substr(t, p + nl + 1, 1) != "\n") return 0
+      p += nl + 2; body = ""; sep = ""
+      for (;;) {
+        if (p > length(t)) return 0
+        nl = index(substr(t, p), "\n"); line = nl ? substr(t, p, nl - 1) : substr(t, p)
+        if (line == x) break
+        if (!nl) return 0
+        body = body sep line; sep = "\n"; p += nl
+      }
+      for (p += length(x); substr(t, p, 1) ~ /[ \t\n]/; p++) ;
+      if (substr(t, p, 1) != ")") return 0
+      w = w body; i += p - 1
+      return 1
+    }
+    BEGIN { RS = "\001" } {
+      s = $0; n = length(s); w = ""; inw = 0; mk = 0; q = ""
       for (i = 1; i <= n; i++) {
-        c = substr(s, i, 1)
+        c = substr(s, i, 1); nx = substr(s, i + 1, 1)
         if (q == "\047") { if (c == "\047") q = ""; else w = w c; continue }
         if (q == "\"") {
-          if (c == "\\" && i < n && index("\"\\$`", substr(s, i + 1, 1))) { w = w substr(s, ++i, 1); continue }
-          if (c == "\"") q = ""; else w = w c
-          continue
+          if (c == "\\" && i < n && index("\"\\$`", nx)) { w = w nx; i++; continue }
+          if (c == "\"") { q = ""; continue }
+          if (c == "$" && nx == "(" && heredoc()) continue
+          if (c == "`" || c == "$" && nx == "(") { subst(); continue }
+          if (c == "$" && nx != "" && !index(" \t\n\"", nx)) mk = 1
+          w = w c; continue
         }
         if (c == "\047" || c == "\"") { q = c; inw = 1; continue }
-        if (c == "\\" && i < n) { w = w substr(s, ++i, 1); inw = 1; continue }
-        if (c ~ /[ \t]/) { if (inw) printf "%s\036", w; w = ""; inw = 0; continue }
-        if (c == "\n" || c == ";" || c == "&" || c == "|") {
-          if (inw) printf "%s\036", w
-          w = ""; inw = 0; printf "\035\036"; continue
-        }
+        if (c == "\\" && i < n) { w = w nx; i++; inw = 1; continue }
+        if (c ~ /[ \t]/) { flush(); continue }
+        if (c == "\n" || c == ";" || c == "&" || c == "|") { flush(); printf "\035\036"; continue }
+        if (c == "`" || c == "$" && nx == "(") { subst(); continue }
+        if (c == "$" && nx != "" && !index(" \t\n", nx) || index("*?[{", c) || c == "~" && !inw) mk = 1
         w = w c; inw = 1
       }
-      if (inw) printf "%s\036", w
+      flush()
     }' > "$WORK/words"
   words=()
   IFS=$'\036' read -r -d '' -a words < "$WORK/words"
@@ -264,13 +303,14 @@ posting_text() { # <command line> <directory a relative file is read from>
 }
 
 command_text() { # <first word> <past the last word> <directory a relative file is read from>
-  local entry word i k val f file path
+  local entry word i k val f file path short
   local -a spec prefix flags
   while IFS= read -r entry; do
-    spec=(); prefix=(); flags=()
+    spec=(); prefix=(); flags=(); short=''
     read -r -a spec <<< "$entry"
     for word in ${spec[@]+"${spec[@]}"}; do
       case $word in -*) flags+=("$word") ;; *) prefix+=("$word") ;; esac
+      case ${word%:file} in -[!-]) short=$short${word:1:1} ;; esac
     done
     [ "${#prefix[@]}" -gt 0 ] && [ $(($2 - $1)) -ge "${#prefix[@]}" ] || continue
     k=0
@@ -279,6 +319,12 @@ command_text() { # <first word> <past the last word> <directory a relative file 
     POSTING=matched
     i=$(($1 + k))
     while [ "$i" -lt "$2" ]; do
+      word=${words[$i]}
+      case $word in -[!-]?*)
+        case $short in ''|*"${word:1:1}"*) ;; *)
+          case ${word:2} in *["$short"]*) UNREAD="a one-letter flag grouped in ${word} could not be read" ;; esac ;;
+        esac ;;
+      esac
       for f in ${flags[@]+"${flags[@]}"}; do
         file=''; [ "${f%:file}" = "$f" ] || file=1
         f=${f%:file}; val=''
@@ -290,6 +336,7 @@ command_text() { # <first word> <past the last word> <directory a relative file 
           esac
         fi
         [ -n "$val" ] || continue
+        case $val in *"$MARK") UNREAD="the value of ${f} is changed by the shell before it is posted"; continue ;; esac
         if [ -n "$file" ]; then
           case $val in -) path='' ;; /*) path=$val ;; *) path="$3/$val" ;; esac
           if [ -n "$path" ] && [ -r "$path" ]; then { cat "$path"; printf '\n'; } >> "$WORK/text"
