@@ -22,15 +22,24 @@ Five pieces of work surround the page.
 
 1. **It is in context from the start, through the `glossary loading hooks`.** Beside the session-start
    hook that tells the agent to read the method page, the glossary itself enters the main agent's
-   context, at the start and again after the context is compacted. The host cuts any one hook message
-   over its size cap down to a file path and a short preview (the host's hook documentation; the cap is
-   the host's own threshold), so the page goes in several messages, each under the cap, split between
-   entries; enough are registered for a page at the size limit. Three agents get it too, because their
+   context at the start, after the conversation is cleared, and again after the context is compacted. A
+   resumed or forked session does not load it again: it rebuilds its conversation from the stored
+   messages, which hold the pieces loaded earlier (claimed from how this project's session logs store a
+   hook's added context; not observed, since no session here was ever resumed). The host cuts any one
+   hook message over its size cap — a threshold of 10,000 characters the host's hook documentation
+   states — down to a file path and a short preview: measured here, a 15,025-character message arrived
+   as a 2,486-character notice naming the file that holds it (a throwaway session, Claude Code 2.1.304,
+   2026-11-16). So the page goes in several messages split between entries, each holding at most 9,500
+   bytes of the page, a threshold the loading hook sets (read from its script), plus a line naming its
+   part, because the pieces arrive in no fixed order. Five are registered, by arithmetic 47,500 bytes in
+   all, enough for a page at the instruction size cap the method hands down, 40,000 characters; a page
+   past them makes the last piece name the page rather than end silently, and the shipped page arrived as
+   four in that session. Three agents get it too, because their
    writing reaches the owner as written or holds the rule there: the spec writer, the design author and
    the design reviewer. The interview and task skills start these three as general-purpose agents whose
    brief names the agent's page, so the agent's type alone does not pick them out; a hook on the
    agent-starting tool appends the page to the brief of a start whose type or brief names one of the
-   three.
+   three, unless the brief already carries it.
 2. **One sweep renames.** Every other name and retired name on the covered surfaces becomes the canonical
    name of what it names at that place; a listed name that names several things is replaced, at each
    place, by the name of the thing it names there, as the table of such names below says. A word with
@@ -42,9 +51,12 @@ Five pieces of work surround the page.
 3. **The `vocabulary check`** joins this repository's check list. It reads the listed names and every
    covered file and fails naming the file, the line and the name, with no exemption for quoting: the
    glossary page alone may carry them. In a script it skips the names the script gives its own variables
-   and functions, the id a script's comment carries so that a document can name that function or
-   variable, and a line carrying an `internals mark` that says why the old word must stay — text an
-   earlier file carries and the script still reads, or a test's planted copy of it. It also refuses a
+   and functions, and a line carrying an `internals mark` — a comment holding `vocabulary-internal:` and
+   why the old word must stay: text an earlier file carries and the script still reads, or a test's
+   planted copy of it. A mark alone on its line covers the lines below it up to the next blank line, a
+   mark giving no reason is itself a finding, and a mark in a page of prose does nothing. In every
+   covered file it skips the bracketed id a script's comment carries, so that a document can name that
+   function or variable in the script's own spelling. It also refuses a
    glossary whose names collide. It reports which surfaces and how many files it read. A page it cannot
    read, one that yields no names, or a covered file it cannot read is a could-not-run, never a pass.
 4. **The `plain-words check`** runs in every project using the harness, at the three moments the host
@@ -266,8 +278,8 @@ statements must change together is the design author.
 | listed name | an other name or a retired name the glossary lists, which the checks refuse | — |
 | vocabulary check | the check failing when a listed name appears in the harness's own files | — |
 | plain-words check | the hooks reading what the agent writes to a person for listed names and coined words, recording each reading with the session's hook records | — |
-| internals mark | the comment marking a line of a script that must keep an old word | — |
-| model-call marker | the setting a harness hook puts in the environment of a model it calls, so the harness's own hooks inside that call do nothing | — |
+| internals mark | the comment, `vocabulary-internal:` and why, marking a line of a script, or the lines below it, that must keep an old word | — |
+| model-call marker | the setting a harness hook puts in the environment of a model it calls, so the hooks that load the glossary or read text for a person do nothing inside that call | — |
 
 #### Retired names
 
@@ -436,17 +448,15 @@ makes is covered by that review's entry.
 - **Quoting is a mention only in text for a person.** In the harness's files every appearance counts,
   because the glossary is where an old name lives on. Rejected: exempting quoted names in files — the
   sweep's leftovers would hide behind backticks.
-- **Script words are skipped by kind, not by file**: names the script gives its own variables and
-  functions, the ids its comments carry for documents to cite, and marked lines. Rejected: a per-file allowance — it would hide a printed message
+- **Script words are skipped by kind, not by file**: in a script, the names it gives its own variables
+  and functions and the lines under the internals mark; in every covered file, the bracketed ids a
+  script's comments carry, which documents cite in the script's own spelling. Rejected: a per-file allowance — it would hide a printed message
   in the same file; reading only comments and strings — misses unquoted shell text.
-- **Entries are short.** 125 entries (a count of the rows of the tables above) at about 245 characters
-  each — name 15, other names 15, what it is 75, what it does 80, where it is defined 40, markup 20, an
-  estimate from the entry's fields — come to about 30,625 characters. The rest is estimated by part: the
-  rule, six sentences at about 150 characters, 900; the five retired-name rows, estimated at about 110
-  each, 550; the title, the opening line and the eleven group headings, estimated at about 30 each, 390;
-  the three together, an estimated 1,840. The page comes to
-  about 32,465 characters, below the 35,000-character early warning (a threshold the method hands down),
-  with room for about 10 more entries ((35,000 − 32,465) / 245). Rejected: the
+- **Entries are short.** The page holds its 125 entries in 30,175 characters, 241 an entry on average,
+  and with the rule, the section on words a script must keep, the five retired names and the headings
+  comes to 33,949 characters (each figure measured by a character count of the page on this branch,
+  2026-11-16), below the 35,000-character early warning (a threshold the method hands down), with room
+  for about 4 more entries ((35,000 − 33,949) / 241). Rejected: the
   spec's estimate of about 410 characters an entry — the page then holds about 85 entries, fewer than the
   required list.
 - **Posting commands are declared in the project's profile**, as the deployed-configuration patterns are,
@@ -479,18 +489,22 @@ makes is covered by that review's entry.
 ## Risks
 
 - **Three files loaded whole sit close to the early warning**: the method page, the task skill and this
-  repository's project context page, 814, 954 and 1,327 characters below it (measured by a character
-  count of each file on this branch, 2026-11-15). Mitigation: in those files a canonical name is no longer
+  repository's project context page, 621, 954 and 1,200 characters below it (measured by a character
+  count of each file on this branch, 2026-11-16). Mitigation: in those files a canonical name is no longer
   than what it replaces where a shorter one exists; otherwise explanation moves to a page reached by link.
-- **The glossary itself sits near the warning** by the estimate above, leaving little room for later
-  entries. Mitigation: a later entry for one part of a concept already present merges into that entry.
-- **These host behaviours are documented by the host and not yet observed here (verify)**: the cap on
-  one hook message, a denied question never reaching the person, a brief rewritten at an agent's start,
-  the final message the turn-end event carries, the flag the host sets on a turn end that follows a
-  hook's own continuation, and a warning in a hook's answer shown to the person without asking anything.
-  No hook in this repository relies on any of them yet (a search of its hooks for the host's fields
-  behind them, on this branch, 2026-11-15). Each is exercised in this repository before the checks rely
-  on it.
+- **The glossary itself sits near the warning**, 1,051 characters below it by the measurement above,
+  leaving little room for later entries. Mitigation: a later entry for one part of a concept already
+  present merges into that entry.
+- **These host behaviours are documented by the host and not yet observed here (verify)**: a brief
+  rewritten at an agent's start reaching the agent, a denied question never reaching the person, the
+  final message the turn-end event carries, the flag the host sets on a turn end that follows a hook's own
+  continuation, and a warning in a hook's answer shown to the person without asking anything. Nor is a
+  resumed session still holding the glossary pieces loaded at its start observed. Before this
+  task no hook in this repository relied on any of them (a search of its hooks for the host's fields
+  behind them, on this branch, 2026-11-15). The brief rewrite was tried and not observed: a throwaway
+  session stops at the login before any agent starts. The hook appending the page to a brief is built as
+  the host documents it; if the host ignores the rewrite, the agent starts without the page and nothing
+  else changes. The plain-words check's four are exercised in this repository before it relies on them.
 - **A false model finding costs one rewrite or one restatement**, never a block: after each refusal made
   by the model's reading alone, the next question or post in that turn is exempt from that reading, chat
   is restated at most once, and every reading is recorded so the rate can be counted.
@@ -518,21 +532,24 @@ makes is covered by that review's entry.
   asking what a harness word means.
 - `glossary name reader` — gives both checks the canonical, other and retired names; refuses a page whose
   names are not in the fixed form.
-- `glossary loading hooks` — at session start and after compaction, put the page into the main agent's
-  context in pieces under the host's cap; at an agent start whose type or brief names one of the three
-  agents, append the page to its brief; inside a model call made by a harness hook, do nothing.
+- `glossary loading hooks` — at session start, after a clear and after compaction, but not on a resume
+  or a fork, put the page into the main agent's context in pieces under the host's cap, each naming its
+  part; at an agent start whose type or brief names one of the three agents, append the page to its
+  brief unless the brief already carries it; inside a model call made by a harness hook, do nothing.
 - `vocabulary check` — in this repository's check list: fails on a listed name in a covered file, naming
   file, line and name; fails on a glossary listing one name twice, or a name as both canonical and other
   or retired; reports its surfaces and file count; reports a could-not-run on an unreadable page or file.
-- `internals mark` — written on a script line that must keep an old word; read by the vocabulary check,
-  which skips that line.
+- `internals mark` — written, as `vocabulary-internal:` and the reason, on a script line that must keep
+  an old word, or alone on a line above several such lines; read by the vocabulary check, which skips
+  that line, or the lines below a lone mark up to the next blank line, and reports a mark with no reason.
 - `plain-words check` — before a question: refuses on a finding, or lets it through; before a declared
   posting command: refuses on a finding, or lets it through; at the end of the main agent's turn: makes the
   agent continue once to restate, or ends the turn; on any could-not-run: lets the text through and tells
   the person once per session, through the warning the host shows from the hook's answer.
-- `model-call marker` — set in the environment of the plain-words check's model call and of the loop
-  detector's judging-stage call; read by the glossary loading hooks and the plain-words check, which do
-  nothing inside a call carrying it.
+- `model-call marker` — the environment variable `HARNESS_MODEL_CALL`, set in the environment of the
+  plain-words check's model call and of the loop detector's judging-stage call, and inherited by every
+  hook of the session that call starts; read by the glossary loading hooks and the plain-words check,
+  which do nothing inside a call carrying it.
 - `Posting commands row` — declared in a project's profile; read by the plain-words check to know which
   commands post and where their text is.
 - `plain-words record` — written at every reading, finding or none; read by the check to know whether the
@@ -544,8 +561,9 @@ makes is covered by that review's entry.
 
 ## Collisions
 
-- The method page's communication rule already forbids agent-internal words toward a person; that clause is
-  replaced by a pointer to the glossary's rule rather than kept beside it.
+- The method page's communication rule, and the interview skill's checks on a question's wording and on
+  the question asked when an interview stops, already forbid agent-internal words toward a person; each
+  of those clauses is replaced by a pointer to the glossary's rule rather than kept beside it.
 - The spec writer's list of words forbidden in a question restates part of the same rule; it points
   at the glossary instead of growing.
 - The loop ledger's page enumerates its record classes; the new class is added there.
