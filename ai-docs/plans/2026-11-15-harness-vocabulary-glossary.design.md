@@ -39,7 +39,9 @@ Five pieces of work surround the page.
    the design reviewer. The interview and task skills start these three as general-purpose agents whose
    brief names the agent's page, so the agent's type alone does not pick them out; a hook on the
    agent-starting tool appends the page to the brief of a start whose type or brief names one of the
-   three, unless the brief already carries it.
+   three, unless the brief already carries it. It answers with the rewritten brief and an allow: the
+   host's documentation says auto mode can refuse a changed call that carries no decision, and that a
+   hook's allow overrides no deny or ask rule the person has set.
 2. **One sweep renames.** Every other name and retired name on the covered surfaces becomes the canonical
    name of what it names at that place; a listed name that names several things is replaced, at each
    place, by the name of the thing it names there, as the table of such names below says. A word with
@@ -62,17 +64,20 @@ Five pieces of work surround the page.
 4. **The `plain-words check`** runs in every project using the harness, at the three moments the host
    allows: a question, before the question tool shows it; a text to post, before a posting command runs —
    which commands post, and which of their flags carry the text or name its file, is the project's
-   `Posting commands row` in its profile; and the chat text of the main agent's turn, when the turn
+   `Posting commands row` in its profile, and a declared command is read wherever it sits in the line
+   the agent runs, a `cd` earlier in the line setting where a relative file is looked up, with nothing
+   run; and the chat text of the main agent's turn, when the turn
    ends. Each text is read twice side by side: the listed names are matched outside quotation and code marks, and a model reads it
    with the glossary for three breaches — a name translated word for word and used as a term, a name
    invented for a concept, a harness name carrying the meaning with no plain description. A refused
    question or post names what was found, and the agent rewrites and retries. After each refusal made by
    the model's reading alone, only the next question or posted text in that turn is exempt from the
    model's reading; a later one is read and can be refused again. A listed name used as a term is refused
-   every time. Chat text, already shown, makes the agent continue once and restate the
-   affected sentences, asking nothing; the restatement is not read again. When the model or the names
-   cannot be read, the text goes through and the person is told once per session that what the agent
-   writes to them is not being checked. That notice reaches the person as a warning the host shows
+   every time, while the model can read. Chat text, already shown, makes the agent continue once and
+   restate the affected sentences, asking nothing; the restatement is not read again. When the model or
+   the names cannot be read, the text goes through unchanged, the record says the reading could not run,
+   with any listed name the names reading found beside it, and the person is told once per session that
+   what the agent writes to them is not being checked. That notice reaches the person as a warning the host shows
    them straight from the hook's answer, asking nothing of them. Every reading leaves a
    `plain-words record` among the session's hook records.
 5. **The knowledge-base planning documents** kept outside the repository are rewritten with the canonical
@@ -91,7 +96,7 @@ flowchart TD
     L -->|"no"| OK["goes through"]
     L -->|"question or post"| R["refused, finding named;<br/>agent rewrites"]
     L -->|"chat"| RS["agent continues once<br/>and restates in plain words"]
-    P -->|"model or names unreadable"| N["goes through; the person is<br/>told once per session"]
+    P -->|"model or names unreadable"| N["goes through; any listed name<br/>recorded; the person is<br/>told once per session"]
     P --> H["session hook records"]
 ```
 
@@ -349,7 +354,11 @@ words, since STOP is a design review verdict; the human-finding count's "fold", 
 removed last step made, says that. A generic word in a sense its compound does not have is said in full or
 in plain words: "gate" for a permission prompt ("asks first"), "verdict line" for a row the loop detector
 writes, "ledger" alone, "member" for a protected page. A listed name a script prints is rewritten like any
-other.
+other. A token another program parses keeps its words where it carries no listed name — the backlog
+measurement's machine-readable keys and its threshold flag, the session inspection's deferral signature,
+the fix-plan check's baseline verb — and a bracketed id keeps its spelling in any case; the human-finding
+count's key for the removed last step's commits, which nothing else reads, says that, as its message
+does.
 
 ### Listed names that name several things
 
@@ -439,7 +448,7 @@ makes is covered by that review's entry.
   saying that one option beats another.
 - **A name for one part is not an other name of the whole.** The fix-plan check's single tests ("size
   arm", "routing arm" and the rest) and the review-fix round's numbered steps ("beat" with its number) are
-  rewritten as what each tests or does — "the size test", "the step that applies the plan". A step that is
+  rewritten as what each tests or does — "the size test", "the apply". A step that is
   a concept of its own has its entry: round baseline, fix plan, fix-plan check, fix-apply agent, post-apply
   micro-loop, in-place correction. Rejected: listing a part's name under the whole — the sweep would turn
   "there is no size test" into "there is no fix-plan check".
@@ -452,11 +461,11 @@ makes is covered by that review's entry.
   and functions and the lines under the internals mark; in every covered file, the bracketed ids a
   script's comments carry, which documents cite in the script's own spelling. Rejected: a per-file allowance — it would hide a printed message
   in the same file; reading only comments and strings — misses unquoted shell text.
-- **Entries are short.** The page holds its 125 entries in 30,175 characters, 241 an entry on average,
+- **Entries are short.** The page holds its 125 entries in 30,182 characters, 241 an entry on average,
   and with the rule, the section on words a script must keep, the five retired names and the headings
-  comes to 33,949 characters (each figure measured by a character count of the page on this branch,
+  comes to 33,956 characters (each figure measured by a character count of the page on this branch,
   2026-11-16), below the 35,000-character early warning (a threshold the method hands down), with room
-  for about 4 more entries ((35,000 − 33,949) / 241). Rejected: the
+  for about 4 more entries ((35,000 − 33,956) / 241). Rejected: the
   spec's estimate of about 410 characters an entry — the page then holds about 85 entries, fewer than the
   required list.
 - **Posting commands are declared in the project's profile**, as the deployed-configuration patterns are,
@@ -474,42 +483,50 @@ makes is covered by that review's entry.
   answer, calling the model again; a marker that silences every harness hook — changes what the existing
   hooks do in that child session.
 - **The chat text read is the whole turn's**: the transcript's assistant text since the person's last
-  message, plus the final message the turn-end event carries, which the host says the transcript may not
-  yet hold. Rejected: the final message alone — a coined name earlier in the turn is missed.
+  message, plus the final message the turn-end event carries where it differs from the transcript's
+  last text, which the host says the transcript may not yet hold. A turn end that follows the check's
+  own restatement is not read: the host flags it, and where the host does not, the check's own
+  restatement record, newer than the person's last message, marks it. Rejected: the final message
+  alone — a coined name earlier in the turn is missed.
 - **The hook records hold every reading**, finding or none, as a new record class, and the check's own row
-  at each turn end bounds a turn. Rejected: a file of its own — a second session record; findings only —
-  leaves nothing to count a rate against.
+  at each turn end it reads bounds a turn — an empty row when the turn wrote no chat text. Rejected: a
+  file of its own — a second session record; findings only — leaves nothing to count a rate against.
 - **The record of accepted findings is read under both names and written under the new one**, so a task in
   progress keeps what it accepted; the `record of accepted findings` under its new name is the one file
   this task renames that a project already holds. A row names the finding it accepts by the words the
-  finding line prints, and one such line carries a listed name: the pairing kind names its place as "the
-  plan pair". The line prints the new words, and a row recorded with the old ones still matches it.
-  Rejected: migrating the old file or its rows — changes a file nobody asked to change.
+  finding line prints, and the pairing kind's line names its place "the plan"; a row recorded with the
+  earlier words, an other name of the plan, still matches it. The convergence check takes its accepting
+  flag, `--accept`, under that name alone. Rejected: migrating the old file or its rows — changes a file nobody asked to change.
 
 ## Risks
 
 - **Three files loaded whole sit close to the early warning**: the method page, the task skill and this
-  repository's project context page, 621, 954 and 1,200 characters below it (measured by a character
+  repository's project context page, 698, 978 and 1,239 characters below it (measured by a character
   count of each file on this branch, 2026-11-16). Mitigation: in those files a canonical name is no longer
   than what it replaces where a shorter one exists; otherwise explanation moves to a page reached by link.
-- **The glossary itself sits near the warning**, 1,051 characters below it by the measurement above,
+- **The glossary itself sits near the warning**, 1,044 characters below it by the measurement above,
   leaving little room for later entries. Mitigation: a later entry for one part of a concept already
   present merges into that entry.
-- **These host behaviours are documented by the host and not yet observed here (verify)**: a brief
-  rewritten at an agent's start reaching the agent, a denied question never reaching the person, the
-  final message the turn-end event carries, the flag the host sets on a turn end that follows a hook's own
-  continuation, and a warning in a hook's answer shown to the person without asking anything. Nor is a
-  resumed session still holding the glossary pieces loaded at its start observed. Before this
-  task no hook in this repository relied on any of them (a search of its hooks for the host's fields
-  behind them, on this branch, 2026-11-15). The brief rewrite was tried and not observed: a throwaway
-  session stops at the login before any agent starts. The hook appending the page to a brief is built as
-  the host documents it; if the host ignores the rewrite, the agent starts without the page and nothing
-  else changes. The plain-words check's four are exercised in this repository before it relies on them.
+- **These host behaviours are documented by the host and observed here at most in part (verify)**. Each
+  was tried in a throwaway session (Claude Code 2.1.304, 2026-11-16), which stops at the login before any
+  model turn, so no tool is called in it. Not observed: a brief rewritten at an agent's start reaching
+  the agent, a denied question never reaching the person, and the flag the host sets on a turn end that
+  follows a hook's own continuation. Observed in part: the final message a turn end carries — the field
+  is on the event the host sends when a turn fails, and an ordinary turn end was not seen; and a warning
+  in a hook's answer — the host keeps it in the session's transcript and prints nothing of it in a
+  non-interactive session, and it was not seen on screen, nor from a hook before a tool call or at a
+  turn end. Nor is a resumed session still holding the glossary pieces loaded at its start observed.
+  Before this task no hook in this repository relied on any of them (a search of its hooks for the
+  host's fields behind them, on this branch, 2026-11-15). Each is built as the host documents it. If the
+  host does otherwise: an ignored brief rewrite starts the agent without the page and changes nothing
+  else; a turn end the host does not flag is still left unread after a restatement, by the check's own
+  record; a final message missing from the event leaves the turn's text as the transcript holds it; a
+  warning the host does not show leaves the person untold that the text is unchecked.
 - **A false model finding costs one rewrite or one restatement**, never a block: after each refusal made
   by the model's reading alone, the next question or post in that turn is exempt from that reading, chat
   is restated at most once, and every reading is recorded so the rate can be counted.
 - **Each turn end and each question or post waits for a model call**, bounded by the hook's time limit;
-  over it the text goes through as a could-not-run.
+  past it the text goes through as a could-not-run, any listed name found recorded beside it.
 - **The extra turn end a restatement adds** carries no tool call, so the loop detector sees an empty turn
   and reaches no verdict; the restatement is told to call no tool.
 - **A project already using the harness has no posting-commands row**: posts there go unchecked, told once
@@ -544,16 +561,21 @@ makes is covered by that review's entry.
   that line, or the lines below a lone mark up to the next blank line, and reports a mark with no reason.
 - `plain-words check` — before a question: refuses on a finding, or lets it through; before a declared
   posting command: refuses on a finding, or lets it through; at the end of the main agent's turn: makes the
-  agent continue once to restate, or ends the turn; on any could-not-run: lets the text through and tells
-  the person once per session, through the warning the host shows from the hook's answer.
+  agent continue once to restate, or ends the turn; when the model or the names cannot be read: lets the
+  text through, records any listed name found, and tells the person once per session, through the
+  warning the host shows from the hook's answer.
 - `model-call marker` — the environment variable `HARNESS_MODEL_CALL`, set in the environment of the
   plain-words check's model call and of the loop detector's judging-stage call, and inherited by every
   hook of the session that call starts; read by the glossary loading hooks and the plain-words check,
   which do nothing inside a call carrying it.
-- `Posting commands row` — declared in a project's profile; read by the plain-words check to know which
-  commands post and where their text is.
-- `plain-words record` — written at every reading, finding or none; read by the check to know whether the
-  question or post before this one in the turn was refused by the model's reading alone, whether the
+- `Posting commands row` — declared in a project's profile, one quoted entry per command: its leading
+  words, then the flags carrying its text, a flag marked as naming a file whose content is the text; a
+  row with no entry declares that nothing posts; this repository and the project template declare the
+  six commands of the review host's command-line client that create, edit or comment on a pull request
+  or an issue. Read by the plain-words check to know which commands post and where their text is.
+- `plain-words record` — written at every reading, finding or none, and at a turn end with no chat text;
+  read by the check to know whether the question or post before this one in the turn was refused by the
+  model's reading alone, whether the
   turn's chat was already restated, and whether the session was already told the check cannot read; read
   afterwards to count how often text was flagged.
 - `record of accepted findings` — written under its new name by the accepting act; read by every run of
