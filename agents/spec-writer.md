@@ -182,7 +182,7 @@ amended:                    # required iff this invocation applied an amendment 
 
 The orchestrator parses this block. **Malformed YAML triggers a one-shot retry asking you to re-emit only the status block.**
 
-**`amended` names every spec statement the amendment changed, added or removed** — the heading it sits under and its words as they now stand, a removed one by its heading and the words it had. After an amendment that keeps the approach, the orchestrator reads it to name to the whole-pair reader the design statements linked to those statements, so an omitted statement is one whose links nobody reads first ([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict), step 5).
+**`amended` names every spec statement the amendment changed, added or removed** — the heading it sits under and its words as they now stand, a removed one by its heading and the words it had. After an amendment that keeps the approach, the orchestrator reads it to name to the contradiction reader the design statements linked to those statements, so an omitted statement is one whose links nobody reads first ([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict), step 5).
 
 ## Hard rules
 
@@ -204,7 +204,7 @@ The spec is a MODEL-facing artefact. The question you emit is read by a develope
 
 **FORBIDDEN in a question, an option label, or an option description:**
 
-- A workflow-artefact path or name: `*.spec.md`, `*.design.md`, `*.state.md`, `.progress.md`, "the spec", "the design doc", "§ Technical constraints".
+- A workflow-artefact path or name: `*.spec.md`, `*.design.md`, `*.state.md`, `.progress.md`, "the spec", "the design", "§ Technical constraints".
 - An acceptance-criterion id (`AC3`), a decomposition-task id (`T7`), a round number, or any other handle whose meaning lives in a file.
 - A harness name carrying the meaning, an agent's or a status value's included: [`${CLAUDE_PLUGIN_ROOT}/docs/glossary.md` § Text for a person](${CLAUDE_PLUGIN_ROOT}/docs/glossary.md#text-for-a-person).
 - A bare symbol / class / table name as the whole subject, with no plain-language gloss of what it is for.

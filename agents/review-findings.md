@@ -1,6 +1,6 @@
 ---
 name: review-findings
-description: "Walks the entire codebase on the current branch (no diff, no spec) and produces a findings table written to a progress file. Invoked by /project-review at the start of a whole-branch review."
+description: "Walks the entire codebase on the current branch (no diff, no spec) and produces a findings table written to a progress file. Invoked by /project-review at the start of a whole-repository review."
 ---
 
 # Review Findings Subagent
@@ -106,7 +106,7 @@ Flag each of:
 - **Missing `@param`** on a function that ALREADY carries a doc-comment and takes ≥1 argument → `minor`. (A function with no doc-comment is not flagged.)
 - **Missing `@return`** on a function that already carries a doc-comment whose return shape is non-obvious (a closed type, a result type, a semantically-meaningful null) → `minor`.
 - **Missing `@throws`** on a function asserting a precondition / throwing an argument-or-state exception / indexing without a bounds-check / doing arithmetic that can overflow → `minor`. (This is a genuine contract that warrants a doc-comment even when none is present.)
-- **`@throws` naming an UNVERIFIED type** → `major`. `@throws <Type>` is a type assertion, not prose: for an exception originating in a framework/dependency, a type not confirmable against the branch's own resolved dependency versions is a false contract that invites a wrong `catch` (a sibling type reads like a supertype). Where the doc-comment and a design doc's analysis disagree, the doc-comment is the finding.
+- **`@throws` naming an UNVERIFIED type** → `major`. `@throws <Type>` is a type assertion, not prose: for an exception originating in a framework/dependency, a type not confirmable against the branch's own resolved dependency versions is a false contract that invites a wrong `catch` (a sibling type reads like a supertype). Where the doc-comment and a design's analysis disagree, the doc-comment is the finding.
 - **Section ordering violation** — Summary → `@param` → `@return` → `@throws` → `@sample` / `@see` → `minor`.
 - **Ad-hoc sections** (`# Notes`, `# History`) → `nit`.
 - **Self-sufficiency violations** — no `[ai-docs/...]` link, no "see PR #N", no "as documented in spec X" — in a doc-comment → `major`.

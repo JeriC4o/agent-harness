@@ -13,7 +13,7 @@ Reactive bug-fixing workflow. **Fundamentally different from `/task`:**
 > ⛔ **Do NOT open Edit, do NOT write code until Step 2 (Root Cause) is complete.**
 
 > **⚡ Compaction recovery check — read FIRST on every invocation.**
-> If you are re-entering this skill after auto-compaction (summary block at top of context, or workflow context feels thin), STOP before any tool call and:
+> If you are re-entering this skill after auto-compaction (summary block at top of context, or workflow context feels thin), stop before any tool call and:
 >
 > 1. **Locate the durable-state file** — `ls ai-docs/bugfix/trace-*.md 2>/dev/null`. One match → durable state. None → fresh invocation. Multiple → surface to user.
 > 2. Read it **top-to-bottom in one pass**. Recorded `current_step` is a cross-check, never an instruction to skip the read.
@@ -126,17 +126,17 @@ Before Edit, make a plan:
 
 Now open Edit.
 
-**Site-count rule:** if the fix requires changes in >3 **behaviour-change sites** → you're fixing a symptom. STOP, go back to Step 2.
+**Site-count rule:** if the fix requires changes in >3 **behaviour-change sites** → you're fixing a symptom. Stop, go back to Step 2.
 
-> **Count sites, not files — and state the count at the Step 4 plan, not retroactively at review.** Say it in BOTH forms: "N files, but M behaviour-change sites"; proceed only when M ≤ 3. NOT behaviour-change sites: mechanical call-site / mock-matcher churn forced by one signature change, a class extracted from that same fix, and its config surface (enum + property). If M > 3, STOP as written — this gate is unconditional, not advisory, and recording the reasoning in the trace is not a substitute for stopping.
+> **Count sites, not files — and state the count at the Step 4 plan, not retroactively at review.** Say it in BOTH forms: "N files, but M behaviour-change sites"; proceed only when M ≤ 3. NOT behaviour-change sites: mechanical call-site / mock-matcher churn forced by one signature change, a class extracted from that same fix, and its config surface (enum + property). If M > 3, stop as written — this gate is unconditional, not advisory, and recording the reasoning in the trace is not a substitute for stopping.
 
-**One-attempt rule:** if a new bug appeared in the same place after the fix → STOP. Draw a full system diagram, show it to the user.
+**One-attempt rule:** if a new bug appeared in the same place after the fix → stop. Draw a full system diagram, show it to the user.
 
 **Write progress:** rewrite `**current_step:**` to `Step 5: Fix`; append a bullet recording file(s) and lines touched.
 
-> **Spec Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave untrue a sentence of a `*.spec.md` / `*.design.md` still in `ai-docs/plans/` — or, under a `**parent_skill:**` trace, of the enclosing task's own plan, wherever it sits? A spec sentence merely broader than what shipped, or one another spec sentence overrides, is not left untrue; only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts. **(B)** Does the fix diff touch one of those? Either is a Spec/Design Amendment, not an ordinary fix — A fires even when the fix lands entirely in code, and a finding that fired A is not closed until the cited sentence is re-read and either confirmed or amended. STOP and route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume here. **Never a plan another task archived in `ai-docs/plans/done/`:** neither arm fires on it, and a fix never edits it — a finding whose closing would touch it is fixed in the work's own files. **Except under a `**parent_skill:**` trace:** a sentence of the enclosing task's own design that the fix leaves untrue, without breaking the agreed approach, takes that round's in-place correction instead, and that round's review rules on it. Full rationale: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group).
+> **Spec Amendment trigger — two arms, and the subject arm comes first.** **(A)** Would closing this finding leave untrue a sentence of a `*.spec.md` / `*.design.md` still in `ai-docs/plans/` — or, under a `**parent_skill:**` trace, of the enclosing task's own plan, wherever it sits? A spec sentence merely broader than what shipped, or one another spec sentence overrides, is not left untrue; only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts. **(B)** Does the fix diff touch one of those? Either is a Spec/Design Amendment, not an ordinary fix — A fires even when the fix lands entirely in code, and a finding that fired A is not closed until the cited sentence is re-read and either confirmed or amended. Stop and route through [`/task` § Spec Amendment recipe](../task/SKILL.md#spec-amendment-recipe), then resume here. **Never a plan another task archived in `ai-docs/plans/done/`:** neither arm fires on it, and a fix never edits it — a finding whose closing would touch it is fixed in the work's own files. **Except under a `**parent_skill:**` trace:** a sentence of the enclosing task's own design that the fix leaves untrue, without breaking the agreed approach, takes that round's in-place correction instead, and that round's review rules on it. Full rationale: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group).
 
-> **The scouted fix plan does NOT run here, and that is the current state rather than a pending change.** `/task` Step 11 routes every review-fix round through one: a fresh-context agent writes the round's plan, a checked-in gate decides whether it may be applied, and a second agent applies only the rows marked for a fix. This step fixes in the current context, as written above. Whether the mechanism is extended here is **conditional on evidence**: it is attempted only if a like-for-like cost measurement on a real feature task shows the sequence paid for itself, and if no effect shows, the extension does not happen at all. Tracked in the harness repository as issue #98.
+> **The fix plan does NOT run here, and that is the current state rather than a pending change.** `/task` Step 11 routes every review-fix round through one: a fresh-context agent writes the round's plan, a checked-in gate decides whether it may be applied, and a second agent applies only the rows marked for a fix. This step fixes in the current context, as written above. Whether the mechanism is extended here is **conditional on evidence**: it is attempted only if a like-for-like cost measurement on a real feature task shows the sequence paid for itself, and if no effect shows, the extension does not happen at all. Tracked in the harness repository as issue #98.
 
 ---
 
@@ -163,7 +163,7 @@ Now open Edit.
 
 3. **On APPROVE:** proceed to Step 6.7. **Write progress:** rewrite `**current_step:**` to `Step 6.5: Self-review — APPROVE (Round N)`.
 4. **On REJECT:** loop back to Step 5 — address each `⬜ Open` finding. After fixes, return for Round N+1. Rewrite `**current_step:**` to `Step 6.5: Self-review — REJECT (Round N), addressing findings`.
-5. **After Round 3 with REJECT:** STOP. Do not commit. Surface remaining findings to the user.
+5. **After Round 3 with REJECT:** stop. Do not commit. Surface remaining findings to the user.
 
 ---
 
@@ -186,4 +186,4 @@ Now open Edit.
 
 ## ⛔ Anti-pattern: fix-break cycle
 
-If you suspect a fix-break loop (similar symptom reported twice, same file changed >2 times, user asks "why did you decide to do it that way?"): STOP, close all Edits, draw a full system diagram, show it to the user, and wait for confirmation before continuing. Full detail: [reference.md § Anti-pattern: fix-break cycle](reference.md#anti-pattern-fix-break-cycle).
+If you suspect a fix-break loop (similar symptom reported twice, same file changed >2 times, user asks "why did you decide to do it that way?"): stop, close all Edits, draw a full system diagram, show it to the user, and wait for confirmation before continuing. Full detail: [reference.md § Anti-pattern: fix-break cycle](reference.md#anti-pattern-fix-break-cycle).

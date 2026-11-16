@@ -36,7 +36,7 @@ Runs **alongside** Step 1. Scan the union (`ai-docs/learnings.md` + `ai-docs/lea
 
 Group by topic / target surface (Skill / Subagent / AGENTS.md section). Topic = the `Rule:` line's named surface. Count validation entries per topic — drives Step 2b routing.
 
-Correction pass (Step 1 → Step 2a) and Carrot pass (Step 1b → Step 2b) produce independent groupings; an entry's `Kind:` field assigns it to a pass.
+The pass over correction entries (Step 1 → Step 2a) and the Carrot pass (Step 1b → Step 2b) produce independent groupings; an entry's `Kind:` field assigns it to a pass.
 
 ### Step 2a: Determine actions (the pass over correction entries)
 

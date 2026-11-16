@@ -68,7 +68,7 @@ A placeholder in these examples is written without a space and with a numeric li
 | `resolved: <reason>` | The tree already satisfies this finding, no edit is owed this round, and this is **not** a dispute — typically a finding closed before the round began by an approved amendment. Routes nothing, declares 0, and like `object:` refuses an empty reason |
 | `amendment: spec` | Closing this needs a spec artefact changed, which is not a fix |
 | `amendment: design` | Closing this needs a design artefact changed, which is not a fix |
-| `correction: <what shipped instead>` | The fix leaves a sentence of the task's own design untrue WITHOUT breaking the agreed approach; the payload says what shipped. The design is not reopened — once the round's fix exists, its correction pass rewrites the item in place |
+| `correction: <what shipped instead>` | The fix leaves a sentence of the task's own design untrue WITHOUT breaking the agreed approach; the payload says what shipped. The design is not reopened — once the round's fix exists, its in-place correction rewrites the item |
 
 Anything else is refused by the gate. A round whose every finding plans no edit is a legitimate plan — every row `object:`, every row `resolved:`, or any mix — and its declared total is 0. It still runs the whole sequence.
 
