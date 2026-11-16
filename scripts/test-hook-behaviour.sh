@@ -142,7 +142,7 @@ jq -r '.hooks | to_entries[] | .key as $ev | .value[] | (.matcher // "-") as $m
        | .hooks | to_entries[] | [$ev, $m, (.key|tostring)] | @tsv' "$HOOKS" > "${WORK}/keys.tsv"
 TOTAL=$(wc -l < "${WORK}/keys.tsv" | tr -d ' ')
 DISTINCT=$(sort -u "${WORK}/keys.tsv" | wc -l | tr -d ' ')
-check "every hook command has a triple" "$TOTAL" "29"
+check "every hook command has a triple" "$TOTAL" "32"
 check "the ${TOTAL} triples are distinct" "$DISTINCT" "$TOTAL"
 SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS" | sort -u | wc -l | tr -d ' ')
 [ "$SM_DISTINCT" -lt "$TOTAL" ] \
@@ -178,6 +178,8 @@ PreToolUse|Bash|4|three_dot_diff|err|BLOCKED: `git diff <base>...HEAD` on a bran
 PreToolUse|Bash|5|deployed_config_filter|err|BLOCKED: this content search can surface deployed-config files
 PreToolUse|Bash|6|piped_gate|err|BLOCKED: a gate (build / test / lint / format / shellcheck / manifest parse) is
 PreToolUse|Bash|7|plan_inv_shell|jq|CONFIRM: this command writes to a protected plan-invariants page
+PreToolUse|Bash|8|plain_post|jq|[plain-words] This post was not sent
+PreToolUse|AskUserQuestion|0|plain_question|jq|[plain-words] This question was not sent
 PreToolUse|Edit|Write|0|member_path|err|[propagation-rule-reminder] You are editing
 PreToolUse|Edit|Write|1|learnings_headers|err|[archive-protection-reminder]
 PreToolUse|Edit|Write|2|plan_inv_edit|jq|CONFIRM: this edit changes a required section on a protected plan-invariants page
@@ -188,6 +190,7 @@ PostToolUse|Write|Edit|1|broken_sh|err|[sh-syntax-check]
 PostToolUse|Bash|0|gate_pass|jq|[gate-record] scripts/test-thing.sh exited zero; tree digest
 PostToolUse|*|0|result_ok|none|
 Stop|-|0|turn_verdict|err|[loop-index] coarse repeat:
+Stop|-|1|plain_turn|jq|[plain-words] Your reply this turn
 SubagentStart|-|0|agent_mark|none|
 SubagentStop|-|0|turn_verdict_sub|err|[loop-index] coarse repeat:
 PostToolUseFailure|*|0|result_fail|none|
@@ -207,6 +210,9 @@ GLOSSARY_FIXTURE="${WORK}/glossary.md"
     i=$((i+1))
   done
 } > "$GLOSSARY_FIXTURE"
+PLAIN_FIXTURE="${WORK}/plain-glossary.md"
+printf '# Glossary\n\n## Things\n\n| Canonical name | Other names | What it is | What it does | Defined at |\n|---|---|---|---|---|\n| widget ledger | "gadget book" | A made-up record. | It holds made-up rows. | planned |\n' > "$PLAIN_FIXTURE"
+PLAIN_T="${WORK}/plain-turn.jsonl"
 # A bare `wc -l < missing` makes the SHELL report the redirection, which no
 # `2>/dev/null` on wc can suppress; the absence is an expected state here.
 ledger_rows(){ if [ -f "${LEDGER}/$1.jsonl" ]; then wc -l < "${LEDGER}/$1.jsonl" | tr -d ' '; else printf '0'; fi; }
@@ -276,6 +282,17 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
       jq -nc '{session_id:"s-result", hook_event_name:"SubagentStart",
                agent_id:"a17de311aa309cb52", agent_type:"general-purpose",
                prompt_id:"p-1", transcript_path:"/tmp/transcript.jsonl", cwd:"/tmp"}' ;;
+    plain_question)
+      jq -nc '{session_id:"s-plain-q", tool_name:"AskUserQuestion",
+               tool_input:{questions:[{question:"Shall I update the gadget book?", header:"Next", options:[{label:"Yes", description:"Go on"}]}]}}' ;;
+    plain_post)
+      grep -q '^| Posting commands |' "$PROJ/AGENTS.md" \
+        || printf '\n| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text` |\n' >> "$PROJ/AGENTS.md"
+      jq -nc --arg d "$PROJ" '{session_id:"s-plain-p", cwd:$d, tool_input:{command:"ticketctl post --text \"The gadget book is ready.\""}}' ;;
+    plain_turn)
+      printf '%s\n' '{"type":"user","message":{"content":"Go."},"timestamp":"2999-01-01T00:00:00.000Z"}' \
+        '{"type":"assistant","message":{"content":[{"type":"text","text":"The gadget book is updated."}]}}' > "$PLAIN_T"
+      jq -nc --arg t "$PLAIN_T" '{session_id:"s-plain-t", hook_event_name:"Stop", transcript_path:$t, stop_hook_active:false, last_assistant_message:"The gadget book is updated."}' ;;
     turn_verdict)     seed_turn s-turn;     printf '%s' '{"session_id":"s-turn","hook_event_name":"Stop"}' ;;
     turn_verdict_sub) seed_turn s-turn-sub; printf '%s' '{"session_id":"s-turn-sub","hook_event_name":"SubagentStop"}' ;;
     *) return 1 ;;
@@ -346,6 +363,8 @@ while IFS= read -r row; do
   # A page long enough for every registered piece, so the last registration is
   # read against output rather than against the shipped page's current length.
   case "$trig" in glossary_*) RUN_ENV="$RUN_ENV HARNESS_GLOSSARY_PAGE=\"$GLOSSARY_FIXTURE\"" ;; esac
+  # The model reading is off, so no model is ever called here and the names alone refuse.
+  case "$trig" in plain_*) RUN_ENV="$RUN_ENV HARNESS_GLOSSARY_PAGE=\"$PLAIN_FIXTURE\" HARNESS_PLAIN_WORDS_MODEL=off" ;; esac
   rows_before=$(ledger_rows s-result)
   run_hook "$ev" "$matcher" "$idx" "$pay" || continue
 
@@ -353,7 +372,7 @@ while IFS= read -r row; do
     err) anchored "${key}: emits its own marker on stderr" "$ERR" "$marker" ;;
     out) anchored "${key}: emits its own marker on stdout" "$OUT" "$marker" ;;
     jq)
-      ctx=$(jq -r '.hookSpecificOutput.additionalContext // .hookSpecificOutput.permissionDecisionReason // empty' "$OUT" 2>/dev/null)
+      ctx=$(jq -r '.hookSpecificOutput.additionalContext // .hookSpecificOutput.permissionDecisionReason // .reason // empty' "$OUT" 2>/dev/null)
       if [ -z "$ctx" ]; then bad "${key}: no jq-readable field on stdout alone"
       else case "$ctx" in "$marker"*) ok "${key}: the jq field carries its marker" ;;
                           *) bad "${key}: jq field [${ctx}] does not start with [${marker}]" ;; esac
@@ -395,7 +414,7 @@ printf '\n== AC15a: the markers are pairwise disjoint over the distinguishable c
 MARKERS=$(printf '%s\n' "$TABLE" | awk -F'|' '{print $NF}' | grep -v '^$')
 MARKERS=$(printf '%s\n%s' "$MARKERS" "$EXTRA_MARKER" | sort -u)
 MCOUNT=$(printf '%s\n' "$MARKERS" | wc -l | tr -d ' ')
-check "distinct marker strings in the table" "$MCOUNT" "26"
+check "distinct marker strings in the table" "$MCOUNT" "29"
 clash=0
 while IFS= read -r a; do
   while IFS= read -r b; do

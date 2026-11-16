@@ -65,7 +65,7 @@ TP="${WORK}/${SID}.jsonl"
 cat > "$WORK/bin/claude" <<'STUB'
 #!/usr/bin/env bash
 cat > "${STUB_SEEN:-/dev/null}"
-printf 'called\n' >> "${STUB_CALLS:-/dev/null}"
+printf 'called %s\n' "${HARNESS_MODEL_CALL:-unset}" >> "${STUB_CALLS:-/dev/null}"
 printf '%s\n' "${STUB_ANSWER:-CIRCLING it keeps re-running the same search}"
 STUB
 chmod +x "$WORK/bin/claude"
@@ -197,6 +197,7 @@ check "  the model"    "$(printf '%s' "$t3" | jq -r '.model')"   "haiku"
 has   "  the reason, taken from the FIRST line" "$(printf '%s' "$t3" | jq -r '.reason')" "re-running the same search"
 seen=$(cat "$WORK/seen")
 has "the prompt carries a resolved argument" "$seen" "arg3"
+check "the model is called under the model-call marker" "$(sort -u "$STUB_CALLS")" "called 1"
 has "  and the bin"                          "$seen" "grep"
 
 reset; n_of 8 "grep -rn"

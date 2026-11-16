@@ -77,7 +77,7 @@ is the same commands.
    `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-ledger-write.sh`,
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
    `hooks/lib/test-plan-invariants-guard.sh`, `hooks/lib/test-gate-record.sh`,
-   `hooks/lib/test-glossary-context.sh`,
+   `hooks/lib/test-glossary-context.sh`, `hooks/lib/test-plain-words.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
    `skills/pr-merged/scripts/test-cleanup-progress.sh`,
@@ -216,6 +216,7 @@ at that heading.
 | any tracked text file — the foreign-identifier leg reads the whole tree | `method-purity` |
 | any file the vocabulary check reads — the glossary, every file under `docs/`, `skills/`, `agents/`, `rules/`, `hooks/`, `scripts/` or `templates/project/`, and `AGENTS.md`, `ai-docs/context.md`, `ai-docs/learnings/README.md`, `README.md`, `.claude-plugin/*.json` | `vocabulary` |
 | `hooks/lib/glossary-names.sh` | `scripts/test-check-vocabulary.sh` |
+| `hooks/hooks.json`, `hooks/lib/glossary-names.sh`, `hooks/lib/ledger-write.sh` | `hooks/lib/test-plain-words.sh` |
 | `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `ai-docs/context.md`, `docs/agents-method.md`, `docs/glossary.md`, `agents/*.md`, `skills/*/SKILL.md`, `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, their `templates/project/` copies | `instruction-size` |
 | `templates/project/**` | `skills/harness-init/scripts/test-scaffold.sh`, `scripts/test-audit-project.sh` |
 
@@ -230,6 +231,7 @@ at that heading.
 | Ticket key format | `GH-<issue number>` |
 | Review surface | GitHub PR via `gh` |
 | Merge style | `squash` |
+| Posting commands | `gh pr create --title --body --body-file:file` `gh pr edit --title --body --body-file:file` `gh pr comment --body --body-file:file` `gh issue create --title --body --body-file:file` `gh issue edit --title --body --body-file:file` `gh issue comment --body --body-file:file` — the commands that post text to the review surface or the tracker, each as its leading words and the flags carrying the text; a flag ending in :file names a file holding it. The plain-words check reads that text before it is posted |
 | Diagram form | `mermaid` — Mermaid, which GitHub renders in a PR description and in a committed Markdown file |
 | File link form | `https://github.com/JeriC4o/agent-harness/blob/<ref>/<path>` — GitHub's address of a file at a branch or a commit; a pull request's commits stay reachable under its own `refs/pull/<N>/head` after its branch is deleted |
 

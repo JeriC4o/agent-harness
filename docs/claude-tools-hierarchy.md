@@ -108,20 +108,23 @@ and holds in every repo, which is why it carries no guard.
 | PreToolUse(Bash) | `diff-range-guard` | |
 | PreToolUse(Bash) | `config-search-gate` | |
 | PreToolUse(Bash) | `result-masking` | |
+| PreToolUse(Bash) | `plain-words`, a post | [guarded] |
 | PreToolUse(*) | `loop-index` | |
 | PreToolUse(Edit\|Write) | `propagation-rule-reminder` | [guarded] |
 | PreToolUse(Edit\|Write) | `archive-protection-reminder` | |
 | PreToolUse(Skill) | `skill-gate` | |
 | PreToolUse(Agent) | `glossary-context`, the brief | [guarded] |
+| PreToolUse(AskUserQuestion) | `plain-words`, a question | [guarded] |
 | PostToolUse(Write\|Edit) | `learnings-append-check` | |
 | PostToolUse(Write\|Edit) | `sh-syntax-check` | |
 | PostToolUse(*), PostToolUseFailure(*) | `loop-result` | |
 | PostToolUse(Bash), PostToolUseFailure(Bash) | `gate-record` | |
 | Stop, SubagentStop | `loop-verdict` | |
+| Stop | `plain-words`, the turn's chat | [guarded] |
 | SubagentStart | `loop-agent-mark` | |
 
-The ledger `loop-index`, `loop-result`, `gate-record`, `loop-verdict` and `loop-agent-mark` write — its one
-unswallowed failure, its six record classes, and the view `/inspect` reads: [`${CLAUDE_PLUGIN_ROOT}/docs/loop-ledger.md` § The loop ledger](${CLAUDE_PLUGIN_ROOT}/docs/loop-ledger.md#the-loop-ledger).
+The ledger `loop-index`, `loop-result`, `gate-record`, `loop-verdict`, `loop-agent-mark` and `plain-words` write — its one
+unswallowed failure, its seven record classes, and the view `/inspect` reads: [`${CLAUDE_PLUGIN_ROOT}/docs/loop-ledger.md` § The loop ledger](${CLAUDE_PLUGIN_ROOT}/docs/loop-ledger.md#the-loop-ledger).
 
 > **Not configured, but expected per project:** a `PostToolUse(Write|Edit)` formatter hook running
 > `%FORMAT_CMD%` on changed source files. Add it once the project's formatter command is filled in

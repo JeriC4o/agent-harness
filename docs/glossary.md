@@ -202,7 +202,7 @@ alone on its line, the mark covers the lines below it up to the next blank line.
 | glossary | — | This page: one entry per concept of the plugin, opening with the rule for text written to a person. | It is put into the agents' context at the start, and the checks read its names from it. | `docs/glossary.md` § Text for a person |
 | listed name | — | A name this page lists as an other name or a retired name. | Neither the plugin's files nor text for a person may use it as a term. | `docs/glossary.md` § Text for a person |
 | vocabulary check | — | A check failing when a name this page lists appears in the plugin's own files. | It names the file, the line and the name, and reports which files it read. | `AGENTS.md` § Build & Test |
-| plain-words check | — | The guards reading what the agent writes to a person for names this page lists and for invented names. | They refuse a question or a post with one, have chat with one restated, and record every reading. | planned |
+| plain-words check | — | The guards reading what the agent writes to a person for names this page lists and for invented names. | They refuse a question or a post with one, have chat with one restated, and record every reading. | `docs/hook-inventory.md` § The hooks |
 | internals mark | — | A comment on a script line whose word must stay as it is. | The check for names this page lists skips that line. | `docs/glossary.md` § Words a script must keep |
 | model-call marker | — | A setting a guard of the plugin puts in the environment of a model it calls. | The guards that load this page or read text for a person do nothing inside that call, so it starts no further calls. | `docs/hook-inventory.md` § The hooks |
 
