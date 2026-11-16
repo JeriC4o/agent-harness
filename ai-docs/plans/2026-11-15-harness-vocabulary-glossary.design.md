@@ -372,9 +372,11 @@ most, and where it names something else the sweep writes that thing's own name:
 | "correction pass" | in-place correction | a round fixing a pull request already open, in the method page's rule on the end of an iteration and the workflow page's section on it: post-push fix round. The improvement agent's pass over the Learning Log's correction entries, in its own steps, the agent auditing the log's entries and the page giving an entry's format: "the pass over correction entries" |
 | "working record" | progress file | in the spec-amendment procedure, the record of whichever workflow is running, which is the progress file or a bug fix's trace: said in those words |
 | "scouted fix" | review-fix round | "scouted fix plan" where it names the plan a round's fix scout writes, in the workflow page's table of the skills the amendment trigger fires in: fix plan |
+| "task workflow" | spec workflow | in the knowledge-base planning documents kept outside the repository, the task skill, which carries both the spec workflow and the knowledge-base workflow while the harness moves from one to the other: task skill |
 
 Every use of "excuse route" names the record of accepted findings together with how the convergence check
-reads and writes it, never the accepting act alone, so it is listed under the record. "Task workflow" names the spec workflow wherever it occurs; it is listed under
+reads and writes it, never the accepting act alone, so it is listed under the record. "Task workflow"
+names the spec workflow wherever it occurs in a covered file; it is listed under
 that entry rather than made its canonical name, because the planned knowledge-base workflow is a way of
 running a task too, so the name would come to mislead. The fix round on an open pull request, which
 "correction pass" also names, has its own entry, post-push fix round; "follow-up round", which names it
@@ -484,9 +486,12 @@ makes is covered by that review's entry.
   hooks do in that child session.
 - **The chat text read is the whole turn's**: the transcript's assistant text since the person's last
   message, plus the final message the turn-end event carries where it differs from the transcript's
-  last text, which the host says the transcript may not yet hold. A turn end that follows the check's
-  own restatement is not read: the host flags it, and where the host does not, the check's own
-  restatement record, newer than the person's last message, marks it. Rejected: the final message
+  last text: observed here, a copy of the transcript taken inside a turn-end hook did not yet hold the
+  reply the event carried (Claude Code 2.1.304, 2026-11-16). A turn end that follows the check's own
+  restatement is not read: the host flags it, observed false on a first turn end and true on the one
+  after a hook's continuation, and where the host does not, the check's own restatement record, newer
+  than the person's last message, marks it. The hook's reason reaches the transcript as an entry the
+  host marks as its own rather than the person's, so it does not move the person's last message. Rejected: the final message
   alone — a coined name earlier in the turn is missed.
 - **The hook records hold every reading**, finding or none, as a new record class, and the check's own row
   at each turn end it reads bounds a turn — an empty row when the turn wrote no chat text. Rejected: a
@@ -507,21 +512,18 @@ makes is covered by that review's entry.
 - **The glossary itself sits near the warning**, 1,044 characters below it by the measurement above,
   leaving little room for later entries. Mitigation: a later entry for one part of a concept already
   present merges into that entry.
-- **These host behaviours are documented by the host and observed here at most in part (verify)**. Each
-  was tried in a throwaway session (Claude Code 2.1.304, 2026-11-16), which stops at the login before any
-  model turn, so no tool is called in it. Not observed: a brief rewritten at an agent's start reaching
-  the agent, a denied question never reaching the person, and the flag the host sets on a turn end that
-  follows a hook's own continuation. Observed in part: the final message a turn end carries — the field
-  is on the event the host sends when a turn fails, and an ordinary turn end was not seen; and a warning
-  in a hook's answer — the host keeps it in the session's transcript and prints nothing of it in a
-  non-interactive session, and it was not seen on screen, nor from a hook before a tool call or at a
-  turn end. Nor is a resumed session still holding the glossary pieces loaded at its start observed.
-  Before this task no hook in this repository relied on any of them (a search of its hooks for the
-  host's fields behind them, on this branch, 2026-11-15). Each is built as the host documents it. If the
-  host does otherwise: an ignored brief rewrite starts the agent without the page and changes nothing
-  else; a turn end the host does not flag is still left unread after a restatement, by the check's own
-  record; a final message missing from the event leaves the turn's text as the transcript holds it; a
-  warning the host does not show leaves the person untold that the text is unchecked.
+- **Three host behaviours are documented by the host and observed here at most in part (verify)**: a
+  brief rewritten at an agent's start reaching the agent and a denied question never reaching the
+  person, both not observed, tried in a throwaway session that stops at the login before any model turn;
+  and a warning in a hook's answer, observed in part — the host keeps it in the session's transcript and
+  prints nothing of it in a non-interactive session, and it was not seen on screen, nor from a hook
+  before a tool call or at a turn end (Claude Code 2.1.304, 2026-11-16). Nor is a resumed session still
+  holding the glossary pieces loaded at its start observed. The final message a turn end carries and the
+  flag on a turn end after a hook's continuation are observed, as the decision on the chat text read
+  says. Before this task no hook in this repository relied on any of them (a search of its hooks for
+  the host's fields behind them, on this branch, 2026-11-15). Each is built as the host documents it.
+  If the host does otherwise: an ignored brief rewrite starts the agent without the page and changes
+  nothing else; a warning the host does not show leaves the person untold that the text is unchecked.
 - **A false model finding costs one rewrite or one restatement**, never a block: after each refusal made
   by the model's reading alone, the next question or post in that turn is exempt from that reading, chat
   is restated at most once, and every reading is recorded so the rate can be counted.
