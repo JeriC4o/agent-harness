@@ -38,13 +38,13 @@ agreement.
 
 The convention above was written for a gate whose answer is a function of its input. A check whose
 judgement is made by a model carries no such guarantee, and it is held to a stated standard rather than
-excused from one. Five obligations, enumerated here as the definition of that standard, the first of them
+exempted from one. Five obligations, enumerated here as the definition of that standard, the first of them
 being the convention above carried over unchanged:
 
-1. **The three outcomes still hold, and a could-not-run is still not a pass.** Nothing about a judgement
-   class makes an unfinished run readable as a clean one.
+1. **The three outcomes still hold, and a could-not-run is still not a pass.** Nothing about a model making the
+   judgement makes an unfinished run readable as a clean one.
 2. **It reports, and rules on nothing.** A finding names what was found and where it sits; whether it does
-   harm is the reader's call. A judgement check that also ruled on consequence would fold two decisions
+   harm is the reader's call. A judgement check that also ruled on consequence would merge two decisions
    into one output and leave the reader nothing to overturn.
 3. **Every class it covers carries a positive control.** A deliberately planted fault of that class is
    shown to be caught by it. A class with no such demonstration is not a check, and is reported as

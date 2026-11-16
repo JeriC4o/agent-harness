@@ -1,28 +1,28 @@
 # The review-fix round
 
 > Extracted from `${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md`, which carried it until the two
-> task-flow pages reached the instruction-file size cap between them. This is METHOD: it holds in
+> task-flow pages reached the instruction size cap between them. This is METHOD: it holds in
 > every project and names no language, build tool, domain entity or ticket prefix. It is loaded when a
 > review round actually runs, which is the only time any of it applies.
 >
 > **The binding obligation lives in `${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` § Step 11 and is not
 > repeated here** — that page is always in context and this one is not, so an obligation moved here
 > would be an obligation a round could miss. What is here is the procedure: the spawn prompts, the
-> plan format, the reason-token vocabulary and the narrative behind each beat.
+> plan format, the reason-token vocabulary and the narrative behind each step.
 
 ## Step 11 — the review-fix round (recipe)
 
-The round's five beats, per the Scouted-plan AXIOM in `SKILL.md`. The gate script owns every number in the round: the baseline it measures against, the threshold the **one** size check fires on — the pre-apply gate, on the plan's declared total — and the verdict both agents are judged by.
+The round runs six steps in this order, the sixth only when a fix-plan row calls for it, and then returns to the review: the round baseline, the fix plan, the fix-plan check, the apply, the post-apply micro-loop and the in-place correction. The binding text is `SKILL.md` § Step 11. The fix-plan check owns every number in the round: the round baseline it measures against, the threshold the **one** size test fires on — before the apply, on the plan's declared total — and the verdict both agents are judged by.
 
-**Beat 1 — baseline (orchestrator, one call).**
+**First — the round baseline (orchestrator, one call).**
 
 ```
 "${CLAUDE_SKILL_DIR}"/scripts/check-fix-plan.sh baseline ai-docs/plans/YYYY-MM-DD-name.progress.md
 ```
 
-It appends the round's `## Fix Plan (Round N)` stub — the heading, the three header fields and the table heading — and prints the tree sha it recorded. The orchestrator transcribes nothing: the sha reaches the plan by the script's own write, so it cannot be mistyped, and a later caller cannot substitute a baseline of its own choosing. Exit 2 means the round could not be baselined, which is not a pass.
+It appends the round's `## Fix Plan (Round N)` stub — the heading, the three header fields and the table heading — and prints the tree sha it recorded. The orchestrator transcribes nothing: the sha reaches the plan by the script's own write, so it cannot be mistyped, and a later caller cannot substitute a baseline of its own choosing. Exit 2 means the round could not take its baseline, which is not a pass.
 
-**Beat 2 — plan (`fix-scout`, fresh context).**
+**Second — the fix plan (`fix-scout`, fresh context).**
 
 ```
 Agent(subagent_type="general-purpose", prompt="
@@ -35,7 +35,7 @@ Agent(subagent_type="general-purpose", prompt="
 ")
 ```
 
-**The spawn prompt names which fields the scout fills, and that sentence is load-bearing.** The gate refuses an empty `verification` and an absent `declared_changed_lines`, so a brief telling the scout the stub is untouchable contradicts the gate it feeds — and the first real run produced exactly that, with the scout filling them anyway and naming the contradiction. The stub's emptiness is a feature, because a placeholder would satisfy the verification arm; the brief has to say which half of it is the scout's.
+**The spawn prompt names which fields the scout fills, and that sentence is load-bearing.** The gate refuses an empty `verification` and an absent `declared_changed_lines`, so a brief telling the scout the stub is untouchable contradicts the gate it feeds — and the first real run produced exactly that, with the scout filling them anyway and naming the contradiction. The stub's emptiness is a feature, because a placeholder would satisfy the verification test; the brief has to say which half of it is the scout's.
 
 The scout fills the table — **at least one** row per open finding, `#` copied from the findings table, a closed-vocabulary `Disposition` (`fix` / `object: <reason>` / `resolved: <reason>` / `amendment: spec` / `amendment: design` / `correction: <what shipped instead>`), the target `file:line`, the expected changed lines on the basis the column heading names, and either `none` or the quoted artefact sentence Arm A puts at stake. A finding whose remedy spans several files takes a row per file; what is refused is a finding in no row, or a row matching no open finding:
 
@@ -45,9 +45,9 @@ The scout fills the table — **at least one** row per open finding, `#` copied 
 
 Canonical schema, header fields and the counting basis: [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § `Fix Plan (Round N)` sections](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#fix-plan-round-n-sections).
 
-**Beat 3 — gate (orchestrator, one call).** `check-fix-plan.sh plan <progress-file>`, then read the `decision=` token. The verdict is one header line plus one line per arm; every arm prints its own line whether or not it wins the decision, so a plan with two faults shows both and the header names the one being acted on.
+**Third — the fix-plan check (orchestrator, one call).** `check-fix-plan.sh plan <progress-file>`, then read the `decision=` token. The verdict is one header line plus one line per test; every test prints its own line whether or not it wins the decision, so a plan with two faults shows both and the header names the one being acted on.
 
-| Reason token | Arm | Decision |
+| Reason token | Test | Decision |
 |---|---|---|
 | `anchor-unresolved` | A1 | `REFUSE` — a `Target` or Arm-A anchor names a missing file or a line past its end |
 | `arma-quote-unverified` | A1 | `REFUSE` — the Arm-A anchor resolves but the sentence it quotes is not at that line: no fragment of the quote is found within the window the header reports as `arma_quote_window`, the fragments are present out of order, or one is under 24 characters and so too short to locate. The remedy is re-read the file, not renumber the anchor. Whitespace is normalised and `…` elision is honoured, so re-wrapping and quoting in parts both pass |
@@ -60,11 +60,11 @@ Canonical schema, header fields and the counting basis: [`${CLAUDE_PLUGIN_ROOT}/
 | `plan-row-malformed` | A6 | `REFUSE` — a row whose cell count is not 5, usually a raw `\|` in free text |
 | `finding-coverage` | A6 | `REFUSE` — an open finding is absent from the plan, or a row's disposition is out of vocabulary (including a reason-carrying token with an empty reason) or its Arm-A cell empty. Several rows for one finding is **not** a fault |
 | `plan-row-unmatched` | A6 | `REFUSE` — a row whose `#` matches no open finding; such a row pre-authorises a file the review never raised |
-| `arma-unaccounted` | A7 | `REFUSE` — a `fix` row closes a finding whose `Arm A` cell names a spec or design sentence and no row accounts for it, so the round would ship a divergence with nothing correcting it. A sentence of the task's own design is accounted for by a `correction:` row for that finding; a spec sentence by nothing short of `amendment: spec`, and one of another plan's design by nothing short of `amendment: design`, both of which route. The remedy is the accounting row, not a reworded `Arm A` cell. **Evaluated last of the plan arms**, so a round that routes or is under-covered reports that instead. **The verdict line labels this arm `correction-accounting` while the decision carries `arma-unaccounted`** — look the row up by the token, not by the label |
+| `arma-unaccounted` | A7 | `REFUSE` — a `fix` row closes a finding whose `Arm A` cell names a spec or design sentence and no row accounts for it, so the round would ship a divergence with nothing correcting it. A sentence of the task's own design is accounted for by a `correction:` row for that finding; a spec sentence by nothing short of `amendment: spec`, and one of another plan's design by nothing short of `amendment: design`, both of which route. The remedy is the accounting row, not a reworded `Arm A` cell. **Evaluated last of the plan tests**, so a round that routes or is under-covered reports that instead. **The verdict line labels this test `correction-accounting` while the decision carries `arma-unaccounted`** — look the row up by the token, not by the label |
 
 **On `REFUSE`:** hand the verdict back to the same `fix-scout` for a rewrite — **max 3 rounds**, then surface the verdict to the user and stop. On `ROUTE-SPEC` / `ROUTE-DESIGN` the amendment recipes above own the round and no fix agent runs. On `ESCALATE` the user sees the declared total and the threshold and decides.
 
-**Beat 4 — apply (`fix-apply`, fresh context), only on `PASS`.**
+**Fourth — apply (`fix-apply`, fresh context), only on `PASS`.**
 
 ```
 Agent(subagent_type="general-purpose", prompt="
@@ -78,13 +78,13 @@ Agent(subagent_type="general-purpose", prompt="
 **Then the orchestrator's own two acts, in this order.**
 
 1. **Confirm the write landed** — `stat` the files the plan named and `grep` for the changed text, per the Design Amendment recipe's existing mtime+grep wording. The party that applied the change is not the only party asserting it landed.
-2. **Gate the applied diff** — `check-fix-plan.sh applied <progress-file>`. It reads the `round_base` out of the gated plan section and reports `decision=FINDING reason=unplanned-file` when the diff touched a path no `fix` row named, and `decision=OK` otherwise. **A `reason=` token this page does not name is a documentation defect, never an unknown verdict** — the arms are whatever the gate prints. The header carries `actual_changed_lines=<n> ignored=<k> binary=<m>`, so nothing is excluded from the count invisibly. **`actual_changed_lines` is a MEASUREMENT and nothing fires on it** — the post-apply size arm and its `actual-overrun` token are withdrawn, so the verb runs one arm and reports one figure for a human to read. The threshold appears in `plan`'s header only, which is the one place it is enforced.
+2. **Gate the applied diff** — `check-fix-plan.sh applied <progress-file>`. It reads the `round_base` out of the gated plan section and reports `decision=FINDING reason=unplanned-file` when the diff touched a path no `fix` row named, and `decision=OK` otherwise. **A `reason=` token this page does not name is a documentation defect, never an unknown verdict** — the tests are whatever the check prints. The header carries `actual_changed_lines=<n> ignored=<k> binary=<m>`, so nothing is excluded from the count invisibly. **`actual_changed_lines` is a MEASUREMENT and nothing fires on it** — the post-apply size test and its `actual-overrun` token are withdrawn, so the verb runs one test and reports one figure for a human to read. The threshold appears in `plan`'s header only, which is the one place it is enforced.
 
-   **Four path classes are excluded from the `unplanned-file` arm, and the exclusion is a narrowing, not an amnesty**: A2/A3 refuse any passing plan that **proposes an edit** to a spec or design suffix, so every change to one is unbriefed by construction either way. **The header's `ignored=` is a count only; the `excluded-in-round` line is the one place the paths are named.** Whenever the verdict carries that line, the orchestrator reads it and accounts for every named path against the amendment it knows it ran; a named path it cannot account for is a finding. That discrimination cannot be delegated to the gate — an approved amendment's edit and a fix agent editing a spec it was never briefed to touch produce an identical diff, and only the orchestrator holds the fact that separates them. Which four classes, and why each is there: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Why four path classes are excluded from the unplanned-file arm](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#why-four-path-classes-are-excluded-from-the-unplanned-file-arm).
+   **Four path classes are excluded from the `unplanned-file` test, and the exclusion is a narrowing, not an amnesty**: A2/A3 refuse any passing plan that **proposes an edit** to a spec or design suffix, so every change to one is unbriefed by construction either way. **The header's `ignored=` is a count only; the `excluded-in-round` line is the one place the paths are named.** Whenever the verdict carries that line, the orchestrator reads it and accounts for every named path against the amendment it knows it ran; a named path it cannot account for is a finding. That discrimination cannot be delegated to the gate — an approved amendment's edit and a fix agent editing a spec it was never briefed to touch produce an identical diff, and only the orchestrator holds the fact that separates them. Which four classes, and why each is there: [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Why four path classes are excluded from the unplanned-file test](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#why-four-path-classes-are-excluded-from-the-unplanned-file-test).
 
-A `FINDING` is a finding to act on — it goes into the round like any other, never written off as a convenience. Exit 2 from `applied` means the round has no usable baseline, which is not a pass.
+A `FINDING` is a finding to act on — it goes into the round like any other, never written off as a convenience. Exit 2 from `applied` means the round has no usable round baseline, which is not a pass.
 
-**Beat 5 — the post-apply micro-loop (orchestrator).** Unconditional: it runs after the apply and before the full review pass, on every round, with no exemption. Beat 1 of it is the `applied` call above. What follows:
+**Fifth — the post-apply micro-loop (orchestrator).** Unconditional: it runs after the apply and before the full review pass, on every round, with no exemption. Its first act is the `applied` call above. What follows:
 
 | # | Act | Bound |
 |---|---|---|
@@ -93,7 +93,7 @@ A `FINDING` is a finding to act on — it goes into the round like any other, ne
 | 4 | **On a burned cap, surface to the user** | Fixed shape, so the user does not read it from scratch each time: which row (the finding number and the `Target`), what diverged (quoted from the question's reason, not re-derived), the attempts and what changed between them, and **exactly one** recommendation of `re-fix` / `amend-the-plan` / `accept` with one sentence of why. It recommends; the user decides |
 | 5 | **The full review pass**, on every path | A burned cap ends the LOOP, not the gate — work done after the cap still gets its review pass |
 
-**The cap is three attempts and it is counted in the round's plan section**, one bullet per attempt, written by the orchestrator before beat 3 re-spawns:
+**The cap is three attempts and it is counted in the round's plan section**, one bullet per attempt, written by the orchestrator before act 3 re-spawns:
 
 ```
 - attempt 2 — finding 5, row 1: the divergence named was <quoted reason>; re-fix dispatched
@@ -103,7 +103,7 @@ Why that location rather than a counter in the gate: [§ Why the attempt count l
 
 **Then record the loop, once, as it closes** — `check-fix-plan.sh record <progress-file> <iterations> <cost_tool_calls> <answer>`. It decides nothing and exits 0; it appends one verdict row carrying the loop's iteration count, its cost and the question's answer, which is what this loop's own retirement is read from. **All three arguments are required and none defaults:** a default would record a zero silently and the retirement rule would be read off a column of zeros — an absent figure is recoverable, a wrong one is not. **The cost unit is the number of orchestrator tool calls the loop consumed** (not wall-clock, not tokens), counted from the calls made for that loop and no others, which the attempt bullets make auditable. **`<answer>` is exactly one of `MATCH` or `DIVERGE`** — anything else is exit 2, and the word is written into the row rather than only checked, because a check whose input is discarded leaves no evidence it ran. A failed write never changes the round's outcome.
 
-**Then — correct (`design`, fresh context), once per round carrying a `correction:` row, after the micro-loop and before the round's review.** Skipped when no row carries one.
+**Sixth — the in-place correction (`design`, fresh context), once per round carrying a `correction:` row, after the micro-loop and before the round's review.** Skipped when no row carries one.
 
 ```
 Agent(subagent_type="general-purpose", prompt="
@@ -117,7 +117,7 @@ Agent(subagent_type="general-purpose", prompt="
 ")
 ```
 
-**The round number is passed, not derived**: the rows the pass works from are that round's, and a fresh context can at best take the highest-numbered plan section, which is a different thing. The orchestrator then confirms the correction landed, as it confirms every agent write, and the Arm A closing gate re-reads each cited sentence before its finding is marked `✅ Fixed (corrected in place)`. The round's review rules on the correction through the design's change since the freeze ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)).
+**The round number is passed, not derived**: the rows the correction works from are that round's, and a fresh context can at best take the highest-numbered plan section, which is a different thing. The orchestrator then confirms the correction landed, as it confirms every agent write, and the Arm A closing gate re-reads each cited sentence before its finding is marked `✅ Fixed (corrected in place)`. The round's review rules on the correction through the design's change since the freeze ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The plan freeze](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)).
 
 ## Step 11 — review-fix narrative (detail)
 
@@ -125,7 +125,7 @@ For each `⬜ Open` finding in the latest `## Self-Review (Round N)` section —
 
 - **Fix it** → the plan row says `fix` and `fix-apply` applies it; the orchestrator marks `✅ Fixed` once the applied diff is gated. **If the finding quoted a spec/design sentence, re-read that sentence in its file** and either confirm it true of the post-fix state or amend it — shipping what a sentence promised makes the sentence true only if the shipped thing does what it says.
 - **Breaks the agreed approach, or leaves a sentence of another plan's design untrue** → trigger the **Design Amendment** recipe (user approval required); on return mark `✅ Fixed (design amended)`.
-- **Diverges from a sentence of the task's own design without breaking the approach** → the row says `correction: <what shipped instead>`, beside the `fix` row or alone when the tree already holds what shipped; once the micro-loop closes, the round's one correction pass rewrites the item in place; mark `✅ Fixed (corrected in place)`.
+- **Diverges from a sentence of the task's own design without breaking the approach** → the row says `correction: <what shipped instead>`, beside the `fix` row or alone when the tree already holds what shipped; once the micro-loop closes, the round's one in-place correction rewrites the item; mark `✅ Fixed (corrected in place)`.
 - **Requires a spec change** → trigger the **Spec Amendment** recipe; on return mark `✅ Fixed (spec amended)`.
 - **Already closed before the round began** (an approved amendment settled it, and the tree already satisfies it) → the plan row says `resolved: <reason>` and nothing is applied. It is not an objection and not an exemption: the round still runs the whole sequence.
 - **Object to it** (finding is wrong or intentionally out of scope):
@@ -150,7 +150,7 @@ because choosing a remedy is what defeats the subject test; and the closing gate
 sentence in its own file, because shipping the thing a sentence promised makes the sentence true only if
 the shipped thing does what the sentence says it does.
 
-**Why the correction beat runs after the micro-loop.** A correction describes code that exists. Written
+**Why the in-place correction runs after the micro-loop.** A correction describes code that exists. Written
 before the apply, it describes a fix that has not landed; written before the micro-loop closes, a re-fix
 can still change what lands — either way the corrected item is false one re-fix later. After the loop the
 round's code is what the review reads, and the review reads the correction beside it through the change

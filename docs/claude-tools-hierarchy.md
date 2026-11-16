@@ -70,7 +70,7 @@ Kept here so the audit can compare both sides without grepping the whole tree on
 - `inspector` (judges a reduced session event stream for harness defects)
 - `fix-scout` (writes a review round's fix plan into the section the gate reads)
 - `fix-apply` (applies the gate-passed plan's fix rows and nothing else)
-- `contradiction-reader` (reports where a plan pair contradicts itself or an artefact; issues no verdict)
+- `contradiction-reader` (reports where a plan contradicts itself or an artefact; issues no verdict)
 
 ### Project-defined Skills
 

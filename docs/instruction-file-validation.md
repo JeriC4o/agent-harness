@@ -104,4 +104,4 @@ The instruction-file corpus audited by `/ai-audit` is:
 - `${CLAUDE_PLUGIN_ROOT}/rules/**/*.md`
 - `ai-docs/{code-style,doc-convention,context,agent-writing-style,learning-log,workflow,claude-tools-hierarchy,skill-size-exemptions,considerations-link-reading,instruction-file-validation,agent-docs-index}.md`
 
-The 40,000-char file-size cap applies to the files in this corpus that load whole when an agent starts; a page reached only by link carries none (`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Build & Test).
+The instruction size cap of 40,000 characters applies to the files in this corpus that load whole when an agent starts; a page reached only by link carries none (`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Build & Test).

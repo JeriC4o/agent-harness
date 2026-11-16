@@ -1,7 +1,7 @@
 # Check scope — touched-scope checks in the loop, the full list once at the end
 
-Every loop that ends in a commit — the task workflow, the bugfix workflow, the whole-branch review and the
-fix round on an open pull request — runs two kinds of check at two different moments. **Inside the loop,
+Every loop that ends in a commit — the spec workflow, the bugfix workflow, the whole-repository review and the
+post-push fix round — runs two kinds of check at two different moments. **Inside the loop,
 only the checks a change touches. Once, after review approves and before the loop's last commit and the
 push after it, the full list.** This page states that rule once; each loop's step points here rather than restating it.
 
@@ -62,8 +62,8 @@ receives the failing output records one `major` finding per failing check.
 ## The nested case
 
 A bugfix invoked from any loop that owes its own final run **runs none**: it is still inside that loop,
-and the loop's finalise step owes the run. Two routes reach it — the task workflow, and Step 4 of the fix
-round on an open pull request, which sends a real defect to the bugfix workflow.
+and the loop's finalise step owes the run. Two routes reach it — the spec workflow, and Step 4 of the post-push
+fix round, which sends a real defect to the bugfix workflow.
 
 ## What the gate record reports along the way
 

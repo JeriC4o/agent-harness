@@ -39,7 +39,7 @@ Read `.cursorignore` | `.gitignore`, deny access to matched paths.
 
 ## Build & Test
 
-The project's build, test, format and lint commands live in the **project profile** (`AGENTS.md` §&nbsp;Build & Test in the consuming repo). Skills reference them by the placeholder names `%BUILD_CMD%`, `%TEST_CMD%`, `%FULL_CHECK_CMD%`, `%FORMAT_CMD%`, `%LINT_CMD%` and `<module-path>`; resolve each against that table before running anything. An unresolved placeholder is a STOP — ask the user rather than guessing a command. `%TEST_CMD%` is the narrowing run inside a loop and `%FULL_CHECK_CMD%` the full list, run once after review approves: [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md).
+The project's build, test, format and lint commands live in the **project profile** (`AGENTS.md` §&nbsp;Build & Test in the consuming repo). Skills reference them by the placeholder names `%BUILD_CMD%`, `%TEST_CMD%`, `%FULL_CHECK_CMD%`, `%FORMAT_CMD%`, `%LINT_CMD%` and `<module-path>`; resolve each against that table before running anything. An unresolved placeholder means stop and ask the user rather than guess a command. `%TEST_CMD%` is the narrowing run inside a loop and `%FULL_CHECK_CMD%` the full list, run once after review approves: [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md).
 
 Reading a green test run correctly — the four ways a pass can be fake — is in [`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Reading a test result](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#reading-a-test-result).
 
@@ -48,8 +48,8 @@ being read rather than the exit status alone, and the standard a check whose jud
 to instead of determinism — is in [`${CLAUDE_PLUGIN_ROOT}/docs/gate-outcomes.md`](${CLAUDE_PLUGIN_ROOT}/docs/gate-outcomes.md).
 
 > **AXIOM — Every instruction file loaded WHOLE when an agent starts MUST stay below 40,000 chars.**
-> Such a file is paid for on every subagent spawn, skill invocation or session start, which is what the cap prices. Applies to: `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, the project's `ai-docs/context.md`, this file and the glossary beside it, every `agents/*.md` and `skills/*/SKILL.md` under `${CLAUDE_PLUGIN_ROOT}` or the project's `.claude/`. The **35,000-char early warning** gives one full `/task` cycle of headroom; the harness repo's check list reddens at it, so a task closes with that headroom intact.
-> **A page reached only by link carries no per-file cap** — every other `${CLAUDE_PLUGIN_ROOT}/docs/**` page, a skill's `reference.md` and other supporting files, `${CLAUDE_PLUGIN_ROOT}/rules/**`. It is read when a rule that already states the obligation links to it, and it is where extracted rationale goes: capping it as well leaves an extraction nowhere to land. Keep it sectioned and link to an anchor, not to the page.
+> Such a file is paid for on every subagent spawn, skill invocation or session start, which is what the instruction size cap prices. Applies to: `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, the project's `ai-docs/context.md`, this file and the glossary beside it, every `agents/*.md` and `skills/*/SKILL.md` under `${CLAUDE_PLUGIN_ROOT}` or the project's `.claude/`. The **35,000-char early warning** gives one full `/task` cycle of headroom; the harness repo's check list reddens at it, so a task closes with that headroom intact.
+> **A page reached only by link carries no instruction size cap** — every other `${CLAUDE_PLUGIN_ROOT}/docs/**` page, a skill's `reference.md` and other supporting files, `${CLAUDE_PLUGIN_ROOT}/rules/**`. It is read when a rule that already states the obligation links to it, and it is where extracted rationale goes: capping it as well leaves an extraction nowhere to land. Keep it sectioned and link to an anchor, not to the page.
 >
 > | If `wc -m <file>` reports, for a file loaded whole... | Action |
 > |---|---|
@@ -71,7 +71,7 @@ Code-search hierarchy (which tool for which question, and the verbatim block sub
 
 **Never let one command's exit status mask another's.** Each gate (format, lint, build, test, search) runs as its OWN Bash call — do not join independent gates with `&&` / `;`, and do not pipe a gate through `head` / `tail` / `grep`: a pipeline's rc is the LAST command's. Limit output with the tool's own flags (`-m` / `--max-count`, `-n`, `-L`) and read the gate's full output. **Where a gate's honest output is too large to read, redirect it to a FILE and search the file** — that is NOT masking, and the hook's own refusal prescribes it. The Bash tool surfaces a non-zero status by itself, so a trailing `echo $?` buys nothing and costs the output it displaced, and `/dev/null` destroys the one line that names which assertion failed. Run independent diagnostics as parallel tool calls, never separated by an `echo` / `printf` marker. **The `result-masking` hook blocks six shapes at dispatch and its refusal carries their remediation, so they are not restated here:** a gate piped into a filter or pager, a trailing `|| echo` / `|| true`, a gate FOLLOWED across `;` by an `echo` banner, two SHELL gates joined with `&&`, `>` `/dev/null`, and a gate inside a `for` / `while` loop. Its gate set includes a `jq -e` / `--exit-status` manifest parse; it is still a SUBSET of the gates, so **its silence is not clearance**. Measured over one corpus, every violation committed while the hook was in force was stopped by the hook and none by this paragraph. **Five shapes no command-string guard can see, so the check is yours alone:** (1) an unquoted `$var` file list — **zsh does not word-split**; (2) `$?` after a pipeline is the LAST command’s status — run un-piped or read `${PIPESTATUS[0]}` / `$pipestatus[1]`; the hook matches a known filter list only, so a gate piped into anything outside it reaches you unflagged; (3) `out=$(fn)` is a SUBSHELL — it propagates `fn`’s rc but DISCARDS every variable `fn` assigned, so a helper that reports status by setting a global must be invoked BARE and the global read afterwards, and pre-initialising that global is worse than leaving it unset: `unbound variable` fails loudly, while a stale value lets every exit-status assertion pass while measuring nothing; (4) a gate whose path arrives through a variable or a glob; (5) a counting command (`grep -c`, `diff`, `test`) whose status reports a property of the INPUT, not the health of the run — a legitimate `0` exits non-zero and short-circuits an `&&` chain, so compare the captured value (`[ "$n" = 0 ]`) — the hook now refuses a conjunction between two SHELL GATES, which leaves a conjunction of plain READS exactly as invisible as before. Before chaining on ANY command’s status, ask what that status MEANS for that command. **A check MANDATED in prose is not yet a check: the spelling is part of it.** "Run X over every Y" leaves the composition to the reader, and the readings that mask a failure are the ones that look most natural — verify the mandated invocation FAILS on a planted defect before writing it down. `No files matched` / `Total 0 tests` / `unknown option` IS the failure. **The rule binds on the CONSTRUCT as written, not on whether the gate happened to run.** **Carve-out — NOT result-masking:** a `cd <dir> && <cmd>` prefix, a `[ -n "$x" ] && …` guard that does not swallow a gate's rc, and any chain inside a hook or checked-in `.sh`.
 
-**Capture tool-usage lessons in memory.** When you hit and resolve friction with a tool/skill (wrong output envelope, query dialect, flag, param shape, auth quirk), save the corrected usage to `~/.claude` memory as a `reference` memory so new sessions don't repeat the mistake. This cross-session `~/.claude` memory is distinct from `ai-docs/learnings.md` (the instruction-violation log): tool-usage know-how goes to memory, instruction violations go to the Learning Log.
+**Capture tool-usage lessons in memory.** When you hit and resolve friction with a tool/skill (wrong output envelope, query dialect, flag, param shape, auth quirk), save the corrected usage to `~/.claude` memory as a `reference` memory so new sessions don't repeat the mistake. This cross-session `~/.claude` memory is distinct from `ai-docs/learnings.md` (the Learning Log): tool-usage know-how goes to memory, instruction violations go to the Learning Log.
 
 ### Skill-usage priority
 
@@ -96,7 +96,7 @@ See [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`](${CLAUDE_PLUGIN_ROOT}/docs/code
 > The first action of any skill that produces commits OR writes a planning artifact is checking the current branch; if it is the default branch, switch **before** any `Edit` / `Write`.
 
 - A human merges on the review surface, in the merge style the profile declares; Claude never merges. → [§ Merge strategy](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#merge-strategy)
-- **A commit on a task branch is made without asking**; a task-workflow step changing a shared file commits it before it is marked done. → [§ Each step commits what it wrote](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#each-step-commits-what-it-wrote)
+- **A commit on a task branch is made without asking**; a spec-workflow step changing a shared file commits it before it is marked done. → [§ Each step commits what it wrote](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#each-step-commits-what-it-wrote)
 - Run the changed module's build before a commit that changes what the build reads, so dependency-graph regressions surface locally. → [§ Build before commit](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#build-before-commit)
 - Stage explicitly; **Never** `git add -A` / `git add .`. → [§ Explicit-file staging](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#explicit-file-staging)
 - **Before every `git commit` during a PR task**, stage `ai-docs/learnings.md` **and** `ai-docs/learnings/` with related code. **After every push**, give a post-push learning entry its own commit. → [§ Staging learnings.md during PR commits](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#staging-ai-docslearningsmd-during-pr-commits)
@@ -106,7 +106,7 @@ See [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`](${CLAUDE_PLUGIN_ROOT}/docs/code
 - **PR review comment resolution:** Resolve only comments fixed by code; objections stay open for the reviewer. → [§ PR review comment resolution](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#pr-review-comment-resolution)
 
 > **AXIOM 2 — At the end of every iteration, read the ticket and write the PR description; a push by itself triggers nothing.**
-> An iteration ends at the first pass, before the PR is opened, and at every correction pass after it, in whichever workflow runs that pass on an open PR. The ticket changes only with the user's consent; the description is written for the reviewer from the whole task, not from the last push. → [§ The ticket and the PR description at the end of an iteration](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-ticket-and-the-pr-description-at-the-end-of-an-iteration)
+> An iteration ends at the first pass, before the PR is opened, and at every post-push fix round after it, in whichever workflow runs it. The ticket changes only with the user's consent; the description is written for the reviewer from the whole task, not from the last push. → [§ The ticket and the PR description at the end of an iteration](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-ticket-and-the-pr-description-at-the-end-of-an-iteration)
 >
 > **AXIOM — Every code-producing commit on a feature branch with an open PR (or about-to-be-opened PR) must pass `self-review` before push.**
 > The per-skill rules already exist (`/task` Step 10, `/bugfix` Step 6.5). This AXIOM names them as instances of a single workspace rule.
@@ -126,9 +126,9 @@ See [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`](${CLAUDE_PLUGIN_ROOT}/docs/code
 >
 > | If you see... | Action |
 > |---|---|
-> | `design` subagent returned with the full design-doc text in its response, but `ls ai-docs/plans/*.design.md` is missing OR doesn't reflect the response | **STOP.** RE-RUN the `design` subagent (do NOT transcribe its text). The design subagent owns the `Write`. |
-> | `spec-writer` returned `status: ready`, user picked "Tweak first", and you're tempted to `Edit` the spec | **STOP.** Append the Q&A to state's `prior_qa`, increment `round`, RE-INVOKE the spec-writer. The spec-writer owns the `Write`. |
-> | Design Amendment recipe step says "update the design doc" | Spawn the `design` subagent with the amendment description. Orchestrator role: (1) surface to user, (2) spawn `design`, (3) spawn `design-review` on the result. NEVER `Edit` `*.design.md` inline — even for one-line fixes. |
+> | `design` subagent returned with the full design text in its response, but `ls ai-docs/plans/*.design.md` is missing OR doesn't reflect the response | **Stop.** RE-RUN the `design` subagent (do NOT transcribe its text). The design author owns the `Write`. |
+> | `spec-writer` returned `status: ready`, user picked "Tweak first", and you're tempted to `Edit` the spec | **Stop.** Append the Q&A to state's `prior_qa`, increment `round`, RE-INVOKE the spec-writer. The spec-writer owns the `Write`. |
+> | Design Amendment recipe step says "update the design" | Spawn the `design` subagent with the amendment description. Orchestrator role: (1) surface to user, (2) spawn `design`, (3) spawn `design-review` on the result. NEVER `Edit` `*.design.md` inline — even for one-line fixes. |
 > | Spec Amendment recipe step says "amend the spec" | Re-invoke `spec-writer` with the amendment in `prior_qa`; for `/task` Step 11 amendments, then run `design` → `design-review` chain. NEVER `Edit` `*.spec.md` inline. |
 > | A reviewer comment on a PR proposes a one-line spec/design fix | The fix is NOT a "trivial edit" — it routes through the Spec / Design Amendment recipe. |
 > | A finding says a spec/design sentence is false, stale, or unsupported, and you are about to fix it in CODE | The amendment trigger fires on the finding's SUBJECT, not on where the fix lands. Route it, and do not close it until the cited sentence is re-read and confirmed or amended. → [§ Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group) |
@@ -140,7 +140,7 @@ See [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`](${CLAUDE_PLUGIN_ROOT}/docs/code
 > receive the corresponding change before the PR is opened. **The sync-group table and the sweep procedure
 > live in [`${CLAUDE_PLUGIN_ROOT}/docs/propagation.md`](${CLAUDE_PLUGIN_ROOT}/docs/propagation.md)** — read it
 > before closing any instruction-file edit, because a group you did not look up is a group you did not
-> propagate to, and `scripts/check-propagation-patterns.sh` derives the hook reminder's arms from that same table.
+> propagate to, and `scripts/check-propagation-patterns.sh` derives the hook reminder's path patterns from that same table.
 
 ## Naming
 
@@ -188,10 +188,10 @@ Interpret **the user's** phrasing literally and conservatively. When uncertain �
 | `ai-docs/plans/done/` | Completed plans (spec + design) |
 | `ai-docs/plans/deferred/` | Blocked or future plans |
 | `ai-docs/bugfix/trace-*.md` | Bugfix trace + durable-state surface — deleted on resolution |
-| `ai-docs/learnings.md` | Corrections log ARCHIVE — history + `/improve` fold destination |
+| `ai-docs/learnings.md` | Learning Log ARCHIVE — history + `/improve` fold destination |
 | `ai-docs/learnings/` | Per-branch entry files — where NEW entries go; union with the archive |
 | `ai-docs/feedback/` | Defect reports filed back to the harness — one file per report, committed |
-| `ai-docs/fixtures/` | Frozen real-world inputs a gate replays — committed, never regenerated casually |
+| `ai-docs/fixtures/` | Recorded real-world inputs a gate replays — committed, never regenerated casually |
 | `${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md` | On-demand code-search hierarchy + verbatim block subagents inherit |
 
 See [`${CLAUDE_PLUGIN_ROOT}/docs/agent-docs-index.md`](${CLAUDE_PLUGIN_ROOT}/docs/agent-docs-index.md) for the verbose body of each row (writers, lifecycle, special cases).
