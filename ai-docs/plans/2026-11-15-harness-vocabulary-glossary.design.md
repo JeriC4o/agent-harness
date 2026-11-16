@@ -476,12 +476,14 @@ makes is covered by that review's entry.
 - **The glossary reaches three agents by their brief**, appended at the start, and no others. Rejected:
   every agent at its start — pays the page on agents that write only for agents; by agent type alone —
   the interview and task skills start these three as general-purpose agents.
-- **The model is called through the host's command-line client**, as the turn-end loop detector's optional
-  judging stage already does, with a small model by default, a setting to change it, and a time limit the
-  hook sets. Both calls — this check's and that judging stage's — carry the `model-call marker` in their
-  environment, and the glossary loading hooks and the plain-words check do nothing in a session carrying
-  it. Rejected: no
-  marker — the child session would load the glossary and run the turn-end check on the model's own
+- **The model is called through the host's command-line client**, with a small model by default, a setting
+  to change it, and a time limit the hook sets. The call runs from the hook's scratch folder, in the
+  client's safe mode, with no MCP servers, no tools and no saved session, so the model reads its prompt and
+  nothing of the project; the turn-end loop detector's optional judging stage keeps its earlier form, from
+  the project with none of these, so this check's call is not made as that one is. Both calls — this
+  check's and that judging stage's — carry the `model-call marker` in their environment, and the glossary
+  loading hooks and the plain-words check do nothing in a session carrying it. Rejected: no marker — the
+  child session would load the glossary and run the turn-end check on the model's own
   answer, calling the model again; a marker that silences every harness hook — changes what the existing
   hooks do in that child session.
 - **The chat text read is the whole turn's**: the transcript's assistant text since the person's last
@@ -573,8 +575,9 @@ makes is covered by that review's entry.
 - `Posting commands row` — declared in a project's profile, one quoted entry per command: its leading
   words, then the flags carrying its text, a flag marked as naming a file whose content is the text; a
   row with no entry declares that nothing posts; this repository and the project template declare the
-  six commands of the review host's command-line client that create, edit or comment on a pull request
-  or an issue. Read by the plain-words check to know which commands post and where their text is.
+  eleven commands of the review host's command-line client that create, edit, comment on, close or
+  reopen a pull request or an issue, or review a pull request, each text flag in its long and its short
+  spelling. Read by the plain-words check to know which commands post and where their text is.
 - `plain-words record` — written at every reading, finding or none, and at a turn end with no chat text;
   read by the check to know whether the question or post before this one in the turn was refused by the
   model's reading alone, whether the

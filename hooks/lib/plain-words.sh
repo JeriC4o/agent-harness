@@ -19,9 +19,9 @@
 # refused every time, because the agent can always remove it. Chat is restated at most
 # once a turn.
 #
-# A COULD-NOT-RUN IS NEVER A PASS. When the names or the model cannot be read the text
-# goes through, the record says could-not-run with any listed name found beside it, and
-# the person is told once a session.
+# A COULD-NOT-RUN IS NEVER A PASS. When the names, the model or a file a declared flag
+# names cannot be read the text goes through, the record says could-not-run with any
+# listed name found beside it, and the person is told once a session.
 #
 # ITS OWN RECORDS ARE ITS MEMORY. Each hook run is its own process, so whether the
 # previous question was refused, whether this turn was restated and whether the person
@@ -126,8 +126,11 @@ model_read() { # <what the text is> <text file>
     cat "$2"; printf '\n</text>\n'
   } > "$WORK/prompt" 2>/dev/null || { MODEL_WHY='the glossary could not be read'; return 0; }
   # The marker keeps the session this call starts from loading the glossary and from
-  # reading its own answer here, which would call the model again.
-  HARNESS_MODEL_CALL=1 claude -p --model "$MODEL" < "$WORK/prompt" > "$WORK/answer" 2>/dev/null &
+  # reading its own answer here, which would call the model again. Started in the
+  # scratch directory in safe mode, with no tools, MCP servers or saved session, it reads
+  # the prompt and nothing of the project; exec lets the time limit's kill reach it.
+  ( cd "$WORK" && HARNESS_MODEL_CALL=1 exec claude -p --model "$MODEL" --safe-mode --strict-mcp-config \
+      --no-session-persistence --tools '' ) < "$WORK/prompt" > "$WORK/answer" 2>/dev/null &
   local pid=$! ticks=0 rc
   while kill -0 "$pid" 2>/dev/null; do
     if [ "$ticks" -ge $((LIMIT * 10)) ]; then
@@ -158,6 +161,8 @@ judge() { # <what the text is> <text file> <model exempt: 1 or empty> <outcome o
   names_found "$2"
   if [ "$NAMES_STATE" = cannot ]; then
     MODEL_WHY='the names the glossary lists could not be read'
+  elif [ -n "${UNREAD:-}" ]; then
+    MODEL_WHY=$UNREAD
   elif [ -n "$3" ]; then
     MODEL_STATE=exempt
   else
@@ -258,9 +263,8 @@ posting_text() { # <command line> <directory a relative file is read from>
   done
 }
 
-# The declared text of the command in words[first .. past), when an entry declares it.
 command_text() { # <first word> <past the last word> <directory a relative file is read from>
-  local entry word i k val f file
+  local entry word i k val f file path
   local -a spec prefix flags
   while IFS= read -r entry; do
     spec=(); prefix=(); flags=()
@@ -279,12 +283,18 @@ command_text() { # <first word> <past the last word> <directory a relative file 
         file=''; [ "${f%:file}" = "$f" ] || file=1
         f=${f%:file}; val=''
         if [ "${words[$i]}" = "$f" ] && [ $((i + 1)) -lt "$2" ]; then val=${words[$((i + 1))]}
-        else case ${words[$i]} in "$f="*) val=${words[$i]#"$f="} ;; esac
+        else
+          case ${words[$i]} in
+            "$f="*) val=${words[$i]#"$f="} ;;
+            "$f"?*) case $f in -[!-]) val=${words[$i]#"$f"} ;; esac ;;
+          esac
         fi
         [ -n "$val" ] || continue
         if [ -n "$file" ]; then
-          case $val in /*) ;; *) val="$3/$val" ;; esac
-          [ -r "$val" ] && { cat "$val"; printf '\n'; } >> "$WORK/text"
+          case $val in -) path='' ;; /*) path=$val ;; *) path="$3/$val" ;; esac
+          if [ -n "$path" ] && [ -r "$path" ]; then { cat "$path"; printf '\n'; } >> "$WORK/text"
+          else UNREAD="the file ${f} names, ${val}, could not be read"
+          fi
         else
           printf '%s\n' "$val" >> "$WORK/text"
         fi
@@ -305,7 +315,7 @@ case $MOMENT in
     cmd=$(printf '%s' "$IN" | jq -r '.tool_input.command // empty' 2>/dev/null) || exit 0
     [ -n "$cmd" ] || exit 0
     cwd=$(printf '%s' "$IN" | jq -r '.cwd // empty' 2>/dev/null); [ -n "$cwd" ] || cwd=$PROJECT
-    POSTING=''
+    POSTING=''; UNREAD=''
     posting_text "$cmd" "$cwd"
     case $POSTING in
       undeclared)
@@ -316,7 +326,7 @@ case $MOMENT in
         notice_json "$why"
         ;;
       matched)
-        [ -n "$(tr -d '[:space:]' < "$WORK/text")" ] || exit 0
+        [ -n "$UNREAD" ] || [ -n "$(tr -d '[:space:]' < "$WORK/text")" ] || exit 0
         refuse_or_pass post
         ;;
     esac

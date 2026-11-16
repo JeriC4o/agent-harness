@@ -32,14 +32,13 @@ cat > "$W/glossary.md" <<'EOF'
 |---|---|
 | doodad fold | A made-up step nobody runs any more. |
 EOF
-printf '| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text --text-file:file` `ticketctl note --body` |\n' > "$W/proj/AGENTS.md"
+printf '| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text -t --text-file:file -F:file` `ticketctl note --body -b` |\n' > "$W/proj/AGENTS.md"
 
-# The stub answers from $W/answer, exits with $W/rc, sleeps $W/sleep seconds, and logs
-# the marker it was started under.
 cat > "$W/bin/claude" <<EOF
 #!/usr/bin/env bash
 cat > "$W/last-prompt"
 printf '%s\n' "\${HARNESS_MODEL_CALL:-unset}" >> "$W/calls"
+{ pwd; printf '<%s>' "\$@"; printf '\n'; } > "$W/last-call"
 [ -s "$W/sleep" ] && sleep "\$(cat "$W/sleep")"
 cat "$W/answer" 2>/dev/null
 exit "\$(cat "$W/rc" 2>/dev/null || echo 0)"
@@ -83,6 +82,11 @@ out=$(question q1 'Shall I update the gadget-book?')
 check "a hyphen between the words still matches" "$(decision "$out")" "deny"
 check "the model was called under the model-call marker" "$(sort -u "$W/calls")" "1"
 has "  and was handed the glossary" "$(cat "$W/last-prompt")" "| widget ledger |"
+out=$(cd "$W/proj" && question q1 'Shall I go on?')
+hasnt "  started outside the project directory the hook runs in" "$(sed -n 1p "$W/last-call")" "$W/proj"
+has "  in the client's safe mode" "$(sed -n 2p "$W/last-call")" "<--safe-mode>"
+has "  with no tools" "$(sed -n 2p "$W/last-call")" "<--tools><>"
+has "  and no saved session" "$(sed -n 2p "$W/last-call")" "<--no-session-persistence>"
 
 printf '\n== a question: the model reading, and its refusal bound ==\n'
 answer 'INVENTED | the side shelf | a name for a concept the person has never seen'
@@ -133,6 +137,12 @@ check "a declared command after ; is read" "$(decision "$out")" "deny"
 out=$(post p1 'git status
 ticketctl note --body "the doodad fold"')
 check "a declared command on a later line is read" "$(decision "$out")" "deny"
+out=$(post p1 'ticketctl note -b "the gadget book"')
+check "a short text flag is read" "$(decision "$out")" "deny"
+out=$(post p1 'ticketctl post -F body.md')
+check "a short file flag is read" "$(decision "$out")" "deny"
+out=$(post p1 'ticketctl post -t"The gadget book is ready."')
+check "a short flag with its value attached is read" "$(decision "$out")" "deny"
 printf '| Setting | Value |\n|---|---|\n| Posting commands | none |\n' > "$W/proj/AGENTS.md"
 out=$(post p2 'ticketctl post --text "the gadget book"')
 check "a profile declaring none reads no post" "$out" ""
@@ -141,7 +151,7 @@ out=$(post p3 'ls')
 has "a profile with no Posting commands row tells the person once" "$(notice "$out")" "does not say which commands post"
 check "  recorded as a could-not-run" "$(lastrow p3 | jq -r '.outcome + " " + (.notice|tostring)')" "could-not-run true"
 check "  and only once a session" "$(post p3 'ls')" ""
-printf '| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text --text-file:file` `ticketctl note --body` |\n' > "$W/proj/AGENTS.md"
+printf '| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text -t --text-file:file -F:file` `ticketctl note --body -b` |\n' > "$W/proj/AGENTS.md"
 
 printf '\n== the turn end: the chat text since the person last wrote ==\n'
 cat > "$W/t1.jsonl" <<'EOF'
@@ -190,6 +200,14 @@ check "  a listed name goes through while the model cannot run" "$(decision "$ou
 has "  the person is told" "$(notice "$out")" "the model call failed"
 check "  the record is a could-not-run, never a pass" "$(lastrow c1b | jq -r '.outcome + " " + .model_state')" "could-not-run cannot"
 check "  and it records the name the names reading found" "$(lastrow c1b | jq -r '.by + " " + .names[0].name')" "names gadget book"
+answer NONE; before=$(calls)
+out=$(post c1c 'ticketctl post --text-file gone.md')
+check "a file a declared flag names that cannot be read lets the post through" "$(decision "$out")" ""
+has "  tells the person, naming the file" "$(notice "$out")" "gone.md"
+check "  recorded as a could-not-run" "$(lastrow c1c | jq -r .outcome)" "could-not-run"
+check "  and the model is not called" "$(calls)" "$before"
+post c1d 'ticketctl post --text "all fine" --text-file -' >/dev/null
+check "text from standard input is a could-not-run, never passed" "$(lastrow c1d | jq -r .outcome)" "could-not-run"
 answer 'Sure, looks fine to me.'
 out=$(question c2 'Shall I carry on?')
 check "an answer the hook cannot read is a could-not-run" "$(lastrow c2 | jq -r .outcome)" "could-not-run"
