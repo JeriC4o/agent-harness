@@ -20,8 +20,8 @@
 # once a turn.
 #
 # A COULD-NOT-RUN IS NEVER A PASS. When the names or the model cannot be read the text
-# goes through unless a listed name was found, the record says could-not-run, and the
-# person is told once a session.
+# goes through, the record says could-not-run with any listed name found beside it, and
+# the person is told once a session.
 #
 # ITS OWN RECORDS ARE ITS MEMORY. Each hook run is its own process, so whether the
 # previous question was refused, whether this turn was restated and whether the person
@@ -169,8 +169,8 @@ judge() { # <what the text is> <text file> <model exempt: 1 or empty> <outcome o
   [ "$nn" -gt 0 ] && BY=names
   [ "$nf" -gt 0 ] && BY=${BY:+$BY+}model
   NOTICE=false; WHY=''
-  if [ -n "$BY" ]; then OUTCOME=$4
-  elif [ "$MODEL_STATE" = cannot ]; then OUTCOME=could-not-run; WHY=$MODEL_WHY
+  if [ "$MODEL_STATE" = cannot ]; then OUTCOME=could-not-run; WHY=$MODEL_WHY
+  elif [ -n "$BY" ]; then OUTCOME=$4
   else OUTCOME=passed
   fi
   if [ "$MODEL_STATE" = cannot ] && ! told; then NOTICE=true; WHY=$MODEL_WHY; fi
@@ -206,16 +206,18 @@ refuse_or_pass() { # <question | post>
 # leading words and then the flags carrying the text, a flag ending in :file naming a
 # file that holds it; or the word none. Sets POSTING (undeclared | none | declared |
 # matched) and, on a match, writes the text to $WORK/text.
-posting_text() { # <command> <directory a relative file is read from>
-  local row entry word i k nw val f file
-  local -a words spec prefix flags
+SEP=$'\035'
+posting_text() { # <command line> <directory a relative file is read from>
+  local row s e nw base d
+  local -a words
   row=$(awk -F'|' '/^\|[[:space:]]*Posting commands[[:space:]]*\|/ { print $3; exit }' "${PROJECT}/AGENTS.md" 2>/dev/null)
   if [ -z "$(printf '%s' "$row" | tr -d '[:space:]')" ]; then POSTING=undeclared; return 0; fi
   case $row in *'`'*) ;; *) POSTING=none; return 0 ;; esac
   POSTING=declared
   printf '%s' "$row" | grep -o '`[^`]*`' | tr -d '`' > "$WORK/entries"
   # Words the way the shell would quote them, without running anything inside: single
-  # and double quotes and a backslash escape. The first command of a list is the one read.
+  # and double quotes and a backslash escape. An unquoted ;, &, | or line break ends a
+  # command, so a posting command is read wherever it sits in the line.
   printf '%s' "$1" | LC_ALL=C awk 'BEGIN { RS = "\001" } {
       s = $0; n = length(s); w = ""; inw = 0; q = ""
       for (i = 1; i <= n; i++) {
@@ -228,8 +230,11 @@ posting_text() { # <command> <directory a relative file is read from>
         }
         if (c == "\047" || c == "\"") { q = c; inw = 1; continue }
         if (c == "\\" && i < n) { w = w substr(s, ++i, 1); inw = 1; continue }
-        if (c ~ /[ \t\n]/) { if (inw) printf "%s\036", w; w = ""; inw = 0; continue }
-        if (c == ";" || c == "&" || c == "|") { if (inw) printf "%s\036", w; inw = 0; exit }
+        if (c ~ /[ \t]/) { if (inw) printf "%s\036", w; w = ""; inw = 0; continue }
+        if (c == "\n" || c == ";" || c == "&" || c == "|") {
+          if (inw) printf "%s\036", w
+          w = ""; inw = 0; printf "\035\036"; continue
+        }
         w = w c; inw = 1
       }
       if (inw) printf "%s\036", w
@@ -238,28 +243,47 @@ posting_text() { # <command> <directory a relative file is read from>
   IFS=$'\036' read -r -d '' -a words < "$WORK/words"
   nw=${#words[@]}
   : > "$WORK/text"
+  base=$2
+  s=0
+  while [ "$s" -lt "$nw" ]; do
+    e=$s
+    while [ "$e" -lt "$nw" ] && [ "${words[$e]}" != "$SEP" ]; do e=$((e + 1)); done
+    if [ "$e" -gt "$s" ] && [ "${words[$s]}" = cd ]; then
+      d=''; [ $((s + 1)) -lt "$e" ] && d=${words[$((s + 1))]}
+      case $d in '') ;; /*) base=$d ;; *) base="$base/$d" ;; esac
+    elif [ "$e" -gt "$s" ]; then
+      command_text "$s" "$e" "$base"
+    fi
+    s=$((e + 1))
+  done
+}
+
+# The declared text of the command in words[first .. past), when an entry declares it.
+command_text() { # <first word> <past the last word> <directory a relative file is read from>
+  local entry word i k val f file
+  local -a spec prefix flags
   while IFS= read -r entry; do
     spec=(); prefix=(); flags=()
     read -r -a spec <<< "$entry"
     for word in ${spec[@]+"${spec[@]}"}; do
       case $word in -*) flags+=("$word") ;; *) prefix+=("$word") ;; esac
     done
-    [ "${#prefix[@]}" -gt 0 ] && [ "$nw" -ge "${#prefix[@]}" ] || continue
+    [ "${#prefix[@]}" -gt 0 ] && [ $(($2 - $1)) -ge "${#prefix[@]}" ] || continue
     k=0
-    while [ "$k" -lt "${#prefix[@]}" ] && [ "${words[$k]}" = "${prefix[$k]}" ]; do k=$((k + 1)); done
+    while [ "$k" -lt "${#prefix[@]}" ] && [ "${words[$(($1 + k))]}" = "${prefix[$k]}" ]; do k=$((k + 1)); done
     [ "$k" -eq "${#prefix[@]}" ] || continue
     POSTING=matched
-    i=$k
-    while [ "$i" -lt "$nw" ]; do
+    i=$(($1 + k))
+    while [ "$i" -lt "$2" ]; do
       for f in ${flags[@]+"${flags[@]}"}; do
         file=''; [ "${f%:file}" = "$f" ] || file=1
         f=${f%:file}; val=''
-        if [ "${words[$i]}" = "$f" ] && [ $((i + 1)) -lt "$nw" ]; then val=${words[$((i + 1))]}
+        if [ "${words[$i]}" = "$f" ] && [ $((i + 1)) -lt "$2" ]; then val=${words[$((i + 1))]}
         else case ${words[$i]} in "$f="*) val=${words[$i]#"$f="} ;; esac
         fi
         [ -n "$val" ] || continue
         if [ -n "$file" ]; then
-          case $val in /*) ;; *) val="$2/$val" ;; esac
+          case $val in /*) ;; *) val="$3/$val" ;; esac
           [ -r "$val" ] && { cat "$val"; printf '\n'; } >> "$WORK/text"
         else
           printf '%s\n' "$val" >> "$WORK/text"

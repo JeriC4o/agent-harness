@@ -119,9 +119,20 @@ out=$(post p1 'ticketctl note --body="all fine here"')
 check "a flag written with = is read, and plain text passes" "$(decision "$out")" ""
 check "  with a record" "$(lastrow p1 | jq -r '.moment + " " + .outcome')" "post passed"
 n=$(rows p1 | wc -l | tr -d ' ')
-out=$(post p1 'echo "the gadget book" && ticketctl post --text hi')
-check "a command that does not start with a declared one is not read" "$(decision "$out")" ""
+out=$(post p1 'echo "the gadget book" | grep gadget')
+check "a line with no declared command is not read" "$(decision "$out")" ""
 check "  and leaves no record" "$(rows p1 | wc -l | tr -d ' ')" "$n"
+out=$(post p1 'echo "the gadget book" && ticketctl post --text hi')
+check "a declared command later in the line is read for its own text only" "$(decision "$out")" ""
+check "  and recorded" "$(rows p1 | wc -l | tr -d ' ')" "$((n + 1))"
+mkdir -p "$W/sub"; printf 'The sprocket log is gone.\n' > "$W/sub/note.md"
+out=$(post p1 'cd sub && ticketctl post --text-file note.md')
+check "a declared command after cd ... && is read, its file found where cd moved" "$(decision "$out")" "deny"
+out=$(post p1 'git status; ticketctl post --text "The gadget book is ready."')
+check "a declared command after ; is read" "$(decision "$out")" "deny"
+out=$(post p1 'git status
+ticketctl note --body "the doodad fold"')
+check "a declared command on a later line is read" "$(decision "$out")" "deny"
 printf '| Setting | Value |\n|---|---|\n| Posting commands | none |\n' > "$W/proj/AGENTS.md"
 out=$(post p2 'ticketctl post --text "the gadget book"')
 check "a profile declaring none reads no post" "$out" ""
@@ -173,8 +184,12 @@ check "  recorded as a could-not-run, never as passed" "$(lastrow c1 | jq -r '.o
 out=$(question c1 'Shall I carry on again?')
 check "  the notice comes once a session" "$(notice "$out")" ""
 check "  and the second reading is still recorded" "$(lastrow c1 | jq -r .outcome)" "could-not-run"
-out=$(question c1 'Shall I update the gadget book?')
-check "  a listed name is still refused while the model cannot run" "$(decision "$out")" "deny"
+answer NONE 1
+out=$(question c1b 'Shall I update the gadget book?')
+check "  a listed name goes through while the model cannot run" "$(decision "$out")" ""
+has "  the person is told" "$(notice "$out")" "the model call failed"
+check "  the record is a could-not-run, never a pass" "$(lastrow c1b | jq -r '.outcome + " " + .model_state')" "could-not-run cannot"
+check "  and it records the name the names reading found" "$(lastrow c1b | jq -r '.by + " " + .names[0].name')" "names gadget book"
 answer 'Sure, looks fine to me.'
 out=$(question c2 'Shall I carry on?')
 check "an answer the hook cannot read is a could-not-run" "$(lastrow c2 | jq -r .outcome)" "could-not-run"

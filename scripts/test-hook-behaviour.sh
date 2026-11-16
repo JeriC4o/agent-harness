@@ -213,6 +213,9 @@ GLOSSARY_FIXTURE="${WORK}/glossary.md"
 PLAIN_FIXTURE="${WORK}/plain-glossary.md"
 printf '# Glossary\n\n## Things\n\n| Canonical name | Other names | What it is | What it does | Defined at |\n|---|---|---|---|---|\n| widget ledger | "gadget book" | A made-up record. | It holds made-up rows. | planned |\n' > "$PLAIN_FIXTURE"
 PLAIN_T="${WORK}/plain-turn.jsonl"
+mkdir -p "${WORK}/plain-bin"
+printf '#!/usr/bin/env bash\ncat > /dev/null\nprintf "NONE\\n"\n' > "${WORK}/plain-bin/claude"
+chmod +x "${WORK}/plain-bin/claude"
 # A bare `wc -l < missing` makes the SHELL report the redirection, which no
 # `2>/dev/null` on wc can suppress; the absence is an expected state here.
 ledger_rows(){ if [ -f "${LEDGER}/$1.jsonl" ]; then wc -l < "${LEDGER}/$1.jsonl" | tr -d ' '; else printf '0'; fi; }
@@ -363,8 +366,8 @@ while IFS= read -r row; do
   # A page long enough for every registered piece, so the last registration is
   # read against output rather than against the shipped page's current length.
   case "$trig" in glossary_*) RUN_ENV="$RUN_ENV HARNESS_GLOSSARY_PAGE=\"$GLOSSARY_FIXTURE\"" ;; esac
-  # The model reading is off, so no model is ever called here and the names alone refuse.
-  case "$trig" in plain_*) RUN_ENV="$RUN_ENV HARNESS_GLOSSARY_PAGE=\"$PLAIN_FIXTURE\" HARNESS_PLAIN_WORDS_MODEL=off" ;; esac
+  # The model is a stub that finds nothing, so no real model is called and the names alone refuse.
+  case "$trig" in plain_*) RUN_ENV="$RUN_ENV HARNESS_GLOSSARY_PAGE=\"$PLAIN_FIXTURE\" PATH=\"$WORK/plain-bin:\$PATH\"" ;; esac
   rows_before=$(ledger_rows s-result)
   run_hook "$ev" "$matcher" "$idx" "$pay" || continue
 
