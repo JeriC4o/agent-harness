@@ -77,6 +77,7 @@ is the same commands.
    `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-ledger-write.sh`,
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
    `hooks/lib/test-plan-invariants-guard.sh`, `hooks/lib/test-gate-record.sh`,
+   `hooks/lib/test-glossary-context.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
    `skills/pr-merged/scripts/test-cleanup-progress.sh`,
@@ -200,6 +201,7 @@ at that heading.
 | `hooks/hooks.json` | `scripts/test-hook-behaviour.sh`, `propagation-arms`, `plan-invariants`, `scripts/test-plugin-manifest.sh` |
 | `hooks/hooks.json` | `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`, `hooks/lib/test-loop-verdict.sh` |
 | `hooks/hooks.json` | `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-skill-gate.sh`, `hooks/lib/test-plan-invariants-guard.sh` |
+| `hooks/hooks.json`, `docs/glossary.md` | `hooks/lib/test-glossary-context.sh` |
 | `docs/propagation.md` | `propagation-arms` |
 | `README.md` | `readme-update` |
 | `docs/plan-invariants.md`, any instruction file on the surfaces it examines, `hooks/lib/plan-invariants-guard.sh` | `plan-invariants` |
@@ -214,7 +216,7 @@ at that heading.
 | any tracked text file — the foreign-identifier leg reads the whole tree | `method-purity` |
 | any file the vocabulary check reads — the glossary, every file under `docs/`, `skills/`, `agents/`, `rules/`, `hooks/`, `scripts/` or `templates/project/`, and `AGENTS.md`, `ai-docs/context.md`, `ai-docs/learnings/README.md`, `README.md`, `.claude-plugin/*.json` | `vocabulary` |
 | `hooks/lib/glossary-names.sh` | `scripts/test-check-vocabulary.sh` |
-| `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `ai-docs/context.md`, `docs/agents-method.md`, `agents/*.md`, `skills/*/SKILL.md`, `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, their `templates/project/` copies | `instruction-size` |
+| `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `ai-docs/context.md`, `docs/agents-method.md`, `docs/glossary.md`, `agents/*.md`, `skills/*/SKILL.md`, `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, their `templates/project/` copies | `instruction-size` |
 | `templates/project/**` | `skills/harness-init/scripts/test-scaffold.sh`, `scripts/test-audit-project.sh` |
 
 **Selection flag:** `--only`

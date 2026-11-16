@@ -100,6 +100,7 @@ and holds in every repo, which is why it carries no guard.
 | Event | Name | |
 |---|---|---|
 | SessionStart | rules-load reminder | [guarded] |
+| SessionStart(startup\|clear\|compact) | `glossary-context`, one registration per piece of the page | [guarded] |
 | PreToolUse(Bash) | broad `find` / `grep -r` over `$HOME` blocker | |
 | PreToolUse(Bash) | `branch-protection` | [guarded] |
 | PreToolUse(Bash) | `auto-stage-learnings` | [guarded] |
@@ -111,6 +112,7 @@ and holds in every repo, which is why it carries no guard.
 | PreToolUse(Edit\|Write) | `propagation-rule-reminder` | [guarded] |
 | PreToolUse(Edit\|Write) | `archive-protection-reminder` | |
 | PreToolUse(Skill) | `skill-gate` | |
+| PreToolUse(Agent) | `glossary-context`, the brief | [guarded] |
 | PostToolUse(Write\|Edit) | `learnings-append-check` | |
 | PostToolUse(Write\|Edit) | `sh-syntax-check` | |
 | PostToolUse(*), PostToolUseFailure(*) | `loop-result` | |

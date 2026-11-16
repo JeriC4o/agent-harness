@@ -10,6 +10,41 @@
             "statusMessage": "Read session rules..."
           }
         ]
+      },
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/harness-managed.sh || exit 0; \"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/glossary-context.sh piece 1 5",
+            "timeout": 10,
+            "statusMessage": "Loading the glossary..."
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/harness-managed.sh || exit 0; \"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/glossary-context.sh piece 2 5",
+            "timeout": 10,
+            "statusMessage": "Loading the glossary..."
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/harness-managed.sh || exit 0; \"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/glossary-context.sh piece 3 5",
+            "timeout": 10,
+            "statusMessage": "Loading the glossary..."
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/harness-managed.sh || exit 0; \"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/glossary-context.sh piece 4 5",
+            "timeout": 10,
+            "statusMessage": "Loading the glossary..."
+          },
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/harness-managed.sh || exit 0; \"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/glossary-context.sh piece 5 5",
+            "timeout": 10,
+            "statusMessage": "Loading the glossary..."
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -97,6 +132,17 @@
             "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/skill-gate.sh",
             "timeout": 10,
             "statusMessage": "Checking who is asking for this skill..."
+          }
+        ]
+      },
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/harness-managed.sh || exit 0; \"${CLAUDE_PLUGIN_ROOT}\"/hooks/lib/glossary-context.sh brief",
+            "timeout": 10,
+            "statusMessage": "Checking whether this agent's brief takes the glossary..."
           }
         ]
       },

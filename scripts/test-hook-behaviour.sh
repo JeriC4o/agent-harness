@@ -142,7 +142,7 @@ jq -r '.hooks | to_entries[] | .key as $ev | .value[] | (.matcher // "-") as $m
        | .hooks | to_entries[] | [$ev, $m, (.key|tostring)] | @tsv' "$HOOKS" > "${WORK}/keys.tsv"
 TOTAL=$(wc -l < "${WORK}/keys.tsv" | tr -d ' ')
 DISTINCT=$(sort -u "${WORK}/keys.tsv" | wc -l | tr -d ' ')
-check "every hook command has a triple" "$TOTAL" "23"
+check "every hook command has a triple" "$TOTAL" "29"
 check "the ${TOTAL} triples are distinct" "$DISTINCT" "$TOTAL"
 SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS" | sort -u | wc -l | tr -d ' ')
 [ "$SM_DISTINCT" -lt "$TOTAL" ] \
@@ -164,6 +164,12 @@ SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS
 #         none = an accepted non-emitter proved behaviourally below.
 # ---------------------------------------------------------------------------
 TABLE='SessionStart|-|0|session|jq|REQUIRED SESSION START: read
+SessionStart|startup|clear|compact|0|glossary_piece|jq|Glossary of the harness, part 1 of
+SessionStart|startup|clear|compact|1|glossary_piece|jq|Glossary of the harness, part 2 of
+SessionStart|startup|clear|compact|2|glossary_piece|jq|Glossary of the harness, part 3 of
+SessionStart|startup|clear|compact|3|glossary_piece|jq|Glossary of the harness, part 4 of
+SessionStart|startup|clear|compact|4|glossary_piece|jq|Glossary of the harness, part 5 of
+PreToolUse|Agent|0|glossary_brief|brief|The harness glossary follows.
 PreToolUse|Bash|0|commit_on_default|err|BLOCKED: git commit/push on
 PreToolUse|Bash|1|commit_dirty_learnings|err|[auto-stage-learnings]
 PreToolUse|Bash|2|find_home|err|BLOCKED: broad find/bfs/grep -r over
@@ -192,6 +198,15 @@ PostToolUseFailure|Bash|0|gate_fail|jq|[gate-record] scripts/test-thing.sh exite
 EXTRA_MARKER='[loop-index] loop: '
 
 LEDGER="${WORK}/loops"
+GLOSSARY_FIXTURE="${WORK}/glossary.md"
+{
+  printf '# Glossary\n\n## Things\n\n| Canonical name | Other names | What it is | What it does | Defined at |\n|---|---|---|---|---|\n'
+  i=1
+  while [ "$i" -le 400 ]; do
+    printf '| doohickey %s | — | A made-up thing filling one row of this page. | It takes up room. | planned |\n' "$i"
+    i=$((i+1))
+  done
+} > "$GLOSSARY_FIXTURE"
 # A bare `wc -l < missing` makes the SHELL report the redirection, which no
 # `2>/dev/null` on wc can suppress; the absence is an expected state here.
 ledger_rows(){ if [ -f "${LEDGER}/$1.jsonl" ]; then wc -l < "${LEDGER}/$1.jsonl" | tr -d ' '; else printf '0'; fi; }
@@ -199,6 +214,10 @@ ledger_rows(){ if [ -f "${LEDGER}/$1.jsonl" ]; then wc -l < "${LEDGER}/$1.jsonl"
 payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture state
   case "$1" in
     session) printf '%s' '{"hook_event_name":"SessionStart","session_id":"s0"}' ;;
+    glossary_piece) printf '%s' '{"hook_event_name":"SessionStart","session_id":"s0","source":"startup"}' ;;
+    glossary_brief)
+      jq -nc --arg p "$ROOT/agents/design.md" \
+        '{tool_name:"Agent", tool_input:{subagent_type:"general-purpose", description:"d", prompt:("Read " + $p)}}' ;;
     commit_on_default)
       git -C "$PROJ" checkout -q main
       jq -nc '{tool_input:{command:"git commit -m seed"}}' ;;
@@ -324,6 +343,9 @@ while IFS= read -r row; do
   pay=$(payload_for "$trig") || { bad "${key}: no trigger defined for ${trig}"; continue; }
 
   RUN_ENV="HARNESS_LOOP_DIR=\"$LEDGER\" CLAUDE_PLUGIN_ROOT=\"$ROOT\" CLAUDE_PROJECT_DIR=\"$PROJ\""
+  # A page long enough for every registered piece, so the last registration is
+  # read against output rather than against the shipped page's current length.
+  case "$trig" in glossary_*) RUN_ENV="$RUN_ENV HARNESS_GLOSSARY_PAGE=\"$GLOSSARY_FIXTURE\"" ;; esac
   rows_before=$(ledger_rows s-result)
   run_hook "$ev" "$matcher" "$idx" "$pay" || continue
 
@@ -336,6 +358,12 @@ while IFS= read -r row; do
       else case "$ctx" in "$marker"*) ok "${key}: the jq field carries its marker" ;;
                           *) bad "${key}: jq field [${ctx}] does not start with [${marker}]" ;; esac
       fi ;;
+    brief)
+      ctx=$(jq -r '.hookSpecificOutput.updatedInput.prompt // empty' "$OUT" 2>/dev/null)
+      case "$ctx" in
+        "Read "*"$marker"*) ok "${key}: the rewritten brief keeps the original and carries its marker" ;;
+        *) bad "${key}: rewritten brief [${ctx:0:120}] lacks [${marker}]" ;;
+      esac ;;
     none)
       emitted=$(( $(wc -c < "$OUT") + $(wc -c < "$ERR") ))
       rows_after=$(ledger_rows s-result)
@@ -367,7 +395,7 @@ printf '\n== AC15a: the markers are pairwise disjoint over the distinguishable c
 MARKERS=$(printf '%s\n' "$TABLE" | awk -F'|' '{print $NF}' | grep -v '^$')
 MARKERS=$(printf '%s\n%s' "$MARKERS" "$EXTRA_MARKER" | sort -u)
 MCOUNT=$(printf '%s\n' "$MARKERS" | wc -l | tr -d ' ')
-check "distinct marker strings in the table" "$MCOUNT" "20"
+check "distinct marker strings in the table" "$MCOUNT" "26"
 clash=0
 while IFS= read -r a; do
   while IFS= read -r b; do
