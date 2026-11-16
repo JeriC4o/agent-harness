@@ -16,8 +16,8 @@
 # session maps to several transcripts, and without this field a cross-agent
 # finding cannot be expanded into detail later. The payload's transcript_path is
 # the PARENT's even for a call made inside a subagent, so the stored pointer is
-# that path with the payload's own agent_id folded back in; with no agent_id
-# there is nothing to fold and it is stored unchanged. The pointer is NOT
+# that path with the payload's own agent_id put back in; with no agent_id
+# there is nothing to put in and it is stored unchanged. The pointer is NOT
 # checked against the disk -- at PreToolUse the subagent's file may not exist
 # yet, and the first call in a subagent is exactly when it does not.
 #
@@ -38,9 +38,9 @@
 #                                       the tokens while no local detector fires)
 #
 # agent_id is READ FROM THE PAYLOAD, and it is the only field that can tell a
-# subagent call from a main-thread one. The agent TYPE stored beside it cannot:
-# the client sends that on the main thread of an --agent session too, so a
-# detector branching on it would read that thread as a subagent. It is a
+# subagent call from one the main agent made. The agent TYPE stored beside it
+# cannot: the client sends that for the main agent of an --agent session too,
+# so a detector branching on it would read the main agent as a subagent. It is a
 # diagnostic here and nothing reads it -- which is why the token appears
 # exactly once in this file, in the ledger entry. transcript_path cannot serve
 # either: it is the parent's on both. A malformed agent_id degrades to "main"
@@ -194,7 +194,7 @@ kind="$1"; count="$2"; agents="$3"; span="${4:-$TAIL_N}"
 # did not change because the ledger was short. Neither is derived from the
 # other, so making them agree breaks whichever question it was answering.
 #
-# ALL THREE ARMS COUNT IN "CALLS", AND THE NOUN IS LOAD-BEARING. "steps" is the
+# ALL THREE KINDS COUNT IN "CALLS", AND THE NOUN IS LOAD-BEARING. "steps" is the
 # word that carried the original falsehood: the message said "in the last 20
 # steps" while the number was a count of ledger LINES, and the vague noun is
 # what let the two pass for each other. The quantity is a count of calls now,
@@ -202,7 +202,7 @@ kind="$1"; count="$2"; agents="$3"; span="${4:-$TAIL_N}"
 # verdict row has no way to tell whether "steps" meant lines, calls or model
 # turns, which is why the word does not survive anywhere in these three strings.
 #
-# EVERY ARM ALSO SAYS WHICH CALLS ITS NUMBERS COUNT, because the call being
+# EVERY KIND ALSO SAYS WHICH CALLS ITS NUMBERS COUNT, because the call being
 # reported has NOT run -- it was interrupted at dispatch -- and a bare "3 times
 # in the last 3 calls" leaves the reader to guess whether the interrupted call
 # is in there. It is, in the span, always. The CLAUSE IS NOT UNIFORM and must not be
@@ -210,7 +210,7 @@ kind="$1"; count="$2"; agents="$3"; span="${4:-$TAIL_N}"
 # print (count is n + 1, span is prior + 1, and na includes cur), while
 # `error-retry`'s count is `fails` -- recorded error outcomes, all of them
 # PRIOR, because this call cannot have failed before running. A blanket
-# "including the current one" on that arm would be false.
+# "including the current one" on that kind would be false.
 if [ "$kind" = "error-retry" ]; then
   why=$(printf 'this exact call has already FAILED %s times in the last %s calls (the failures are all prior; this call has not run yet, though the call count includes it). Edits in between do not clear it -- an edit between two failures of the same call is an attempt that did not work, which is the evidence for the loop rather than an exemption from it. Before approving a further attempt, say what about THIS change makes the failure different; if the answer is only that something was changed, the loop is the finding.' \
         "$count" "$span")

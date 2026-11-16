@@ -5,7 +5,7 @@
 > `harness` plugin at `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` and is read at session start.
 > Where the two disagree about a project fact, this file wins; about method, the method file wins.
 >
-> Fill in every `%PLACEHOLDER%` below. An unresolved placeholder is a STOP, not a guess.
+> Fill in every `%PLACEHOLDER%` below. An unresolved placeholder means stop and ask, not a guess.
 
 ## Build & Test
 

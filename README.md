@@ -1,6 +1,6 @@
 # agent-harness
 
-Multiagentic workflow harness — a Claude Code **plugin** carrying a spec-driven task workflow, a reactive
+Multiagentic workflow harness — a Claude Code **plugin** carrying a spec workflow for each task, a reactive
 bugfix loop, skeptical review subagents, and enforcement hooks. Install it once, use it in every project;
 each project keeps its own context and its own learning log.
 
@@ -54,7 +54,7 @@ Leave the rest as placeholders; `/harness:task` appends entities as it discovers
 
 **Declare how you merge.** The `Merge style` row of `AGENTS.md` § VCS says how a human merges a pull
 request: `squash`, the default the setup writes, or `merge-commit`, which keeps every commit. No row, or any
-other value, reads as `squash`. It matters in one place: when a task starts on a leftover progress record
+other value, reads as `squash`. It matters in one place: when a task starts on a leftover progress file
 and the hosting site cannot say whether that work merged, `merge-commit` lets the default branch's history
 answer, and `squash` has you asked.
 
@@ -144,8 +144,8 @@ tree, and one check answering both ways about one unchanged artefact.
 
 `scripts/human-findings.sh` counts what a person raised after the automated review passed — each comment
 posted on the pull request and each fix commit pushed after it opened. Version bumps and merge commits are
-excluded, and so is the closing-fold commit that a pull request merged before that pass was retired still
-carries. Push times come from the hosting site's push-activity record, never from commit
+excluded, and so is a commit made by the since-removed last step of a task, which a pull request merged
+before that step was retired may still carry. Push times come from the hosting site's push-activity record, never from commit
 dates, and a pull request older than that record's reach is reported as not computable rather than as
 zero. `/harness:inspect` runs it for the session's branch; it also runs on demand:
 
@@ -207,11 +207,11 @@ claude plugin update harness@agent-harness
 ```
 
 The first refreshes this machine's local copy of the marketplace catalog; the second is the one that
-moves the installed payload.
+moves the installed copy.
 
 **`claude plugin install` is not an upgrade path.** Against an existing installation it short-circuits,
 prints `✔ Plugin "harness@agent-harness" is already installed (scope: user)`, and exits 0 — a success
-message with the payload untouched. `claude plugin marketplace update` on its own refreshes catalog
+message with the installed copy untouched. `claude plugin marketplace update` on its own refreshes catalog
 metadata and nothing else. Run together they read like an upgrade and are not one.
 
 `update` applies to the scope you installed into and defaults to `user`. If you installed with
@@ -277,7 +277,7 @@ ai-docs/                   this repo's own profile + plan/learning data
 | `/harness:bugfix` | Reactive: trace → root cause → failing test → fix → self-review. Test before fix, always. |
 | `/harness:interview` | Requirements interview that produces the spec. Invoked by `/harness:task`, or standalone for spec-only work. |
 | `/harness:context-reset` | Group handoff for large tasks, and the compaction-recovery protocol every orchestrator re-enters through. |
-| `/harness:project-review` | Whole-branch review: findings table → fix loop → self-review until APPROVE. |
+| `/harness:project-review` | Whole-repository review: findings table → fix loop → self-review until APPROVE. |
 | `/harness:pr-merged` | Post-merge cleanup: switch to the default branch, pull, drop the branch's progress files, delete the branch. |
 | `/harness:improve` | Folds merged learning files into the archive, finds repeating corrections, proposes rule escalations — and drafts promotion candidates for lessons that are about the method. |
 | `/harness:improve-global` | Run in the harness repo: sweeps candidates across every registered project and promotes a rule once ≥2 of them hit it. |
@@ -333,7 +333,7 @@ Four things the one-line description leaves out.
 **The design is written for you; the working plan is not.** The design carries the approach, the key
 decisions with the alternatives they rejected, a diagram, the risks and what the change builds, aimed at
 5,000 characters. The subtasks, their order and the files each one edits go into the task's local progress
-record and are never committed. After review approves, the plan is frozen in a commit of its own; then one
+file and are never committed. After review approves, the plan is frozen in a commit of its own; then one
 question asks to push it and confirm the approach (with no remote, only to confirm), links the design and
 states its measured length. Implementation waits for your "yes"; a "no" with a reason sends the approach
 back to be redesigned, and the refused freeze stays in the branch's history. A task begun before this
@@ -348,13 +348,13 @@ agreed approach is corrected in the design in place, and nobody is asked; one th
 whose subject is a sentence in the spec, stop for a human decision. A finding is routed by its **subject**,
 not by where its fix would land — choosing the remedy first is what defeats that routing.
 
-**Step 11 is not a step.** It is a six-beat sequence with a mechanical gate in the middle, and the
+**Step 11 is not a step.** It is a sequence of steps with a mechanical check in the middle, and the
 orchestrator never applies a fix in its own context:
 
 ```mermaid
 flowchart LR
-    B["baseline"] --> P["fix-scout writes<br/>the round's plan"]
-    P --> G{"plan gate"}
+    B["round baseline"] --> P["fix-scout writes<br/>the round's plan"]
+    P --> G{"fix-plan check"}
     G -->|REFUSE| P
     G -->|ESCALATE| AU["author decides<br/>on the declared size"]
     AU --> G
@@ -375,7 +375,7 @@ first, it would be false again one re-fix later. One pass corrects every design 
 The plugin cache is keyed by **version**, so an installed copy only refreshes when
 `.claude-plugin/plugin.json` carries a version it has not seen. A fix shipped without a bump reaches
 nobody — `/plugin marketplace update` will refresh the marketplace metadata, report success, and leave the
-old payload in place.
+old installed copy in place.
 
 **Bump the patch version in the same PR as any change to plugin-loaded content** — `skills/`, `agents/`,
 `rules/`, `hooks/`, `docs/`, `scripts/`, `templates/`. A change confined to `README.md` or `ai-docs/`
@@ -392,14 +392,14 @@ than through an install, so edits take effect without reinstalling. To exercise 
 claude --plugin-dir /Users/jc/projects/agent-harness
 ```
 
-There is no build. `bash scripts/run-checks.sh` runs the whole pre-commit gate list in one call and
+There is no build. `bash scripts/run-checks.sh` runs the whole pre-commit check list in one call and
 reports a verdict per member; it derives the suite list from the tree and cross-checks it against the
 list `AGENTS.md` names — in both directions, for the test suites and for every structural check that
 section spells as a script invocation — so a script-backed gate can be neither documented and never
 wired in, nor wired in and never documented. The
 gate is nine structural checks — JSON manifests parse, every relative link and
 anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script, this README
-documents an update procedure that actually updates, the propagation reminder's path arms still agree
+documents an update procedure that actually updates, the propagation reminder's path patterns still agree
 with the Propagation Rule table they are derived from, and the base principles of a spec and a design are
 intact with nothing in the instruction corpus contradicting one or adding a required element, and the
 shipped method files name no project's stack while no file carries another codebase's identifiers, and
@@ -409,7 +409,7 @@ delivery gates:
 `scripts/test-install-smoke.sh` installs the working tree into a throwaway config and requires the plugin
 to actually load, `scripts/check-release.sh` refuses a branch that changed shipped content without a
 version bump, and `scripts/test-upgrade-smoke.sh` runs this README's own update commands against a
-lowered install and requires the payload to move. See [`AGENTS.md` § Build & Test](AGENTS.md#build--test).
+lowered install and requires the installed copy to move. See [`AGENTS.md` § Build & Test](AGENTS.md#build--test).
 
 Inside a work loop the runner takes `--only <member>[,<member>…]`, naming members as `--list` prints them:
 it runs just those, prints the selection, and says the full list was not run. Which members a change
@@ -422,7 +422,7 @@ unnarrowed, after review approves.
   are `## Patterns` blocks with soft verbs. [`docs/agent-writing-style.md`](docs/agent-writing-style.md)
   is the style contract for both.
 - **One writer per artefact.** The orchestrator never writes `*.spec.md` / `*.design.md`, or the working
-  plan in the progress record — the owning subagent does. Violating that is how transcribed-instead-of-written docs drift.
+  plan in the progress file — the owning subagent does. Violating that is how transcribed-instead-of-written docs drift.
 - **Durable state survives compaction.** Every orchestrator carries a compaction-recovery callout at the
   top of its body and a `.progress.md` on disk, so a truncated session re-enters where it left off.
 - **The Learning Log is append-only, and per project.** Corrections go to

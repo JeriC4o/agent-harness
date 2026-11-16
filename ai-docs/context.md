@@ -5,7 +5,7 @@ Context for developing **the harness itself**. A consuming project gets its own 
 
 ## Overview
 
-A Claude Code plugin that ships a spec-driven task workflow, a reactive bugfix loop, skeptical review
+A Claude Code plugin that ships a spec workflow, a reactive bugfix loop, skeptical review
 subagents, and enforcement hooks — plus the method documentation they read. Distributed via this repo
 acting as its own plugin marketplace. Consuming projects keep their own profile (`AGENTS.md`,
 `ai-docs/context.md`) and their own learning corpus (`ai-docs/learnings/`).
@@ -57,7 +57,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   finding under `applied`**, `unplanned-file`, and the single `THRESHOLD_CHANGED_LINES=150` that its ONE
   firing site reads — the pre-apply gate, on the plan's declared total. The disposition vocabulary is
   **six**; the sixth, `correction:`, sends a divergence from the task's own design to the round's in-place
-  correction instead of routing it. The post-apply size arm is withdrawn; `record` persists the post-apply micro-loop's
+  correction instead of routing it. The post-apply size test is withdrawn; `record` persists the post-apply micro-loop's
   iteration count, its cost in orchestrator tool calls and the bounded question's answer.
 - **Invariant.** It lives in the progress file, which is gitignored and deleted by `/pr-merged`, so no
   new artefact type and no new deletion path. The gate decides on its TEXT — never on an agent's
@@ -91,10 +91,10 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   record with the header and no row declares a pair with no links, and an absent one declares nothing.
 - **Code.** `scripts/check-plan-links.sh` with its payload `scripts/check-plan-links.py`, on the
   `0 clean / 1 findings / 2 cannot run` convention: a row is silent, `moved`, `re-confirm` or `ambiguous`,
-  and a folded spec is `skipped`, never clean. The contract is `docs/declared-links.md`; the format is
+  and a cut-down spec is `skipped`, never clean. The contract is `docs/declared-links.md`; the format is
   `docs/templates/progress-format.md` § The record of declared links (committed).
 - **Invariant.** It reports and stops nothing: no site refuses on it. It moves to `ai-docs/plans/done/`
-  with the plan, as the excuse record does, and stays there; the fix-plan gate's measured diff excludes it
+  with the plan, as the record of accepted findings does, and stays there; the fix-plan check's measured diff excludes it
   through `IGNORE_GLOB_LINKS`.
 
 ## Plan invariants
@@ -131,10 +131,10 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
   EXECUTION — not the spec lookup, which was measured catching neither failure — so an unloadable sibling
   is a cannot-run and never the findings code. Its verdict line carries the principle, element, surface,
   page, unaccounted and finding counts followed by a per-surface roster.
-  `hooks/lib/plan-invariants-guard.sh` is the edit-time refusal, registered on two `PreToolUse` matchers
+  `hooks/lib/plan-invariants-guard.sh` is the plan-invariants guard, registered on two `PreToolUse` matchers
   so both the editing tools and the shell route reach it; it covers the six protected pages and nothing
-  else, through the one list the refusal-agreement leg compares against the table. It is armed only in a
-  session whose transcript records a run of `/improve`, `/improve-global` or `/ai-audit`, and while armed
+  else, through the one list the refusal-agreement leg compares against the table. It is switched on only in a
+  session whose transcript records a run of `/improve`, `/improve-global` or `/ai-audit`, and while on
   an edit asks only when it changes a heading or a required-element name on the page; a shell write asks
   whenever it is recognised (GH-169).
 - **Invariant.** The record is not the route by which an element becomes required: it is cross-checked
@@ -163,7 +163,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
-| `ai-docs/fixtures/` | Frozen real-world inputs a gate replays, committed and never refreshed as routine maintenance — `loop-corpus/` holds the loop ledger's replayed call rows, `plan-convergence-planted.md` the planted plan pair the convergence reader reads on every run — one fault per class plus one spec-broader-than-design case it must not report — and `positional-references.baseline` the recorded positions the convergence check reports arrivals against |
+| `ai-docs/fixtures/` | Real-world inputs a gate replays, committed and never refreshed casually — `loop-corpus/` holds the loop ledger's replayed call rows, `plan-convergence-planted.md` the planted plan the contradiction reader reads on every run — one fault per class plus one spec-broader-than-design case it must not report — and `positional-references.baseline` the recorded positions the convergence check reports arrivals against |
 
 ## Tech stack
 
@@ -184,16 +184,16 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | Formatter | none |
 | Linter (the gate) | `shellcheck` for `.sh`; `jq -e .` for JSON manifests. **Neither the `shell-syntax` member nor `untracked-shell` globs anything but `*.sh`, so no gate in the pre-commit list parses a payload sibling by walking the tree** — each is asserted by the suite that owns its entry point instead: `scripts/check-plan-invariants.py` is `ast.parse`d by a leg of `scripts/test-check-plan-invariants.sh`, and `scripts/check-plan-convergence.py` with both of its siblings — `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py` — by a leg of `scripts/test-check-plan-convergence.sh` that enumerates all three, and `scripts/check-plan-links.py` by a leg of `scripts/test-check-plan-links.sh`, each run by its single entry point, and the invariants payloads are additionally asserted tracked by the check itself, because a file read for its data while untracked makes the local run green and every other clone a cannot-run |
 | Source root / test root | n/a — no compiled sources |
-| Required external interpreters | `python3` and `perl`, beside the `awk` and `jq` the payload files above need. `python3` runs all six `.py` payloads above — `scripts/check-plan-invariants.py` with the refusal sibling it loads, `scripts/check-plan-convergence.py` with the holding and reporting siblings it loads, and `scripts/check-plan-links.py` with the holding sibling it loads — is the scanning tool of the three plan-document checks and, inline, of `scripts/check-method-purity.sh` and `scripts/check-instruction-size.sh`, each of which preflights it by name and names every payload it could not find. `perl` executes nowhere in the tree's shipped code and is still a hard dependency of the mandatory check list: five of its members build their mutant fixtures with it — the loop-index and loop-verdict verifications under `hooks/lib/`, and the bin-of, loop-grid and loop-metrics suites under `scripts/` — so on a host without it those positive controls cannot run, and a could-not-run is not a pass. `scripts/run-checks.sh` demands it in the same preflight roster as the tools it invokes itself, which is what makes that failure loud and early rather than mid-suite. **A word-list mention is not an invocation:** `hooks/lib/plan-invariants-guard.sh` and its own verification carry the name as DATA, inside the vocabulary that recognises a command writing a file in place, and neither runs it |
-| Thousand-line exemption | **No file in this repository is exempt from `docs/code-style.md` § File size today**, and the row keeps this heading because three files cite it by name — `scripts/check-plan-convergence.sh`, `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py`, a measurement taken with `grep -rl 'Thousand-line exemption'` over the tree. What the row records is the band below that limit. The convergence payload answered the same limit by splitting rather than by an exemption: it crossed it at 1,447 lines and became three files. The core file that split left measures, with `wc -l`, inside the 800–1000 band `docs/code-style.md` calls **hard-ish** and routes to a justification in the pull-request description: what that file keeps is what both sibling groups read — the plan pair, the segmentation, the numeral readers, the two readers that separate the method root from the project root, the excuse route and the report — so a further cut would have to cross machinery both siblings call rather than follow a seam the check already states as data, and the lines above 800 are tolerated on that ground. This row is the durable record of that justification, and the pull request carries the same one when it opens. |
+| Required external interpreters | `python3` and `perl`, beside the `awk` and `jq` the payload files above need. `python3` runs all six `.py` payloads above — `scripts/check-plan-invariants.py` with the refusal sibling it loads, `scripts/check-plan-convergence.py` with the holding and reporting siblings it loads, and `scripts/check-plan-links.py` with the holding sibling it loads — is the scanning tool of the three plan-document checks and, inline, of `scripts/check-method-purity.sh` and `scripts/check-instruction-size.sh`, each of which preflights it by name and names every payload it could not find. `perl` executes nowhere in the tree's shipped code and is still a hard dependency of the mandatory check list: five of its members build their mutant fixtures with it — the loop-index and loop-verdict verifications under `hooks/lib/`, and the bin-of, loop-grid and loop-metrics suites under `scripts/` — so on a host without it those positive controls cannot run, and a could-not-run is not a pass. `scripts/run-checks.sh` demands it in the same preflight roster as the tools it invokes itself, which is what makes that failure loud and early rather than mid-suite. **A word-list mention is not an invocation:** `hooks/lib/plan-invariants-guard.sh` and its suite carry the name as DATA, inside the vocabulary that recognises a command writing a file in place, and neither runs it |
+| Thousand-line exemption | **No file in this repository is exempt from `docs/code-style.md` § File size today**, and the row keeps this heading because three files cite it by name — `scripts/check-plan-convergence.sh`, `scripts/check-plan-convergence-holding.py` and `scripts/check-plan-convergence-reporting.py`, a measurement taken with `grep -rl 'Thousand-line exemption'` over the tree. What the row records is the band below that limit. The convergence payload answered the same limit by splitting rather than by an exemption: it crossed it at 1,447 lines and became three files. The core file that split left measures, with `wc -l`, inside the 800–1000 band `docs/code-style.md` calls **hard-ish** and routes to a justification in the pull-request description: what that file keeps is what both sibling groups read — the plan, the segmentation, the numeral readers, the two readers that separate the method root from the project root, the accepted findings and the report — so a further cut would have to cross machinery both siblings call rather than follow a seam the check already states as data, and the lines above 800 are tolerated on that ground. This row is the durable record of that justification, and the pull request carries the same one when it opens. |
 
 ## Deployed configuration
 
 **Deployed-config globs:** `.env` `.env.*`
 
-The file class whose CONTENTS are ASK-gated by
+The file class the agent asks before reading, per
 [`${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Permissions](../docs/agents-method.md#permissions). The
-search guard `hooks/lib/deployed-config-guard.sh` reads the line above at search time, so the gated class
+search guard `hooks/lib/deployed-config-guard.sh` reads the line above at search time, so that class
 is this project's own spelling rather than one stack's filenames carried inside a method file. One glob
 per backticked token, all on that one line; a project with no such class writes `none`, which silences the
 guard. **This project holds no deployed configuration in the tree** — the two globs are the class the
@@ -213,13 +213,13 @@ contents, plus three delivery gates (`test-install-smoke.sh`, `check-release.sh`
 `test-upgrade-smoke.sh`) that answer the question the structural ones cannot — does this reach a
 consumer. The structural ten run in one call as `bash scripts/run-checks.sh`, which reports a verdict per
 member, derives its suite list from the tree rather than carrying one, keeps every member's status instead
-of the last one's, and cross-checks its own member table against the gate list in `AGENTS.md` — in both
+of the last one's, and cross-checks its own member table against the check list in `AGENTS.md` — in both
 directions, for suites and for every structural check that section spells as a script invocation — so a
 script-backed gate can be neither documented-and-unwired nor wired-and-undocumented. The four members
 backed by a shell function rather than a script (the manifest parse, the syntax gate, the untracked-file
-check and the inventory itself) are outside that comparison: deleting their items from the gate list is
+check and the inventory itself) are outside that comparison: deleting their items from the check list is
 silent, and the pinned member table in the suite is what covers them. The three delivery gates stay separate: they run once before a PR, need the
-`claude` CLI, and exit 2 when they cannot run, so folding them in would give the runner's rc 2 two
+`claude` CLI, and exit 2 when they cannot run, so merging them in would give the runner's rc 2 two
 meanings.
 
 ---
@@ -235,11 +235,11 @@ meanings.
   `${CLAUDE_PLUGIN_ROOT}` expands in the double-quoted executable path and stays LITERAL inside the
   single-quoted payload the model reads, so every method address in a message goes through
   `hooks/lib/plugin-ref.sh`: it emits the address only when that file is readable here and otherwise
-  names the read access the plugin needs. A `case` arm anchors on `CLAUDE_PROJECT_DIR`, never on the
-  install — an arm written against the install path can only fire on an edit the rules already deny.
+  names the read access the plugin needs. A `case` pattern anchors on `CLAUDE_PROJECT_DIR`, never on the
+  install — a pattern written against the install path can only fire on an edit the rules already deny.
 - **Bump `plugin.json` version in the same PR as any change to plugin-loaded content.** The install cache
   is keyed by version; without a bump the fix reaches nobody, and `marketplace update` reports success
-  while leaving the old payload in place. Content that ships: `skills/`, `agents/`, `rules/`, `hooks/`,
+  while leaving the old installed copy in place. Content that ships: `skills/`, `agents/`, `rules/`, `hooks/`,
   `docs/`, `scripts/`, `templates/`.
 
 ---
@@ -256,7 +256,7 @@ meanings.
   true for the bounds below to mean anything is the BOUNDS, not the magnitude.
 
   **Nothing asserts that the principles page reaches an installed copy at all.** The install gate
-  inventories skills, agents and hook events and has no documentation arm, so a release that delivered
+  inventories skills, agents and hook events and checks no documentation, so a release that delivered
   this page to nobody would be reported by no check here. It is a bound
   in its own right: nothing it rests on is a property of what the verification compares, so no change to
   the comparisons can close it.
@@ -271,8 +271,8 @@ meanings.
   is what a later reader does about the bound.
 - `GH-11` — `/harness:improve` Step 5b has never produced a candidate on a real Learning Log; every part
   is unit-tested, the path is not.
-- `GH-72` — the tier-1 fan-out arm became reachable when the hook started reading `agent_id` off the
-  payload. Its bar, `na > 1`, is inherited from a time when the arm could not fire at all, so it has
+- `GH-72` — the tier-1 fan-out signal became reachable when the hook started reading `agent_id` off the
+  payload. Its bar, `na > 1`, is inherited from a time when the signal could not fire at all, so it has
   never been measured against a real firing. The verdict line records `agents` and the threshold it
   fired under, so the calibration arrives on its own; revisit only if the first real firings show the
   bar is wrong.
@@ -317,17 +317,17 @@ meanings.
   The `agent-mark` canary added by GH-86 is what now makes a REGRESSION here visible: if these ids ever
   collapse back to `main`, recorded subagent starts with no non-`main` call row says so from the ledger
   alone.
-- `GH-75` — the propagation reminder's arms are now derived from the sync-group table and anchored on
+- `GH-75` — the propagation reminder's patterns are now derived from the sync-group table and anchored on
   the project directory, so the project-side mirrors a consumer may keep (`.claude/agents/*.md`,
-  `.claude/rules/**/*.md`, `.claude/commands/*.md`) are matched by no arm. Measured as a widening
-  rather than a regression: no path the pre-fix arms matched is silent under the current set, and
+  `.claude/rules/**/*.md`, `.claude/commands/*.md`) are matched by no pattern. Measured as a widening
+  rather than a regression: no path the earlier patterns matched is silent under the current set, and
   `scripts/check-propagation-patterns.sh` asserts that. Revisit when a consuming project actually keeps
   those mirrors.
-- `GH-98` — the scouted fix-plan sequence (scout → mechanical gate → fix agent) shipped into the main
-  feature-development flow only, on a cost baseline measured by hand from a single session. Its payoff
+- `GH-98` — the review-fix round (scout → mechanical gate → fix agent) shipped into the main
+  feature-development flow only, on costs measured by hand in a single session. Its payoff
   has never been measured against a real firing, so the figure that would justify it does not exist
   yet. What is owed is a **like-for-like measurement of the review loop on the next real feature
-  task** — the same loop, run through the scouted flow, measured the same way.
+  task** — the same loop, run as a review-fix round, measured the same way.
 
   **That measurement is the GATE on whether the mechanism is extended at all, not owed bookkeeping.**
   `GH-98` is written as a conditional: the extension to the three remaining fix-applying loops does
@@ -335,7 +335,7 @@ meanings.
   **closed** rather than left open — raising instead whether the main-flow mechanism earns its keep.
   Extending on the analogy alone multiplies a cost that nothing has yet shown buys anything.
 
-  **The baseline the comparison must be made against** (from GH-91, session
+  **The figures the comparison must be made against** (from GH-91, session
   `e330fc3e-e105-4690-8c78-37110ee25714`, the GH-52 task / PR #89): the review loop was **55% of task
   cost**; within that loop the orchestrator's own share was **58%** against the four review subagents'
   **42%**; orchestrator tool calls across the loop **66**, as **3 / 29 / 19 / 10 / 5** per round. The
@@ -367,7 +367,7 @@ meanings.
   is worth keeping at all is also still open — only where it lives is now settled. Closing this for
   tidiness would still remove the only path to ever recalibrating the threshold.
 
-  **The weights are part of the baseline, not a choice.** Input-token equivalents at
+  **The weights are part of those figures, not a choice.** Input-token equivalents at
   `fresh_input ×1 + output ×5 + cache_read ×0.1 + cache_creation ×2`, **deduped by message id**. A
   figure computed any other way is not comparable to the numbers above and the comparison is void;
   there is no partial credit for a differently-weighted measurement.

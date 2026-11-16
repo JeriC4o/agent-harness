@@ -8,15 +8,15 @@
 # Exit: always 0. A malformed payload, an absent jq, an unreadable field or an
 #       absent or unreadable transcript yields silence, which defers to the
 #       normal permission flow rather than blocking work on a guard that could
-#       not read whether it is armed. Once armed, the two inputs that decide an
+#       not read whether it is switched on. Once on, the two inputs that decide an
 #       edit fail the other way: an unreadable element record or an unreadable
 #       change is put to the author.
 #
-# ARMED BY LEARNING MODE, KEYED ON THE ELEMENT SIGNATURE (GH-169). The threat is
+# SWITCHED ON BY LEARNING MODE, KEYED ON THE ELEMENT SIGNATURE (GH-169). The threat is
 # the measured one: a self-improvement pass made a new element required. So the
-# refusal fires only in a session that ran one of the automated learning passes
-# -- /improve, /improve-global, or /ai-audit, whose escalation audit edits
-# instruction files on its own -- and while armed an Edit or Write asks only
+# refusal fires only in a session that ran one of the workflows turning the
+# Learning Log into rules -- /improve, /improve-global, or /ai-audit, whose escalation audit edits
+# instruction files on its own -- and while on, an Edit or Write asks only
 # when it changes the page's element signature. A shell write asks whenever it
 # targets a protected page, because its content is not visible here. Outside
 # learning mode it is silent, and an element arriving or leaving is caught by
@@ -30,10 +30,10 @@
 # docs/plan-invariants.md in both directions, so an unguarded route and a
 # surplus interruption are both reported rather than sitting there unnoticed.
 #
-# WHY THE SHELL ARM HAS TWO CONDITIONS. A command must carry a write CONSTRUCT
+# WHY THE SHELL ROUTE HAS TWO CONDITIONS. A command must carry a write CONSTRUCT
 # and the resolved repo-relative path of one of that construct's write operands
 # must be protected. Each answers a different escape and dropping either breaks
-# the arm in its own direction. Resolution alone fires on a READ, and in this
+# the route in its own direction. Resolution alone fires on a READ, and in this
 # repository that is the common case rather than a corner one: the ambient
 # working style reads through the shell, so an orientation read of these pages
 # arrives as `cat`, `sed -n` or `grep`. A refusal that loud is the kind that
@@ -48,7 +48,7 @@
 # reading tool. A write-construct list misses an unlisted writer and the cost is
 # that one writer escaping the refusal.
 #
-# THE SIX SILENT FORMS OF THE WRITE ARM, every one of them under-firing.
+# THE SIX SILENT FORMS OF THE WRITE ROUTE, every one of them under-firing.
 # Three never spell the protected path as a literal token, so no resolution
 # rule reaches them: a glob, a command substitution that produces the path, and
 # a target list read from a file. One follows from the write condition: a writer
@@ -137,7 +137,7 @@ reason_for() { # <lead> <pages> <what was seen>
 # transcript also holds every MENTION of those names -- the skill listing, tool
 # output, prose -- and a mention is not a run. It lasts for the rest of the
 # session. A subagent's payload carries the parent's transcript, so a pass the
-# skill delegates is armed too.
+# skill delegates switches it on too.
 #
 # THE SHAPES ARE CLAUDE CODE'S, NOT OURS. Measured on the CLI's own transcripts:
 # a skill's slash command is a user message whose string content opens with
@@ -247,7 +247,7 @@ fi
 
 [ -n "$cmd" ] || exit 0
 
-# Every form this arm reaches spells a guarded basename as a literal token, so
+# Every form this route reaches spells a guarded basename as a literal token, so
 # a command carrying none of them cannot be one of those forms. The forms that
 # hide the basename -- a glob, a substitution, a list read from a file -- are the
 # stated residual, not something this fast path gives up.
@@ -276,7 +276,7 @@ joined=$(printf '%s' "$cmd" | tr '\n' ';')
 # characters with spaces, and the translation feeding the segment loop cuts on
 # all eight. So `sed -i '' 's|a|b|g' <protected page>` put its in-place writer
 # and its resolved path in different segments, each missing the other, and the
-# arm went silent on every one of the eight and in both quote spellings.
+# route went silent on every one of the eight and in both quote spellings.
 # Neutralised here, while the quotes are still there to read, leaving the
 # quoting itself intact and the eight characters meaningful wherever the shell
 # would treat them as a separator. An inert character rather than a deletion,
@@ -301,7 +301,7 @@ joined=$(printf '%s' "$cmd" | tr '\n' ';')
 #
 # The fallback is to the UNTOUCHED text, never to an empty string: an awk that
 # is absent or that fails would otherwise empty `padded` and silence the whole
-# write arm, which is a wider silence than the one being closed.
+# write route, which is a wider silence than the one being closed.
 neutralised=$(printf '%s' "$joined" | awk -v seps="$SEGMENT_SEPARATORS" '
 {
   out = ""; q = ""; esc = 0

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# PreToolUse gate for skills that must not be STARTED BY A SUBAGENT and must be
-# CONFIRMED BY THE USER when the main thread reaches for them.
+# PreToolUse hook for skills that must not be STARTED BY A SUBAGENT and must be
+# CONFIRMED BY THE USER when the main agent reaches for them.
 #
 # WHY THIS EXISTS RATHER THAN disable-model-invocation. That flag expresses one
 # posture only: the model may never invoke the skill, with or without the user
@@ -14,7 +14,7 @@
 # reference states that PreToolUse input carries agent_id "only when the hook
 # fires inside a subagent call". Verified on this build: a probe subagent
 # recorded agent_id a601d47b93e8d7bc6 with agent_type general-purpose, while the
-# main thread records neither field. A gate resting on a field that never
+# main agent's call carries neither field. A gate resting on a field that never
 # arrives is a gate that cannot fail, so the test suite asserts BOTH branches.
 #
 # IT NEVER BREAKS THE TURN. Every path exits 0; a malformed payload, an absent
@@ -52,16 +52,16 @@ done
 [ -n "$hit" ] || exit 0
 
 # A non-string agent_id is treated as absent: an array or a number is not an
-# agent, and reading one as present would deny the MAIN thread, which is the
+# agent, and reading one as present would deny the MAIN agent, which is the
 # failure direction that costs the user their own workflow.
 agent=$(printf '%s' "$in" | jq -r 'if (.agent_id | type) == "string" then .agent_id else "" end' 2>/dev/null) || exit 0
 
 if [ -n "$agent" ]; then
   decision="deny"
-  reason=$(printf 'BLOCKED: a subagent may not start /%s. This workflow owns branch state, spec and design artefacts, and commits; it is the MAIN thread that runs it, after the user confirms. Hand back with what you found and what you would run, and let the parent decide. Do not reproduce the workflow steps by hand instead -- a spec and a design written outside the skill are exactly what its subagent contract forbids.' "$hit")
+  reason=$(printf 'BLOCKED: a subagent may not start /%s. This workflow owns branch state, spec and design artefacts, and commits; it is the MAIN agent that runs it, after the user confirms. Hand back with what you found and what you would run, and let the parent decide. Do not reproduce the workflow steps by hand instead -- a spec and a design written outside the skill are exactly what its subagent contract forbids.' "$hit")
 else
   decision="ask"
-  reason=$(printf 'CONFIRM: /%s starts the full ordered workflow -- interview, spec, design, design-review, implementation, verification, self-review -- and it writes planning artefacts and commits along the way. It runs only when the user says so, so this call is being put to them rather than taken. A skill the user typed reaches this gate too, because nothing in the payload separates a typed invocation from a proposed one.' "$hit")
+  reason=$(printf 'CONFIRM: /%s starts the full ordered workflow -- interview, spec, design, design-review, implementation, verification, self-review -- and it writes planning artefacts and commits along the way. It runs only when the user says so, so this call is being put to them rather than taken. A skill the user typed is asked about too, because nothing in the payload separates a typed invocation from a proposed one.' "$hit")
 fi
 
 jq -nc --arg d "$decision" --arg r "$reason" \

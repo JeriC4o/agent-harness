@@ -57,7 +57,7 @@ check "the result-masking hook blocks even in an unmanaged repo" "$rc" "2"
 # A suite made of shell scripts was invisible to this guard: the gate anchor
 # listed build tools by name and `bash` was not among them, so in a repository
 # whose every gate is `bash scripts/test-*.sh` the hook guarded nothing at all.
-# The second arm keys on a shell interpreter invoking a SCRIPT FILE whose
+# The second pattern keys on a shell interpreter invoking a SCRIPT FILE whose
 # basename carries a gate word -- never on a bare interpreter, which is what
 # keeps `bash -c ... | jq` legitimate.
 gate_case() { # <label> <command> <want-rc>

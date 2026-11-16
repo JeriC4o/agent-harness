@@ -82,7 +82,7 @@ reset() {
 
 # A real call, through the real tier-1 hook, so `bin` is derived in production.
 CALLN=0
-call() { # $1 command, $2 agent_id (empty = main thread), $3 "noline" = write no transcript line
+call() { # $1 command, $2 agent_id (empty = main agent), $3 "noline" = write no transcript line
   # ONE id for both sides. The ledger stores a pointer and the transcript holds
   # the detail; if the two ids differ the resolution silently finds nothing, and
   # every model-stage assertion then fails for a fixture reason rather than a
@@ -169,9 +169,9 @@ printf '\n== POSITIVE CONTROL: drop the kind filter, verdicts inflate the gate =
 MUT2="${WORK}/mut-kind.sh"
 perl -0pe 's/    if \(k != "call"\) next\n    b = ""/    b = ""/' "$HOOK" > "$MUT2"
 check "the mutation applied" "$(grep -c 'if (k != "call") next' "$MUT2")" "1"
-# 7 calls -- under the gate -- plus verdict lines carrying the same bin. EACH
-# arm gets its own ledger: a Stop writes a turn marker, which resets the count,
-# so running the real hook first would leave the mutated arm nothing to count and
+# 7 calls -- under the threshold -- plus verdict rows carrying the same bin. EACH
+# run gets its own ledger: a Stop writes a turn marker, which resets the count,
+# so running the real hook first would leave the mutated copy nothing to count and
 # the control would report "not caught" for a reason unrelated to the guard.
 seed() { reset; n_of 7 "grep -rn"
          for _ in 1 2; do

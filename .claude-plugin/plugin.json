@@ -2,7 +2,7 @@
   "name": "harness",
   "displayName": "Agent Harness",
   "version": "0.1.66",
-  "description": "Spec-driven task workflow, reactive bugfix loop, and skeptical review subagents, with per-project learning and instruction-surface auditing.",
+  "description": "Spec workflow from interview to pull request, reactive bugfix loop, and skeptical review subagents, with per-project learning and instruction-surface auditing.",
   "author": {
     "name": "JeriC4o"
   },

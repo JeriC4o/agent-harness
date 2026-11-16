@@ -8,7 +8,7 @@
 # WHY THIS SUITE EXISTS. The manifest's human-readable messages carried the
 # literal string ${CLAUDE_PLUGIN_ROOT} in EVERY delivery ever measured, because
 # they sat inside single-quoted printf formats where no shell expands anything.
-# No delivery count is frozen here on purpose: the corpus it would come from
+# No delivery count is fixed here on purpose: the corpus it would come from
 # keeps growing until the fixed version is installed, so any figure written
 # down is stale the day after. Worse, the corpus CONTAMINATES ITSELF when
 # measured: grepping the transcripts writes the grep into the transcripts, and
@@ -37,7 +37,7 @@
 # stdout alone.
 #
 # A HOOK THAT ERRORS LOOKS EXACTLY LIKE A HOOK THAT FIRED, so no assertion here
-# is "output is non-empty". An arm probe in this task reported all twelve paths
+# is "output is non-empty". A path-pattern probe in this task reported all twelve paths
 # firing, negative control included, because the extracted command file did not
 # exist and every run printed an error to stderr.
 
@@ -253,7 +253,7 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
     plan_inv_shell) learn_transcript
       jq -nc --arg t "$LEARN_T" '{tool_name:"Bash", tool_input:{command:"printf x >> agents/design.md"}, transcript_path:$t}' ;;
     skill_task_main)
-      # No agent_id: the MAIN-thread branch, which must ASK rather than deny.
+      # No agent_id: the MAIN-agent branch, which must ASK rather than deny.
       # The plugin spelling is used deliberately -- the gate strips the prefix,
       # and a fixture written as bare `task` would not exercise that.
       jq -nc '{tool_name:"Skill", tool_input:{skill:"harness:task"}}' ;;
@@ -628,22 +628,22 @@ TOTAL_BYTES=$(( $(wc -c < "$OUT") + $(wc -c < "$ERR") ))
 check "part 2: the FULL command emits 0 bytes on the same anchor (the shadowing is real)" "$TOTAL_BYTES" "0"
 
 # ---------------------------------------------------------------------------
-printf '\n== AC8 + AC13: the real hook on a class the pre-fix arms matched ==\n'
+printf '\n== AC8 + AC13: the real hook on a class the earlier path patterns matched ==\n'
 # ---------------------------------------------------------------------------
 PREFIX_PATTERN=$(bash "${ROOT}/scripts/check-propagation-patterns.sh" --print-prefix-pattern)
-[ -n "$PREFIX_PATTERN" ] && ok "the pre-fix case pattern is a committed constant, read from one place" \
-                         || bad "could not read the pre-fix pattern"
+[ -n "$PREFIX_PATTERN" ] && ok "the earlier case pattern is a committed constant, read from one place" \
+                         || bad "could not read the earlier pattern"
 matched_before(){ CLAUDE_PLUGIN_ROOT="${WORK}/elsewhere/plugin" eval "case \"\$1\" in ${PREFIX_PATTERN}) return 0 ;; esac; return 1"; }
 matched_before "${PROJ_PHYS}/.claude/skills/deploy/SKILL.md" \
-  && ok "the pre-fix arms matched a project-local .claude/skills/*/SKILL.md" \
-  || bad "the pre-fix arms no longer match that class, so AC13 has lost its witness"
+  && ok "the earlier path patterns matched a project-local .claude/skills/*/SKILL.md" \
+  || bad "the earlier path patterns no longer match that class, so AC13 has lost its witness"
 matched_before "${PROJ_PHYS}/agents/design.md" \
-  && bad "the pre-fix arms matched agents/design.md, which they could not in a consuming project" \
+  && bad "the earlier path patterns matched agents/design.md, which they could not in a consuming project" \
   || ok "and they did NOT match agents/design.md -- the dead half of the old set, reproduced"
 
 fire_prop "$PROP" "$PROJ_PHYS" "${PROJ_PHYS}/.claude/skills/deploy/SKILL.md" "$PROJ_PHYS"
 fired && ok "the REAL hook fires on .claude/skills/deploy/SKILL.md" \
-      || bad "the real hook is silent on the class the tenth arm restored"
+      || bad "the real hook is silent on the class the tenth path pattern restored"
 
 printf '\n== AC11: the five bound controls stay silent through the real hook ==\n'
 for c in my-agents/notes.md sub-agents/x.md src/docs/readme.md node_modules/x/docs/a.md vendor/scripts/build.sh; do
@@ -1232,15 +1232,15 @@ printf '\n== the deployed-config search guard: the class is the project profile,
 # THE INDEX IS THE SELECTOR. Every row of the trigger table, and every deep leg
 # in this file, reaches its hook by ordinal within the matcher group -- so a
 # hook removed or reordered in the Bash matcher re-points each row after it at
-# the wrong command while the suite stays green. These four pin the Bash arms
-# this file selects by ordinal to a token only that arm carries.
-check "Bash arm 0 is still the branch guard the BP_CMD legs degrade" \
+# the wrong command while the suite stays green. These four pin the Bash entries
+# this file selects by ordinal to a token only that entry carries.
+check "Bash entry 0 is still the branch guard the BP_CMD legs degrade" \
   "$(cmd_of PreToolUse Bash 0 | grep -c 'BLOCKED: git commit/push on')" "1"
-check "Bash arm 5 is still the deployed-config search guard" \
+check "Bash entry 5 is still the deployed-config search guard" \
   "$(cmd_of PreToolUse Bash 5 | grep -c 'deployed-config-guard\.sh')" "1"
-check "Bash arm 6 is still the result-masking guard the GATE_CMD legs degrade" \
+check "Bash entry 6 is still the result-masking guard the GATE_CMD legs degrade" \
   "$(cmd_of PreToolUse Bash 6 | grep -c 'BLOCKED: a gate')" "1"
-check "Bash arm 7 is still the plan-invariants guard" \
+check "Bash entry 7 is still the plan-invariants guard" \
   "$(cmd_of PreToolUse Bash 7 | grep -c 'plan-invariants-guard\.sh')" "1"
 
 DC_IDX=5

@@ -126,7 +126,7 @@ t2row=$(jq -nc --arg b "$bin" --argjson r "$repeats" --argjson n "$turn_calls" \
      min_bin_repeats: $mb, judged: ($m != "off")}' 2>/dev/null) || t2row=""
 [ -z "$t2row" ] || harness_ledger_append "$sid" "$ledger" "$t2row" || true
 
-printf '[loop-index] coarse repeat: %s ran %s times in this turn of %s calls, under different arguments each time. Same shape of command, no exact repeat -- which is what retrying one intent looks like. If that is what happened, say what the next attempt would do differently; if it was distinct work, the threshold is in the verdict line and is meant to be tuned.\n' \
+printf '[loop-index] coarse repeat: %s ran %s times in this turn of %s calls, under different arguments each time. Same shape of command, no exact repeat -- which is what retrying one intent looks like. If that is what happened, say what the next attempt would do differently; if it was distinct work, the threshold is in the row this hook wrote to the loop ledger and is meant to be tuned.\n' \
   "$bin" "$repeats" "$turn_calls" >&2
 
 [ "$MODEL" != "off" ] || mark_turn

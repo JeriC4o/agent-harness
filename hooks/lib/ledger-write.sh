@@ -74,7 +74,7 @@ harness_ledger_report_once() {
   # the session or to say nothing; nothing is the one that cannot make a bad
   # situation worse.
   mkdir "$marker" 2>/dev/null || return 0
-  printf '[loop-index] LOOP DETECTION IS DISABLED for this session: the ledger %s could not be written. Tier 1 and tier 2 both read that file, so no repeated-call, fan-out or retry finding can fire until it is writable again -- a quiet run from here is not evidence that nothing looped. Fix the permissions on that directory, or point HARNESS_LOOP_DIR at a writable one. Reported once per session.\n' \
+  printf '[loop-index] LOOP DETECTION IS DISABLED for this session: the loop ledger %s could not be written. Tier 1 and tier 2 both read that file, so no repeated-call, fan-out or retry finding can fire until it is writable again -- a quiet run from here is not evidence that nothing looped. Fix the permissions on that directory, or point HARNESS_LOOP_DIR at a writable one. Reported once per session.\n' \
     "$2" >&2
   return 0
 }

@@ -5,7 +5,7 @@
     {
       "name": "harness",
       "source": "./",
-      "description": "Spec-driven task workflow, reactive bugfix loop, and skeptical review subagents, with per-project learning and instruction-surface auditing."
+      "description": "Spec workflow from interview to pull request, reactive bugfix loop, and skeptical review subagents, with per-project learning and instruction-surface auditing."
     }
   ]
 }

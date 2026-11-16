@@ -55,7 +55,7 @@ is the same commands.
    exists: the Propagation Rule's Spec-Amendment sync group pointed its final
    member at `ai-docs/workflow.md`, so that member was never once updated by a sweep, and neither
    hand-run check above could see it.
-3. (folded into 2)
+3. (merged into 2)
 4. `bash -n` on every `*.sh` — **as `git ls-files -z '*.sh' | xargs -0 -n1 bash -n`, and not otherwise.**
    The three natural spellings all report success on a file that does not parse, verified against a
    deliberately broken fixture: `-exec bash -n {} +` batches, so only the first file is parsed and the
@@ -100,20 +100,20 @@ is the same commands.
    with no `plugin update` beside it, or an Update section carrying no upgrade verb at all. Needs no
    `claude` CLI, so it runs wherever the checks above it run.
 5a. `bash scripts/check-propagation-patterns.sh` — DERIVES the propagation reminder's path classes from the
-   Propagation Rule table in `docs/propagation.md` and asserts the `case` arms in `hooks/hooks.json`
-   agree: every derived class has an arm that fires on an absolute representative, every control stays
-   silent, and no path the pre-fix arms matched is silent under the current set. Catches "a sync group
+   Propagation Rule table in `docs/propagation.md` and asserts the `case` path patterns in `hooks/hooks.json`
+   agree: every derived class has a pattern that fires on an absolute representative, every control stays
+   silent, and no path the earlier patterns matched is silent under the current set. Catches "a sync group
    was added to the table and the reminder never learned about it" — drift between a list and the table
    beside it, which no link check or syntax check can see. **Numbered `5a`, not `6`:** this list runs
    1–8 in one continuous sequence, so ANY structural check numbered in that sequence collides with the
-   delivery gate already numbered 6; item 3's `(folded into 2)` is the precedent for a non-sequential
+   delivery gate already numbered 6; item 3's `(merged into 2)` is the precedent for a non-sequential
    entry here, and renumbering would break `AGENTS.md`'s own "invisible to gate 6" reference below. The
    same reasoning numbers the next one `5b`.
 5b. `bash scripts/check-plan-invariants.sh` — three legs over the base principles of a spec and a design:
    each pinned sentence present and unchanged, with an ABSENCE reported distinctly from a WORDING
    difference; the required-element set derived from three loci and cross-checked against the
    enumeration on `docs/plan-invariants.md`, in both directions, so neither a widened template nor a
-   widened enumeration moves on its own; and the live coverage of the edit-time refusal against that
+   widened enumeration moves on its own; and the live coverage of the plan-invariants guard against that
    page's protected-page table, also in both directions. Exits
    `0 clean / 1 findings / 2 cannot run` — **a cannot-run is not a pass**, and an unreadable required
    input, a template that moved, an empty extraction, an unreadable corpus file and an untracked payload
@@ -137,8 +137,8 @@ is the same commands.
    **Numbered `5c` for the reason item `5a` gives.**
 5d. `bash scripts/check-instruction-size.sh` — the size AXIOM in `docs/agents-method.md` § Build & Test,
    for the class it caps: every file that loads whole at agent start, here and in `templates/project/`.
-   Red at the 35,000-character early warning rather than at the 40,000 cap, so a task cannot close
-   without leaving the next one room to add a rule. Counts characters, not bytes. A page reached only by
+   Red at the 35,000-character early warning rather than at the 40,000-character instruction size
+   cap, so a task cannot close without leaving the next one room to add a rule. Counts characters, not bytes. A page reached only by
    link is outside the class by design. Exits `0 clean / 1 findings / 2 cannot run`, needs `python3`.
    **Numbered `5d` for the reason item `5a` gives.**
 5e. `bash scripts/check-vocabulary.sh` — no other name or retired name the glossary lists appears on a
@@ -169,7 +169,7 @@ walks an upgrade against a *pre-existing* install:
    **exits 2 naming the fetch, which is not a pass.** A commit id or a local branch as the base is read as
    given, with no remote contact.
 8. `bash scripts/test-upgrade-smoke.sh` — extracts `README.md`'s own documented update commands and runs
-   them against a deliberately lowered install, then requires the installed payload to have moved.
+   them against a deliberately lowered install, then requires the installed copy to have moved.
    Catches "the documented procedure reports success and upgrades nothing" — invisible to gate 6, which
    installs into an EMPTY sandbox where the short-circuit that defines the failure cannot fire. Requires
    the `claude` CLI; **exits 2 when it cannot run, which is not a pass.**
@@ -299,7 +299,7 @@ the profile page, and the two have already fallen out of step once.
   `scripts/check-candidate.sh` in the same act.** That gate derives a promotion candidate's deny
   vocabulary from the project's own `ai-docs/context.md`, which starts life as a copy of that template,
   and subtracts a hand-written list of generic section names. Nothing derives either list from the other.
-  Today most arms are inert, because a later stage of the same pipeline admits only single-word tokens —
+  Today most entries of that list are inert, because a later stage of the same pipeline admits only single-word tokens —
   the live ones are `%`, `Overview`, `Registry` and `Layout`. The hazard is forward: rename a heading to
   a **single word** and it silently becomes a deny term, refusing any candidate that contains that common
   word, with no visible cause. This is recorded here rather than beside the Propagation Rule's sync

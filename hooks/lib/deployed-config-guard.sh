@@ -9,7 +9,7 @@
 # and an allow-listed search tool prompts for nothing. This script is the
 # machine half of that honour-system rule.
 #
-# WHY THE FILE CLASS IS NOT WRITTEN DOWN HERE. It used to be: two arms keyed to
+# WHY THE FILE CLASS IS NOT WRITTEN DOWN HERE. It used to be: two branches keyed to
 # one stack's configuration filenames and one build tool's source layout, in a
 # file that ships to every project. Three costs, all measured. A project whose
 # environment-specific values live anywhere else got no gate at all. A project
@@ -93,7 +93,7 @@ HIT=''
 printf '%s\n' "$FILTERS" | sed -n 's/^inc //p' | grep -qE "$PAT" \
   && HIT='a file filter that can match a declared deployed-config glob'
 
-# The operand arm. A token that matches the class is read as a PATH only when a
+# The operand test. A token that matches the class is read as a PATH only when a
 # file of that name exists, which is what separates an operand from a search
 # pattern that quotes the name -- the distinction the old spelling could not
 # make. Flags are skipped so a filter value is not counted twice.
@@ -116,6 +116,6 @@ r="${CLAUDE_PLUGIN_ROOT:-}"
 a=$("$r"/hooks/lib/plugin-ref.sh docs/agents-method.md 2>/dev/null)
 [ -n "$a" ] || a="${r:+$r/}docs/agents-method.md — correct operation of the plugin requires read access to the plugin directory${r:+ $r}"
 
-printf 'BLOCKED: this content search can surface deployed-config files (%s) — ASK-gated in %s section Permissions. The gate binds on ANY tool that puts the file bytes in context, not just Read.\n\nThe gated class is THIS PROJECT'"'"'S OWN declaration, read from the `Deployed-config globs` line of ai-docs/context.md: %s\n\nDo one of:\n  1. Narrow the filter to the project'"'"'s own SOURCE extensions, as its profile records them, so no declared glob can match.\n  2. Exclude it explicitly. MIND THE SPELLING PER TOOL: a glob-valued exclude flag takes a glob (--exclude=config*.env); ripgrep takes a NEGATED glob (-g "!config*.env"); a REGEX-valued exclude flag needs config.*[.]env$ instead. The glob spelling passed to a regex flag silently misses the environment variants (config-ENVIRONMENT.env), which are the ones carrying deployed overrides.\n  3. For a setting DEFAULT, read the declared default in source — ungated, authoritative, and it does not drift with the deployed file.\n  4. If the DEPLOYED value is genuinely needed, ASK THE USER FIRST, then Read the file directly. The method file gates this on the HONOUR SYSTEM — settings.json has no ask/deny entry for it, so no prompt will stop you. The ask is yours to make.\n\nA clean run of this hook is NOT clearance: it does not catch a bare unfiltered search whose pattern matches a config key, nor a filter so wide that no declared glob appears in it.\n' \
+printf 'BLOCKED: this content search can surface deployed-config files (%s) — reading them asks first, per %s section Permissions. That holds for ANY tool that puts the file bytes in context, not just Read.\n\nThat class of files is THIS PROJECT'"'"'S OWN declaration, read from the `Deployed-config globs` line of ai-docs/context.md: %s\n\nDo one of:\n  1. Narrow the filter to the project'"'"'s own SOURCE extensions, as its profile records them, so no declared glob can match.\n  2. Exclude it explicitly. MIND THE SPELLING PER TOOL: a glob-valued exclude flag takes a glob (--exclude=config*.env); ripgrep takes a NEGATED glob (-g "!config*.env"); a REGEX-valued exclude flag needs config.*[.]env$ instead. The glob spelling passed to a regex flag silently misses the environment variants (config-ENVIRONMENT.env), which are the ones carrying deployed overrides.\n  3. For a setting DEFAULT, read the declared default in source — ungated, authoritative, and it does not drift with the deployed file.\n  4. If the DEPLOYED value is genuinely needed, ASK THE USER FIRST, then Read the file directly. The method file gates this on the HONOUR SYSTEM — settings.json has no ask/deny entry for it, so no prompt will stop you. The ask is yours to make.\n\nA clean run of this hook is NOT clearance: it does not catch a bare unfiltered search whose pattern matches a config key, nor a filter so wide that no declared glob appears in it.\n' \
   "$HIT" "$a" "$(printf '%s' "$GLOBS" | tr '\n' ' ')" >&2
 exit 2
