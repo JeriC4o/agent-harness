@@ -159,7 +159,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `agents/<name>.md` | The 10 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
 | `hooks/hooks.json` | **24** hook entries in 13 matcher groups, running **20** distinct guards — four are registered twice: three of them on two EVENTS each, and the plan-invariants refusal on two MATCHERS of one event, which is why "how many hooks" has three defensible answers and this row gives all three. Re-derive from the manifest with `jq` over `.hooks[][].hooks[]` (length, and the length of its unique `.command` set) rather than trusting this line; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
-| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `check-plan-invariants.sh`, `check-plan-convergence.sh`, `check-method-purity.sh`, `check-instruction-size.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `ref-current.sh` as the remote-currency helper `check-release.sh` calls, `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
+| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `check-plan-invariants.sh`, `check-plan-convergence.sh`, `check-method-purity.sh`, `check-instruction-size.sh`, `check-vocabulary.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `ref-current.sh` as the remote-currency helper `check-release.sh` calls, `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
@@ -208,10 +208,10 @@ glob per backticked token, all on that one line; `none` when the project has no 
 
 ## Build & test commands
 
-No build. The checks in `AGENTS.md § Build & Test` are the gate: nine structural ones over the repo's
+No build. The checks in `AGENTS.md § Build & Test` are the gate: ten structural ones over the repo's
 contents, plus three delivery gates (`test-install-smoke.sh`, `check-release.sh`,
 `test-upgrade-smoke.sh`) that answer the question the structural ones cannot — does this reach a
-consumer. The structural nine run in one call as `bash scripts/run-checks.sh`, which reports a verdict per
+consumer. The structural ten run in one call as `bash scripts/run-checks.sh`, which reports a verdict per
 member, derives its suite list from the tree rather than carrying one, keeps every member's status instead
 of the last one's, and cross-checks its own member table against the gate list in `AGENTS.md` — in both
 directions, for suites and for every structural check that section spells as a script invocation — so a

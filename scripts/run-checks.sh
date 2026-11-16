@@ -141,7 +141,8 @@ readme-update|sh:scripts/check-readme-update.sh
 propagation-arms|sh:scripts/check-propagation-arms.sh
 plan-invariants|sh:scripts/check-plan-invariants.sh
 method-purity|sh:scripts/check-method-purity.sh
-instruction-size|sh:scripts/check-instruction-size.sh'
+instruction-size|sh:scripts/check-instruction-size.sh
+vocabulary|sh:scripts/check-vocabulary.sh'
 
 member_names()   { printf '%s\n' "$MEMBERS" | sed 's/|.*//'; }
 member_scripts() { printf '%s\n' "$MEMBERS" | sed -n 's/^[^|]*|sh:\(..*\)$/\1/p'; }

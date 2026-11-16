@@ -28,7 +28,8 @@ Text one agent writes for another, such as a brief or a report, is not.
 
 A listed name appears in the harness's files only on this page and on a script line that must keep it:
 text that files written before a rename carry and the script still reads, or a test's planted copy of such
-text. That line carries the internals mark, a comment holding `vocabulary-internal:` and why the word stays.
+text. That line carries the internals mark, a comment holding `vocabulary-internal:` and why the word stays;
+alone on its line, the mark covers the lines below it up to the next blank line.
 
 ## Workflow and agents
 
@@ -200,7 +201,7 @@ text. That line carries the internals mark, a comment holding `vocabulary-intern
 |---|---|---|---|---|
 | glossary | — | This page: one entry per concept of the plugin, opening with the rule for text written to a person. | It is put into the agents' context at the start, and the checks read its names from it. | `docs/glossary.md` § Text for a person |
 | listed name | — | A name this page lists as an other name or a retired name. | Neither the plugin's files nor text for a person may use it as a term. | `docs/glossary.md` § Text for a person |
-| vocabulary check | — | A check failing when a name this page lists appears in the plugin's own files. | It names the file, the line and the name, and reports which files it read. | planned |
+| vocabulary check | — | A check failing when a name this page lists appears in the plugin's own files. | It names the file, the line and the name, and reports which files it read. | `AGENTS.md` § Build & Test |
 | plain-words check | — | The guards reading what the agent writes to a person for names this page lists and for invented names. | They refuse a question or a post with one, have chat with one restated, and record every reading. | planned |
 | internals mark | — | A comment on a script line whose word must stay as it is. | The check for names this page lists skips that line. | `docs/glossary.md` § Words a script must keep |
 | model-call marker | — | A setting a guard of the plugin puts in the environment of a model it calls. | The plugin's own guards do nothing inside that call, so it starts no further calls. | planned |

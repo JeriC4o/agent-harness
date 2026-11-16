@@ -56,7 +56,7 @@ make_tree() {
   printf '{"name":"harness","version":"0.0.1"}\n' > "$d/.claude-plugin/plugin.json"
   printf '{"name":"agent-harness"}\n' > "$d/.claude-plugin/marketplace.json"
   local s
-  for s in check-references check-readme-update check-propagation-arms check-plan-invariants check-method-purity check-instruction-size check-release; do
+  for s in check-references check-readme-update check-propagation-arms check-plan-invariants check-method-purity check-instruction-size check-vocabulary check-release; do
     printf '#!/usr/bin/env bash\nexit 0\n' > "$d/scripts/$s.sh"
   done
   printf '#!/usr/bin/env bash\nexit 0\n' > "$d/scripts/test-alpha.sh"
@@ -76,6 +76,7 @@ make_tree() {
 5b. `bash scripts/check-plan-invariants.sh` — the plan-invariants gate.
 5c. `bash scripts/check-method-purity.sh` — the method-purity gate.
 5d. `bash scripts/check-instruction-size.sh` — the instruction-size gate.
+5e. `bash scripts/check-vocabulary.sh` — the vocabulary gate.
 
 **Delivery gates** — below this heading, so the span must not reach them:
 `bash scripts/check-release.sh`.
@@ -98,13 +99,14 @@ has "  the propagation member reported" "$OUT" "ok   propagation-arms"
 has "  the plan-invariants member reported" "$OUT" "ok   plan-invariants"
 has "  the method-purity member reported" "$OUT" "ok   method-purity"
 has "  the instruction-size member reported" "$OUT" "ok   instruction-size"
+has "  the vocabulary member reported" "$OUT" "ok   vocabulary"
 has "  the inventory member reported"   "$OUT" "ok   gate-inventory"
 has "  the first derived suite ran"     "$OUT" "ok   hooks/lib/test-beta.sh"
 has "  the second derived suite ran"    "$OUT" "ok   scripts/test-alpha.sh"
-# The count is the anti-narrowing assertion AGENTS.md check 4 demands: seven
+# The count is the anti-narrowing assertion AGENTS.md check 4 demands: eight
 # structural stubs plus two stub suites are tracked, and a runner that processed
 # fewer has silently reduced its own input set while exiting 0.
-has "  and shell-syntax carries its file COUNT" "$OUT" "9 files"
+has "  and shell-syntax carries its file COUNT" "$OUT" "10 files"
 
 printf '\n== a failing suite: red, named, and the rest still run ==\n'
 make_tree "$FAKE"
@@ -458,8 +460,9 @@ readme-update|sh:scripts/check-readme-update.sh
 propagation-arms|sh:scripts/check-propagation-arms.sh
 plan-invariants|sh:scripts/check-plan-invariants.sh
 method-purity|sh:scripts/check-method-purity.sh
-instruction-size|sh:scripts/check-instruction-size.sh'
-check "the member table is exactly the pinned ten, in order" "$table" "$expected"
+instruction-size|sh:scripts/check-instruction-size.sh
+vocabulary|sh:scripts/check-vocabulary.sh'
+check "the member table is exactly the pinned eleven, in order" "$table" "$expected"
 
 printf '\n== a module path is accepted, ignored, and SAID to be ignored ==\n'
 # AGENTS.md resolves %TEST_CMD% to this runner, and skills invoke that as

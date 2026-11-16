@@ -22,7 +22,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4. `run-checks.sh` runs both as its `shell-syntax` and `manifests` members |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
-**Structural checks that stand in for a test suite** — run all nine before any commit that touches
+**Structural checks that stand in for a test suite** — run all ten before any commit that touches
 instruction files.
 
 **`bash scripts/run-checks.sh` runs every one of them in a single call**, reporting a verdict per member
@@ -86,7 +86,7 @@ is the same commands.
    `scripts/test-check-plan-convergence.sh`, `scripts/test-check-plan-links.sh`,
    `scripts/test-hook-behaviour.sh`,
    `scripts/test-run-checks.sh`, `scripts/test-check-method-purity.sh`,
-   `scripts/test-check-instruction-size.sh`.
+   `scripts/test-check-instruction-size.sh`, `scripts/test-check-vocabulary.sh`.
    **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed
    file COUNT beside the syntax verdict and reddens a separate `untracked-shell` member on any `*.sh` the
    index cannot see — but only when it runs, so a hand-run still owes both reads.
@@ -140,9 +140,20 @@ is the same commands.
    without leaving the next one room to add a rule. Counts characters, not bytes. A page reached only by
    link is outside the class by design. Exits `0 clean / 1 findings / 2 cannot run`, needs `python3`.
    **Numbered `5d` for the reason item `5a` gives.**
+5e. `bash scripts/check-vocabulary.sh` — no other name or retired name the glossary lists appears on a
+   covered surface: the shipped `docs/`, `skills/`, `agents/`, `rules/`, `hooks/` and `scripts/`, this
+   repository's `AGENTS.md`, `ai-docs/context.md` and `ai-docs/learnings/README.md`, the scaffolding,
+   `README.md` and the plugin manifests, tracked or untracked-not-ignored, with no exemption for quoting.
+   A script keeps the names it gives its own variables and functions, the bracketed ids its comments
+   carry, and lines under the internals mark. It also refuses a glossary whose names collide or whose
+   "defined at" names a missing page or heading. The names come through `hooks/lib/glossary-names.sh`,
+   the reader the hooks share, so there is one list. Exits `0 clean / 1 findings / 2 cannot run`; a
+   malformed glossary entry, an unreadable covered file and a script its tokenizer refuses are each a
+   could-not-run. Its verdict line carries the counts, then a per-surface roster. Needs `python3`.
+   **Numbered `5e` for the reason item `5a` gives.**
 
 **Delivery gates** — the checks above validate this repository's CONTENTS; these three validate that the
-contents reach a consumer. The nine structural checks cannot see delivery by construction: the first two
+contents reach a consumer. The ten structural checks cannot see delivery by construction: the first two
 gates exist because a bug got past every check there was at the time, the third because nothing above it
 walks an upgrade against a *pre-existing* install:
 
@@ -201,6 +212,8 @@ at that heading.
 | `docs/plan-invariants.md`, `ai-docs/plans/done/` | `scripts/test-plan-archive.sh` |
 | `hooks/lib/gate-pattern.sh` | `hooks/lib/test-gate-record.sh`, `scripts/test-hook-behaviour.sh`, `hooks/lib/test-harness-managed.sh` |
 | any tracked text file — the foreign-identifier leg reads the whole tree | `method-purity` |
+| any file the vocabulary check reads — the glossary, every file under `docs/`, `skills/`, `agents/`, `rules/`, `hooks/`, `scripts/` or `templates/project/`, and `AGENTS.md`, `ai-docs/context.md`, `ai-docs/learnings/README.md`, `README.md`, `.claude-plugin/*.json` | `vocabulary` |
+| `hooks/lib/glossary-names.sh` | `scripts/test-check-vocabulary.sh` |
 | `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `ai-docs/context.md`, `docs/agents-method.md`, `agents/*.md`, `skills/*/SKILL.md`, `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, their `templates/project/` copies | `instruction-size` |
 | `templates/project/**` | `skills/harness-init/scripts/test-scaffold.sh`, `scripts/test-audit-project.sh` |
 
