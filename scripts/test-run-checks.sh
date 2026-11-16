@@ -552,11 +552,13 @@ check "the live tree and AGENTS.md agree" "$real_rc" "0"
 has "  the four-minute suite is a member" "$real" "scripts/test-loop-corpus.sh"
 has "  this file is a member"             "$real" "scripts/test-run-checks.sh"
 has "  and so is the runner's own check list head" "$real" "manifests"
-# Delivery gates run at a different moment (before opening a PR, not before
-# every commit) and exit 2 when the claude CLI is absent, which this runner
-# would have to translate. They are exempt BY NAME, so assert that.
+# Delivery gates and the model measurement run at a different moment (before
+# opening a PR, not before every commit) and exit 2 when the claude CLI is
+# absent, which this runner would have to translate. They are exempt BY NAME,
+# so assert that.
 hasnt "  the install smoke test is not a member" "$real" "test-install-smoke.sh"
 hasnt "  the upgrade smoke test is not a member" "$real" "test-upgrade-smoke.sh"
+hasnt "  the model measurement is not a member" "$real" "test-plain-words-model.sh"
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

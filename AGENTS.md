@@ -174,6 +174,14 @@ walks an upgrade against a *pre-existing* install:
    installs into an EMPTY sandbox where the short-circuit that defines the failure cannot fire. Requires
    the `claude` CLI; **exits 2 when it cannot run, which is not a pass.**
 
+**A measurement beside them, not a gate:** `bash scripts/test-plain-words-model.sh` sends one planted text
+per kind of finding the plain-words check's model reports, and one unchanged text several times
+(`--readings N`, default 5), through the check itself to the real model, and prints which kinds were caught
+and how often the unchanged text got the same answer. Exempt by name from the check list, as the delivery
+gates are, because every reading is a paid model call. Run it when the check or the glossary changes and
+put its output in the pull request's description. Requires the `claude` CLI with a login; exits 1 when a
+kind is not caught and **2 when the model cannot read, which is not a pass.**
+
 `shellcheck` is **recommended but not required**, and deliberately not named as the gate: it is not
 installed on every machine that edits this repo, and a gate that cannot run is worse than one that is
 honestly absent. Run it when you have it.

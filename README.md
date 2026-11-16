@@ -58,6 +58,14 @@ other value, reads as `squash`. It matters in one place: when a task starts on a
 and the hosting site cannot say whether that work merged, `merge-commit` lets the default branch's history
 answer, and `squash` has you asked.
 
+**Declare what posts.** The plain-words check reads what the agent writes to you — a question before you
+see it, a pull request's description, an issue text or a comment before it is posted, and the chat when a
+turn ends — for harness names you would have to look up, and has the agent say the same thing in plain
+words. Which commands post text is the `Posting commands` row of `AGENTS.md` § VCS: the setup writes the
+six `gh` commands that create, edit or comment on a pull request or an issue; list your own if you post
+elsewhere, or write `none`. Without the row — a project set up before it existed has none — posts go
+unchecked, and you are told so once a session.
+
 **Commits need no prompt; pushes do.** A workflow commits on the task branch without asking, and asks
 before pushing or opening a pull request. The scaffolded `.claude/settings.json` lets committing and
 staging named files run without a permission prompt; staging or committing everything at once still
@@ -257,7 +265,7 @@ current project — **per-project learning is a property of the addressing, not 
 skills/<name>/SKILL.md     the 9 workflows below
 agents/<name>.md           the 8 subagents
 rules/ast-index.md         code-search hierarchy, inherited verbatim by subagents
-hooks/hooks.json           the 12 hooks (hooks/lib/ holds the shared guard)
+hooks/hooks.json           32 hook entries running 28 distinct commands (hooks/lib/ holds the shared guard)
 scripts/                   utility scripts shared by more than one skill
 docs/
   agents-method.md         the method rule surface, read at session start
@@ -397,13 +405,14 @@ reports a verdict per member; it derives the suite list from the tree and cross-
 list `AGENTS.md` names — in both directions, for the test suites and for every structural check that
 section spells as a script invocation — so a script-backed gate can be neither documented and never
 wired in, nor wired in and never documented. The
-gate is nine structural checks — JSON manifests parse, every relative link and
+gate is ten structural checks — JSON manifests parse, every relative link and
 anchor resolves, every `${CLAUDE_PLUGIN_ROOT}` path exists, `bash -n` on every script, this README
 documents an update procedure that actually updates, the propagation reminder's path patterns still agree
 with the Propagation Rule table they are derived from, and the base principles of a spec and a design are
 intact with nothing in the instruction corpus contradicting one or adding a required element, and the
-shipped method files name no project's stack while no file carries another codebase's identifiers, and
-every file that loads whole at agent start keeps its size headroom — plus
+shipped method files name no project's stack while no file carries another codebase's identifiers,
+every file that loads whole at agent start keeps its size headroom, and no shipped file nor this README
+uses a name the glossary lists as replaced or retired — plus
 three
 delivery gates:
 `scripts/test-install-smoke.sh` installs the working tree into a throwaway config and requires the plugin
@@ -433,7 +442,8 @@ unnarrowed, after review approves.
   **two distinct projects** have hit the same thing. The sweep reads candidates and nothing else, so the
   boundary is a file selector rather than an instruction to be careful.
 - **Hooks catch what prose cannot.** Branch protection, gate-masking (`| tail` on a test run), learnings
-  auto-staging, propagation reminders — see [`hooks/hooks.json`](hooks/hooks.json). Hooks that presuppose
+  auto-staging, propagation reminders, the plain-words check on what the agent writes to you — see
+  [`hooks/hooks.json`](hooks/hooks.json). Hooks that presuppose
   a harness profile are guarded and no-op elsewhere; hooks that encode pure method (do not mask a gate,
   do not scan `$HOME`) hold in every repo by design.
 

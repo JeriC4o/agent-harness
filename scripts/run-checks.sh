@@ -171,10 +171,10 @@ $MEMBERS
 MEMBERS_EOF
 }
 
-# Delivery gates run at a different moment and have a different rc contract, so
-# they are exempt BY NAME: adding a third one is then a decision, not an
-# omission that nothing reports.
-EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
+# Delivery gates, and the plain-words check's measurement against the real model,
+# run at a different moment and have a different rc contract, so they are exempt
+# BY NAME: adding another is then a decision, not an omission that nothing reports.
+EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh scripts/test-plain-words-model.sh'
 # A delivery gate; the promotion gate a skill calls on its own; the fix-plan
 # gate a skill calls per review round; and the three plan-document gates a skill
 # or a plan's author calls with path arguments. The last four cannot instead be
