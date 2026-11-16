@@ -1,6 +1,6 @@
 # THIS FILE HOLDS NO SECTION NAME OF A SPEC OR A DESIGN AS A LITERAL: a script
 # carrying one beside a presence word reads as enforcing a required element.
-# The sections a folded spec keeps are borrowed through the holding sibling.
+# The sections a cut-down spec keeps are borrowed through the holding sibling.
 import importlib.util
 import os
 import re
@@ -67,7 +67,7 @@ def load_holding():
         spec.loader.exec_module(module)
         return module
     except Exception as exc:
-        blocked('the payload sibling %s could not be loaded (%s: %s), so whether the spec is folded is unknown'
+        blocked('the payload sibling %s could not be loaded (%s: %s), so whether the spec is a cut-down one is unknown'
                 % (path, type(exc).__name__, exc))
         return None
 
@@ -177,7 +177,7 @@ if not cannot:
              'HEADING_LINE': HEADING_LINE, 'FENCE': FENCE, 'QUOTE_MARK': QUOTE_MARK},
             bodies['spec'])
         if FOLDED is None and not cannot:
-            blocked('the sections a folded spec keeps could not be borrowed, so a folded spec could not be told from any other')
+            blocked('the sections a cut-down spec keeps could not be borrowed, so a cut-down spec could not be told from any other')
 
 ROWS = []
 if not cannot:
@@ -203,7 +203,7 @@ if not cannot:
     for link_id, ends in ROWS:
         if FOLDED and any(doc == 'spec' for doc, _h, _q in ends):
             COUNTS['skipped'] += 1
-            REPORT.append('skipped %s -- it has a spec end and the spec is folded, so it was not examined'
+            REPORT.append('skipped %s -- it has a spec end and the spec is a cut-down one, so it was not examined'
                           % link_id)
             continue
         where = [[h for h, text in split[doc] for _ in range(text.count(quote))]
@@ -241,7 +241,7 @@ if FINDINGS:
     print('check-plan-links: %d findings | %s' % (FINDINGS, TALLY))
     sys.exit(1)
 if FOLDED:
-    print('check-plan-links: skipped -- the spec is folded, which is not a pass | %s' % TALLY)
+    print('check-plan-links: skipped -- the spec is a cut-down one, which is not a pass | %s' % TALLY)
     sys.exit(2)
 print('check-plan-links: clean | %s' % TALLY)
 sys.exit(0)

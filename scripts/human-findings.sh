@@ -72,6 +72,7 @@ is_fold() {
   local s f
   while IFS=$'\t' read -r s f; do
     [ "$s" = removed ] || continue
+    # vocabulary-internal: the removed last step of a task deleted its log under this name
     case $f in ai-docs/plans/*.redline.md) return 0 ;; esac
   done < "$T/files"
   return 1
@@ -133,7 +134,7 @@ count_pr() {
     def list: split(" ") | map(select(. != ""));
     {pr: $n, available: true, branch: $b, created_at: $c,
      comments: {issue: $ci, review: $cr, inline: $cl, total: ($ci + $cr + $cl)},
-     commits: {counted: ($counted | list), fold: ($folds | list), version_bump: ($bumps | list), merge: ($merges | list)}}
+     commits: {counted: ($counted | list), removed_last_step: ($folds | list), version_bump: ($bumps | list), merge: ($merges | list)}}
     | .count = .comments.total + (.commits.counted | length)'
 }
 
@@ -146,7 +147,7 @@ text_pr() {
       "PR #\(.pr) (\(.branch)): \(.count) human finding(s) -- \(.comments.total) comment(s) "
       + "[issue \(.comments.issue), review \(.comments.review), inline \(.comments.inline)], "
       + "\(.commits.counted | length) fix commit(s) pushed after opening; excluded: "
-      + "\(.commits.fold | length) fold, \(.commits.version_bump | length) version bump, \(.commits.merge | length) merge"
+      + "\(.commits.removed_last_step | length) of the removed last step, \(.commits.version_bump | length) version bump, \(.commits.merge | length) merge"
     else "PR #\(.pr): COULD NOT BE COMPUTED -- \(.reason)" end'
 }
 

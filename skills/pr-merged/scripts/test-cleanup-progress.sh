@@ -40,16 +40,16 @@ fresh
 out=$(cleanup); rc=$?
 check "no branch argument -> rc 2" "$rc" "2"
 
-printf '\n== the Branch field, which survives the fold ==\n'
+printf '\n== the Branch field, which survives the spec being cut down ==\n'
 fresh
-# A folded spec: the collapse keeps no header, so it names no ticket.
+# A cut-down spec keeps no header, so it names no ticket.
 printf '## Out of scope\n\n- Nothing.\n' > "$W/case/ai-docs/plans/done/2026-01-01-a.spec.md"
-progress ai-docs/plans/2026-01-01-a.progress.md GH-9-fold
-progress ai-docs/plans/2026-01-02-b.progress.md GH-9-fold-more
-progress ai-docs/plans/deferred/2026-01-03-c.progress.md GH-9-fold
-out=$(cleanup GH-9-fold); rc=$?
+progress ai-docs/plans/2026-01-01-a.progress.md GH-9-cut
+progress ai-docs/plans/2026-01-02-b.progress.md GH-9-cut-more
+progress ai-docs/plans/deferred/2026-01-03-c.progress.md GH-9-cut
+out=$(cleanup GH-9-cut); rc=$?
 check "a branch named by a progress file -> rc 0" "$rc" "0"
-gone "its progress file is deleted, though the folded spec names no ticket" \
+gone "its progress file is deleted, though the cut-down spec names no ticket" \
   "$W/case/ai-docs/plans/2026-01-01-a.progress.md"
 kept "a branch whose name only starts with it keeps its own" \
   "$W/case/ai-docs/plans/2026-01-02-b.progress.md"
@@ -59,10 +59,10 @@ kept "a deferred task's progress file is not touched" \
 # A match by the Branch field ends the run: the ticket route would otherwise also
 # reach a progress file linked through another spec tracked under the same key.
 fresh
-progress ai-docs/plans/2026-01-01-a.progress.md GH-9-fold
+progress ai-docs/plans/2026-01-01-a.progress.md GH-9-cut
 printf '**Tracked in:** GH-9\n\n## Scope\n' > "$W/case/ai-docs/plans/2026-01-06-f.spec.md"
 progress ai-docs/plans/2026-01-06-f.progress.md GH-9-earlier
-out=$(cleanup GH-9-fold); rc=$?
+out=$(cleanup GH-9-cut); rc=$?
 check "a Branch-field match -> rc 0" "$rc" "0"
 gone "the matched file is deleted" "$W/case/ai-docs/plans/2026-01-01-a.progress.md"
 kept "and the ticket route does not run after it" "$W/case/ai-docs/plans/2026-01-06-f.progress.md"

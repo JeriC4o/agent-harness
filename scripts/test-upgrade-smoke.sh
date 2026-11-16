@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #
 # Upgrade smoke test: does README.md section Update actually move an installed
-# payload?
+# copy?
 #
 # Run: bash scripts/test-upgrade-smoke.sh
 #
 # WHY THIS EXISTS. Section Update told readers to run
 # `/plugin marketplace update agent-harness` and nothing else, and section
 # Releasing told them `claude plugin install harness@agent-harness`. Both print
-# success. Neither moves the installed payload: the first refreshes catalog
+# success. Neither moves the installed copy: the first refreshes catalog
 # metadata, the second short-circuits with `already installed` against an
 # existing install. This machine sat five versions behind on the documented
 # procedure, and every existing gate called the repository clean.
@@ -29,7 +29,7 @@
 #
 # The negative control is the trap itself: before running the procedure, the
 # gate runs `plugin install` against the existing install and requires it to
-# report success while the payload stays put. Without that leg, a green here
+# report success while the installed copy stays put. Without that leg, a green here
 # could not be told from a gate that passes in the one configuration where it
 # cannot fail -- which is the defect this whole ticket is about.
 #
@@ -50,7 +50,7 @@ check(){ if [ "$2" = "$3" ]; then ok "$1"; else bad "$1 (want [$3], got [$2])"; 
 
 # The human-readable listing prints a local-folder marketplace's own manifest
 # version (`folderVersion` in the JSON), so it reports a raised source as
-# installed while the cached payload has not moved; `version` is what the
+# installed while the cached copy has not moved; `version` is what the
 # install recorded.
 recorded() {
   claude plugin list --json 2>/dev/null \
@@ -110,10 +110,10 @@ printf '\n== raise the source, then the negative control: install is NOT an upgr
 jq --arg v "$HIGH" '.version = $v' "$TREE/.claude-plugin/plugin.json" > "$TREE/.claude-plugin/plugin.json.tmp" \
   && mv "$TREE/.claude-plugin/plugin.json.tmp" "$TREE/.claude-plugin/plugin.json"
 out=$(claude plugin install "${NAME}@${MARKET}" --scope user -y 2>&1); rc=$?
-# Success plus an unmoved payload is the whole defect, reproduced on purpose.
+# Success plus an unmoved installed copy is the whole defect, reproduced on purpose.
 if [ "$rc" = "0" ]; then ok "install against an existing install still exits 0"; else bad "install against an existing install still exits 0 (rc=$rc): $out"; fi
 has "  and reports success" "$out" "already installed"
-if [ -d "${CACHE}/${HIGH}" ]; then bad "  but the payload did NOT move -- $HIGH appeared in the cache"; else ok "  but the payload did NOT move"; fi
+if [ -d "${CACHE}/${HIGH}" ]; then bad "  but the installed copy did NOT move -- $HIGH appeared in the cache"; else ok "  but the installed copy did NOT move"; fi
 check "  and plugin list still records $LOW" "$(recorded version)" "$LOW"
 
 printf '\n== the documented procedure, EXTRACTED from README section Update ==\n'
@@ -138,7 +138,7 @@ while IFS= read -r step; do
   if [ "$rc" = "0" ]; then ok "ran: $step"; else bad "ran: $step (rc=$rc): $out"; fi
 done <<< "$STEPS"
 
-printf '\n== and the payload moved -- both observables ==\n'
+printf '\n== and the installed copy moved -- both observables ==\n'
 if [ -d "${CACHE}/${HIGH}" ]; then ok "cache carries $HIGH"; else bad "cache carries $HIGH (has: $(ls "$CACHE" 2>&1 | tr '\n' ' '))"; fi
 check "plugin list records $HIGH" "$(recorded version)" "$HIGH"
 check "  and the plugin is still enabled" "$(recorded enabled)" "true"

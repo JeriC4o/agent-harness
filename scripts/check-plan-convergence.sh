@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
 #
-# Does a plan pair converge -- does every number name its own origin, and does
+# Does a plan converge -- does every number name its own origin, and does
 # every relation the documents state actually hold?
 #
 # Run:  check-plan-convergence.sh <spec> <design>
 #       check-plan-convergence.sh --accept '<class>|<spot>|<subject>' --grounds '<why>' <spec> <design>
 # Exit: 0 clean, 1 findings, 2 cannot run -- which is NOT a pass.
 # Core: check-plan-convergence.py <method root> <method-indexed 0|1> <project root>
-#       <spec> <design> <excuse key> <grounds> -- the first three are resolved here.
+#       <spec> <design> <key to accept> <grounds> -- the first three are resolved here.
 #
 # Tests: scripts/test-check-plan-convergence.sh
 #
-# THE GRANT ACT IS A FLAG AND NOT A SECOND ENTRY POINT, because it must see the
-# finding before it waives it: it runs every class with excusing suspended,
+# THE ACCEPTING ACT IS A FLAG AND NOT A SECOND ENTRY POINT, because it must see
+# the finding before it accepts it: it runs every class with accepting suspended,
 # prints the finding carrying the key in full, and only then appends a row to
 # the record beside the plan. An ordinary run writes nothing, ever. The key is
 # copied off a finding line, which carries it, so neither half is retyped.
 #
-# IT IS EXEMPT FROM THE GATE RUNNER'S MEMBER LIST, by name, for the reason
+# IT IS EXEMPT FROM THE CHECK RUNNER'S MEMBER LIST, by name, for the reason
 # scripts/check-spec-criteria.sh is: a member is invoked with no arguments and both of
 # the paths below are required, so a documented member would report cannot-run
 # on every run. The exemption lives in EXEMPT_CHECKS there. Its consequence is
@@ -33,11 +33,11 @@
 #
 # THE THREE-OUTCOME CONVENTION IS THE CONTRACT. A caller refuses on anything
 # that is not a clean 0 and says WHICH of the two it got, because the two have
-# different remedies: findings are fixed or excused in the plan, while a
+# different remedies: findings are fixed or accepted in the plan, while a
 # cannot-run means this check examined less than it reported and nothing about
 # the plan has been established. A 0 is not always the word `clean`: a plan
-# whose every finding is excused also exits 0 and says so in those terms, so a
-# caller that treats 0 as nothing-to-see loses the waivers.
+# whose every finding is accepted also exits 0 and says so in those terms, so a
+# caller that treats 0 as nothing-to-see loses the accepted findings.
 #
 # WHAT A CLEAN VERDICT MEANS, and the bound is the point of saying it: no figure
 # in either document sits in a clause silent about its origin, and no relation
@@ -84,7 +84,7 @@ if [ -n "$EXCUSE" ] && [ -z "$GROUNDS" ]; then
   printf 'check-plan-convergence: cannot run -- --accept needs --grounds, in terms a later reader can check\n' >&2; exit 2
 fi
 if [ -n "$GROUNDS" ] && [ -z "$EXCUSE" ]; then
-  printf 'check-plan-convergence: cannot run -- --grounds excuses nothing without --accept naming the finding\n' >&2; exit 2
+  printf 'check-plan-convergence: cannot run -- --grounds accepts nothing without --accept naming the finding\n' >&2; exit 2
 fi
 
 # Each of these is a cannot-run rather than a finding, because a document that
@@ -132,8 +132,8 @@ REPORTING_PAYLOAD="${HERE}/check-plan-convergence-reporting.py"
 
 # TWO ROOTS, because an installed copy sits in a plugin cache that is no
 # repository. The method inputs ship with this file and are read from its
-# parent; the project data -- the roster, the baseline, the excuse record beside
-# the spec -- belongs to the work tree holding the spec. One root serving both
+# parent; the project data -- the roster, the record of accounted positions and
+# the record of accepted findings beside the spec -- belongs to the work tree holding the spec. One root serving both
 # made every installed run a cannot-run before any class examined anything.
 SPEC_DIR=$(cd -- "$(dirname -- "$SPEC")" && pwd -P)
 PROJECT_TOP=$(git -C "$SPEC_DIR" rev-parse --show-toplevel 2>/dev/null)

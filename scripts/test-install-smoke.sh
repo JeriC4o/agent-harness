@@ -133,7 +133,7 @@ covers_tree() { # <label> <declared count> <subdir> <find predicate...>
 # assertion: an array holding one name twice and another dropped has the same
 # length as a complete one, so the comparison would pass while the dropped
 # component is checked by nothing -- reinstating exactly the blindness this
-# arm closes. Probed rather than reasoned: with `fix-scout` duplicated and one
+# check closes. Probed rather than reasoned: with `fix-scout` duplicated and one
 # agent dropped, the length is 10 against a ten-file tree and the comparison
 # goes green. Both comparands are therefore counts of distinct names; `find`
 # and `jq ... | keys` cannot repeat one, so only the declared side needs it.
@@ -150,7 +150,7 @@ done
 # check in that loop is PRESENCE-ONLY: an event the manifest registers and this
 # list omits leaves the gate GREEN, so until this line existed the list was a
 # gate on the install and never on the manifest. Measured as a real gap, not a
-# hypothetical: the `SubagentStart` arm was added to hooks.json and every
+# hypothetical: the `SubagentStart` event was added to hooks.json and every
 # assertion in this file stayed green. The count is derived from the manifest so
 # the NEXT new event announces itself here instead of relying on whoever edits
 # the file next having read this comment.
@@ -167,9 +167,9 @@ esac
 # Distinct names, not array length, for the reason spelled out above the two
 # component counts: a duplicated event name would make a short list measure
 # long. Carried here as well rather than left as the narrower fix, because the
-# two arms are the same check over different inventories.
+# two are the same check over different inventories.
 declared_events=$(printf '%s\n' "${EVENTS[@]}" | sort -u | wc -l | tr -d ' ')
-# Same guard as the two component arms get inside `covers_tree`, and for the
+# Same guard as the two component checks get inside `covers_tree`, and for the
 # same measured reason: a pipeline comparand can land empty while the script
 # runs on, and an empty one turns this into a comparison whose message names no
 # number. Unlike `MANIFEST_EVENTS` above, an empty value here cannot compare

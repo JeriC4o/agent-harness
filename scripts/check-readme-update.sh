@@ -8,7 +8,7 @@
 # WHY THIS EXISTS. Section Update told readers to run
 # `/plugin marketplace update agent-harness` and nothing else; section Releasing
 # told them `claude plugin install harness@agent-harness --scope user`. The
-# first refreshes catalog metadata and never touches the installed payload. The
+# first refreshes catalog metadata and never touches the installed copy. The
 # second, against an existing install, short-circuits with `already installed`
 # and exits 0. Both print success, neither upgrades anything, and this machine
 # sat five versions behind on the documented procedure.
@@ -20,8 +20,8 @@
 # a procedure written in English is not a path any of them reads.
 #
 # The companion gate is scripts/test-upgrade-smoke.sh, which executes section
-# Update's own commands against a lowered install and requires the payload to
-# move. That one is stronger, and it is the one that would have caught the
+# Update's own commands against a lowered install and requires the installed
+# copy to move. That one is stronger, and it is the one that would have caught the
 # original defect -- but it costs ~20 s and a `claude` CLI. This check needs
 # neither, so it can run wherever the structural checks run.
 #
@@ -32,7 +32,7 @@
 # Findings, printed to stderr as CLASS|line|message:
 #   D1  a fenced line outside Install runs `plugin install` -- a command in a
 #       fence is an instruction to run, and this one reports success without
-#       moving the payload
+#       moving the installed copy
 #   D2  a fenced BLOCK outside Install carries `marketplace update` with no
 #       `plugin update` -- a metadata refresh dressed as an upgrade
 #   D3  section Update carries no fenced `plugin update` at all -- the positive
@@ -75,7 +75,7 @@ command -v awk >/dev/null 2>&1 || {
 out=$(awk -v exempt="$EXEMPT" '
   function flush(  ) {
     if (nblock > 0 && sec != exempt && mktup && !plugup)
-      printf "D2|%d|%s: a fenced block gives `marketplace update` with no `plugin update` -- metadata refresh only, the payload never moves\n", bstart, sec
+      printf "D2|%d|%s: a fenced block gives `marketplace update` with no `plugin update` -- metadata refresh only, the installed copy never moves\n", bstart, sec
     nblock = 0; mktup = 0; plugup = 0
   }
   !fence && /^## / { flush(); sec = substr($0, 4); sub(/[ \t]+$/, "", sec) }

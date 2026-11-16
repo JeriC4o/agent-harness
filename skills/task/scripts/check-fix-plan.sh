@@ -43,7 +43,7 @@
 # written down.
 #
 # `diff-tree` runs WITHOUT -M on purpose. With it a rename collapses to a single
-# `from => to` path, which matches no planned Target, so arm (a) would report
+# `from => to` path, which matches no planned Target, so test (a) would report
 # every rename as an unplanned file. Two plain paths cost a 2N over-count and
 # err toward a human seeing the round.
 #
@@ -80,13 +80,13 @@ THRESHOLD_CHANGED_LINES=150
 #       the round afterwards and `baseline` refuses a second stub, so the round keeps
 #       a round_base taken before the amendment while A2/A3 forbid any passing
 #       plan from PROPOSING AN EDIT to those two SUFFIXES -- without this entry
-#       arm (a) fires by construction on every amendment-then-resume round,
+#       test (a) fires by construction on every amendment-then-resume round,
 #       permanently. THE TWO SUFFIXES AND NOT THE DIRECTORY: A2/A3 key on the
 #       suffixes, so a directory-wide prefix is strictly wider than its own
 #       justification, and a tracked non-routing path under it (this repository
 #       holds `ai-docs/plans/done/<x>.design-evidence.md`) is briefable by a
 #       passing plan AND dropped from the measured total -- declared lines
-#       against zero measured, the asymmetry these arms exist to close. It is a
+#       against zero measured, the asymmetry these tests exist to close. It is a
 #       narrowing and not an amnesty: a `fix` row naming either suffix routes and
 #       a row proposing no edit briefs nothing, so every change to one is
 #       unbriefed by construction and each is NAMED on the excluded-in-round line
@@ -94,18 +94,18 @@ THRESHOLD_CHANGED_LINES=150
 #       ran. That discrimination is not derivable from a diff,
 #       which looks identical whichever party made it. Inside `case` there is no pathname
 #       expansion and `*` spans `/`, so both patterns cover ai-docs/plans/done/
-#       as well -- the same note the A2/A3 arms carry.
+#       as well -- the same note the A2/A3 tests carry.
 IGNORE_EXACT='ai-docs/learnings.md'
 IGNORE_PREFIX='ai-docs/learnings/'
 IGNORE_GLOB_SPEC='ai-docs/plans/*.spec.md'
 IGNORE_GLOB_DESIGN='ai-docs/plans/*.design.md'
-# The declared-link record: the design author writes it mid-round -- on a design
+# The record of declared links: the design author writes it mid-round -- on a design
 # amendment, on an approach-changing re-entry, in an amendment's own pass --
 # and no `fix` row can name it, while `is_ignored`
-# short-circuits arm (a)'s membership test and `planned` admits `fix` rows only.
+# short-circuits test (a)'s membership test and `planned` admits `fix` rows only.
 # A variable of its own because the two globs above are the suffixes the A7
 # ANCHOR TEST keys on, a correspondence docs/templates/progress-format.md
-# states; this one is read by `is_ignored` alone and by no arm. Its lines leave
+# states; this one is read by `is_ignored` alone and by no test. Its lines leave
 # `actual_changed_lines`, which nothing fires on, and the `excluded-in-round`
 # line NAMES the record, so the write stays visible by name.
 IGNORE_GLOB_LINKS='ai-docs/plans/*.links.md'
@@ -431,7 +431,7 @@ ARMS="${WORK}/arms"
 
 arm() { printf '  %-4s %-20s %-5s %s\n' "$1" "$2" "$3" "${4:-}" >> "$ARMS"; }
 
-# Only the FIRST failing arm sets the decision, and the arms are evaluated in
+# Only the FIRST failing test sets the decision, and the tests are evaluated in
 # the order they are printed: that is what makes routing beat size, so a plan
 # that both names a plans artefact and overruns routes rather than escalating to
 # a user who could wave it through to the fix agent.
@@ -494,7 +494,7 @@ do_plan() {
   # THE FINDINGS THAT CARRY THEIR OWN ACCOUNTING, read once before the row loop.
   # A7 below exempts a `fix` row whose finding number appears in the set its Arm
   # A anchor calls for, which is what lets a scout write the TRUTHFUL Arm A cell.
-  # Without these sets the arm refuses the honest plan and passes the evasive
+  # Without these sets the test refuses the honest plan and passes the evasive
   # one: a row naming the at-stake sentence is refused however the round
   # accounts for it, while a row declaring `none` and no accounting row is not.
   # A finding may hold several rows by design, so the pair -- one `fix` row
@@ -551,7 +551,7 @@ do_plan() {
       fi
     fi
 
-    # ARM A7 `correction-accounting`. A `fix` row closes its finding by changing
+    # TEST A7 `correction-accounting`. A `fix` row closes its finding by changing
     # something OTHER than the sentence its Arm A cell names, so when that
     # sentence sits in a plan artefact the round ships a divergence from the
     # agreed plan with nothing correcting it. What accounts for it depends on
@@ -579,7 +579,7 @@ do_plan() {
     #     not be cleared the other way either, because `baseline` refuses a
     #     second stub.
     #
-    # WHAT THIS ARM CANNOT SEE, written down so its reach is not mistaken: it
+    # WHAT THIS TEST CANNOT SEE, written down so its reach is not mistaken: it
     # keys on the Arm A cell, which the scout writes. A scout that writes
     # `none` where a sentence really is at stake escapes the accounting
     # entirely, and no mechanical check can see that -- judging whether closing a
@@ -589,7 +589,7 @@ do_plan() {
     # makes a non-`none` cell trustworthy; a `none` cell is unfalsifiable here by
     # construction.
     #
-    # The globs are the two variables the routing arms key on, UNQUOTED so they
+    # The globs are the two variables the routing tests key on, UNQUOTED so they
     # stay patterns. No bare-glob alternative is needed beside the `:*` forms:
     # `arma_anchor` returns only a token matching path:line, so an anchor without
     # a line never reaches this `case`.
@@ -610,7 +610,7 @@ do_plan() {
     # THE PATH HALF IS KEYED ON A ROW THAT PROPOSES AN EDIT, and the guard wraps
     # THIS `case` only. What the path half catches is an attempt to have the fix
     # agent edit a spec or design artefact, so permission is what it must key on
-    # -- and permission comes from the disposition, exactly as arm (a)'s allowed
+    # -- and permission comes from the disposition, exactly as test (a)'s allowed
     # set does. Unqualified it fired on a row proposing no edit, which made
     # `resolved:` unusable for its own documented primary case: a finding closed
     # before the round by an approved amendment names the artefact the finding
@@ -669,7 +669,7 @@ do_plan() {
 
     # The converse direction, which no finding-side check can see: findings map
     # to rows, so those checks guard the finding side only, and a row matching
-    # no open finding PRE-AUTHORISES a file -- arm (a) measures the applied diff
+    # no open finding PRE-AUTHORISES a file -- test (a) measures the applied diff
     # against the Target column, so a fabricated row is invisible from there by
     # construction. Tested as set MEMBERSHIP, not count equality: the counts
     # agree on a swap (one finding omitted, one row fabricated), so equality was
@@ -731,7 +731,7 @@ do_plan() {
   done < "${WORK}/open-numbers"
   coverage="${coverage}${missing:+${coverage:+; }}${missing}"
 
-  # Two fault classes under one arm, each with its own reason token and each
+  # Two fault classes under one test, each with its own reason token and each
   # printing its own line, because the remedies differ: a finding-coverage
   # fault means fix the row, an unmatched row means delete it. The
   # finding-coverage decide comes first so the swap case -- one finding
@@ -749,7 +749,7 @@ do_plan() {
     arm A6 finding-coverage pass "$(grep -c . < "${WORK}/open-numbers") open findings, $(grep -c . < "${WORK}/rows") dispositions"
   fi
 
-  # LAST of the plan arms, so a round that routes or is under-covered reports
+  # LAST of the plan tests, so a round that routes or is under-covered reports
   # that instead: both are already accounted for by their own route, and a
   # refusal for want of accounting on top of one would name a remedy the scout
   # has in fact taken.
@@ -796,7 +796,7 @@ do_applied() {
   # Permission comes from the disposition, not from the presence of a target: an
   # `object:`, `resolved:` or `amendment:` row names a file `fix-apply` is
   # forbidden to touch, so admitting its target would pre-authorise the one edit
-  # this arm exists to report.
+  # this test exists to report.
   planned=$(table_rows "$sec" | while IFS="$SEP" read -r _ _ disp target _; do
     [ "$disp" != fix ] || target_path "$target"
   done)
@@ -826,7 +826,7 @@ do_applied() {
     arm '(a)' unplanned-file pass
   fi
 
-  # ARM (b) IS DELETED. It compared this round's actual changed-line total
+  # TEST (b) IS DELETED. It compared this round's actual changed-line total
   # against the threshold and was retired on evidence: one round declared 54
   # lines and landed 743, producing a verdict nobody could act on. A plan
   # declaring twenty lines and landing seven hundred IS a diff that does not

@@ -114,7 +114,7 @@ EXCLUDED_SURFACES = (
     # The Log is the union of the index file and the directory of entries, so
     # both spellings belong to this one exclusion; `ai-docs/learnings.md` is a
     # file rather than a directory and no prefix reaches it.
-    ('learning-record', 'an entry there is a proposal rather than a rule, and the composition class is routed away from escalation',
+    ('learning-log', 'an entry there is a proposal rather than a rule, and the composition class is routed away from escalation',
      lambda p: p == 'ai-docs/learnings.md' or p.startswith('ai-docs/learnings/')),
     # REPOSITORY MECHANICS. Three of these eight ARE read under an explicit
     # method instruction -- session start reads .gitignore, the permissions step
@@ -282,7 +282,7 @@ else:
 # ROUTE 2 IS THE QUIETER ROUTE. A line in the review contract carrying both an
 # element-shaped token and a severity verdict makes that element mandatory with
 # no template changing anywhere. The corpus spells a severity verdict three
-# disjoint ways, so the arm reads ANY spelling rather than an enumeration of
+# disjoint ways, so the route reads ANY spelling rather than an enumeration of
 # the three: an enumeration has to be re-measured every time the corpus acquires
 # a fourth way of saying it, and a missing spelling is silent.
 #
@@ -290,7 +290,7 @@ else:
 # where a sweep of prose cannot see them. Its one target is the record of
 # deliberate absence, a requirement list. There were three until the
 # per-criterion verification line stopped being an element, and two until the
-# closing fold's removal list went with the fold. The reason the count is
+# removal list of the task's removed last step went with that step. The reason the count is
 # recorded here rather than left implicit: a route that silently reads fewer
 # targets than its files hold derives fewer elements and reports no arrival for
 # the ones it stopped seeing.
@@ -328,7 +328,7 @@ for _t in fenced_sections(DESIGN_CONTRACT):
 # verification line (`AC<N> ... :`), which stopped being an element; a design
 # says nothing about tests, so the review contract carries no such token and the
 # branch could only ever manufacture a spurious ARRIVAL against the record.
-# Removed rather than left harmless: a derivation arm with no possible subject
+# Removed rather than left harmless: a derivation branch with no possible subject
 # is indistinguishable from one whose subject has not been written yet.
 # [element-token]
 ELEMENT_TOKEN = re.compile(r'^##\s+\S.*$')
@@ -398,7 +398,7 @@ for doc, tok in sorted(RECORDED_ELEMENTS - DERIVED):
             % (PRINCIPLES_DOC, doc, tok), surface_of(PRINCIPLES_DOC))
 
 # ---------------------------------------------------------------------------
-# Leg 3. Refusal agreement -- the live covered set of the edit-time refusal
+# Leg 3. Refusal agreement -- the live covered set of the plan-invariants guard
 # against the protected-page table, in both directions. It is a SIBLING rather
 # than a span, for the reason its own header gives; of the spans that could have
 # moved it was the only pure SINK, so the seam is one call and a context mapping

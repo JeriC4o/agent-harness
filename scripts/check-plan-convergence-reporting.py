@@ -1,7 +1,7 @@
 # The four classes of check-plan-convergence.py whose findings are a REPORT
 # rather than a hold: provenance, reference, pairing and isolation. The payload
-# beside this file owns the plan pair, the segmentation, the numeral readers,
-# the excuse route and the report; this carries these four classes and nothing
+# beside this file owns the plan, the segmentation, the numeral readers, the
+# record of accepted findings and the report; this carries these four classes and nothing
 # else.
 #
 # WHY IT IS A THIRD FILE AT ALL. The single payload reached 1,447 lines against
@@ -87,7 +87,7 @@ def run(ctx):
     for doc, body, units in ctx['documents']:
         provenance(doc, body, units, ctx['built'])
     if record is NO_RECORD:
-        SKIPPED['reference'] = 'the project keeps no baseline record at %s' % BASELINE_RECORD
+        SKIPPED['reference'] = 'the project keeps no record of accounted positions at %s' % BASELINE_RECORD
     else:
         ENTERED.add('reference')
         reference(paths, record)
@@ -103,8 +103,8 @@ def run(ctx):
 # ---------------------------------------------------------------------------
 # THE THREE ADMISSIBLE KINDS ARE THE BASE PRINCIPLE'S, and this vocabulary
 # recognises that a clause NAMES one. It never rules on whether the provenance
-# it names is true: that is a reading, and a reading belongs to the judgement
-# class. So a clean provenance verdict means no figure's clause is silent about
+# it names is true: that is a reading, and a reading belongs to the
+# contradiction reader. So a clean provenance verdict means no figure's clause is silent about
 # its origin, never that every stated origin is honest.
 #
 # THE UNIT IS THE CLAUSE INSIDE THE SENTENCE, because the obligation is written
@@ -179,7 +179,8 @@ def provenance(doc, body, units, built):
 # loud that a reference to a kind of file nothing here carries is outside the
 # sweep, where a list would have said nothing and drifted as well.
 #
-# THE BASELINE IS THE COMPARAND AND AN ARRIVAL IS WHAT GETS REPORTED. Sweeping
+# THE RECORD OF ACCOUNTED POSITIONS IS THE COMPARAND AND AN ARRIVAL IS WHAT GETS
+# REPORTED. Sweeping
 # the positions that predate the rule is outside this work by the requirements'
 # own boundary, and a class reporting all of them on its first run would ship a
 # gate that is red on arrival. One row per accounted position -- shape, path and
@@ -317,7 +318,7 @@ def reference(paths, record):
                 ACCOUNTED += 1
                 continue
             finding('reference', path, token,
-                    '%s carries a position the baseline does not account for -- [%s]; a reader may trust it without re-deriving it, and the record row that would account for it is: %s'
+                    '%s carries a position the record of accounted positions does not account for -- [%s]; a reader may trust it without re-deriving it, and the record row that would account for it is: %s'
                     % (path, token, row))
 
 
@@ -488,20 +489,20 @@ def pairing(units, paths):
 # ITS BOUND, AND THE UNIT IS WHERE THE WHOLE COST SITS. The reach is a repeated
 # LITERAL: the same figure at two sites, or a whole statement or table cell of at
 # least that length repeated at two sites. The unit is deliberately NOT a sliding
-# window over the text: measured on one real plan pair, a 24-character window
+# window over the text: measured on one real plan, a 24-character window
 # found 438 repeats, almost every one a fragment of shared English phrasing
 # inside two different sentences, which a reader would wade through on every
 # plan. A repeated statement or cell is the same FACT in two places, which is
 # what the requirement asks for; a repeated phrase inside two different claims
-# is not. A paraphrase is the judgement class's subject either way.
+# is not. A paraphrase is the contradiction reader's subject either way.
 #
 # IT REPORTS AND NO LONGER HOLDS. A repeat is not the event that does harm: a
 # one-sided edit to one of two linked sites is, and a repeat across the spec
 # and the design is never seen here, since the unit is one document. Its whole
-# record held no drift catch -- every waiver it was granted covered noise, a
+# record held no drift catch -- every finding it accepted covered noise, a
 # boilerplate sentence or the exit codes 0, 1 and 2. A legitimate restatement
 # of a whole short clause still fires, and the reviewer weighs it rather than
-# an excuse quieting it.
+# an acceptance quieting it.
 # ---------------------------------------------------------------------------
 FRAGMENT_SOURCE = 'skills/task/scripts/check-fix-plan.sh'
 FRAGMENT_NAME = 'ARMA_QUOTE_MIN'

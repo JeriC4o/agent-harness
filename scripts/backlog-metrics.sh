@@ -20,15 +20,15 @@
 #
 #   ratio    tickets opened per PR merged. Sustained above 1, the tail outruns
 #            delivery. Below it, the backlog is being worked off.
-#   cadence  a BURST (several tickets in one day) is a planning pass -- scope
-#            discovery. A DRIP (one at a time, spread out) is what parking work
-#            looks like. The drip share is the suspicious half.
+#   arrival  several tickets in one day is a planning pass -- scope discovery.
+#            One at a time, spread out, is what parking work looks like. The
+#            share arriving one at a time is the suspicious half.
 #   age      a healthy backlog churns. A median open age that only climbs means
 #            tickets are filed and never returned to.
 #   volume   opened vs closed over the same window.
 #
 # WHAT IT DELIBERATELY DOES NOT DO. It does not emit a verdict or a score.
-# Deferral is a SHAPE OVER TIME; a single run is a snapshot, and a snapshot
+# Putting work off is a SHAPE OVER TIME; a single run is a snapshot, and a snapshot
 # cannot tell "parking work" from "week one". Every run says so in `notes`.
 #
 # Tests: scripts/test-backlog-metrics.sh (no network -- fixtures via --*-file)
@@ -90,7 +90,7 @@ jq -n \
   | ([ $pr[] | select(.state == "MERGED") ] | length) as $merged
 
   # Group by CALENDAR DAY of creation. A day at or over the threshold is a
-  # planning pass; anything else is a drip, which is the shape deferral takes.
+  # planning pass; anything else arrived one at a time, the shape of work put off.
   | ( $iss | group_by(.createdAt[0:10])
            | map({date: .[0].createdAt[0:10], count: length}) ) as $days
   | ( $days | map(select(.count >= $burst)) ) as $bursts
@@ -117,7 +117,7 @@ jq -n \
           drip_share: (if $opened == 0 then null
                        else (($drip_issues / $opened) * 100 | round) / 100 end) },
       notes:
-        ( [ "A single run is a snapshot; deferral is a shape over time, and one ratio cannot tell parking work from week one of a project." ]
+        ( [ "A single run is a snapshot; putting work off shows only over time, and one ratio cannot tell parking work from week one of a project." ]
           + ( if $merged == 0
               then [ "Ratio is undefined rather than infinite: there are no merged PRs in this window." ]
               else [] end )
@@ -125,7 +125,7 @@ jq -n \
               then [ "Tickets are being opened faster than work is shipping (\($opened) opened per \($merged) merged)." ]
               else [] end )
           + ( if $opened > 0 and ($drip_issues / $opened) > 0.5 and $drip_issues >= 3
-              then [ "Most tickets arrived one at a time rather than in a planning pass, which is the cadence deferral has." ]
+              then [ "Most tickets arrived one at a time rather than several on one day, which is how work being put off arrives." ]
               else [] end ) ) }
   ' > "$WORK/report.json" || die "failed to build the report"
 
@@ -142,10 +142,10 @@ jq -r '
   "",
   "  ratio              \(.ratio_opened_per_merged | n) tickets opened per merged PR",
   "  open age (days)    median \(.open_age_days.median | n), oldest \(.open_age_days.max | n)",
-  "  cadence            \(.cadence.burst_issues) in planning bursts, \(.cadence.drip_issues) one at a time (drip share \(.cadence.drip_share | n))",
+  "  tickets opened     \(.cadence.burst_issues) several on one day, \(.cadence.drip_issues) one at a time (fraction one at a time \(.cadence.drip_share | n))",
   ( if (.cadence.bursts | length) > 0
-    then "  bursts             " + (.cadence.bursts | map("\(.date) x\(.count)") | join(", "))
-    else "  bursts             none at threshold \(.burst_threshold)" end ),
+    then "  busy days          " + (.cadence.bursts | map("\(.date) x\(.count)") | join(", "))
+    else "  busy days          none at threshold \(.burst_threshold)" end ),
   "",
   ( .notes[] | "  note: " + . )
 ' "$WORK/report.json"

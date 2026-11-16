@@ -52,7 +52,7 @@ check "3 issues over 4 merged PRs" "$(jq -r '.ratio_opened_per_merged' <<<"$(run
 I2=$(issues i2 "1:OPEN:2026-09-01" "2:OPEN:2026-09-02" "3:OPEN:2026-09-03" "4:OPEN:2026-09-04")
 check "4 issues over 2 merged PRs" "$(jq -r '.ratio_opened_per_merged' <<<"$(run "$I2" "$(prs p2 2)")")" "2"
 
-printf '\n== a burst is planning; a drip is deferral ==\n'
+printf '\n== several tickets on one day is planning; one at a time is work put off ==\n'
 # This is the whole point. Backlog growth on its own is ambiguous -- it is also
 # what a project start looks like. Five tickets filed in one planning pass is
 # scope discovery; five filed one-per-day during implementation is an agent
@@ -91,7 +91,7 @@ out=$(run "$I" "$P")
 check "a healthy ratio raises nothing" "$(jq -r '[.notes[]|select(test("faster than"))]|length' <<<"$out")" "0"
 
 printf '\n== one measurement is not a trend, and it says so ==\n'
-# The number this script prints is a snapshot. Deferral is a SHAPE OVER TIME --
+# The number this script prints is a snapshot. Putting work off is a SHAPE OVER TIME --
 # a single ratio cannot distinguish "parking work" from "week one of a project".
 has "every run carries the trend caveat" "$(run "$I" "$P" | jq -r '.notes|join(" ")')" "snapshot"
 

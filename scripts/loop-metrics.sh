@@ -343,7 +343,7 @@ if [ -n "$FOR" ]; then
     | ( $ua == 0 or ($ua_idx | min) >= (($calls | length) - $ua) ) as $ua_tail
     # The two records, joined. The hook wrote who it believed was calling; the
     # transcripts say who was. A call with no recovered agent is in neither
-    # count -- there is nothing to compare it against, and folding it into
+    # count -- there is nothing to compare it against, and merging it into
     # either one would turn an absence into a confirmation or a fault.
     | ( [ $calls[] | select($by_id[.tool_use_id] != null)
           | { tool_use_id: .tool_use_id, stored: .agent_id,
@@ -365,7 +365,7 @@ if [ -n "$FOR" ]; then
                                                   tool_use_id: .prior_tool_use_id } } ] },
           # An id the transcripts do not account for is reported, never absorbed:
           # on a LIVE session the most recent call has no transcript record yet,
-          # and a reader that quietly folded those into "main" would invent an
+          # and a reader that quietly merged those into "main" would invent an
           # attribution out of a race.
           attribution:
             { by_agent: ( $calls | map($by_id[.tool_use_id] // "unattributed")

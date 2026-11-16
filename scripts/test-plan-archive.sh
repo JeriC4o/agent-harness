@@ -130,6 +130,7 @@ printf '%s\n' "$DESIGN_QUOTING" > "${A}/2026-01-03-design-only.design.md"
 printf '# Bare\n\nNothing here.\n' > "${A}/2026-01-04-bare.spec.md"
 printf '# Bare\n\nNothing here.\n' > "${A}/2026-01-04-bare.design.md"
 printf '# Undated\n' > "${A}/undated.design.md"
+# vocabulary-internal: a log file the removed last step of a task wrote under this name
 for ignored in 2026-01-01-both.links.md 2026-01-01-both.progress.md 2026-01-01-both.redline.md 2026-01-01-both.design-evidence.md; do
   printf '## Out of scope\n\nnot a plan document\n' > "${A}/${ignored}"
 done
@@ -176,7 +177,7 @@ check "  the last section runs to the next heading of its level" \
 | Which? | This one. |"
 check "  a section's stated count is the number of lines it frames" \
       "$(printf '%s\n' "$OUT" | grep -c '^--- spec 2026-01-01-both.spec.md: ## Out of scope (10 lines follow)$')" "1"
-check "  the spec's three come in the order the fold's list gives, then the design's" \
+check "  the spec's three come in the order the record of deliberate absence gives, then the design's" \
       "$(printf '%s\n' "$OUT" | sed -n '/^=== plan 2026-01-01-both$/,/^=== plan 2026-01-02/p' | sed -n 's/^--- \([a-z]*\) [^:]*: \(.*\) (.*/\1 \2/p' | tr '\n' '|')" \
       "spec ## Out of scope|spec ## Deferred|spec ## Key decisions|design ## Use cases|"
 
@@ -222,26 +223,26 @@ hasnt "  nor the approach" "$OUT" "Approach text that must not be listed"
 hasnt "  nor the title or header fields" "$OUT" "**Source:**"
 hasnt "  nor text after the section's end" "$OUT" "trailing text that must not be listed"
 
-printf '\n== a collapsed spec lists as a full one does ==\n'
+printf '\n== a cut-down spec lists as a full one does ==\n'
 new_root r3
 printf '%s\n' "$SPEC_FULL" > "${A}/2026-04-01-full.spec.md"
-printf '%s\n\n' "$SPEC_COLLAPSED" > "${A}/2026-04-02-folded.spec.md"
-printf '%s\n' "$DESIGN_QUOTING" > "${A}/2026-04-02-folded.design.md"
-cp "${A}/2026-04-02-folded.spec.md" "${D}/folded-before"
+printf '%s\n\n' "$SPEC_COLLAPSED" > "${A}/2026-04-02-cut-down.spec.md"
+printf '%s\n' "$DESIGN_QUOTING" > "${A}/2026-04-02-cut-down.design.md"
+cp "${A}/2026-04-02-cut-down.spec.md" "${D}/cut-down-before"
 run "$R"
 for h in '## Out of scope' '## Deferred' '## Key decisions'; do
   check "the same listed text for ${h}" \
-        "$(body_of "$OUT" "--- spec 2026-04-02-folded.spec.md: ${h}")" \
+        "$(body_of "$OUT" "--- spec 2026-04-02-cut-down.spec.md: ${h}")" \
         "$(body_of "$OUT" "--- spec 2026-04-01-full.spec.md: ${h}")"
 done
 check "  with the same line counts, so no trailing line was dropped" \
-      "$(printf '%s\n' "$OUT" | sed -n 's/^--- spec 2026-04-02-folded.spec.md: //p')" \
+      "$(printf '%s\n' "$OUT" | sed -n 's/^--- spec 2026-04-02-cut-down.spec.md: //p')" \
       "$(printf '%s\n' "$OUT" | sed -n 's/^--- spec 2026-04-01-full.spec.md: //p')"
-has   "  the collapsed spec's plan takes its date from the file name and its key from the design" "$OUT" \
-      "=== plan 2026-04-02-folded
+has   "  the cut-down spec's plan takes its date from the file name and its key from the design" "$OUT" \
+      "=== plan 2026-04-02-cut-down
 date: 2026-04-02
 key: T-9"
-check "  and the archived document is not edited" "$(cmp -s "${A}/2026-04-02-folded.spec.md" "${D}/folded-before"; echo $?)" "0"
+check "  and the archived document is not edited" "$(cmp -s "${A}/2026-04-02-cut-down.spec.md" "${D}/cut-down-before"; echo $?)" "0"
 
 printf '\n== the key is shown alone, or as absent ==\n'
 has   "a key sharing its line with other fields is shown alone" "$OUT" "key: T-9

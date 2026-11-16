@@ -56,6 +56,7 @@ put compare_c3___c4 "{\"commits\":[$(cm c4 '{},{}')]}"
 put compare_x9___c4 "{\"commits\":[$(cm c1 '{}'),$(cm c4 '{},{}')]}"
 put commits_c0 '{"files":[{"status":"added","filename":"src/a.sh"}]}'
 put commits_c1 '{"files":[{"status":"modified","filename":"src/a.sh"}]}'
+# vocabulary-internal: the removed last step of a task deleted its log under this name
 put commits_c2 '{"files":[{"status":"removed","filename":"ai-docs/plans/x.redline.md"},
                            {"status":"modified","filename":"ai-docs/plans/x.design.md"}]}'
 put commits_c3 '{"files":[{"status":"modified","filename":".claude-plugin/plugin.json"}]}'
@@ -86,7 +87,7 @@ check "two human comments, one human commit: three findings" "$(jq -r '.count' <
 check "  a bot by type and a bot by login are not people; an empty review body is no comment" \
       "$(jq -r '[.comments.issue, .comments.review, .comments.inline] | join(",")' <<<"$r")" "1,1,0"
 check "  the fix commit, counted once although two pushes introduced it" "$(jq -r '.commits.counted | join(",")' <<<"$r")" "c1"
-check "  the fold excluded by its redline deletion" "$(jq -r '.commits.fold | join(",")' <<<"$r")" "c2"
+check "  the removed last step's commit excluded by the log it deleted" "$(jq -r '.commits.removed_last_step | join(",")' <<<"$r")" "c2"
 check "  the bump excluded by the profile's paths" "$(jq -r '.commits.version_bump | join(",")' <<<"$r")" "c3"
 check "  the merge commit excluded by its two parents" "$(jq -r '.commits.merge | join(",")' <<<"$r")" "c4"
 check "  the commit pushed before opening is not counted" "$(jq -r '[.commits[][]] | index("c0")' <<<"$r")" "null"

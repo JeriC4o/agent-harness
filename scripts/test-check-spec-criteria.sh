@@ -36,7 +36,7 @@ S=$(mktemp -d)
 # instruction in the live reviewer brief is written on one -- so a fixture that
 # hard-wrapped the same sentence would put the path on one line and the
 # suppression wording on another, take the not-suppression disposition, and pass
-# while measuring nothing. It is FROZEN here rather than read out of the live
+# while measuring nothing. It is FIXED here rather than read out of the live
 # file: the live text is narrowed by this same change, and the shape the verb
 # must keep catching afterwards is this one.
 SUPPRESS_BY_FILENAME='2. Read every `*.spec.md` and `*.design.md` in `ai-docs/plans/done/` — these document **intentional** decisions. Do not raise findings for anything explicitly described there.'
@@ -149,7 +149,7 @@ printf '\n== the entry point a skill invokes is executable ==\n'
 # check-candidate.sh and collect-candidates.sh already use, and that form needs
 # the bit -- every root-level script invoked that way in this repository carries
 # it. The SUITE is only ever run as `bash scripts/test-check-spec-criteria.sh` from the
-# gate list, which does not, so it stays 644 beside its siblings. The committed
+# check list, which does not, so it stays 644 beside its siblings. The committed
 # MODE is what is asserted, not the working tree's: a lost bit reaches a consumer
 # through the index.
 if [ -x "$CHECK" ]; then ok "check-spec-criteria.sh carries the execute bit"

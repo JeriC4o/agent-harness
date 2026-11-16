@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 #
-# The frozen-corpus replay gate for the tier-1 loop detector (GH-86 / GH-88).
+# The recorded-corpus replay gate for the tier-1 loop detector (GH-86 / GH-88).
 # Run from anywhere:
 #   bash scripts/test-loop-corpus.sh
 #
 # This is the only gate in the repo that measures the detector against rows the
 # FIELD wrote rather than rows a test authored. It replays every call row of a
 # real recorded session at a range of window widths, under the shipped rule and
-# under the frozen pre-fix one, and compares both against committed expectations.
+# under the earlier one kept unchanged, and compares both against committed
+# expectations.
 #
 # WHY IT DRIVES THE AWK AND NOT THE HOOK. The ledger stores a djb2 hash of the
 # tool arguments and never the arguments, so no synthetic payload can reproduce
@@ -21,7 +22,7 @@
 # needs no loop at all.
 #
 # Runtime is minutes, not seconds -- 1728 call rows replayed at 18 window
-# width-passes across two legs: `replay` runs three times (frozen/real,
+# width-passes across two legs: `replay` runs three times (earlier/real,
 # fixed/real, fixed/repaired) over six widths each. There is deliberately no flag to narrow it: a gate
 # that can quietly shrink its own input set is the failure this ticket is about.
 
@@ -79,12 +80,12 @@ check "and the rewritten form is present, so the rows were scrubbed not deleted"
 check "  in the dash spelling too" \
       "$(grep -c -- '-home-u-projects-agent-harness' "$REAL")" "1728"
 
-printf '\n== the fixtures are present, compact, and the baseline belongs to THIS one ==\n'
+printf '\n== the fixtures are present, compact, and the committed expectations belong to THIS one ==\n'
 for f in "$REAL" "$MAP" "$BASE"; do
   check "$(basename "$f") is present and non-empty" "$( [ -s "$f" ] && echo yes || echo no )" "yes"
 done
 check "the detector is readable"      "$( [ -r "$AWK_LIVE" ] && echo yes || echo no )" "yes"
-check "the frozen control is executable, since this gate invokes it by path" \
+check "the earlier rule's control is executable, since this gate invokes it by path" \
       "$( [ -x "$WRAP" ] && echo yes || echo no )" "yes"
 # § A10. The detector's regexes are whitespace-sensitive -- `"kind":"call"`, no
 # space -- so a reformatted fixture matches NOTHING and every assertion that
@@ -96,7 +97,7 @@ if [ "$CALLS" -lt 1 ]; then
   exit 1
 fi
 ok "the real leg yields $CALLS parsed call rows"
-check "the row inventory is the one the baseline was measured against" \
+check "the row inventory is the one the committed expectations were measured against" \
       "$(printf '%s/%s/%s/%s/%s' "$(wc -l < "$REAL" | tr -d ' ')" "$CALLS" \
          "$(grep -c '"kind":"result"' "$REAL")" "$(grep -c '"kind":"turn"' "$REAL")" \
          "$(grep -c '"kind":"verdict"' "$REAL")")" \
@@ -104,7 +105,7 @@ check "the row inventory is the one the baseline was measured against" \
 # The sha is what makes AC10 a diff rather than a coincidence: a regenerated
 # fixture fails HERE, naming the cause, instead of further down as a changed
 # firing count that reads like a detector regression.
-check "the committed baseline names this exact fixture" \
+check "the committed expectations name this exact fixture" \
       "$(shasum -a 256 "$REAL" | awk '{print $1}')" \
       "$(jq -r '._fixture_sha256' "$BASE")"
 
@@ -179,7 +180,7 @@ counts_at() { local out="$1" w acc=""; shift; for w in "$@"; do acc="${acc}$(fir
 FIXED_W="20 26 40 100 343 unbounded"
 FROZEN_W="20 40 100 759 760 unbounded"
 
-printf '\n== CONTROL OF THE CONTROL: the frozen pair still reproduces the field measurement ==\n'
+printf '\n== CONTROL OF THE CONTROL: the earlier pair still reproduces the field measurement ==\n'
 # Everything the pre-fix legs claim rests on this pair being the rule that
 # actually shipped, so it is checked before it is used. K is in LINES, which is
 # the half of the control that lives in the wrapper: fed CALLS the same awk
@@ -193,10 +194,10 @@ check "K =  40 LINES -> 2 firings" "$(fired_at "$FROZEN_OUT" 40)"  "2"
 check "K = 100 LINES -> 3 firings" "$(fired_at "$FROZEN_OUT" 100)" "3"
 check "unbounded -> 0 firings, the non-monotonicity that produced this ticket" \
       "$(fired_at "$FROZEN_OUT" unbounded)" "0"
-# THREE fields and never four. The frozen pair predates the counted span, so a
-# fourth field here means someone updated the control -- which the freeze
-# forbids, and which would silently destroy every leg built on it.
-check "every frozen verdict carries three fields, which is itself the freeze check" \
+# THREE fields and never four. The earlier pair predates the counted span, so a
+# fourth field here means someone updated the control -- which keeping it
+# unchanged forbids, and which would silently destroy every leg built on it.
+check "every verdict of the earlier pair carries three fields, which is itself the check it is unchanged" \
       "$(awk -F"$TAB" '{print split($3, a, " ")}' "$FROZEN_OUT" | sort -u | tr '\n' ',')" "3,"
 
 printf '\n== AC9: the validation leg reproduces what the field recorded ==\n'
@@ -221,7 +222,7 @@ ok "pre-fix firings across $FROZEN_W: $FROZEN_SERIES"
 check "POSITIVE CONTROL: the pre-fix series is NOT monotonic, so this sweep discriminates" \
       "$(printf '%s' "$FROZEN_SERIES" | awk '{d=0; for(i=2;i<=NF;i++) if ($i+0 < $(i-1)+0) d=1; print d}')" "1"
 
-printf '\n== AC10: the fixed rule against the committed baseline ==\n'
+printf '\n== AC10: the fixed rule against the committed expectations ==\n'
 printf '  (replaying %s call rows at %s call-widths)\n' "$CALLS" "$(printf '%s' "$FIXED_W" | wc -w | tr -d ' ')"
 FIXED_OUT="${WORK}/fixed.tsv"
 # shellcheck disable=SC2086
@@ -229,7 +230,7 @@ replay "$REAL" fixed "$FIXED_OUT" $FIXED_W
 for w in $FIXED_W; do
   check "K = $w calls" "$(fired_at "$FIXED_OUT" "$w")" "$(jq -r --arg w "$w" '.firings[$w]' "$BASE")"
 done
-check "the baseline names every width this gate sweeps, and no others" \
+check "the committed expectations name every width this gate sweeps, and no others" \
       "$(jq -r '.firings | keys_unsorted | join(" ")' "$BASE")" "$FIXED_W"
 
 printf '\n== AC3 (corpus half): the fixed rule is non-decreasing over the same leg ==\n'
@@ -237,7 +238,7 @@ FIXED_SERIES=$(counts_at "$FIXED_OUT" $FIXED_W)
 ok "fixed firings across $FIXED_W: $FIXED_SERIES"
 check "no width finds less than a narrower one" \
       "$(printf '%s' "$FIXED_SERIES" | awk '{d=0; for(i=2;i<=NF;i++) if ($i+0 < $(i-1)+0) d=1; print d}')" "0"
-# 343 is where the HYBRID feed breaks -- the frozen awk fed calls instead of
+# 343 is where the HYBRID feed breaks -- the earlier awk fed calls instead of
 # lines. The fixed rule is swept through it deliberately: a repair that merely
 # moved the break rather than removing it would show here.
 check "including 343, where the call-fed hybrid breaks" \
@@ -303,7 +304,7 @@ for ord in 1458 1470 1471; do
 done
 check "the real leg sees one agent throughout" \
       "$(awk -F"$TAB" '$1=="40" {split($3,a," "); print a[3]}' "$FIXED_OUT" | sort -u | tr '\n' ',')" "1,"
-# The repair changes the ARM and never whether a row fires, so the two legs must
+# The repair changes the SIGNAL and never whether a row fires, so the two legs must
 # agree width for width. A difference here means the derivation moved something
 # it had no business moving.
 check "and the repair moved no firing COUNT at any width" \

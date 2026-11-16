@@ -2,7 +2,7 @@
 #
 # Tests for check-plan-invariants.sh -- the verification that the base
 # principles of a spec and a design are intact, that nothing has added a
-# required element, and that the edit-time refusal still covers the pages that
+# required element, and that the plan-invariants guard still covers the pages that
 # define one.
 #
 # Run: bash scripts/test-check-plan-invariants.sh
@@ -188,8 +188,8 @@ has "  the verification surface was examined, though the refusal covers one file
     "$OUT" "surface verification examined-clean"
 hasg "  and the three surfaces deliberately out are NAMED with their size, not omitted" \
     "$OUT" "*surface plan-documents not-examined ([0-9]* files, excluded by design*"
-hasg "  the learning record among them" \
-    "$OUT" "*surface learning-record not-examined ([0-9]* files, excluded by design*"
+hasg "  the Learning Log among them" \
+    "$OUT" "*surface learning-log not-examined ([0-9]* files, excluded by design*"
 hasg "  and the repository's own mechanics" \
     "$OUT" "*surface repository-mechanics not-examined ([0-9]* files, excluded by design*"
 
@@ -211,7 +211,7 @@ hasnt "  it is not reported as an absence" "$OUT" "leg1-absence: principle 5"
 # is what a mutant that never ran produces.
 mutant 'if norm(got) != norm(want):' 'if False and norm(got) != norm(want):'
 runm
-check "  with the wording arm taken away the mutant has nothing left to report -> rc 0" "$RC" "0"
+check "  with the wording test taken away the mutant has nothing left to report -> rc 0" "$RC" "0"
 has "  while still reaching a verdict of its own" "$OUT" "check-plan-invariants: clean"
 has "  over the whole corpus, so the silence is not a narrowed run" "$OUT" "principles=10"
 hasnt "  and it reports no wording finding" "$OUT" "finding leg1-wording: principle 5"
@@ -301,7 +301,7 @@ def surfaced(p):
 
 RULES = {
     'plan-documents': lambda p: p.startswith('ai-docs/plans/'),
-    'learning-record': lambda p: p == 'ai-docs/learnings.md' or p.startswith('ai-docs/learnings/'),
+    'learning-log': lambda p: p == 'ai-docs/learnings.md' or p.startswith('ai-docs/learnings/'),
     'repository-mechanics': lambda p: (p.startswith(('.claude-plugin/', '.claude/',
                                                      'ai-docs/fixtures/loop-corpus/'))
                                        or p in ('.gitignore', 'README.md',
@@ -324,7 +324,7 @@ check "  no surfaceless tracked file is claimed by NO exclusion" "${EXCL% *}" "0
 check "  and none is claimed by MORE THAN ONE" "${EXCL#* }" "0"
 has "  the roster names all three with a reason" "$OUT" "surface repository-mechanics not-examined"
 has "  including the plan documents" "$OUT" "surface plan-documents not-examined"
-has "  and the learning record" "$OUT" "surface learning-record not-examined"
+has "  and the Learning Log" "$OUT" "surface learning-log not-examined"
 
 # The other direction of the same property: a file that belongs to no exclusion
 # IS reported, so `unaccounted=0` above is a measurement rather than a constant.

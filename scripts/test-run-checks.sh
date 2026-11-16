@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
 # Tests for run-checks.sh -- the single entry point for this repository's
-# pre-commit gate list.
+# pre-commit check list.
 #
 # Run: bash scripts/test-run-checks.sh
 #
-# WHY THESE LEGS. The runner's whole job is to run every member of the gate
+# WHY THESE LEGS. The runner's whole job is to run every member of the check
 # list and report a verdict per member, so each of its characteristic failures
 # is a FALSE GREEN:
 #
@@ -72,7 +72,7 @@ make_tree() {
    Then every test suite green:
    `scripts/test-alpha.sh`, `hooks/lib/test-beta.sh`.
 5. `bash scripts/check-readme-update.sh` — the README gate.
-5a. `bash scripts/check-propagation-patterns.sh` — the arms gate.
+5a. `bash scripts/check-propagation-patterns.sh` — the path-pattern gate.
 5b. `bash scripts/check-plan-invariants.sh` — the plan-invariants gate.
 5c. `bash scripts/check-method-purity.sh` — the method-purity gate.
 5d. `bash scripts/check-instruction-size.sh` — the instruction-size gate.
@@ -344,7 +344,7 @@ else
   bad "the missing-function mutation did not apply, so its leg would measure nothing"
 fi
 
-# The predicate matters here, not just the arm: `command -v` resolves external
+# The predicate matters here, not just the branch: `command -v` resolves external
 # commands, so `fn:true` passed the earlier check, ran `true`, printed no
 # verdict line at all, and the run exited 0 one member short of its own list.
 # `declare -F` is the discriminating one -- verified under bash 3.2 directly:
@@ -391,7 +391,7 @@ printf '\n== a structural check can be documented and never wired in ==\n'
 make_tree "$FAKE"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$FAKE/scripts/check-newgate.sh"
 git -C "$FAKE" add scripts/check-newgate.sh
-sed 's|^5a\. `bash scripts/check-propagation-patterns.sh` — the arms gate.|&\n5b. `bash scripts/check-newgate.sh` — a gate nobody runs.|' \
+sed 's|^5a\. `bash scripts/check-propagation-patterns.sh` — the path-pattern gate.|&\n5b. `bash scripts/check-newgate.sh` — a gate nobody runs.|' \
   "$FAKE/AGENTS.md" > "$FAKE/AGENTS.md.new"
 mv "$FAKE/AGENTS.md.new" "$FAKE/AGENTS.md"
 if grep -q 'check-newgate' "$FAKE/AGENTS.md"; then
@@ -551,7 +551,7 @@ check "the live tree and AGENTS.md agree" "$real_rc" "0"
 [ "$real_rc" = "0" ] || printf '%s\n' "$real"
 has "  the four-minute suite is a member" "$real" "scripts/test-loop-corpus.sh"
 has "  this file is a member"             "$real" "scripts/test-run-checks.sh"
-has "  and so is the runner's own gate list head" "$real" "manifests"
+has "  and so is the runner's own check list head" "$real" "manifests"
 # Delivery gates run at a different moment (before opening a PR, not before
 # every commit) and exit 2 when the claude CLI is absent, which this runner
 # would have to translate. They are exempt BY NAME, so assert that.

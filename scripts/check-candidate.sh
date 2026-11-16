@@ -196,13 +196,13 @@ if [ -f "$CTX" ]; then
   #
   # Measured: only `%`, `Overview`, `Registry` and `Layout` can fire at all,
   # because the single-word filter on the last line of this pipeline rejects
-  # everything a hyphenated or multi-word arm could match. Two of those four,
+  # everything a hyphenated or multi-word alternative could match. Two of those four,
   # `Registry` and `Layout`, come from the HARNESS repository's own context.md
   # and not from the template -- so this list is a UNION of two sources, not a
   # projection of one.
   #
   # THE HAZARD IS FORWARD, not present. Rename a template heading to a single
-  # word -- `## Tech stack` to `## Stack` -- and the arm spelled for the old
+  # word -- `## Tech stack` to `## Stack` -- and the alternative spelled for the old
   # multi-word name stops covering it, the new heading becomes a deny term, and
   # every candidate containing that common word is refused with no visible
   # cause. So ANY rename of a `## ` heading in templates/project/ai-docs/context.md
@@ -214,12 +214,12 @@ if [ -f "$CTX" ]; then
   # WHY STATED RATHER THAN DERIVED. A run-time derivation from the template is
   # the shape this repository prefers and it does not fit here, on three counts.
   # (1) The list is that union, so deriving from the template alone turns
-  # `Registry` and `Layout` -- two of the four live arms -- into deny terms,
+  # `Registry` and `Layout` -- two of the four live alternatives -- into deny terms,
   # which is a behaviour change dressed as a cleanup. (2) Rule mode resolves no
   # harness root; only report mode does, so the template is not addressable from
   # here without widening the gate's structure. (3) An unreadable template would
   # yield an EMPTY exclusion list, refusing strictly more than today's inert
-  # arms -- a cannot-run that reads as a stricter pass is worse than the drift
+  # alternatives -- a cannot-run that reads as a stricter pass is worse than the drift
   # it would prevent.
   ents=$(grep -E '^## ' "$CTX" | sed -E 's/^## //' \
          | grep -vE '^(%|Overview|Services|Key modules|Tech stack|Language profile|Build|Code organization|Request-scoped|Registry|Promotion candidate|Method file|Profile file|Layout)' \

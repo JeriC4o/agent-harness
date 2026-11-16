@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Run this repository's whole pre-commit gate list, one member at a time, and
+# Run this repository's whole pre-commit check list, one member at a time, and
 # report a verdict per member.
 #
 # Run:  run-checks.sh [--root <dir>] [--list | --only <member>[,<member>...]]
@@ -30,7 +30,7 @@
 #     (`git ls-files`), so a suite added to the tree is covered the day it lands.
 #     A hardcoded list is how a gate stops covering something while staying
 #     green -- the same drift check-propagation-patterns.sh exists to catch between
-#     the hook arms and the propagation table.
+#     the hook's path patterns and the propagation table.
 #   - ABSENCE IS NEVER SUCCESS. A member whose file is gone is MISSING (red), a
 #     tracked-file set of zero is red, an untracked `*.sh` is red because
 #     `git ls-files` cannot see it, and a gate that exits 0 having processed
@@ -393,7 +393,7 @@ if [ "$LIST_ONLY" -eq 1 ]; then
   exit 0
 fi
 
-printf 'gate list for %s\n' "$ROOT"
+printf 'check list for %s\n' "$ROOT"
 if [ -n "$IGNORED_ARG" ]; then
   printf 'note: [%s] ignored — a positional argument selects nothing; select with --only.\n' "$IGNORED_ARG"
 fi

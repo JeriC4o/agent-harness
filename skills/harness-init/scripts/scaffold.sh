@@ -152,5 +152,5 @@ fi
 
 printf '\n%s created, %s left alone.\n' "$created" "$skipped"
 [ "$DRY" -eq 1 ] && printf 'DRY RUN: nothing was written.\n'
-printf 'Next: fill every %%PLACEHOLDER%% in AGENTS.md and ai-docs/context.md. An unresolved one is a STOP.\n'
+printf 'Next: fill every %%PLACEHOLDER%% in AGENTS.md and ai-docs/context.md. An unresolved one means stop and ask.\n'
 exit 0

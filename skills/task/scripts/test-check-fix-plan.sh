@@ -12,10 +12,10 @@
 # bit, so a suite spelled that way is green precisely because it never runs the
 # thing the way it ships.
 #
-# Each arm is exercised twice: a CONTROL that reaches the arm and passes, and a
+# Each test is exercised twice: a CONTROL that reaches the test and passes, and a
 # planted defect that trips it. The control is not decoration -- a parser that
-# selects nothing reports every arm as passing, so a planted-defect assertion
-# alone cannot tell a live arm from a dead one.
+# selects nothing reports every test as passing, so a planted-defect assertion
+# alone cannot tell a live test from a dead one.
 
 set -uo pipefail
 
@@ -180,12 +180,12 @@ F=$(mkfix); review "$F" "$ONE_OPEN"
 plan "$F" x 'the suite' 6 '| 1 | fix | ai-docs/plans/t.design.md guidance prose | 6 | none |'
 gate plan "$(prog "$F")"
 check "a design path with prose after it routes" "$RC" "1"
-has   "  arm A3 fires on it" "$OUT" "A3   design-amendment     FAIL  finding 1 targets ai-docs/plans/t.design.md"
+has   "  test A3 fires on it" "$OUT" "A3   design-amendment     FAIL  finding 1 targets ai-docs/plans/t.design.md"
 F=$(mkfix); review "$F" "$ONE_OPEN"; printf 'notes\n' > "${F}/ai-docs/plans/notes.md"
 plan "$F" x 'the suite' 6 '| 1 | fix | ai-docs/plans/notes.md cf ai-docs/plans/x.spec.md:2 | 6 | none |'
 gate plan "$(prog "$F")"
 check "a spec path named only in the prose does not route" "$RC" "0"
-has   "  arm A2 passes" "$OUT" "A2   spec-amendment       pass"
+has   "  test A2 passes" "$OUT" "A2   spec-amendment       pass"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
 plan "$F" x 'the suite' 6 '| 1 | amendment: spec | docs/workflow.md:10 | 6 | none |'
@@ -222,13 +222,13 @@ gate plan "$(prog "$F")"
 check "one over the boundary escalates" "$RC" "1"
 has   "  decision" "$OUT" "decision=ESCALATE reason=size-over-threshold"
 has   "  the header carries the value it fired under" "$OUT" "threshold_changed_lines=150"
-has   "  the arm reports both numbers" "$OUT" "declared 151 of 150"
+has   "  the test reports both numbers" "$OUT" "declared 151 of 150"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
 plan "$F" x 'the suite' 400 '| 1 | fix | ai-docs/plans/t.spec.md:4 | 400 | none |'
 gate plan "$(prog "$F")"
 has "routing beats size: a plan that both routes and overruns ROUTES" "$OUT" "decision=ROUTE-SPEC"
-has "  and the size arm still reports its finding" "$OUT" "A4   size                 FAIL  declared 400 of 150"
+has "  and the size test still reports its finding" "$OUT" "A4   size                 FAIL  declared 400 of 150"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
 plan "$F" x 'the suite' 40 "$ONE_FIX"
@@ -362,15 +362,15 @@ F=$(mkfix); review "$F" "$ONE_OPEN"
 gate plan "$(prog "$F")"
 check "a round with no plan section at all refuses" "$RC" "1"
 has   "  decision" "$OUT" "decision=REFUSE reason=no-plan-section"
-has   "  no arm claims to have passed" "$OUT" "A1   anchor-resolution    n/a"
+has   "  no test claims to have passed" "$OUT" "A1   anchor-resolution    n/a"
 
 TWO_OPEN="| 2 | docs/other.md:5 | nit | Another | ${OPEN} |"
 TWO_FIX='| 2 | fix | docs/other.md:5 | 3 | none |'
 THREE_FIX='| 3 | fix | docs/other.md:5 | 3 | none |'
 BAD_ANCHOR='| 1 | fix | docs/workflow.md:9999 | 12 | none |'
 
-printf '\n== T1-Y arm precedence, on one plan carrying two faults at once ==\n'
-# The only legs that discriminate the arm ORDER: a per-property suite is green
+printf '\n== T1-Y test precedence, on one plan carrying two faults at once ==\n'
+# The only legs that discriminate the test ORDER: a per-property suite is green
 # whichever order ships. Their controls are the single-fault legs already in
 # this file -- T1-A's resolving anchor, T1-B/T1-C's routing, T1-D's escalation
 # -- without which a gate that refused everything would satisfy these three.
@@ -380,30 +380,30 @@ F=$(mkfix); review "$F" "$ONE_OPEN" "$TWO_OPEN"
 plan "$F" x 'the suite' 18 "$BAD_ANCHOR" '| 2 | fix | ai-docs/plans/t.spec.md:4 | 6 | none |'
 gate plan "$(prog "$F")"
 check "unanchored and spec-naming at once refuses" "$RC" "1"
-has   "  the anchor arm takes the decision" "$OUT" "decision=REFUSE reason=anchor-unresolved"
+has   "  the anchor test takes the decision" "$OUT" "decision=REFUSE reason=anchor-unresolved"
 hasnt "  and the expensive route is not started" "$OUT" "ROUTE-SPEC"
-has   "  while the superseded arm still shows its own fault" "$OUT" "A2   spec-amendment       FAIL"
+has   "  while the superseded test still shows its own fault" "$OUT" "A2   spec-amendment       FAIL"
 
 F=$(mkfix); review "$F" "$ONE_OPEN" "$TWO_OPEN"
 plan "$F" x 'the suite' 18 "$BAD_ANCHOR" '| 2 | fix | ai-docs/plans/done/t.design.md:4 | 6 | none |'
 gate plan "$(prog "$F")"
 check "unanchored and design-naming at once refuses" "$RC" "1"
-has   "  the anchor arm takes the decision" "$OUT" "decision=REFUSE reason=anchor-unresolved"
+has   "  the anchor test takes the decision" "$OUT" "decision=REFUSE reason=anchor-unresolved"
 hasnt "  and the expensive route is not started" "$OUT" "ROUTE-DESIGN"
-has   "  while the superseded arm still shows its own fault" "$OUT" "A3   design-amendment     FAIL"
+has   "  while the superseded test still shows its own fault" "$OUT" "A3   design-amendment     FAIL"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
 plan "$F" x 'the suite' 200 '| 1 | fix | docs/workflow.md:9999 | 200 | none |'
 gate plan "$(prog "$F")"
 check "unanchored and over the threshold at once refuses" "$RC" "1"
-has   "  the anchor arm takes the decision" "$OUT" "decision=REFUSE reason=anchor-unresolved"
+has   "  the anchor test takes the decision" "$OUT" "decision=REFUSE reason=anchor-unresolved"
 hasnt "  and no size judgement is put to a human" "$OUT" "ESCALATE"
-has   "  while the size arm still shows its own fault" "$OUT" "A4   size                 FAIL  declared 200 of 150"
+has   "  while the size test still shows its own fault" "$OUT" "A4   size                 FAIL  declared 200 of 150"
 
 printf '\n== T1-Z A6 the converse: a plan row matching no open finding ==\n'
 
 # PRIMARY -- the discriminator, and the only leg that is one. Every target
-# resolves and every disposition is in vocabulary, so no earlier arm can claim
+# resolves and every disposition is in vocabulary, so no earlier test can claim
 # the decision, and the row the review never raised is the single fault. A
 # count-equality implementation refuses this too but can only say
 # `finding-coverage`, so the leg separates the two on the reason TOKEN.
@@ -555,7 +555,7 @@ plan "$F" "$B" 'the suite' 1 \
   '| 1 | fix | docs/workflow.md:10 | 1 | none |' \
   '| 1 | fix | docs/scratch/notes.md:1 | 0 | none |'
 gate applied "$(prog "$F")"
-check "ten lines written to a gitignored path fire neither arm" "$RC" "0"
+check "ten lines written to a gitignored path fire neither test" "$RC" "0"
 has   "  only the real file is charged" "$OUT" "actual_changed_lines=1"
 hasnt "  and the gitignored path appears in no verdict field" "$OUT" "docs/scratch"
 has   "  the in-round ignore list is a different exclusion and counted none" "$OUT" "ignored=0"
@@ -573,9 +573,9 @@ plan "$F" "$B" 'the suite' 11 \
 gate applied "$(prog "$F")"
 check "control: the identical write to a NON-gitignored path IS charged" "$RC" "0"
 has   "  both contributions sum" "$OUT" "actual_changed_lines=11"
-has   "  and arm (a) matched both planned paths" "$OUT" "(a)  unplanned-file       pass"
+has   "  and test (a) matched both planned paths" "$OUT" "(a)  unplanned-file       pass"
 
-printf '\n== T1-ZA arm (a) admits fix-row targets only ==\n'
+printf '\n== T1-ZA test (a) admits fix-row targets only ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN" "$TWO_OPEN"; B=$(baseline_of "$F")
 OBJ_ROW='| 2 | object: the cited form is the documented one | docs/other.md:5 | 0 | none |'
 plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |' "$OBJ_ROW"
@@ -598,7 +598,7 @@ plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |' '| 2
 printf 'edit\n' >> "${F}/docs/workflow.md"; printf 'edit\n' >> "${F}/docs/other.md"
 gate applied "$(prog "$F")"
 check "control: the same two-row plan with row 2 as a fix admits both" "$RC" "0"
-has   "  so the arm keys on the disposition, not the row's position" "$OUT" "decision=OK"
+has   "  so the test keys on the disposition, not the row's position" "$OUT" "decision=OK"
 
 # The allowed set is also asserted on its CONSTRUCTION, which pins the filter
 # itself rather than one of its consequences; T1-ZG asserts the `amendment:`
@@ -616,7 +616,7 @@ printf '\n== T1-ZF the amendment-then-resume round: ai-docs/plans/ excluded and 
 # refuses a second stub, so the round keeps a round_base taken BEFORE the
 # amendment wrote to a spec or design artefact -- and A2/A3 forbid any passing
 # plan from PROPOSING AN EDIT to those two SUFFIXES, a `fix` row naming one
-# routing while a row proposing no edit briefs nothing. Arm (a) therefore fired by
+# routing while a row proposing no edit briefs nothing. Test (a) therefore fired by
 # construction on every such round, permanently. The exclusion closes that, and
 # the `excluded-in-round` LINE is what keeps it a narrowing rather than an
 # amnesty: the header's `ignored=` carries a COUNT ONLY, so a leg reading the
@@ -638,7 +638,7 @@ plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |'
 gate applied "$(prog "$F")"
 check "a round whose baseline predates an amendment is OK" "$RC" "0"
 has   "  decision" "$OUT" "decision=OK"
-has   "  arm (a) names neither plan artefact" "$OUT" "(a)  unplanned-file       pass"
+has   "  test (a) names neither plan artefact" "$OUT" "(a)  unplanned-file       pass"
 has   "  the measurement charges the briefed file and nothing else" "$OUT" "actual_changed_lines=1"
 has   "  and the exclusion is counted" "$OUT" "ignored=2"
 EXCL=$(printf '%s\n' "$OUT" | grep 'excluded-in-round')
@@ -654,7 +654,7 @@ gate applied "$(prog "$F")"
 check "control: an unbriefed file OUTSIDE the prefix is still a finding" "$RC" "1"
 has   "  decision" "$OUT" "decision=FINDING reason=unplanned-file"
 ARMA=$(printf '%s\n' "$OUT" | grep -F '(a)')
-has   "  named on arm (a) by itself" "$ARMA" "docs/other.md"
+has   "  named on test (a) by itself" "$ARMA" "docs/other.md"
 hasnt "  so the entry is a suffix exclusion, not a blanket amnesty" "$ARMA" "ai-docs/plans/"
 
 # The NON-ROUTING control, and the reason the exclusion is two suffixes rather
@@ -671,7 +671,7 @@ else ok  "the non-routing fixture is tracked and excluded by neither .gitignore 
 plan "$F" "$B" 'the suite' 2 '| 1 | fix | docs/workflow.md:10 | 1 | none |' "| 2 | fix | ${EVID}:2 | 1 | none |"
 gate plan "$(prog "$F")"
 check "a non-routing path under ai-docs/plans/ may be briefed by a passing plan" "$RC" "0"
-has   "  because the routing arms key on two suffixes, not on the directory" "$OUT" "decision=PASS"
+has   "  because the routing tests key on two suffixes, not on the directory" "$OUT" "decision=PASS"
 printf 'edit\n' >> "${F}/docs/workflow.md"
 printf 'edit\n' >> "${F}/${EVID}"
 gate applied "$(prog "$F")"
@@ -680,10 +680,10 @@ has   "  decision" "$OUT" "decision=OK"
 has   "  both briefed edits are charged to the round" "$OUT" "actual_changed_lines=2"
 has   "  and nothing was excluded, so no declared-vs-actual gap opens" "$OUT" "ignored=0"
 
-# The same path in the other direction, which is what pins arm (a) itself: edited
+# The same path in the other direction, which is what pins test (a) itself: edited
 # and named by NO row, it must FLAG. Under the directory-wide form it was silently
 # excluded and the verdict stayed OK -- so the two legs together are the pair that
-# tells the two spellings apart, one on the measurement and one on the arm.
+# tells the two spellings apart, one on the measurement and one on the test.
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 printf 'edit\n' >> "${F}/docs/workflow.md"
 printf 'edit\n' >> "${F}/${EVID}"
@@ -692,7 +692,7 @@ gate applied "$(prog "$F")"
 check "an UNNAMED edit to a non-routing path under the prefix is a finding" "$RC" "1"
 has   "  decision" "$OUT" "decision=FINDING reason=unplanned-file"
 ARMA=$(printf '%s\n' "$OUT" | grep -F '(a)')
-has   "  named on arm (a) like any other unplanned path" "$ARMA" "$EVID"
+has   "  named on test (a) like any other unplanned path" "$ARMA" "$EVID"
 hasnt "  rather than being quietly excluded instead" "$OUT" "excluded-in-round"
 
 printf '\n== T1-ZG the amendment row END TO END, not on the construction ==\n'
@@ -714,20 +714,20 @@ gate applied "$(prog "$F")"
 check "and applied IS reached for that round" "$RC" "1"
 has   "  decision" "$OUT" "decision=FINDING reason=unplanned-file"
 ARMA=$(printf '%s\n' "$OUT" | grep -F '(a)')
-has   "  arm (a) names the file nobody's row touched" "$ARMA" "docs/other.md"
+has   "  test (a) names the file nobody's row touched" "$ARMA" "docs/other.md"
 hasnt "  not the amendment's own plan artefact" "$ARMA" "ai-docs/plans/t.spec.md"
 hasnt "  nor the briefed fix target" "$ARMA" "docs/workflow.md"
 EXCL=$(printf '%s\n' "$OUT" | grep 'excluded-in-round')
 has   "  while the amendment's write is NAMED as excluded" "$EXCL" "ai-docs/plans/t.spec.md"
 
-printf '\n== T1-H applied arm (a): unplanned files ==\n'
+printf '\n== T1-H applied test (a): unplanned files ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 plan "$F" "$B" 'the suite' 3 '| 1 | fix | docs/workflow.md:10 | 3 | none |'
 printf 'edit\n' >> "${F}/docs/workflow.md"
 gate applied "$(prog "$F")"
 check "only planned files is OK" "$RC" "0"
 has   "  decision" "$OUT" "decision=OK"
-has   "  arm (a) passes" "$OUT" "(a)  unplanned-file       pass"
+has   "  test (a) passes" "$OUT" "(a)  unplanned-file       pass"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 plan "$F" "$B" 'the suite' 3 '| 1 | fix | docs/workflow.md:10 | 3 | none |'
@@ -744,8 +744,8 @@ gate applied "$(prog "$F")"
 check "an unplanned file CREATED this round is a finding" "$RC" "1"
 has   "  names the path" "$OUT" "docs/created.md"
 
-# A Target cell carrying prose after its anchor. The plan arm takes the
-# anchor up to the first space, so arm (a) must read the same path from it.
+# A Target cell carrying prose after its anchor. The plan test takes the
+# anchor up to the first space, so test (a) must read the same path from it.
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 plan "$F" "$B" 'the suite' 3 '| 1 | fix | docs/workflow.md:10 — address the `x` token, not the line | 3 | none |'
 gate plan "$(prog "$F")"
@@ -753,7 +753,7 @@ check "a Target with prose after the anchor passes the plan gate" "$RC" "0"
 printf 'edit\n' >> "${F}/docs/workflow.md"
 gate applied "$(prog "$F")"
 check "and the file it names is planned on apply" "$RC" "0"
-has   "  arm (a) passes" "$OUT" "(a)  unplanned-file       pass"
+has   "  test (a) passes" "$OUT" "(a)  unplanned-file       pass"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 plan "$F" "$B" 'the suite' 3 '| 1 | fix | docs/workflow.md guidance prose with no line | 3 | none |'
@@ -763,8 +763,8 @@ check "a prose Target without a line still plans its path, and an unplanned edit
 has   "  naming only the unplanned path" "$OUT" "(a)  unplanned-file       FAIL  docs/other.md"
 hasnt "  not the planned one" "$(printf '%s\n' "$OUT" | grep -F '(a)')" "docs/workflow.md"
 
-printf '\n== T1-I applied REPORTS the measurement; the size arm is gone ==\n'
-# Arm (b) is withdrawn, so nothing post-apply compares a total against a limit.
+printf '\n== T1-I applied REPORTS the measurement; the size test is gone ==\n'
+# Test (b) is withdrawn, so nothing post-apply compares a total against a limit.
 # What survives is the MEASUREMENT the header reports, and these fixtures -- a
 # tracked and an untracked contribution -- are kept for the counting basis
 # behind it. The leg asserts the reported figure and the ABSENCE of any verdict
@@ -781,11 +781,11 @@ F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 plan "$F" "$B" 'the suite' 151 '| 1 | fix | docs/new.md:1 | 151 | none |'
 awk 'BEGIN { for (i = 1; i <= 151; i++) print "n " i }' > "${F}/docs/new.md"
 gate applied "$(prog "$F")"
-check "a round PAST the old boundary is OK too -- no size arm fires" "$RC" "0"
+check "a round PAST the old boundary is OK too -- no size test fires" "$RC" "0"
 has   "  decision" "$OUT" "decision=OK"
 has   "  while the measurement is still reported" "$OUT" "actual_changed_lines=151"
 hasnt "  no overrun reason token survives" "$OUT" "actual-overrun"
-hasnt "  no second arm line at all" "$OUT" "(b)"
+hasnt "  no second test line at all" "$OUT" "(b)"
 hasnt "  and no limit is printed where nothing enforces one" "$OUT" "threshold_changed_lines"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
@@ -837,7 +837,7 @@ has "the stub carries the basis in the column heading" "$STUB" "Expected changed
 has "the stub leaves verification for the scout" "$STUB" "**verification:**"
 gate plan "$(prog "$F")"
 check "an unfilled stub REFUSES rather than passing" "$RC" "1"
-has   "  the verification arm fires" "$OUT" "A5   verification-named   FAIL"
+has   "  the verification test fires" "$OUT" "A5   verification-named   FAIL"
 gate baseline "$(prog "$F")"
 check "a second baseline for the same round is exit 2" "$RC" "2"
 has   "  reason named" "$OUT" "already carries a ## Fix Plan (Round 1) section"
@@ -855,7 +855,7 @@ printf 'r2\nr2\n' > "${F}/docs/round2-new.md"
 gate applied "$(prog "$F")"
 check "the round is OK" "$RC" "0"
 has   "  the untracked file is charged its DELTA, not its length" "$OUT" "actual_changed_lines=4"
-has   "  and the round-1 tracked edit fires neither arm" "$OUT" "(a)  unplanned-file       pass"
+has   "  and the round-1 tracked edit fires neither test" "$OUT" "(a)  unplanned-file       pass"
 
 printf '\n== T1-L the in-round ignore list is narrow and never silent ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
@@ -864,7 +864,7 @@ printf 'edit\n' >> "${F}/docs/workflow.md"
 printf 'a new learning\n' >> "${F}/ai-docs/learnings/b.md"
 printf 'an archive line\n' >> "${F}/ai-docs/learnings.md"
 gate applied "$(prog "$F")"
-check "both ignore-list paths fire neither arm" "$RC" "0"
+check "both ignore-list paths fire neither test" "$RC" "0"
 has   "  and the exclusion is counted in the header" "$OUT" "ignored=2"
 has   "  and every excluded path is named" "$OUT" "ai-docs/learnings.md ai-docs/learnings/b.md"
 
@@ -890,11 +890,11 @@ F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 plan "$F" "$B" 'the suite' 160 '| 1 | fix | docs/workflow.md:10 | 160 | none |'
 awk 'BEGIN { for (i = 1; i <= 160; i++) print "rewritten " i }' > "${F}/docs/workflow.md"
 gate applied "$(prog "$F")"
-# Re-pointed with arm (b): this sub-leg's subject is the BASIS at a larger
-# figure, and the verdict it used to assert was the deleted size arm's. Past the
+# Re-pointed with test (b): this sub-leg's subject is the BASIS at a larger
+# figure, and the verdict it used to assert was the deleted size test's. Past the
 # old boundary the verb is now OK, so asserting the refusal here would assert a
 # mechanism that is gone.
-check "160 rewritten lines is 160, and no size arm fires on it" "$RC" "0"
+check "160 rewritten lines is 160, and no size test fires on it" "$RC" "0"
 has   "  the total" "$OUT" "actual_changed_lines=160"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
@@ -936,10 +936,10 @@ git -C "$F" mv docs/other.md docs/renamed.md
 gate applied "$(prog "$F")"
 check "a 40-line pure rename is OK against a plan declaring 2N" "$RC" "0"
 has   "  and charges 2N" "$OUT" "actual_changed_lines=80"
-has   "  arm (a) matched both plain paths" "$OUT" "(a)  unplanned-file       pass"
+has   "  test (a) matched both plain paths" "$OUT" "(a)  unplanned-file       pass"
 
 # Rename detection stays OFF on purpose: with -M the two rows collapse to one
-# `from => to` path, which matches no planned Target, so arm (a) would report
+# `from => to` path, which matches no planned Target, so test (a) would report
 # every rename as an unplanned file. This pins the absence.
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 plan "$F" "$B" 'the suite' 80 '| 1 | fix | docs/other.md:1 | 80 | none |'
@@ -960,7 +960,7 @@ plan "$F" x 'the suite' 7 '| 1 | object: the row reads \| a \| b \| and stands |
 gate plan "$(prog "$F")"
 check "escaped pipes in both free-text columns shift no later field" "$RC" "0"
 has   "  the Arm A anchor BEHIND the pipes was still found" "$OUT" "A1   anchor-resolution    pass"
-has   "  and the row's figure reached the size arm intact" "$OUT" "declared 7 of 150"
+has   "  and the row's figure reached the size test intact" "$OUT" "declared 7 of 150"
 hasnt "  and the restored pipes matched the file's own row" "$OUT" "arma-quote-unverified"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
@@ -1073,7 +1073,7 @@ plan "$F" x 'the suite' 12 '| 1 | fix | docs/quoted.md:10 | 12 | `docs/quoted.md
 gate plan "$(prog "$F")"
 check "a quote absent from the cited line refuses" "$RC" "1"
 has   "  decision" "$OUT" "decision=REFUSE reason=arma-quote-unverified"
-has   "  on its own arm line, because the remedy is re-read the file" "$OUT" "A1   arma-quote-unverified"
+has   "  on its own test line, because the remedy is re-read the file" "$OUT" "A1   arma-quote-unverified"
 has   "  while the anchor itself is reported as resolving" "$OUT" "A1   anchor-resolution    pass"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"; quotefix "$F"
@@ -1081,7 +1081,7 @@ plan "$F" x 'the suite' 12 "| 1 | fix | docs/quoted.md:10 | 12 | \`docs/quoted.m
 gate plan "$(prog "$F")"
 check "control: the sentence actually AT that line passes" "$RC" "0"
 has   "  decision" "$OUT" "decision=PASS"
-hasnt "  so the arm does not refuse everything" "$OUT" "arma-quote-unverified"
+hasnt "  so the test does not refuse everything" "$OUT" "arma-quote-unverified"
 
 printf '\n== T1-ZI the usability set: re-wrap, elision, order, and the floor ==\n'
 # Refusing a correct citation is the failure to avoid above all others: this
@@ -1191,7 +1191,7 @@ check "one line past W refuses" "$RC" "1"
 has   "  decision" "$OUT" "decision=REFUSE reason=arma-quote-unverified"
 has   "  naming the window it searched" "$OUT" "lines 3-9"
 
-printf '\n== T1-ZK the routing arms path half keyed on fix rows ==\n'
+printf '\n== T1-ZK the routing tests path half keyed on fix rows ==\n'
 # Each leg differs from the passing shape in ONE half alone, because a suite
 # written against the unqualified rule stays green under the narrowed one.
 # The targets are the fixture's REAL four-line artefacts: a fabricated plans
@@ -1375,7 +1375,7 @@ check "  and no refused call wrote a row" "$(grep -c . "$VJ5")" "2"
 
 printf '\n== T1-ZO the sixth disposition: correction: <what shipped instead> ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN"
-plan "$F" x 'the suite' 0 '| 1 | correction: the arm keys on the suffix pair | docs/workflow.md:10 | 0 | none |'
+plan "$F" x 'the suite' 0 '| 1 | correction: the test keys on the suffix pair | docs/workflow.md:10 | 0 | none |'
 gate plan "$(prog "$F")"
 check "correction: with a payload passes" "$RC" "0"
 has   "  decision" "$OUT" "decision=PASS"
@@ -1387,15 +1387,16 @@ check "a bare correction: is refused, as object: and resolved: are" "$RC" "1"
 has   "  the message names the sixth member" "$OUT" "correction: <what shipped instead>"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"
+# vocabulary-internal: the disposition token the removed last step of a task used, which the check refuses
 plan "$F" x 'the suite' 0 '| 1 | redline: modified — the as-built step text | docs/workflow.md:10 | 0 | none |'
 gate plan "$(prog "$F")"
-check "the retired redline: token is refused" "$RC" "1"
+check "the removed last step's disposition token is refused" "$RC" "1"
 has   "  as outside the vocabulary" "$OUT" "disposition [redline: modified — the as-built step text] is outside the vocabulary"
 
 printf '\n== T1-ZP A7 correction-accounting: a fix row whose Arm A names a plan artefact ==\n'
 # THE FIRST LEG IS THE PRE-MANDATE CONTROL, and it was observed passing before
-# this arm existed: the code fix is right, the design sentence it leaves untrue
-# is named in the Arm A cell, and every arm reported pass.
+# this test existed: the code fix is right, the design sentence it leaves untrue
+# is named in the Arm A cell, and every test reported pass.
 DIVERGED='the design asserts a sentence the shipped code diverges from'
 diverge_at() { # <fixture> <repo-relative path> -> the line DIVERGED now sits on
   printf '%s\n' "$DIVERGED" >> "${1}/${2}"
@@ -1415,9 +1416,9 @@ plan "$F" x 'the suite' 12 "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell "
 gate plan "$(prog "$F")"
 check "a fix row leaving a design sentence untrue is refused" "$RC" "1"
 has   "  decision" "$OUT" "decision=REFUSE reason=arma-unaccounted"
-has   "  and the arm names the sentence's own anchor" "$(a7line "$OUT")" "${DESIGNED}:${L}"
+has   "  and the test names the sentence's own anchor" "$(a7line "$OUT")" "${DESIGNED}:${L}"
 
-# Without this leg the arm refuses the honest plan and passes the evasive one: a
+# Without this leg the test refuses the honest plan and passes the evasive one: a
 # scout naming the at-stake sentence on its `fix` row is refused, while one
 # writing `none` and no `correction:` row is not.
 F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$DESIGNED")
@@ -1432,7 +1433,7 @@ has   "  A7 passes" "$(a7line "$OUT")" "pass"
 F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$SPECED")
 plan "$F" x 'the suite' 12 "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell "$SPECED" "$L") |"
 gate plan "$(prog "$F")"
-check "the spec suffix fires the same arm, so the pair is covered" "$RC" "1"
+check "the spec suffix fires the same test, so the pair is covered" "$RC" "1"
 has   "  decision" "$OUT" "decision=REFUSE reason=arma-unaccounted"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" "$SPECED")
@@ -1459,7 +1460,7 @@ plan "$F" x 'the suite' 12 \
 gate plan "$(prog "$F")"
 check "a correction row does not account for another plan's design" "$RC" "1"
 has   "  decision" "$OUT" "decision=REFUSE reason=arma-unaccounted"
-has   "  and the arm names that design's anchor" "$(a7line "$OUT")" "${OTHER_DESIGN}:${L}"
+has   "  and the test names that design's anchor" "$(a7line "$OUT")" "${OTHER_DESIGN}:${L}"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"; quotefix "$F"
 plan "$F" x 'the suite' 12 "| 1 | fix | docs/workflow.md:10 | 12 | \`docs/quoted.md:10\` — \"${SENTENCE}\" |"
@@ -1471,8 +1472,8 @@ has   "  A7 passes" "$(a7line "$OUT")" "pass"
 F=$(mkfix); review "$F" "$ONE_OPEN"; L=$(diverge_at "$F" ai-docs/plans/t.design-evidence.md)
 plan "$F" x 'the suite' 12 "| 1 | fix | docs/workflow.md:10 | 12 | $(arma_cell ai-docs/plans/t.design-evidence.md "$L") |"
 gate plan "$(prog "$F")"
-check "a non-routing path under the plan prefix does not fire the arm" "$RC" "0"
-has   "  because the arm keys on the two suffixes, not on the directory" "$OUT" "decision=PASS"
+check "a non-routing path under the plan prefix does not fire the test" "$RC" "0"
+has   "  because the test keys on the two suffixes, not on the directory" "$OUT" "decision=PASS"
 
 # The four exemptions, one leg each. A family qualifier tested on one
 # representative reads as applied to all of them, and only the member that lacks
@@ -1507,7 +1508,7 @@ has   "  and A7 itself passes, because the breaking path accounts for the round"
 F=$(mkfix); review "$F" "$ONE_OPEN"
 plan "$F" x 'the suite' 12 "$ONE_FIX"
 gate plan "$(prog "$F")"
-check "a none cell cannot fire the arm, which is its documented bound" "$RC" "0"
+check "a none cell cannot fire the test, which is its documented bound" "$RC" "0"
 has   "  A7 passes" "$(a7line "$OUT")" "pass"
 
 printf "\n== T1-ZQ a correction: row corrects the task's own design and routes any other ==\n"
@@ -1546,7 +1547,7 @@ plan "$F" x 'the suite' 12 "$ONE_FIX"
 gate plan "$(prog "$F")"
 check "control: a plan no design anchor reaches does not need the field" "$RC" "0"
 
-printf '\n== T1-ZR applied: unplanned-file is the one finding arm ==\n'
+printf '\n== T1-ZR applied: unplanned-file is the one finding test ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |'
 printf 'edit\n' >> "${F}/docs/workflow.md"
@@ -1554,28 +1555,29 @@ printf 'd5, as the approved amendment wrote it\n' >> "${F}/${DESIGNED}"
 gate applied "$(prog "$F")"
 check "a round in which an approved amendment wrote the design is OK" "$RC" "0"
 has   "  decision" "$OUT" "decision=OK"
-hasnt "  and no arm keyed on a marker or a log reports" "$OUT" "A8"
+hasnt "  and no test keyed on a marker or a log reports" "$OUT" "A8"
 EXCL=$(printf '%s\n' "$OUT" | grep 'excluded-in-round')
 has   "  the design edit is named for the orchestrator to account for" "$EXCL" "$DESIGNED"
 
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 printf 'edit\n' >> "${F}/docs/workflow.md"
+# vocabulary-internal: a log file the removed last step of a task wrote under this name
 printf '| R1.1 | added | row |\n' > "${F}/ai-docs/plans/t.redline.md"
 plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |'
 gate applied "$(prog "$F")"
-check "a *.redline.md is an ordinary path" "$RC" "1"
+check "a log the removed last step wrote is an ordinary path" "$RC" "1"
 has   "  decision" "$OUT" "decision=FINDING reason=unplanned-file"
 ARMA=$(printf '%s\n' "$OUT" | grep -F '(a)')
-has   "  named on arm (a)" "$ARMA" "ai-docs/plans/t.redline.md"
+has   "  named on test (a)" "$ARMA" "ai-docs/plans/t.redline.md"
 
-printf '\n== T1-ZS the declared-link record is excluded ==\n'
+printf '\n== T1-ZS the record of declared links is excluded ==\n'
 F=$(mkfix); review "$F" "$ONE_OPEN"; B=$(baseline_of "$F")
 printf 'edit\n' >> "${F}/docs/workflow.md"
 printf '| L1 | design § A | a | design § B | b | grounds |\n' > "${F}/ai-docs/plans/t.links.md"
 plan "$F" "$B" 'the suite' 1 '| 1 | fix | docs/workflow.md:10 | 1 | none |'
 gate applied "$(prog "$F")"
-check "a round that writes the declared-link record fires no arm" "$RC" "0"
-has   "  arm (a) does not name the record" "$OUT" "(a)  unplanned-file       pass"
+check "a round that writes the record of declared links fires no test" "$RC" "0"
+has   "  test (a) does not name the record" "$OUT" "(a)  unplanned-file       pass"
 EXCL=$(printf '%s\n' "$OUT" | grep 'excluded-in-round')
 has   "  the excluded-in-round line NAMES the record" "$EXCL" "ai-docs/plans/t.links.md"
 has   "  the measurement charges the briefed file alone" "$OUT" "actual_changed_lines=1"

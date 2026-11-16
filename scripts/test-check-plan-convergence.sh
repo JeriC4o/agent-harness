@@ -4,7 +4,7 @@
 #
 # Run: bash scripts/test-check-plan-convergence.sh
 #
-# Every class is planted deliberately in a synthetic plan pair whose correct
+# Every class is planted deliberately in a synthetic plan whose correct
 # answer is known independently of the checker, and every planted fault is
 # PAIRED with a case that must stay silent. A finding without its paired silence
 # says only that the class fires, never that it discriminates -- and a class
@@ -35,7 +35,7 @@ cp "${ROOT}/docs/plan-invariants.md" "$T/docs/plan-invariants.md"
 # The real file, not a stub: the minimum fragment length is BORROWED from it,
 # so a fixture carrying an invented assignment would test the fixture.
 cp "${ROOT}/skills/task/scripts/check-fix-plan.sh" "$T/skills/task/scripts/"
-# The same for the sections a folded spec keeps, borrowed from the record of
+# The same for the sections a cut-down spec keeps, borrowed from the record of
 # deliberate absence.
 cp "${ROOT}/scripts/deliberate-absence.sh" "$T/scripts/"
 # All three payloads, because the entry point preflights each one by name and
@@ -99,7 +99,7 @@ marked() { printf '%s\n' "$1" > "$T/scripts/marked.sh"; }
 account(){ printf '%s\t%s\t%s\n' "$1" "$2" "$3" >> "$BASE"; }
 
 write_pair 'Nothing.' 'Nothing.'
-# The finding line carries its excuse key between the class and the colon, so
+# The finding line carries its key to accept between the class and the colon, so
 # the row is taken from the tail rather than from a fixed prefix.
 run | sed -n 's/^finding reference .*that would account for it is: //p' | sort -u >> "$BASE"
 git -C "$T" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
@@ -263,43 +263,43 @@ $SPEC_ONE" "${COMPLETE/| AC1 |/| AC1, AC9 |}"
 out=$(run)
 has "a row claiming a criterion the spec does not state is reported" "$out" 'claims to deliver AC9'
 
-printf '\n== a folded spec: the criterion leg has nothing to check, and says so ==\n'
+printf '\n== a cut-down spec: the criterion leg has nothing to check, and says so ==\n'
 # The kept sections are read out of the copied record, for the reason tok()
 # reads the record: a suite that spelled them would be the second place they live.
 KEPT=$(sed -n "/^RETAINED='/,/'\$/p" "$T/scripts/deliberate-absence.sh" | sed "s/^RETAINED='//; s/'\$//")
 [ "$(printf '%s\n' "$KEPT" | grep -c .)" -ge 2 ] \
   && ok "the kept sections were derived from the record of deliberate absence" \
   || bad "the kept sections were derived from the record of deliberate absence"
-write_folded() { # [extra spec text]
+write_cut_down() { # [extra spec text]
   { printf '%s\n' "$KEPT" | while IFS= read -r h; do printf '%s\n\n- Kept.\n\n' "$h"; done
     [ -z "${1:-}" ] || printf '%s\n' "$1"; } > "$T/plans/a.spec.md"
   printf '# Design\n\n%s\n\n%s\n' "$DESIGN_FIRST" "$COMPLETE" > "$T/plans/a.design.md"
 }
-write_folded
+write_cut_down
 out=$(run)
-hasnt "a row's delivery claim against a folded spec is not reported" "$out" 'claims to deliver'
-has "and the roster says the criterion leg was not examined, and why" "$out" 'criteria not examined (the spec is folded'
+hasnt "a row's delivery claim against a cut-down spec is not reported" "$out" 'claims to deliver'
+has "and the roster says the criterion leg was not examined, and why" "$out" 'criteria not examined (a cut-down spec'
 has "and the rest of the class still ran" "$out" 'objects=1'
-write_folded '### A note under the last kept section'
+write_cut_down '### A note under the last kept section'
 out=$(run)
-hasnt "a subsection under a kept section leaves the spec folded" "$out" 'claims to deliver'
-write_folded "\`\`\`
+hasnt "a subsection under a kept section leaves the spec cut down" "$out" 'claims to deliver'
+write_cut_down "\`\`\`
 $SPEC_FIRST
 \`\`\`"
 out=$(run)
-hasnt "a heading inside a fence leaves the spec folded" "$out" 'claims to deliver'
+hasnt "a heading inside a fence leaves the spec cut down" "$out" 'claims to deliver'
 printf '%s\n\n- Kept.\n' "$(printf '%s\n' "$KEPT" | tail -n 1)" > "$T/plans/a.spec.md"
 out=$(run)
 has "control: a spec carrying only some kept sections is read as a plan" "$out" 'claims to deliver AC1, which the spec does not state'
 printf '# Draft\n\nNo section yet.\n' > "$T/plans/a.spec.md"
 out=$(run)
 has "control: a spec with no heading at the kept depth is read as a plan" "$out" 'claims to deliver AC1, which the spec does not state'
-write_folded "$SPEC_FIRST
+write_cut_down "$SPEC_FIRST
 
 Still a plan."
 out=$(run)
 has "control: one heading beyond the kept ones and the spec is read as a plan" "$out" 'claims to deliver AC1, which the spec does not state'
-hasnt "and the roster does not call it folded" "$out" 'the spec is folded'
+hasnt "and the roster does not call it cut down" "$out" 'a cut-down spec'
 mv "$T/scripts/deliberate-absence.sh" "$T/scripts/gone-absence.sh"
 out=$(run); rc=$?
 check "an unreadable source for the kept sections -> rc 2" "$rc" "2"
@@ -517,7 +517,7 @@ mv "$BASE" "$T/ai-docs/fixtures/moved"
 out=$(run); rc=$?
 check "a record absent from the working tree skips one class rather than the run" "$rc" "0"
 has "and the roster says the class was not examined, and why" "$out" \
-  'not-examined (the project keeps no baseline record at ai-docs/fixtures/positional-references.baseline)'
+  'not-examined (the project keeps no record of accounted positions at ai-docs/fixtures/positional-references.baseline)'
 hasnt "and no other class reads as skipped" "$out" 'the run stopped before it'
 mv "$T/ai-docs/fixtures/moved" "$BASE"
 git -C "$T" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
@@ -539,8 +539,8 @@ has "and every position becomes an arrival, which is the loud direction" "$out" 
 cp "$T/ai-docs/fixtures/full" "$BASE"
 
 printf '\n== the pairing class, both directions and the ambiguity report ==\n'
-marked '# the refusal this claim leans on [refusal-arm]'
-write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-arm].' 'Nothing.'
+marked '# the refusal this claim leans on [refusal-branch]'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-branch].' 'Nothing.'
 out=$(run)
 hasnt "a claim whose mark sits in a file it names pairs" "$out" 'finding pairing'
 has "and the pair count is printed, so two empty sides cannot read as agreement" "$out" 'pairs=1'
@@ -549,29 +549,29 @@ has "and both sides were counted" "$out" 'claims=1 marks=1'
 # files the PAIR names, so a fixture naming the marked file nowhere leaves this
 # leg passing because the mark was never read -- proved by muting the
 # claiming-statement bound and watching the leg stay green.
-write_pair 'The guard in `docs/swept.md` refuses an empty set [refusal-arm].' 'The other guard lives in `scripts/marked.sh`.'
+write_pair 'The guard in `docs/swept.md` refuses an empty set [refusal-branch].' 'The other guard lives in `scripts/marked.sh`.'
 out=$(run)
 has "a claim whose mark sits in a file it does not name is reported" "$out" 'resolves to nothing'
 has "and the mark it could not use was read rather than skipped" "$out" 'marks=1'
-write_pair 'The guard refuses an empty set [refusal-arm].' 'Nothing.'
+write_pair 'The guard refuses an empty set [refusal-branch].' 'Nothing.'
 out=$(run)
 has "a claim naming no file in the tree is reported" "$out" 'nothing bounds where its mark may sit'
 write_pair 'The guard in `scripts/marked.sh` refuses an empty set.' 'Nothing.'
 out=$(run)
 has "a mark no statement claims is reported" "$out" 'no statement of this plan claims it'
-write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-arm].' 'The same guard in `scripts/marked.sh` refuses it [refusal-arm].'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-branch].' 'The same guard in `scripts/marked.sh` refuses it [refusal-branch].'
 out=$(run)
 has "an id claimed by two statements is reported as ambiguous" "$out" 'claimed by 2 statements'
-marked '# the refusal this claim leans on [refusal-arm]
-# and a second entity carrying the same mark [refusal-arm]'
-write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-arm].' 'Nothing.'
+marked '# the refusal this claim leans on [refusal-branch]
+# and a second entity carrying the same mark [refusal-branch]'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-branch].' 'Nothing.'
 out=$(run)
 has "an id marked at two sites is reported as ambiguous" "$out" 'marked at 2 sites'
-marked '# the refusal this claim leans on [refusal-arm]'
-write_pair 'The guard in `scripts/marked.sh` refuses a set spelled `[refusal-arm]`.' 'Nothing.'
+marked '# the refusal this claim leans on [refusal-branch]'
+write_pair 'The guard in `scripts/marked.sh` refuses a set spelled `[refusal-branch]`.' 'Nothing.'
 out=$(run)
 has "a bracketed token inside a backtick span is not a claim" "$out" 'claims=0'
-marked 'printf "%s" "[refusal-arm]"'
+marked 'printf "%s" "[refusal-branch]"'
 write_pair 'The guard in `scripts/marked.sh` refuses an empty set.' 'Nothing.'
 out=$(run)
 has "a bracketed token outside a comment in a source file is not a mark" "$out" 'marks=0'
@@ -593,7 +593,7 @@ hasnt "a claim against a language admitting no comment resolves on the file alon
 has "and it still counts as a pair, with no reverse pairing asserted" "$out" 'pairs=1'
 
 
-printf '\n== the excuse route: the grant act, and what an ordinary run does with its record ==\n'
+printf '\n== the record of accepted findings: the accepting act, and what an ordinary run does with it ==\n'
 EX="$T/plans/a.accepted.md"
 rm -f "$EX"
 PKEY="provenance|spec § ${SPEC_FIRST_NAME}|40"
@@ -603,8 +603,8 @@ grant() { bash "$SUB" --accept "$1" --grounds "$2" \
 
 write_pair 'The window is 40 rounds wide. The band is 20 + 20 = 41 wide.' 'Nothing.'
 out=$(run)
-has "every finding line carries the key that would excuse it" "$out" "[accept: ${PKEY}]"
-has "and nothing is excused before an act grants one" "$out" 'excused-holding=0 excused-reporting=0'
+has "every finding line carries the key that would accept it" "$out" "[accept: ${PKEY}]"
+has "and nothing is accepted before an act accepts one" "$out" 'accepted-holding=0 accepted-reporting=0'
 
 bash "$SUB" --accept "$PKEY" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
 check "--accept without --grounds -> rc 2" "$?" "2"
@@ -614,16 +614,16 @@ check "--grounds without --accept -> rc 2" "$?" "2"
 
 out=$(grant 'provenance|spec|not-a-subject-of-any-finding' 'why'); rc=$?
 check "a key matching no finding of the run -> rc 2" "$rc" "2"
-has "and says an excuse for an unseen finding excuses nothing" "$out" 'excuses nothing'
+has "and says accepting an unseen finding accepts nothing" "$out" 'accepts nothing'
 out=$(grant 'provenance|only-two-parts' 'why'); rc=$?
 check "a key that is not three parts -> rc 2" "$rc" "2"
 [ -e "$EX" ] && bad "neither refusal wrote a record" || ok "neither refusal wrote a record"
 
 out=$(grant "$PKEY" 'The figure is a worked example in a template, not a measurement.'); rc=$?
-check "the grant act -> rc 0" "$rc" "0"
-has "and it shows the finding BEFORE excusing it" "$out" 'about to excuse, in full'
+check "the accepting act -> rc 0" "$rc" "0"
+has "and it shows the finding BEFORE accepting it" "$out" 'about to accept, in full'
 has "and the finding it shows is the one the key names" "$out" 'spec states [40] in a clause naming neither'
-has "and it names the record it wrote" "$out" 'EXCUSED -- the row above is now recorded'
+has "and it names the record it wrote" "$out" 'ACCEPTED -- the row above is now recorded'
 has "  under the record's current name" "$out" "recorded at ${EX}"
 has "and it says the record is committed and unstaged" "$out" 'COMMITTED record and this run did not stage it'
 out=$(run); rc=$?
@@ -632,54 +632,54 @@ has "and says the run is quieter than every other clone" "$out" 'quieter than ev
 git -C "$T" add plans/a.accepted.md >/dev/null 2>&1
 
 out=$(run)
-has "the waived finding is reported as excused rather than omitted" "$out" 'excused provenance'
+has "the accepted finding is reported as accepted rather than omitted" "$out" 'accepted provenance'
 has "and its grounds travel with it" "$out" 'a worked example in a template'
 hasnt "and it is no longer counted as a finding" "$out" "finding provenance [accept: ${PKEY}]"
-has "the waived count prints beside the verdict, split by whether the class holds" "$out" 'excused-holding=0 excused-reporting=1'
-has "and the holding count is untouched by waiving a reporting finding" "$out" 'holding=1'
+has "the accepted count prints beside the verdict, split by whether the class holds" "$out" 'accepted-holding=0 accepted-reporting=1'
+has "and the holding count is untouched by accepting a reporting finding" "$out" 'holding=1'
 
 BEFORE=$(cksum < "$EX")
 out=$(run)
 AFTER=$(cksum < "$EX")
 check "an ordinary run writes nothing to the record" "$AFTER" "$BEFORE"
 out=$(grant "$PKEY" 'a second time'); rc=$?
-check "granting the same key twice -> rc 0 and no second row" "$rc" "0"
-has "and says so" "$out" 'ALREADY EXCUSED'
+check "accepting the same key twice -> rc 0 and no second row" "$rc" "0"
+has "and says so" "$out" 'ALREADY ACCEPTED'
 AFTER=$(cksum < "$EX")
 check "the record is byte-identical after the repeat" "$AFTER" "$BEFORE"
 
-printf '\n== an excuse survives the passage being edited, and does not travel to another plan ==\n'
+printf '\n== an acceptance survives the passage being edited, and does not travel to another plan ==\n'
 write_pair 'The window is 40 rounds wide, a span rewritten since. The band is 20 + 20 = 41 wide.' 'Nothing.'
 out=$(run)
-has "rewording the passage does not revoke the waiver" "$out" 'excused provenance'
+has "rewording the passage does not revoke the acceptance" "$out" 'accepted provenance'
 write_pair 'Nothing numeric here. The band is 20 + 20 = 41 wide.' 'Nothing.'
 out=$(run)
-hasnt "the fault removed reports nothing at all" "$out" 'excused provenance'
+hasnt "the fault removed reports nothing at all" "$out" 'accepted provenance'
 write_pair 'The window is 40 rounds wide. The band is 20 + 20 = 41 wide.' 'Nothing.'
 out=$(run)
-has "the same fault returning at that spot comes back waived" "$out" 'excused provenance'
+has "the same fault returning at that spot comes back accepted" "$out" 'accepted provenance'
 cp "$T/plans/a.spec.md" "$T/plans/b.spec.md"
 cp "$T/plans/a.design.md" "$T/plans/b.design.md"
 out=$(bash "$SUB" "$T/plans/b.spec.md" "$T/plans/b.design.md" 2>&1)
-hasnt "an unrelated plan inherits nothing -- the record does not travel" "$out" 'excused provenance'
+hasnt "an unrelated plan inherits nothing -- the record does not travel" "$out" 'accepted provenance'
 has "and it objects again from scratch" "$out" 'spec states [40] in a clause naming neither'
 
-printf '\n== a waiver over a HOLDING class, and the record this check cannot read ==\n'
+printf '\n== an accepted finding of a HOLDING class, and the record this check cannot read ==\n'
 out=$(grant "$AKEY" 'The arithmetic is deliberately wrong in a worked example of a false equation.')
-has "a holding finding can be waived too, the route being open to any class" "$out" 'EXCUSED'
+has "a holding finding can be accepted too, the act being open to any class" "$out" 'ACCEPTED'
 git -C "$T" add plans/a.accepted.md >/dev/null 2>&1
 out=$(run); rc=$?
-check "a pair with nothing unexcused left -> rc 0, the caller refusing on holds" "$rc" "0"
-hasnt "and it does NOT read as clean, which is what the waived count is for" "$out" 'check-plan-convergence: clean'
-has "it says in words that it is proceeding over the waivers" "$out" 'proceeding over 2 excused'
-has "the split says a hold was waived rather than a report quieted" "$out" 'excused-holding=1 excused-reporting=1'
+check "a plan with nothing left unaccepted -> rc 0, the caller refusing on holds" "$rc" "0"
+hasnt "and it does NOT read as clean, which is what the accepted count is for" "$out" 'check-plan-convergence: clean'
+has "it says in words that it is proceeding over the accepted findings" "$out" 'proceeding over 2 accepted'
+has "the split says a hold was accepted rather than a report quieted" "$out" 'accepted-holding=1 accepted-reporting=1'
 has "and the holding count falls to zero" "$out" 'holding=0'
-has "the roster names the waivers per class" "$out" ', 1 excused'
+has "the roster names the accepted findings per class" "$out" ', 1 accepted'
 printf '| arithmetic | spec | 20 + 20 = 41 |  |\n' >> "$EX"
 git -C "$T" add plans/a.accepted.md >/dev/null 2>&1
 out=$(run); rc=$?
-check "a row with an empty required cell -> rc 2, never a quiet waiver" "$rc" "2"
-has "and names the row it could not read" "$out" 'excuses nothing checkably'
+check "a row with an empty required cell -> rc 2, never a quiet acceptance" "$rc" "2"
+has "and names the row it could not read" "$out" 'accepts nothing checkably'
 sed -i.bak '/| arithmetic | spec | 20 + 20 = 41 |  |/d' "$EX"
 rm -f "$EX.bak"
 git -C "$T" add plans/a.accepted.md >/dev/null 2>&1
@@ -691,19 +691,19 @@ rm -f "$T/plans/c.md" "$T/plans/b.spec.md" "$T/plans/b.design.md"
 
 printf '\n== a record kept under its earlier name, with a row in the earlier spot words ==\n'
 OLD="$T/plans/a.excuses.md"
-marked '# the refusal this claim leans on [refusal-arm]'
-write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-arm].' 'The same guard in `scripts/marked.sh` refuses it [refusal-arm].'
+marked '# the refusal this claim leans on [refusal-branch]'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-branch].' 'The same guard in `scripts/marked.sh` refuses it [refusal-branch].'
 out=$(run)
-has "the pairing spot prints in the current words" "$out" 'finding pairing [accept: pairing|the plan|refusal-arm]'
+has "the pairing spot prints in the current words" "$out" 'finding pairing [accept: pairing|the plan|refusal-branch]'
 # vocabulary-internal: a row as a record written before the rename carries it
-printf '| pairing | the plan pair | refusal-arm | One guard, stated twice on purpose. |\n' > "$OLD"
+printf '| pairing | the plan pair | refusal-branch | One guard, stated twice on purpose. |\n' > "$OLD"
 git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
 out=$(run)
-has "a record under the earlier name is read" "$out" 'excused pairing'
-hasnt "and its row in the earlier words still matches the finding" "$out" 'finding pairing [accept: pairing|the plan|refusal-arm]'
-out=$(grant 'pairing|the plan|refusal-arm' 'again'); rc=$?
-check "granting a key the earlier record holds -> rc 0" "$rc" "0"
-has "  naming the earlier record as the one holding it" "$out" "ALREADY EXCUSED -- ${OLD}"
+has "a record under the earlier name is read" "$out" 'accepted pairing'
+hasnt "and its row in the earlier words still matches the finding" "$out" 'finding pairing [accept: pairing|the plan|refusal-branch]'
+out=$(grant 'pairing|the plan|refusal-branch' 'again'); rc=$?
+check "accepting a key the earlier record holds -> rc 0" "$rc" "0"
+has "  naming the earlier record as the one holding it" "$out" "ALREADY ACCEPTED -- ${OLD}"
 git -C "$T" rm -q --cached plans/a.excuses.md >/dev/null 2>&1
 rm -f "$OLD"
 
@@ -711,11 +711,11 @@ printf '\n== the record suffix against THIS repository own ignore rules ==\n'
 # Run rather than reasoned about: the two suffixes sit in the same directory and
 # only one of them is swallowed.
 git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.progress.md" \
-  && ok "the working record's suffix IS ignored here" \
-  || bad "the working record's suffix IS ignored here"
+  && ok "the progress file's suffix IS ignored here" \
+  || bad "the progress file's suffix IS ignored here"
 git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.accepted.md" \
-  && bad "the excuse record's suffix is NOT ignored here" \
-  || ok "the excuse record's suffix is NOT ignored here"
+  && bad "the accepted-findings record's suffix is NOT ignored here" \
+  || ok "the accepted-findings record's suffix is NOT ignored here"
 git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.excuses.md" \
   && bad "  nor its earlier suffix" \
   || ok "  nor its earlier suffix"
@@ -768,8 +768,8 @@ hasnt "  and prints no cannot-run verdict" "$out" 'CANNOT RUN'
 has "  and prints the per-class roster" "$out" 'class arithmetic'
 hasnt "  and no class reads as cut short" "$out" 'the run stopped before it'
 has "the pairing class resolves the plan's path against the project" "$out" 'pairs=1'
-has "a project with no baseline record leaves the reference class not examined, and says why" "$out" \
-  'not-examined (the project keeps no baseline record at ai-docs/fixtures/positional-references.baseline)'
+has "a project with no record of accounted positions leaves the reference class not examined, and says why" "$out" \
+  'not-examined (the project keeps no record of accounted positions at ai-docs/fixtures/positional-references.baseline)'
 
 # A spec in no work tree has no roster to read; taking the caller's directory instead is the rejected alternative.
 mkdir -p "$X/loose"
@@ -787,15 +787,15 @@ check "the reference class sweeps the project's tracked files -> rc 1" "$rc" "1"
 has "  and reports the position in the project's file" "$out" 'path-line	docs/note.md	docs/elsewhere.md:12'
 git -C "$J" rm -q --cached ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
 out=$(xrun); rc=$?
-check "a baseline present and unstaged in the project -> rc 2" "$rc" "2"
+check "a record of accounted positions present and unstaged in the project -> rc 2" "$rc" "2"
 has "  and names the record" "$out" 'positional-references.baseline is the comparand'
 git -C "$J" add ai-docs/fixtures/positional-references.baseline >/dev/null 2>&1
 chmod 000 "$XBASE"
 # Asserted, not assumed: a privileged user reads a mode-000 file, and the leg
 # would then measure a readable record under this label.
-[ -r "$XBASE" ] && bad "the baseline was made unreadable" || ok "the baseline was made unreadable"
+[ -r "$XBASE" ] && bad "the record was made unreadable" || ok "the record was made unreadable"
 out=$(xrun); rc=$?
-check "a baseline present and unreadable -> rc 2" "$rc" "2"
+check "a record of accounted positions present and unreadable -> rc 2" "$rc" "2"
 has "  and names the record" "$out" 'positional-references.baseline'
 chmod 644 "$XBASE"
 
@@ -805,12 +805,12 @@ git -C "$J" add -A >/dev/null 2>&1
 bash "$XSUB" --accept "$PKEY" --grounds 'A worked example, not a measurement.' \
   "$J/plans/a.spec.md" "$J/plans/a.design.md" >/dev/null 2>&1
 out=$(xrun); rc=$?
-check "an excuse record unstaged in the project -> rc 2" "$rc" "2"
+check "a record of accepted findings unstaged in the project -> rc 2" "$rc" "2"
 has "  and names it" "$out" 'a.accepted.md exists and is not in the index'
 git -C "$J" add plans/a.accepted.md >/dev/null 2>&1
 out=$(xrun); rc=$?
 check "the same record staged is honoured from the copy -> rc 0" "$rc" "0"
-has "  and the finding reads as excused" "$out" 'excused provenance'
+has "  and the finding reads as accepted" "$out" 'accepted provenance'
 
 mv "$P/docs/plan-invariants.md" "$P/docs/moved.md"
 out=$(xrun); rc=$?
@@ -832,7 +832,7 @@ check "a copy inside an unrelated repository with nothing staged -> rc 0" "$rc" 
 hasnt "  and prints no cannot-run verdict" "$out" 'CANNOT RUN'
 
 printf 'Stated at `docs/plugin-only.md:7`.\n' > "$P/docs/planted.md"
-# The plugin gets a baseline of its own so that a sweep of the wrong tree runs
+# The plugin gets a record of accounted positions so that a sweep of the wrong tree runs
 # the reference class and reports the planted position, rather than skipping.
 mkdir -p "$P/ai-docs/fixtures"
 printf '# Nothing accounted for.\n' > "$P/ai-docs/fixtures/positional-references.baseline"
@@ -862,7 +862,7 @@ $PAYLOADS
 EOF
 
 printf '\n== no section token of a spec or a design is backticked in the check ==\n'
-# The condition on which this check stays out of the edit-time refusal's page
+# The condition on which this check stays out of the plan-invariants guard's page
 # set. Asserted against the record's own rows rather than against a list here,
 # so widening the record cannot leave this leg testing a stale set.
 #
@@ -892,16 +892,16 @@ EOF
 check "no element token is backticked in any of the four files, over ${TOKEN_COUNT} tokens" \
   "$LEAKED" ""
 
-printf '\n== this repository own plan pair is examined rather than skipped ==\n'
+printf '\n== this repository own plan is examined rather than skipped ==\n'
 LIVE_SPEC=$(ls "${ROOT}"/ai-docs/plans/*.spec.md 2>/dev/null | head -1)
 LIVE_DESIGN=${LIVE_SPEC%.spec.md}.design.md
 if [ -n "$LIVE_SPEC" ] && [ -f "$LIVE_DESIGN" ]; then
   out=$(bash "$CHECK" "$LIVE_SPEC" "$LIVE_DESIGN" 2>&1)
-  hasnt "the live pair is not a cannot-run" "$out" 'CANNOT RUN'
+  hasnt "the live plan is not a cannot-run" "$out" 'CANNOT RUN'
   hasnt "and its region census is not empty" "$out" 'regions=0/'
   hasnt "and its statement count is not zero" "$out" 'statements=0 '
 else
-  ok "no active plan pair in this tree, so there is nothing to examine"
+  ok "no active plan in this tree, so there is nothing to examine"
 fi
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"

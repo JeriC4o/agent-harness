@@ -27,7 +27,7 @@
 #   idempotent re-runs are safe).
 #
 # Deferred-task progress files (ai-docs/plans/deferred/) are intentionally
-# NOT touched -- deferral is its own workflow and a deferred task has no
+# NOT touched -- deferring a task is its own workflow and a deferred task has no
 # merged PR to drive cleanup. Bugfix traces are deleted by /bugfix Step 7.
 #
 # Tests: skills/pr-merged/scripts/test-cleanup-progress.sh

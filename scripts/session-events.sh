@@ -393,7 +393,7 @@ jq -n \
           else [] end ) +
         ( if ($depths | length) < 5
           then [{ kind: "turn-depth-spike",
-                  reason: "fewer than 5 turns with spend; a median over this few turns is not a baseline" }]
+                  reason: "fewer than 5 turns with spend; a median over this few turns is not a reliable typical figure" }]
           else [] end ) ) }
   ' > "$WORK/report.json" || die "failed to build the report"
 

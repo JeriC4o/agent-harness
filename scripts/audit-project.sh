@@ -49,7 +49,7 @@ LABELS='%PLACEHOLDER%|%BUILD_CMD%|%TEST_CMD%|%FULL_CHECK_CMD%|%FORMAT_CMD%|%LINT
 for f in AGENTS.md ai-docs/context.md; do
   [ -f "${DIR}/${f}" ] || { finding blocker Q "missing profile file: ${f} -- run /harness:harness-init"; continue; }
   unfilled=$(grep -oE '%[A-Z_]+%' "${DIR}/${f}" | grep -vE "^(${LABELS})$" | sort -u | tr '\n' ' ')
-  [ -n "$unfilled" ] && finding blocker Q "${f}: unresolved placeholder(s): ${unfilled}-- an unresolved placeholder is a STOP, not a default"
+  [ -n "$unfilled" ] && finding blocker Q "${f}: unresolved placeholder(s): ${unfilled}-- an unresolved placeholder means stop and ask, not a default"
 done
 
 # ---- R: command liveness -----------------------------------------------------
