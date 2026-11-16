@@ -579,12 +579,16 @@ makes is covered by that review's entry.
   plain-words check's model call and of the loop detector's judging-stage call, and inherited by every
   hook of the session that call starts; read by the glossary loading hooks and the plain-words check,
   which do nothing inside a call carrying it.
-- `Posting commands row` — declared in a project's profile, one quoted entry per command: its leading
-  words, then the flags carrying its text, a flag marked as naming a file whose content is the text; a
-  row with no entry declares that nothing posts; this repository and the project template declare the
-  eleven commands of the review host's command-line client that create, edit, comment on, close or
-  reopen a pull request or an issue, or review a pull request, each text flag in its long and its short
-  spelling. Read by the plain-words check to know which commands post and where their text is.
+- `Posting commands row` — declared in a project's profile, one quoted entry per name a command answers
+  to: its leading words, then the flags carrying its text, a flag marked `:file` naming a file whose
+  content is the text, and any flag marked `:unread`, one that takes the text from somewhere the line
+  does not show, which makes a post carrying it a could-not-run; a row with no entry declares that
+  nothing posts; this repository and the project template declare thirteen entries, one per name a
+  command answers to: the eleven commands of the review host's command-line client that create, edit,
+  comment on, close or reopen a pull request or an issue, or review a pull request, and the other name
+  each of the two create commands answers to, each text flag in its long and its short spelling, and
+  mark `:unread` the client's flags that fill a post from the commits, a saved earlier run, a template
+  or the text editor. Read by the plain-words check to know which commands post and where their text is.
 - `plain-words record` — written at every reading, finding or none, and at a turn end with no chat text;
   read by the check to know whether the question or post before this one in the turn was refused by the
   model's reading alone, whether the

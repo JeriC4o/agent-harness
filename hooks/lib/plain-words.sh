@@ -210,7 +210,8 @@ refuse_or_pass() { # <question | post>
 
 # The profile's Posting commands row holds backticked entries, each the command's
 # leading words and then the flags carrying the text, a flag ending in :file naming a
-# file that holds it; or the word none. Sets POSTING (undeclared | none | declared |
+# file that holds it and one ending in :unread taking the text from somewhere the line
+# does not show; or the word none. Sets POSTING (undeclared | none | declared |
 # matched) and, on a match, writes the text to $WORK/text.
 SEP=$'\035'
 MARK=$'\037'
@@ -372,7 +373,7 @@ command_text() { # <first word> <past the last word> <directory a relative file 
     read -r -a spec <<< "$entry"
     for word in ${spec[@]+"${spec[@]}"}; do
       case $word in -*) flags+=("$word") ;; *) prefix+=("$word") ;; esac
-      case ${word%:file} in -[!-]) short=$short${word:1:1} ;; esac
+      case ${word%:*} in -[!-]) short=$short${word:1:1} ;; esac
     done
     [ "${#prefix[@]}" -gt 0 ] && [ $(($2 - $1)) -ge "${#prefix[@]}" ] || continue
     k=0
@@ -390,6 +391,12 @@ command_text() { # <first word> <past the last word> <directory a relative file 
       esac
       for f in ${flags[@]+"${flags[@]}"}; do
         file=''; [ "${f%:file}" = "$f" ] || file=1
+        case $f in *:unread)
+          f=${f%:unread}
+          case ${words[$i]} in "$f"|"$f="*) val=1 ;; "$f"?*) case $f in -[!-]) val=1 ;; *) val='' ;; esac ;; *) val='' ;; esac
+          [ -z "$val" ] || UNREAD="the text ${f} posts comes from somewhere the line does not show"
+          continue ;;
+        esac
         f=${f%:file}; val=''; vi=$i
         if [ "${words[$i]}" = "$f" ] && [ $((i + 1)) -lt "$2" ]; then val=${words[$((i + 1))]}; vi=$((i + 1)); step=2
         else
@@ -415,7 +422,7 @@ command_text() { # <first word> <past the last word> <directory a relative file 
           else { cat "$path"; printf '\n'; } >> "$WORK/text"
           fi
         else
-          printf '%s\n' "$val" >> "$WORK/text"; printf '%s\036' "$val" >> "$WORK/values"
+          printf '%s\n' "$val" >> "$WORK/text"; printf '%s\036' "${words[$vi]}" >> "$WORK/values"
         fi
       done
       i=$((i + step))

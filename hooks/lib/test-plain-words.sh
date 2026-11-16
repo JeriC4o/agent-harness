@@ -32,7 +32,7 @@ cat > "$W/glossary.md" <<'EOF'
 |---|---|
 | doodad fold | A made-up step nobody runs any more. |
 EOF
-printf '| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text -t --text-file:file -F:file` `ticketctl note --body -b` |\n' > "$W/proj/AGENTS.md"
+printf '| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text -t --text-file:file -F:file --from-draft:unread -r:unread` `ticketctl note --body -b` |\n' > "$W/proj/AGENTS.md"
 
 cat > "$W/bin/claude" <<EOF
 #!/usr/bin/env bash
@@ -165,7 +165,7 @@ out=$(post p3 'ls')
 has "a profile with no Posting commands row tells the person once" "$(notice "$out")" "does not say which commands post"
 check "  recorded as a could-not-run" "$(lastrow p3 | jq -r '.outcome + " " + (.notice|tostring)')" "could-not-run true"
 check "  and only once a session" "$(post p3 'ls')" ""
-printf '| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text -t --text-file:file -F:file` `ticketctl note --body -b` |\n' > "$W/proj/AGENTS.md"
+printf '| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text -t --text-file:file -F:file --from-draft:unread -r:unread` `ticketctl note --body -b` |\n' > "$W/proj/AGENTS.md"
 
 printf '\n== the turn end: the chat text since the person last wrote ==\n'
 cat > "$W/t1.jsonl" <<'EOF'
@@ -222,6 +222,16 @@ check "  recorded as a could-not-run" "$(lastrow c1c | jq -r .outcome)" "could-n
 check "  and the model is not called" "$(calls)" "$before"
 post c1d 'ticketctl post --text "all fine" --text-file -' >/dev/null
 check "text from standard input is a could-not-run, never passed" "$(lastrow c1d | jq -r .outcome)" "could-not-run"
+before=$(calls); out=$(post c7a 'ticketctl post --text "all fine" --from-draft')
+check "a declared flag taking its text from elsewhere lets the post through as a could-not-run" "$(decision "$out") $(lastrow c7a | jq -r .outcome)" " could-not-run"
+has "  tells the person, naming the flag" "$(notice "$out")" "the text --from-draft posts comes from somewhere the line does not show"
+check "  and the model is not called" "$(calls)" "$before"
+post c7b 'ticketctl post -r' >/dev/null
+check "  with no text flag beside it, still a could-not-run row" "$(lastrow c7b | jq -r .outcome)" "could-not-run"
+post c7c 'ticketctl post -rt "the gadget book"' >/dev/null
+check "  its one-letter spelling with a letter attached is that flag" "$(lastrow c7c | jq -r .outcome)" "could-not-run"
+post c7d 'ticketctl post --from-draft=old.json --text "all fine"' >/dev/null
+check "  and so is the flag written with =" "$(lastrow c7d | jq -r .outcome)" "could-not-run"
 before=$(calls)
 out=$(post c1e 'ticketctl post --text "$BODY"')
 check "a text flag's value the shell expands lets the post through" "$(decision "$out")" ""
@@ -293,6 +303,12 @@ out=$(post c1w 'ticketctl post -F body.md 2>&1')
 check "a descriptor copy writes no file: the file is read and refused" "$(decision "$out")" "deny"
 out=$(post c1x 'ticketctl post -F body.md > /dev/null 2>&1')
 check "  nor does a redirection to /dev/null" "$(decision "$out")" "deny"
+out=$(post c1y 'make-notes && ticketctl post --text-file body.md')
+check "a file after an earlier command naming no file is a could-not-run" "$(decision "$out") $(lastrow c1y | jq -r .outcome)" " could-not-run"
+has "  for the earlier command" "$(lastrow c1y | jq -r .reason)" "may be written by an earlier command in the same line"
+out=$(post c1z 'ticketctl post --text-file body.md; date > stamp.txt')
+check "a file while the line redirects into a path it does not name is a could-not-run" "$(decision "$out") $(lastrow c1z | jq -r .outcome)" " could-not-run"
+has "  for the redirection" "$(lastrow c1z | jq -r .reason)" "may be written elsewhere in the same line"
 hidden() { # <session> <command> <leading words> <where>
   local out; out=$(post "$1" "$2")
   check "a declared command $4 lets the post through as a could-not-run" "$(decision "$out") $(lastrow "$1" | jq -r .outcome)" " could-not-run"
@@ -309,6 +325,8 @@ hidden c6h 'exec ticketctl post --text "all fine"' 'ticketctl post' 'behind exec
 hidden c6i 'echo hi | xargs ticketctl note --body' 'ticketctl note' 'behind xargs'
 hidden c6j 'ticketctl post --text "all fine" && TICKET=7 ticketctl post --text x' 'ticketctl post' 'a second time, behind an assignment'
 hidden c6k "grep -n 'ticketctl post' notes.md" 'ticketctl post' 'inside another command'"'"'s argument'
+hidden c6m 'ticketctl note -b"ticketctl note" ; TICKET=7 ticketctl note --body "all fine"' 'ticketctl note' 'behind an assignment, its words also in a value attached to its flag'
+hidden c6n 'ticketctl note --body="ticketctl note" ; TICKET=7 ticketctl note --body "all fine"' 'ticketctl note' 'behind an assignment, its words also in a value written onto its flag with ='
 out=$(post c6l 'ticketctl note --body "run ticketctl post later on the gadget book"')
 check "a declared command named inside a text the check reads is that text: read and refused" "$(decision "$out")" "deny"
 answer 'Sure, looks fine to me.'
