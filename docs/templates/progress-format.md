@@ -334,7 +334,7 @@ wrong one.
 wrap is invisible to a single-line search; a fragment, or `grep -c` on a distinctive token, is what
 settles it.
 
-## The record of excused findings (committed)
+## The record of accepted findings (committed)
 
 `ai-docs/plans/<spec-base>.accepted.md` — named by the spec base, the spec's file name without `.spec.md`,
 as the plan's other documents are, and **committed**, because it is read by every later run over the

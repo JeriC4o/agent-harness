@@ -69,7 +69,7 @@ Run `git branch --show-current`. If it is the default branch (`main`), run `git 
 
 **Before Step 6:** confirm the spec exists at `ai-docs/plans/YYYY-MM-DD-name.spec.md` and the user has approved its `## Acceptance Criteria`.
 
-### Step 6: Design Subagent
+### Step 6: Design author
 
 First action: confirm the spec exists, and create `ai-docs/plans/YYYY-MM-DD-name.progress.md` when none exists ([schema](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)) with every header field but `**base_commit:**`, which Step 8 writes. A record that exists stands — after an ITERATE or a "no" it is neither recreated nor cleared. **Until Step 8, mark a step done in `**current_step:**` only after its outputs are written and, where shared, committed, recording the head in `**step_commit:**`** ([reference.md § Re-entry before implementation](reference.md#re-entry-before-implementation)). Spawn `design`:
 

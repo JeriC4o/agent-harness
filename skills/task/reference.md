@@ -334,7 +334,7 @@ During Step 8 the orchestrator NEVER executes subtask code in its own context. E
 
 When the test gate returns FAILED, identify the specific failing test and reproduce it in isolation (`%TEST_CMD%` filtered to that one test) before deciding the failure was transient. A subsequent green run is NOT proof of transience — different test isolation, parallel test ordering, or dirty test fixtures can flip results. Only accept "transient" when the test is on a known-flaky list AND multiple reruns are consistently green.
 
-## Step 11 — the scouted-plan sequence
+## Step 11 — the review-fix round
 
 Moved to [`${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md)
 — the spawn prompts for all five beats, the plan format, the reason-token table, the post-apply

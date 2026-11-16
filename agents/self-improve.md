@@ -20,7 +20,7 @@ Read:
 
 ## Workflow
 
-### Step 1: Find patterns (Correction pass)
+### Step 1: Find patterns (the pass over correction entries)
 
 Walk the union — `ai-docs/learnings.md` **and** every `ai-docs/learnings/*.md` — and group entries **whose `Kind:` field is `correction`** (default when `Kind:` is omitted — legacy entries are implicitly `correction`):
 
@@ -38,7 +38,7 @@ Group by topic / target surface (Skill / Subagent / AGENTS.md section). Topic = 
 
 Correction pass (Step 1 → Step 2a) and Carrot pass (Step 1b → Step 2b) produce independent groupings; an entry's `Kind:` field assigns it to a pass.
 
-### Step 2a: Determine actions (Correction pass)
+### Step 2a: Determine actions (the pass over correction entries)
 
 | Occurrences | Current status | Action |
 |---|---|---|

@@ -4,7 +4,7 @@ description: "Produces the design a human reviews and the working plan the imple
 model: opus
 ---
 
-# Design Subagent
+# Design author
 
 Designer Subagent. Receives a spec (and optionally reviewer feedback), investigates the codebase, and writes two things: the design, which the human reads to judge the approach, and the working plan in the task's progress record, which the implementation runs from.
 

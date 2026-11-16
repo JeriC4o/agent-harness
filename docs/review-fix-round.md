@@ -1,4 +1,4 @@
-# The review-fix round — the scouted-plan sequence
+# The review-fix round
 
 > Extracted from `${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md`, which carried it until the two
 > task-flow pages reached the instruction-file size cap between them. This is METHOD: it holds in
@@ -10,7 +10,7 @@
 > would be an obligation a round could miss. What is here is the procedure: the spawn prompts, the
 > plan format, the reason-token vocabulary and the narrative behind each beat.
 
-## Step 11 — the scouted-plan sequence (recipe)
+## Step 11 — the review-fix round (recipe)
 
 The round's five beats, per the Scouted-plan AXIOM in `SKILL.md`. The gate script owns every number in the round: the baseline it measures against, the threshold the **one** size check fires on — the pre-apply gate, on the plan's declared total — and the verdict both agents are judged by.
 
@@ -162,4 +162,4 @@ Three reasons, not one: the fix-plan gate recomputes from the tree on every invo
 between them; the progress file survives a compaction and a session restart, which is exactly when a cap
 is lost; and an attempt count written beside the plan it counts against is auditable by the same read that
 checks the plan. The format constraint that follows from the gate's parser is stated where the count is
-written, in [§ Step 11 — the scouted-plan sequence (recipe)](#step-11--the-scouted-plan-sequence-recipe).
+written, in [§ Step 11 — the review-fix round (recipe)](#step-11--the-review-fix-round-recipe).

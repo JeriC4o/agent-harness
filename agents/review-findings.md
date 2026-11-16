@@ -127,7 +127,7 @@ Use canonical `.progress.md` format from `${CLAUDE_PLUGIN_ROOT}/docs/templates/p
 Code-review-specific shape:
 
 ```markdown
-# Progress: Codebase review [branch] — ACTIVE
+# Progress: Whole-repository review [branch] — ACTIVE
 _Updated: YYYY-MM-DD_
 
 > Read THIS FIRST → code review findings. No spec/design — review-driven.
