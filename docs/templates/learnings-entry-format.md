@@ -2,7 +2,7 @@
 
 Read THIS for the Learning Log entry format — do **not** re-read the log just to recall the shape. Reserve reading the log for its CONTENT (recurrence / escalation audit, dedup check, prior entries), and read it as the union: `ai-docs/learnings.md` **plus** every `ai-docs/learnings/*.md` are one single history.
 
-The authoritative rules live in **${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log**; field semantics in **`${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md`**. This file is the quick-reference template only.
+The authoritative rules live in **${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log**; field semantics in **`${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md`**. This file is the quick-reference template only.
 
 ## Target file
 

@@ -363,11 +363,11 @@ check "  while the element COUNT is exactly what it was, so only a set compariso
       "$(figure elements)" "$BASE_ELEM"
 
 fresh
-tweak scripts/check-redline.sh "^SUPPRESSION_MARKERS=" "KEPT='$ENUM_ELEM'\nSUPPRESSION_MARKERS="
+tweak scripts/check-spec-criteria.sh "^SUPPRESSION_MARKERS=" "KEPT='$ENUM_ELEM'\nSUPPRESSION_MARKERS="
 run
 check "a plan heading list arriving in the near-miss script -> rc 1" "$RC" "1"
 has "  reported as an unguarded route" \
-    "$OUT" "finding leg3-unguarded: scripts/check-redline.sh carries an element-defining locus"
+    "$OUT" "finding leg3-unguarded: scripts/check-spec-criteria.sh carries an element-defining locus"
 
 fresh
 tweak scripts/deliberate-absence.sh "^## Key decisions'" "## Key decisions\n$ARRIVED'"

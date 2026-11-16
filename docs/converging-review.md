@@ -88,7 +88,7 @@ and never reset on this ground.
 
 ## The script
 
-`${CLAUDE_PLUGIN_ROOT}/scripts/review-ledger.sh` does all the hashing and comparing; the reviewer computes
+`${CLAUDE_PLUGIN_ROOT}/scripts/checklist-ledger.sh` does all the hashing and comparing; the reviewer computes
 no digest by hand. Invoke it as its own call, like any other shell script.
 
 - **`plan <findings-file> --base <rev> [--plan <path>]… [--frozen <path>]…`** — at the start of every

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Tests for scripts/check-propagation-arms.sh.
+# Tests for scripts/check-propagation-patterns.sh.
 #
-# Run: bash scripts/test-check-propagation-arms.sh
+# Run: bash scripts/test-check-propagation-patterns.sh
 #
 # Every planted defect is applied to a COPY in a temp tree, never to the live
 # method file -- a gate whose own tests mutate the documents it reads is one
@@ -16,7 +16,7 @@
 set -uo pipefail
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(cd -- "${HERE}/.." && pwd -P)
-GATE="${ROOT}/scripts/check-propagation-arms.sh"
+GATE="${ROOT}/scripts/check-propagation-patterns.sh"
 PASS=0; FAIL=0
 ok(){ PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
 bad(){ FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }
@@ -75,7 +75,7 @@ drop_arm(){ # <fixture> <arm text>
 # control there is.
 anchor_line(){ # <fixed substring> -> the single line number it occurs on
   hits=$(grep -cF -- "$1" "$GATE")
-  [ "$hits" = "1" ] || { printf 'test-check-propagation-arms: anchor matched %s lines, not 1: %s\n' "$hits" "$1" >&2; return 1; }
+  [ "$hits" = "1" ] || { printf 'test-check-propagation-patterns: anchor matched %s lines, not 1: %s\n' "$hits" "$1" >&2; return 1; }
   grep -nF -- "$1" "$GATE" | cut -d: -f1
 }
 gate_replace(){ # <out> <fixed substring> <replacement line>
@@ -89,7 +89,7 @@ gate_delete(){ # <out> <fixed substring>
 
 printf '\n== the live tree is clean ==\n'
 bash "$GATE" > "${TMPD}/real.out" 2>&1
-if [ $? -eq 0 ]; then ok "check-propagation-arms is green on the working tree"; else bad "check-propagation-arms is RED on the working tree"; sed -n '/^FINDING/p' "${TMPD}/real.out"; fi
+if [ $? -eq 0 ]; then ok "check-propagation-patterns is green on the working tree"; else bad "check-propagation-patterns is RED on the working tree"; sed -n '/^FINDING/p' "${TMPD}/real.out"; fi
 REAL_COUNTS=$(counts_of "${TMPD}/real.out")
 [ -n "$REAL_COUNTS" ] && ok "the gate reports its member and control counts beside their enumerations (${REAL_COUNTS})" \
                       || bad "the gate printed no summary counts"

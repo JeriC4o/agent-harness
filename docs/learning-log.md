@@ -1,4 +1,4 @@
-# Corrections log — field glossary + boundary carve-outs
+# Learning Log — field glossary + boundary carve-outs
 
 Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log`. Reference, not narrative.
 

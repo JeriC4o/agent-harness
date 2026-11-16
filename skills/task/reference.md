@@ -143,7 +143,7 @@ Entered from any Step 7 verdict carrying a genuine-conflict row, from a Step 11 
    - **Yes** — scope, intent or the approach itself moved. Re-enter Step 6 (`design`) stating that the spec was amended, then Step 7 against the new pair (counts against the 3-round cap); its GO takes a new freeze as Step 7 takes one, the stamp pass included, the review first ruling on the change since the previous one as the Design Amendment recipe's step 4 hands it, and on a new-shape design the confirmation question is asked again; then proceed.
    - **No** — a criterion restated, an over-promise withdrawn, a wording clarified. **No design re-derivation, no design-review round and no freeze**: a changed requirement is not a divergence. The amended pair is re-read instead, by six acts in order, in whichever workflow entered this recipe:
      1. **The spec writer applies the amendment and names what it amended** — each statement it changed, added or removed, by the heading it sits under and its words as they now stand, a removed one by its heading and the words it had, in the `amended` field of its final status block ([`${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` § Output contract](${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md#output-contract)). Step 4's declared-link run follows.
-     2. **The amended pair is re-read before work resumes**: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec> <design>` as its own call, and the `plan-convergence` reader spawned as Step 7 spawns it ([§ Step 7 — the two convergence halves (detail)](#step-7--the-two-convergence-halves-detail)), so the reader is never the only check standing. Its prompt names two sets of design statements to read first, both drawn by the orchestrator: the design end of every declared link whose spec-end quote falls inside a statement the `amended` field names, even when the quote is intact — read off the link record and that field; and every design end of a link step 4's run reported `moved`. They narrow nothing: the whole pair is still read.
+     2. **The amended pair is re-read before work resumes**: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec> <design>` as its own call, and the contradiction reader spawned as Step 7 spawns it ([§ Step 7 — the two convergence halves (detail)](#step-7--the-two-convergence-halves-detail)), so the reader is never the only check standing. Its prompt names two sets of design statements to read first, both drawn by the orchestrator: the design end of every declared link whose spec-end quote falls inside a statement the `amended` field names, even when the quote is intact — read off the link record and that field; and every design end of a link step 4's run reported `moved`. They narrow nothing: the whole pair is still read.
      3. **Rule on every finding before anything is written, and route each by the side that is wrong.** The re-read reads the whole pair, so it also carries contradictions the amendment did not cause, among them ones an earlier round ruled harmless:
         - **a false design statement goes to the fifth act** — one the amendment made false, whether a reader finding against it, a holding finding of the deterministic check the amendment caused, such as a criterion it added that no decomposition row of an earlier-shape design delivers, or a moved link ruled false below; on a new-shape design, while a group is still to run, every criterion the amendment added or changed, because no check reads the working plan after the freeze; or a genuine design-side contradiction the re-read finds that predates the amendment;
         - **a wrong spec statement goes to a further spec amendment**, with the user's approval, which re-enters this route;
@@ -204,12 +204,12 @@ pass. The author's own exit check already ran this before handing back
 so a holding finding arriving here means the plan changed after that check or the check was skipped
 — either is worth saying out loud rather than re-running quietly.
 
-**The judgement half** is the `plan-convergence` reader. Its output is a report and never a verdict,
+**The judgement half** is the contradiction reader. Its output is a report and never a verdict,
 so there is nothing here to route on: the findings travel into the review, which rules on them.
 
 ```
 Agent(subagent_type="general-purpose", prompt="
-  Read ${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md and follow it.
+  Read ${CLAUDE_PLUGIN_ROOT}/agents/contradiction-reader.md and follow it.
   Spec: ai-docs/plans/YYYY-MM-DD-name.spec.md
   Design: ai-docs/plans/YYYY-MM-DD-name.design.md
 ")
@@ -336,7 +336,7 @@ When the test gate returns FAILED, identify the specific failing test and reprod
 
 ## Step 11 — the scouted-plan sequence
 
-Moved to [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md)
+Moved to [`${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md)
 — the spawn prompts for all five beats, the plan format, the reason-token table, the post-apply
 micro-loop and the narrative behind each beat. The heading stays here so inbound references to it keep
 resolving, and because the gate list below reads this page's own section names at run time.

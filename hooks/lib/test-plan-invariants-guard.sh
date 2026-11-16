@@ -99,8 +99,8 @@ agents/review-findings.md
 docs/templates/progress-format.md
 docs/agents-method.md
 hooks/hooks.json
-scripts/check-redline.sh
-scripts/test-check-redline.sh
+scripts/check-spec-criteria.sh
+scripts/test-check-spec-criteria.sh
 skills/interview/SKILL.md
 docs/workflow.md'
 

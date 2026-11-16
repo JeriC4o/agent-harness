@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Tests for check-redline.sh.
+# Tests for check-spec-criteria.sh.
 #
-# Run: bash scripts/test-check-redline.sh
+# Run: bash scripts/test-check-spec-criteria.sh
 #
 # Every verb gets three legs, never two: an input that must make the check come
 # back NON-EMPTY, a control that must make it come back EMPTY, and a CANNOT-RUN
@@ -17,7 +17,7 @@
 set -uo pipefail
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
-CHECK="${HERE}/check-redline.sh"
+CHECK="${HERE}/check-spec-criteria.sh"
 REPO=$(cd -- "${HERE}/.." && pwd)
 
 PASS=0; FAIL=0
@@ -148,15 +148,15 @@ printf '\n== the entry point a skill invokes is executable ==\n'
 # This checker is invoked from a skill as a plugin-root path, the shape
 # check-candidate.sh and collect-candidates.sh already use, and that form needs
 # the bit -- every root-level script invoked that way in this repository carries
-# it. The SUITE is only ever run as `bash scripts/test-check-redline.sh` from the
+# it. The SUITE is only ever run as `bash scripts/test-check-spec-criteria.sh` from the
 # gate list, which does not, so it stays 644 beside its siblings. The committed
 # MODE is what is asserted, not the working tree's: a lost bit reaches a consumer
 # through the index.
-if [ -x "$CHECK" ]; then ok "check-redline.sh carries the execute bit"
-else bad "check-redline.sh carries the execute bit"; fi
-MODE=$(git -C "$REPO" ls-files -s -- scripts/check-redline.sh | awk '{ print $1 }')
+if [ -x "$CHECK" ]; then ok "check-spec-criteria.sh carries the execute bit"
+else bad "check-spec-criteria.sh carries the execute bit"; fi
+MODE=$(git -C "$REPO" ls-files -s -- scripts/check-spec-criteria.sh | awk '{ print $1 }')
 check "the mode git records is 100755" "$MODE" "100755"
-SMODE=$(git -C "$REPO" ls-files -s -- scripts/test-check-redline.sh | awk '{ print $1 }')
+SMODE=$(git -C "$REPO" ls-files -s -- scripts/test-check-spec-criteria.sh | awk '{ print $1 }')
 check "while the suite's own mode is 644, as its siblings are" "$SMODE" "100644"
 
 printf '\n== specform: a criterion may not name its own instrument ==\n'
@@ -209,9 +209,9 @@ has   "  with the scan's reach reported" "$OUT" "criteria=3"
 # delete one alternative from the pattern and the suite must go red for THAT class
 # alone. Round 3 measured the old shape failing this -- removing the whole `git …`
 # alternative reddened nothing at all.
-for tok in '`bash scripts/x.sh`' '`scripts/check-redline.sh`' '`git grep`' '`git rev-parse`' \
+for tok in '`bash scripts/x.sh`' '`scripts/check-spec-criteria.sh`' '`git grep`' '`git rev-parse`' \
            '`./gradlew :mod:test`' '`jq`' '`grep`' '`wc -c`' '`xargs`' \
-           '%TEST_CMD%' '`check-redline`' '`test-check-redline`' \
+           '%TEST_CMD%' '`check-spec-criteria`' '`test-check-spec-criteria`' \
            '`test_marker_without_row`' '`shouldRefuseWhenAbsent`' 'exits 0'; do
   mkspec "The property holds, verified by ${tok} over the tree."
   run specform "${SW}/s.md"
@@ -258,7 +258,7 @@ rm -rf "$SW"
 
 run bogus x
 check "an unknown verb is exit 2" "$RC" "2"
-has   "  and prints both verbs" "$OUT" "check-redline.sh suppression"
+has   "  and prints both verbs" "$OUT" "check-spec-criteria.sh suppression"
 run
 check "no verb at all is exit 2" "$RC" "2"
 

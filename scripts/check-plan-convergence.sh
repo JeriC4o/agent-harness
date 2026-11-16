@@ -4,7 +4,7 @@
 # every relation the documents state actually hold?
 #
 # Run:  check-plan-convergence.sh <spec> <design>
-#       check-plan-convergence.sh --excuse '<class>|<spot>|<subject>' --grounds '<why>' <spec> <design>
+#       check-plan-convergence.sh --accept '<class>|<spot>|<subject>' --grounds '<why>' <spec> <design>
 # Exit: 0 clean, 1 findings, 2 cannot run -- which is NOT a pass.
 # Core: check-plan-convergence.py <method root> <method-indexed 0|1> <project root>
 #       <spec> <design> <excuse key> <grounds> -- the first three are resolved here.
@@ -18,7 +18,7 @@
 # copied off a finding line, which carries it, so neither half is retyped.
 #
 # IT IS EXEMPT FROM THE GATE RUNNER'S MEMBER LIST, by name, for the reason
-# scripts/check-redline.sh is: a member is invoked with no arguments and both of
+# scripts/check-spec-criteria.sh is: a member is invoked with no arguments and both of
 # the paths below are required, so a documented member would report cannot-run
 # on every run. The exemption lives in EXEMPT_CHECKS there. Its consequence is
 # worth stating: this check's entire mechanical coverage is its own test suite,
@@ -55,7 +55,7 @@ set -uo pipefail
 
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 METHOD_ROOT=$(cd -- "${HERE}/.." && pwd -P)
-USAGE='usage: check-plan-convergence.sh [--excuse <key> --grounds <why>] <spec> <design>'
+USAGE='usage: check-plan-convergence.sh [--accept <key> --grounds <why>] <spec> <design>'
 
 SPEC=''
 DESIGN=''
@@ -63,7 +63,7 @@ EXCUSE=''
 GROUNDS=''
 while [ $# -gt 0 ]; do
   case "$1" in
-    --excuse)  EXCUSE=${2:-}; shift 2 ;;
+    --accept)  EXCUSE=${2:-}; shift 2 ;;
     --grounds) GROUNDS=${2:-}; shift 2 ;;
     -h|--help) sed -n '2,/^$/p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     -*) printf 'check-plan-convergence: %s\n' "$USAGE" >&2; exit 2 ;;
@@ -81,10 +81,10 @@ done
 # Grounds a later reader can check are half of what the act records, so neither
 # flag is any use without the other and an act missing one writes nothing.
 if [ -n "$EXCUSE" ] && [ -z "$GROUNDS" ]; then
-  printf 'check-plan-convergence: cannot run -- --excuse needs --grounds, in terms a later reader can check\n' >&2; exit 2
+  printf 'check-plan-convergence: cannot run -- --accept needs --grounds, in terms a later reader can check\n' >&2; exit 2
 fi
 if [ -n "$GROUNDS" ] && [ -z "$EXCUSE" ]; then
-  printf 'check-plan-convergence: cannot run -- --grounds excuses nothing without --excuse naming the finding\n' >&2; exit 2
+  printf 'check-plan-convergence: cannot run -- --grounds excuses nothing without --accept naming the finding\n' >&2; exit 2
 fi
 
 # Each of these is a cannot-run rather than a finding, because a document that

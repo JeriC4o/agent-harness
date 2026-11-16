@@ -73,7 +73,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 - **Identity.** The trailer's value, the spec base. The plan's freeze is the latest such commit reachable
   from the branch head, so a rebase, which replays the trailer, keeps it.
 - **Code.** `scripts/plan-freeze.sh` — `find`, `show`, `diff`; exit `0` when computed, changed or
-  unchanged, `2` when not, never `1`, since it judges nothing. `scripts/review-ledger.sh` hashes each
+  unchanged, `2` when not, never `1`, since it judges nothing. `scripts/checklist-ledger.sh` hashes each
   `--frozen` document from `show`. Contract: `docs/workflow.md` § The plan freeze.
 - **Invariant.** The change since the freeze is compared by content wherever the document sits, so the
   move into the archive is no change, and a could-not-compute is never read as unchanged.
@@ -159,7 +159,7 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 | `agents/<name>.md` | The 10 subagents |
 | `rules/ast-index.md` | Code-search hierarchy, inherited verbatim by subagents |
 | `hooks/hooks.json` | **29** hook entries in 15 matcher groups, running **25** distinct commands — four are registered twice: three of them on two EVENTS each, and the plan-invariants refusal on two MATCHERS of one event; and six of the commands are one script, the glossary loader, once per piece and once for agent briefs — which is why "how many hooks" has three defensible answers and this row gives all three. Re-derive from the manifest with `jq` over `.hooks[][].hooks[]` (length, and the length of its unique `.command` set) rather than trusting this line; `hooks/lib/` holds the shared guard and the plugin-path resolver (`plugin-ref.sh`) |
-| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-arms.sh`, `check-plan-invariants.sh`, `check-plan-convergence.sh`, `check-method-purity.sh`, `check-instruction-size.sh`, `check-vocabulary.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `ref-current.sh` as the remote-currency helper `check-release.sh` calls, `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
+| `scripts/` | Plugin-level utilities shared by more than one skill (the promotion gate and sweep), the repository's own gates (`check-references.sh`, `check-release.sh`, `check-readme-update.sh`, `check-propagation-patterns.sh`, `check-plan-invariants.sh`, `check-plan-convergence.sh`, `check-method-purity.sh`, `check-instruction-size.sh`, `check-vocabulary.sh`, `test-install-smoke.sh`, `test-upgrade-smoke.sh`), `ref-current.sh` as the remote-currency helper `check-release.sh` calls, `run-checks.sh` as the single entry point for the pre-commit list, and the `test-*.sh` suites those and the skills' helpers are covered by |
 | `docs/` | Method reference, incl. `agents-method.md` |
 | `templates/project/` | What a consuming project gets scaffolded with |
 | `ai-docs/` | This repo's own profile + plan/learning data |
@@ -321,7 +321,7 @@ meanings.
   the project directory, so the project-side mirrors a consumer may keep (`.claude/agents/*.md`,
   `.claude/rules/**/*.md`, `.claude/commands/*.md`) are matched by no arm. Measured as a widening
   rather than a regression: no path the pre-fix arms matched is silent under the current set, and
-  `scripts/check-propagation-arms.sh` asserts that. Revisit when a consuming project actually keeps
+  `scripts/check-propagation-patterns.sh` asserts that. Revisit when a consuming project actually keeps
   those mirrors.
 - `GH-98` — the scouted fix-plan sequence (scout → mechanical gate → fix agent) shipped into the main
   feature-development flow only, on a cost baseline measured by hand from a single session. Its payoff

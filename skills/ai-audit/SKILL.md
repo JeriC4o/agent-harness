@@ -117,7 +117,7 @@ Agent(subagent_type="claude-code-guide", prompt="
 Read every file in:
 
 - `AGENTS.md` and `CLAUDE.md`.
-- `ai-docs/context.md`, `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`, `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md`, `ai-docs/learnings.md` + `ai-docs/learnings/*.md` (one union), `${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md`, `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/agent-docs-index.md`, `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md`, `${CLAUDE_PLUGIN_ROOT}/docs/skill-size-exemptions.md`, `${CLAUDE_PLUGIN_ROOT}/docs/considerations-link-reading.md`, `${CLAUDE_PLUGIN_ROOT}/docs/instruction-file-validation.md`.
+- `ai-docs/context.md`, `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`, `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md`, `ai-docs/learnings.md` + `ai-docs/learnings/*.md` (one union), `${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md`, `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/agent-docs-index.md`, `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md`, `${CLAUDE_PLUGIN_ROOT}/docs/skill-size-exemptions.md`, `${CLAUDE_PLUGIN_ROOT}/docs/considerations-link-reading.md`, `${CLAUDE_PLUGIN_ROOT}/docs/instruction-file-validation.md`.
 - Any active `*.spec.md` / `*.design.md` under `ai-docs/plans/`.
 - Every `${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md`.
 - Every `${CLAUDE_PLUGIN_ROOT}/agents/*.md`.

@@ -70,7 +70,7 @@ Kept here so the audit can compare both sides without grepping the whole tree on
 - `inspector` (judges a reduced session event stream for harness defects)
 - `fix-scout` (writes a review round's fix plan into the section the gate reads)
 - `fix-apply` (applies the gate-passed plan's fix rows and nothing else)
-- `plan-convergence` (reports where a plan pair contradicts itself or an artefact; issues no verdict)
+- `contradiction-reader` (reports where a plan pair contradicts itself or an artefact; issues no verdict)
 
 ### Project-defined Skills
 
@@ -107,7 +107,7 @@ and holds in every repo, which is why it carries no guard.
 | PreToolUse(Bash) | `co-authored-by` | [guarded] |
 | PreToolUse(Bash) | `diff-range-guard` | |
 | PreToolUse(Bash) | `config-search-gate` | |
-| PreToolUse(Bash) | `gate-pipe-guard` | |
+| PreToolUse(Bash) | `result-masking` | |
 | PreToolUse(*) | `loop-index` | |
 | PreToolUse(Edit\|Write) | `propagation-rule-reminder` | [guarded] |
 | PreToolUse(Edit\|Write) | `archive-protection-reminder` | |

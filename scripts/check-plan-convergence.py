@@ -94,16 +94,21 @@ HOLDING = ('completeness', 'arithmetic')
 # the record is a table a reader can find a row in rather than a digest.
 EXCUSE_FIELD = '|'
 SPEC_SUFFIX = '.spec.md'
-EXCUSE_SUFFIX = '.excuses.md'
+EXCUSE_SUFFIX = '.accepted.md'
+# vocabulary-internal: a task in progress when the plugin updated holds its record under the earlier name
+EARLIER_SUFFIX = '.excuses.md'
+# vocabulary-internal: a row recorded before the pairing kind's spot was reworded still names its finding
+EARLIER_SPOTS = {'the plan pair': 'the plan'}
 
 EXCUSES = {}
+KEPT_IN = {}
 EXCUSE_PATH = None
 SUSPEND_EXCUSES = bool(GRANT_KEY)
 
 EXCUSE_HEADER = """# Excused convergence findings: %s
 
 Each row waives ONE finding of `check-plan-convergence.sh` for this plan and no other. Granted by
-`check-plan-convergence.sh --excuse '<class>%s<spot>%s<subject>' --grounds '<why>'`, which prints the
+`check-plan-convergence.sh --accept '<class>%s<spot>%s<subject>' --grounds '<why>'`, which prints the
 finding before writing the row. Removed by deleting its row, which is an act of the same kind. The
 format is `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § The record of excused findings
 (committed).
@@ -123,7 +128,7 @@ def key_of(cls, spot, subject):
 
 def finding(cls, spot, subject, text):
     key = key_of(cls, spot, subject)
-    line = 'finding %s [excuse: %s]: %s' % (cls, key, text)
+    line = 'finding %s [accept: %s]: %s' % (cls, key, text)
     if not SUSPEND_EXCUSES and key in EXCUSES:
         excused.append((cls, 'excused %s [%s]: %s -- on the grounds: %s'
                         % (cls, key, text, EXCUSES[key])))
@@ -648,21 +653,27 @@ def excuse_path():
 def read_excuses(paths):
     global EXCUSE_PATH
     EXCUSE_PATH = excuse_path()
-    if EXCUSE_PATH is None or not os.path.exists(EXCUSE_PATH):
+    if EXCUSE_PATH is None:
         return
+    for path in (EXCUSE_PATH, EXCUSE_PATH[:-len(EXCUSE_SUFFIX)] + EARLIER_SUFFIX):
+        if os.path.exists(path):
+            read_record(path, paths)
+
+
+def read_record(path, paths):
     # BOTH SIDES THROUGH realpath, because the root arrives already resolved
     # while a path given on the command line does not: under a temporary
     # directory behind a symlink the two disagree, the relative path comes out
     # full of parent steps, and a staged record read as untracked.
-    rel = os.path.relpath(os.path.realpath(EXCUSE_PATH), os.path.realpath(PROJECT_ROOT))
+    rel = os.path.relpath(os.path.realpath(path), os.path.realpath(PROJECT_ROOT))
     if rel not in set(paths):
         blocked('%s exists and is not in the index, so this run is quieter than every other clone of this repository -- stage it'
-                % EXCUSE_PATH)
+                % path)
         return
-    body = read_path(EXCUSE_PATH)
+    body = read_path(path)
     if body is None:
         blocked('%s could not be read, so this run cannot know which of its findings are excused'
-                % EXCUSE_PATH)
+                % path)
         return
     for line in body.split('\n'):
         if not line.lstrip().startswith('|'):
@@ -675,9 +686,11 @@ def read_excuses(paths):
         # believes is excused, and admitting it excuses something nobody stated.
         if not all(cells[:4]):
             blocked('%s carries a row with an empty cell -- class, spot, subject and grounds are all required, and a row short of one excuses nothing checkably: %s'
-                    % (EXCUSE_PATH, norm(line)[:160]))
+                    % (path, norm(line)[:160]))
             continue
-        EXCUSES[key_of(cells[0], cells[1], cells[2])] = cells[3]
+        key = key_of(cells[0], EARLIER_SPOTS.get(norm(cells[1]), cells[1]), cells[2])
+        EXCUSES[key] = cells[3]
+        KEPT_IN[key] = path
 
 
 def grant():
@@ -689,9 +702,9 @@ def grant():
         sys.exit(2)
     if GRANT_KEY in EXCUSES:
         print('check-plan-convergence: ALREADY EXCUSED -- %s carries this key and nothing was written: %s'
-              % (EXCUSE_PATH, GRANT_KEY))
+              % (KEPT_IN[GRANT_KEY], GRANT_KEY))
         sys.exit(0)
-    hits = [line for _cls, line in findings if ('[excuse: %s]' % GRANT_KEY) in line]
+    hits = [line for _cls, line in findings if ('[accept: %s]' % GRANT_KEY) in line]
     if not hits:
         print('check-plan-convergence: cannot run -- no finding of this run carries that key, and an excuse for a finding nobody can see excuses nothing: %s'
               % GRANT_KEY)

@@ -52,7 +52,7 @@ printf '\n== unguarded method hooks fire everywhere ==\n'
 cmd=$(jq -r '.hooks.PreToolUse[] | select(.matcher=="Bash") | .hooks[] | select(.statusMessage|test("masked gates")) | .command' "$HOOKS_JSON")
 out=$(cd "$UNMANAGED" && CLAUDE_PLUGIN_ROOT="$PLUGIN_ROOT" CLAUDE_PROJECT_DIR="$UNMANAGED" \
       bash -c "$cmd" <<< '{"tool_input":{"command":"pytest tests | tail -20"}}' 2>&1); rc=$?
-check "gate-pipe-guard blocks even in an unmanaged repo" "$rc" "2"
+check "the result-masking hook blocks even in an unmanaged repo" "$rc" "2"
 
 # A suite made of shell scripts was invisible to this guard: the gate anchor
 # listed build tools by name and `bash` was not among them, so in a repository
@@ -130,7 +130,7 @@ printf '\n== sh-syntax-check fires on a broken .sh and only on .sh ==\n'
 # hazard, the last one costing a wall of 50 unrelated test failures before the
 # shape was recognised. Prose in two instruction files and a gate covering ONE
 # surface did not stop it, so it is a hook now. Unguarded for the same reason
-# gate-pipe-guard is: a shell syntax error is never project-specific.
+# the result-masking hook is: a shell syntax error is never project-specific.
 shcmd=$(jq -r '.hooks.PostToolUse[] | select(.matcher=="Write|Edit") | .hooks[] | select(.command|test("sh-syntax-check")) | .command' "$HOOKS_JSON")
 printf '%s\n' '#!/bin/bash' "jq -r '.a # the row's own bounds' x" > "$UNMANAGED/broken.sh"
 printf '%s\n' '#!/bin/bash' 'echo ok' > "$UNMANAGED/good.sh"

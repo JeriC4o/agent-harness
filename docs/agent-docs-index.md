@@ -32,7 +32,7 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Lifecycle.** Section-keyed.
 **When to read.** When AGENTS.md `## Workflow` AXIOMs link out.
 
-### `${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md`
+### `${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md`
 
 **Purpose.** Learning Log field glossary + boundary-rule exceptions.
 **Writer.** `self-improve` (rare — when a new `Escalated?` value or a new exception clause is introduced).

@@ -3,10 +3,10 @@
 # Does the propagation-rule hook's `case` arm set still agree with the
 # Propagation Rule table it is supposed to mirror?
 #
-# Run:  check-propagation-arms.sh [--root <dir>] [--print-prefix-pattern]
+# Run:  check-propagation-patterns.sh [--root <dir>] [--print-prefix-pattern]
 # Exit: 0 clean, 1 findings, 2 usage error.
 #
-# Tests: scripts/test-check-propagation-arms.sh
+# Tests: scripts/test-check-propagation-patterns.sh
 #
 # WHY THIS GATE EXISTS. The arm list in hooks/hooks.json and the sync-group
 # table in docs/agents-method.md are two spellings of one fact, and nothing
@@ -54,10 +54,10 @@ PREFIX_PATTERN='*AGENTS.md|*.claude/skills/*/SKILL.md|*${CLAUDE_PLUGIN_ROOT}/age
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --root) [ -d "${2:-}" ] || { printf 'check-propagation-arms: no such directory: %s\n' "${2:-}" >&2; exit 2; }
+    --root) [ -d "${2:-}" ] || { printf 'check-propagation-patterns: no such directory: %s\n' "${2:-}" >&2; exit 2; }
             ROOT=$(cd -- "$2" && pwd -P); shift 2 ;;
     --print-prefix-pattern) PRINT_PREFIX=1; shift ;;
-    *) printf 'check-propagation-arms: usage: check-propagation-arms.sh [--root <dir>] [--print-prefix-pattern]\n' >&2; exit 2 ;;
+    *) printf 'check-propagation-patterns: usage: check-propagation-patterns.sh [--root <dir>] [--print-prefix-pattern]\n' >&2; exit 2 ;;
   esac
 done
 
@@ -75,9 +75,9 @@ TABLE="${ROOT}/docs/propagation.md"
 # gate's derived set to ZERO once, and it reported findings rather than a pass.
 METHOD="${ROOT}/docs/agents-method.md"
 HOOKS="${ROOT}/hooks/hooks.json"
-[ -f "$METHOD" ] || { printf 'check-propagation-arms: no docs/agents-method.md under %s -- the catch-all row resolves against its "Applies to:" list\n' "$ROOT" >&2; exit 2; }
-[ -f "$TABLE" ] || { printf 'check-propagation-arms: no docs/propagation.md under %s -- the sync-group table is the input this gate derives from, so its absence is a could-not-run, never a pass\n' "$ROOT" >&2; exit 2; }
-[ -f "$HOOKS" ]  || { printf 'check-propagation-arms: no hooks/hooks.json under %s\n' "$ROOT" >&2; exit 2; }
+[ -f "$METHOD" ] || { printf 'check-propagation-patterns: no docs/agents-method.md under %s -- the catch-all row resolves against its "Applies to:" list\n' "$ROOT" >&2; exit 2; }
+[ -f "$TABLE" ] || { printf 'check-propagation-patterns: no docs/propagation.md under %s -- the sync-group table is the input this gate derives from, so its absence is a could-not-run, never a pass\n' "$ROOT" >&2; exit 2; }
+[ -f "$HOOKS" ]  || { printf 'check-propagation-patterns: no hooks/hooks.json under %s\n' "$ROOT" >&2; exit 2; }
 
 # The one reasoned exclusion. § Learning Log Boundary rule 2 FORBIDS the
 # follow-on instruction-file edits the reminder asks for, so firing here would
@@ -133,7 +133,7 @@ SIBLING="${PD}-sibling"
 
 LIVE_CMD=$(jq -r '.hooks.PreToolUse[] | select(.matcher=="Edit|Write") | .hooks[0].command' "$HOOKS")
 LIVE_PATTERN=$(printf '%s' "$LIVE_CMD" | sed -n 's/.*case "\$k" in \(.*\)) r=.*/\1/p')
-[ -n "$LIVE_PATTERN" ] || { printf 'check-propagation-arms: could not extract the arm pattern from %s\n' "$HOOKS" >&2; exit 2; }
+[ -n "$LIVE_PATTERN" ] || { printf 'check-propagation-patterns: could not extract the arm pattern from %s\n' "$HOOKS" >&2; exit 2; }
 
 pd="$PD"
 fires() { eval "case \"\$1\" in ${LIVE_PATTERN}) return 0 ;; esac; return 1"; }
@@ -151,10 +151,10 @@ TMP=$(mktemp -d); trap 'rm -rf "$TMP"' EXIT INT TERM
 
 # ---- steps 1-2 ---------------------------------------------------------------
 grep -qF '**AXIOM — Edits to one instruction file MUST propagate' "$TABLE" \
-  || { printf 'check-propagation-arms: %s carries no propagation AXIOM -- wrong file or the page was restructured\n' "$TABLE" >&2; exit 2; }
+  || { printf 'check-propagation-patterns: %s carries no propagation AXIOM -- wrong file or the page was restructured\n' "$TABLE" >&2; exit 2; }
 cp "$TABLE" "$TMP/section.md"
 grep -E '^> \|' "$TMP/section.md" | grep -vE '^> \|[ -]*\|[ -]*\|?[ ]*$' | grep -vF 'If you edit' > "$TMP/rows.txt" || true
-[ -s "$TMP/rows.txt" ] || { printf 'check-propagation-arms: docs/propagation.md has no table rows\n' >&2; exit 2; }
+[ -s "$TMP/rows.txt" ] || { printf 'check-propagation-patterns: docs/propagation.md has no table rows\n' >&2; exit 2; }
 tr '|' '\n' < "$TMP/rows.txt" > "$TMP/cells.txt"
 
 # ---- steps 3-5 ---------------------------------------------------------------
@@ -291,7 +291,7 @@ fired_before "${PD}/.claude/skills/deploy/SKILL.md" \
   || finding major 'the pre-fix pattern no longer matches .claude/skills/deploy/SKILL.md -- the carve-in has lost its independent witness'
 
 if [ "$findings" -eq 0 ]; then
-  printf '\ncheck-propagation-arms: %s derived members all fire, %s controls all silent, %s pre-fix matches all kept.\n' \
+  printf '\ncheck-propagation-patterns: %s derived members all fire, %s controls all silent, %s pre-fix matches all kept.\n' \
     "$member_count" "$control_count" "$before"
 fi
 exit $([ "$findings" -gt 0 ] && echo 1 || echo 0)

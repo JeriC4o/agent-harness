@@ -440,7 +440,7 @@ def pairing(units, paths):
 
     for slug, where in sorted(claimed_by.items()):
         if len(where) > 1:
-            finding('pairing', 'the plan pair', slug,
+            finding('pairing', 'the plan', slug,
                     'the id [%s] is claimed by %d statements, so it resolves to more than one of them: %s'
                     % (slug, len(where), ' || '.join(norm(s)[:80] for _d, s in where[:3])))
     for slug, sites in sorted(marks.items()):

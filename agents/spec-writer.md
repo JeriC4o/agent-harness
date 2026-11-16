@@ -103,7 +103,7 @@ cover each criterion are recorded OUTSIDE the spec, in the round's criterion-che
 are chosen while the tests are written and so cannot be promised by a document agreed before them.
 
 **The rule is a refusal, and this is what refuses it.** Before handing back `status: ready`, run
-`${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh specform <spec_path>` and do not hand back on anything but
+`${CLAUDE_PLUGIN_ROOT}/scripts/check-spec-criteria.sh specform <spec_path>` and do not hand back on anything but
 a clean 0 — on anything else say which of the two non-clean outcomes it was, findings or cannot-run, and
 which criteria it named. The check reads each criterion's BODY, not its id cell — the id-cell-only scan is
 the false green it exists to avoid — and prints how many criteria its selector matched. **Read that count

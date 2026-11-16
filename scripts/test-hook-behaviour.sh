@@ -630,7 +630,7 @@ check "part 2: the FULL command emits 0 bytes on the same anchor (the shadowing 
 # ---------------------------------------------------------------------------
 printf '\n== AC8 + AC13: the real hook on a class the pre-fix arms matched ==\n'
 # ---------------------------------------------------------------------------
-PREFIX_PATTERN=$(bash "${ROOT}/scripts/check-propagation-arms.sh" --print-prefix-pattern)
+PREFIX_PATTERN=$(bash "${ROOT}/scripts/check-propagation-patterns.sh" --print-prefix-pattern)
 [ -n "$PREFIX_PATTERN" ] && ok "the pre-fix case pattern is a committed constant, read from one place" \
                          || bad "could not read the pre-fix pattern"
 matched_before(){ CLAUDE_PLUGIN_ROOT="${WORK}/elsewhere/plugin" eval "case \"\$1\" in ${PREFIX_PATTERN}) return 0 ;; esac; return 1"; }

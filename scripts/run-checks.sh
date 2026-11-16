@@ -29,7 +29,7 @@
 #   - THE MEMBER LIST IS DERIVED, NEVER DECLARED. Suites come from the tree
 #     (`git ls-files`), so a suite added to the tree is covered the day it lands.
 #     A hardcoded list is how a gate stops covering something while staying
-#     green -- the same drift check-propagation-arms.sh exists to catch between
+#     green -- the same drift check-propagation-patterns.sh exists to catch between
 #     the hook arms and the propagation table.
 #   - ABSENCE IS NEVER SUCCESS. A member whose file is gone is MISSING (red), a
 #     tracked-file set of zero is red, an untracked `*.sh` is red because
@@ -138,7 +138,7 @@ shell-syntax|fn:syntax_member
 untracked-shell|fn:untracked_member
 gate-inventory|fn:inventory_member
 readme-update|sh:scripts/check-readme-update.sh
-propagation-arms|sh:scripts/check-propagation-arms.sh
+propagation-patterns|sh:scripts/check-propagation-patterns.sh
 plan-invariants|sh:scripts/check-plan-invariants.sh
 method-purity|sh:scripts/check-method-purity.sh
 instruction-size|sh:scripts/check-instruction-size.sh
@@ -183,7 +183,7 @@ EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
 # reasoned ones.
 # documented_checks recognises only the `bash scripts/<name>.sh` spelling inside
 # AGENTS.md's structural-checks span, and a skill-local path cannot take it.
-# scripts/check-redline.sh, scripts/check-plan-convergence.sh and
+# scripts/check-spec-criteria.sh, scripts/check-plan-convergence.sh and
 # scripts/check-plan-links.sh COULD take that spelling and still must not: a
 # member is invoked with no arguments, and all three require at least one --
 # every verb of the first, and both document paths of the other two -- so a
@@ -191,7 +191,7 @@ EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
 # Either way the two directions of the comparison could never agree, and each
 # gate's own test-*.sh suite is its entire mechanical coverage.
 # [exempt-checks]
-EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh scripts/check-redline.sh scripts/check-plan-convergence.sh scripts/check-plan-links.sh'
+EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh scripts/check-spec-criteria.sh scripts/check-plan-convergence.sh scripts/check-plan-links.sh'
 
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 

@@ -336,11 +336,13 @@ settles it.
 
 ## The record of excused findings (committed)
 
-`ai-docs/plans/<spec-base>.excuses.md` — named by the spec base, the spec's file name without `.spec.md`,
+`ai-docs/plans/<spec-base>.accepted.md` — named by the spec base, the spec's file name without `.spec.md`,
 as the plan's other documents are, and **committed**, because it is read by every later run over the
 archived pair, long after the gitignored progress file is gone. **The suffix is not matched by the ignore rules**, which is
 confirmed rather than assumed: `git check-ignore -v` on both reports the working record ignored and this
 one not. Each row waives **one** finding of the plan-convergence check, for **this plan and no other**.
+A record a task wrote before the rename, `<spec-base>.excuses.md`, is still read beside it; new rows go to
+the current name.
 
 | Column | Holds | Why that and not something else |
 |---|---|---|
@@ -356,7 +358,7 @@ one not. Each row waives **one** finding of the plan-convergence check, for **th
 ```
 
 - **Granted by an act that shows the finding first**, and by nothing else: the check's
-  `--excuse '<class>|<spot>|<subject>' --grounds '<why>'` runs every class with waiving suspended, prints
+  `--accept '<class>|<spot>|<subject>' --grounds '<why>'` runs every class with waiving suspended, prints
   the finding carrying that key, and only then appends the row. **No ordinary run writes here**, and a key
   matching no finding of the run is refused — an excuse for a finding nobody can see excuses nothing.
 - **A waived finding stays visible**, reported as excused with its grounds, and the waived count prints

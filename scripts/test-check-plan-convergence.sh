@@ -594,22 +594,22 @@ has "and it still counts as a pair, with no reverse pairing asserted" "$out" 'pa
 
 
 printf '\n== the excuse route: the grant act, and what an ordinary run does with its record ==\n'
-EX="$T/plans/a.excuses.md"
+EX="$T/plans/a.accepted.md"
 rm -f "$EX"
 PKEY="provenance|spec § ${SPEC_FIRST_NAME}|40"
 AKEY="arithmetic|spec § ${SPEC_FIRST_NAME}|20 + 20 = 41"
-grant() { bash "$SUB" --excuse "$1" --grounds "$2" \
+grant() { bash "$SUB" --accept "$1" --grounds "$2" \
   "$T/plans/a.spec.md" "$T/plans/a.design.md" 2>&1; }
 
 write_pair 'The window is 40 rounds wide. The band is 20 + 20 = 41 wide.' 'Nothing.'
 out=$(run)
-has "every finding line carries the key that would excuse it" "$out" "[excuse: ${PKEY}]"
+has "every finding line carries the key that would excuse it" "$out" "[accept: ${PKEY}]"
 has "and nothing is excused before an act grants one" "$out" 'excused-holding=0 excused-reporting=0'
 
-bash "$SUB" --excuse "$PKEY" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
-check "--excuse without --grounds -> rc 2" "$?" "2"
+bash "$SUB" --accept "$PKEY" "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
+check "--accept without --grounds -> rc 2" "$?" "2"
 bash "$SUB" --grounds 'why' "$T/plans/a.spec.md" "$T/plans/a.design.md" >/dev/null 2>&1
-check "--grounds without --excuse -> rc 2" "$?" "2"
+check "--grounds without --accept -> rc 2" "$?" "2"
 [ -e "$EX" ] && bad "a refused act wrote no record" || ok "a refused act wrote no record"
 
 out=$(grant 'provenance|spec|not-a-subject-of-any-finding' 'why'); rc=$?
@@ -624,16 +624,17 @@ check "the grant act -> rc 0" "$rc" "0"
 has "and it shows the finding BEFORE excusing it" "$out" 'about to excuse, in full'
 has "and the finding it shows is the one the key names" "$out" 'spec states [40] in a clause naming neither'
 has "and it names the record it wrote" "$out" 'EXCUSED -- the row above is now recorded'
+has "  under the record's current name" "$out" "recorded at ${EX}"
 has "and it says the record is committed and unstaged" "$out" 'COMMITTED record and this run did not stage it'
 out=$(run); rc=$?
 check "an existing record outside the index -> rc 2" "$rc" "2"
 has "and says the run is quieter than every other clone" "$out" 'quieter than every other clone'
-git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+git -C "$T" add plans/a.accepted.md >/dev/null 2>&1
 
 out=$(run)
 has "the waived finding is reported as excused rather than omitted" "$out" 'excused provenance'
 has "and its grounds travel with it" "$out" 'a worked example in a template'
-hasnt "and it is no longer counted as a finding" "$out" "finding provenance [excuse: ${PKEY}]"
+hasnt "and it is no longer counted as a finding" "$out" "finding provenance [accept: ${PKEY}]"
 has "the waived count prints beside the verdict, split by whether the class holds" "$out" 'excused-holding=0 excused-reporting=1'
 has "and the holding count is untouched by waiving a reporting finding" "$out" 'holding=1'
 
@@ -666,7 +667,7 @@ has "and it objects again from scratch" "$out" 'spec states [40] in a clause nam
 printf '\n== a waiver over a HOLDING class, and the record this check cannot read ==\n'
 out=$(grant "$AKEY" 'The arithmetic is deliberately wrong in a worked example of a false equation.')
 has "a holding finding can be waived too, the route being open to any class" "$out" 'EXCUSED'
-git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+git -C "$T" add plans/a.accepted.md >/dev/null 2>&1
 out=$(run); rc=$?
 check "a pair with nothing unexcused left -> rc 0, the caller refusing on holds" "$rc" "0"
 hasnt "and it does NOT read as clean, which is what the waived count is for" "$out" 'check-plan-convergence: clean'
@@ -675,18 +676,36 @@ has "the split says a hold was waived rather than a report quieted" "$out" 'excu
 has "and the holding count falls to zero" "$out" 'holding=0'
 has "the roster names the waivers per class" "$out" ', 1 excused'
 printf '| arithmetic | spec | 20 + 20 = 41 |  |\n' >> "$EX"
-git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+git -C "$T" add plans/a.accepted.md >/dev/null 2>&1
 out=$(run); rc=$?
 check "a row with an empty required cell -> rc 2, never a quiet waiver" "$rc" "2"
 has "and names the row it could not read" "$out" 'excuses nothing checkably'
-git -C "$T" checkout -- plans/a.excuses.md 2>/dev/null || sed -i.bak '/| arithmetic | spec | 20 + 20 = 41 |  |/d' "$EX"
+sed -i.bak '/| arithmetic | spec | 20 + 20 = 41 |  |/d' "$EX"
 rm -f "$EX.bak"
-git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+git -C "$T" add plans/a.accepted.md >/dev/null 2>&1
 cp "$T/plans/a.spec.md" "$T/plans/c.md"
 out=$(bash "$SUB" "$T/plans/c.md" "$T/plans/a.design.md" 2>&1); rc=$?
 check "a spec not named by the record's own construction -> rc 2" "$rc" "2"
 has "and says the record beside it cannot be named" "$out" 'cannot be named'
 rm -f "$T/plans/c.md" "$T/plans/b.spec.md" "$T/plans/b.design.md"
+
+printf '\n== a record kept under its earlier name, with a row in the earlier spot words ==\n'
+OLD="$T/plans/a.excuses.md"
+marked '# the refusal this claim leans on [refusal-arm]'
+write_pair 'The guard in `scripts/marked.sh` refuses an empty set [refusal-arm].' 'The same guard in `scripts/marked.sh` refuses it [refusal-arm].'
+out=$(run)
+has "the pairing spot prints in the current words" "$out" 'finding pairing [accept: pairing|the plan|refusal-arm]'
+# vocabulary-internal: a row as a record written before the rename carries it
+printf '| pairing | the plan pair | refusal-arm | One guard, stated twice on purpose. |\n' > "$OLD"
+git -C "$T" add plans/a.excuses.md >/dev/null 2>&1
+out=$(run)
+has "a record under the earlier name is read" "$out" 'excused pairing'
+hasnt "and its row in the earlier words still matches the finding" "$out" 'finding pairing [accept: pairing|the plan|refusal-arm]'
+out=$(grant 'pairing|the plan|refusal-arm' 'again'); rc=$?
+check "granting a key the earlier record holds -> rc 0" "$rc" "0"
+has "  naming the earlier record as the one holding it" "$out" "ALREADY EXCUSED -- ${OLD}"
+git -C "$T" rm -q --cached plans/a.excuses.md >/dev/null 2>&1
+rm -f "$OLD"
 
 printf '\n== the record suffix against THIS repository own ignore rules ==\n'
 # Run rather than reasoned about: the two suffixes sit in the same directory and
@@ -694,9 +713,12 @@ printf '\n== the record suffix against THIS repository own ignore rules ==\n'
 git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.progress.md" \
   && ok "the working record's suffix IS ignored here" \
   || bad "the working record's suffix IS ignored here"
-git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.excuses.md" \
+git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.accepted.md" \
   && bad "the excuse record's suffix is NOT ignored here" \
   || ok "the excuse record's suffix is NOT ignored here"
+git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.excuses.md" \
+  && bad "  nor its earlier suffix" \
+  || ok "  nor its earlier suffix"
 
 printf '\n== the derivation cannot run on a record it cannot read ==\n'
 write_pair 'Nothing.' 'Nothing.'
@@ -780,12 +802,12 @@ chmod 644 "$XBASE"
 : > "$J/docs/note.md"
 printf '# Spec\n\n%s\n\nThe window is 40 rounds wide.\n' "$SPEC_FIRST" > "$J/plans/a.spec.md"
 git -C "$J" add -A >/dev/null 2>&1
-bash "$XSUB" --excuse "$PKEY" --grounds 'A worked example, not a measurement.' \
+bash "$XSUB" --accept "$PKEY" --grounds 'A worked example, not a measurement.' \
   "$J/plans/a.spec.md" "$J/plans/a.design.md" >/dev/null 2>&1
 out=$(xrun); rc=$?
 check "an excuse record unstaged in the project -> rc 2" "$rc" "2"
-has "  and names it" "$out" 'a.excuses.md exists and is not in the index'
-git -C "$J" add plans/a.excuses.md >/dev/null 2>&1
+has "  and names it" "$out" 'a.accepted.md exists and is not in the index'
+git -C "$J" add plans/a.accepted.md >/dev/null 2>&1
 out=$(xrun); rc=$?
 check "the same record staged is honoured from the copy -> rc 0" "$rc" "0"
 has "  and the finding reads as excused" "$out" 'excused provenance'

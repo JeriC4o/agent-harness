@@ -85,7 +85,7 @@ SKILLS=(task bugfix interview context-reset project-review pr-merged improve imp
 for comp in "${SKILLS[@]}"; do
   case "$det" in *"$comp"*) ok "skill: $comp" ;; *) bad "skill: $comp missing from the inventory" ;; esac
 done
-AGENTS=(spec-writer design design-review self-review review-findings self-improve learnings-escalation-audit inspector fix-scout fix-apply plan-convergence)
+AGENTS=(spec-writer design design-review self-review review-findings self-improve learnings-escalation-audit inspector fix-scout fix-apply contradiction-reader)
 for comp in "${AGENTS[@]}"; do
   case "$det" in *"$comp"*) ok "agent: $comp" ;; *) bad "agent: $comp missing from the inventory" ;; esac
 done

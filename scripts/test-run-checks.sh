@@ -56,7 +56,7 @@ make_tree() {
   printf '{"name":"harness","version":"0.0.1"}\n' > "$d/.claude-plugin/plugin.json"
   printf '{"name":"agent-harness"}\n' > "$d/.claude-plugin/marketplace.json"
   local s
-  for s in check-references check-readme-update check-propagation-arms check-plan-invariants check-method-purity check-instruction-size check-vocabulary check-release; do
+  for s in check-references check-readme-update check-propagation-patterns check-plan-invariants check-method-purity check-instruction-size check-vocabulary check-release; do
     printf '#!/usr/bin/env bash\nexit 0\n' > "$d/scripts/$s.sh"
   done
   printf '#!/usr/bin/env bash\nexit 0\n' > "$d/scripts/test-alpha.sh"
@@ -72,7 +72,7 @@ make_tree() {
    Then every test suite green:
    `scripts/test-alpha.sh`, `hooks/lib/test-beta.sh`.
 5. `bash scripts/check-readme-update.sh` — the README gate.
-5a. `bash scripts/check-propagation-arms.sh` — the arms gate.
+5a. `bash scripts/check-propagation-patterns.sh` — the arms gate.
 5b. `bash scripts/check-plan-invariants.sh` — the plan-invariants gate.
 5c. `bash scripts/check-method-purity.sh` — the method-purity gate.
 5d. `bash scripts/check-instruction-size.sh` — the instruction-size gate.
@@ -95,7 +95,7 @@ has "  the manifests member reported"   "$OUT" "ok   manifests"
 has "  the references member reported"  "$OUT" "ok   references"
 has "  the shell-syntax member reported" "$OUT" "ok   shell-syntax"
 has "  the readme member reported"      "$OUT" "ok   readme-update"
-has "  the propagation member reported" "$OUT" "ok   propagation-arms"
+has "  the propagation member reported" "$OUT" "ok   propagation-patterns"
 has "  the plan-invariants member reported" "$OUT" "ok   plan-invariants"
 has "  the method-purity member reported" "$OUT" "ok   method-purity"
 has "  the instruction-size member reported" "$OUT" "ok   instruction-size"
@@ -174,7 +174,7 @@ printf '#!/usr/bin/env bash\nexit 1\n' > "$FAKE/scripts/check-references.sh"
 run "$FAKE"
 check "the references gate failing -> rc 1" "$RC" "1"
 has "  it is named"                  "$OUT" "FAIL references"
-has "  and later members still ran"  "$OUT" "ok   propagation-arms"
+has "  and later members still ran"  "$OUT" "ok   propagation-patterns"
 
 printf '\n== drift between the tree and the documented list ==\n'
 # The inventory member is the one check here that no link check, syntax check or
@@ -391,7 +391,7 @@ printf '\n== a structural check can be documented and never wired in ==\n'
 make_tree "$FAKE"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$FAKE/scripts/check-newgate.sh"
 git -C "$FAKE" add scripts/check-newgate.sh
-sed 's|^5a\. `bash scripts/check-propagation-arms.sh` — the arms gate.|&\n5b. `bash scripts/check-newgate.sh` — a gate nobody runs.|' \
+sed 's|^5a\. `bash scripts/check-propagation-patterns.sh` — the arms gate.|&\n5b. `bash scripts/check-newgate.sh` — a gate nobody runs.|' \
   "$FAKE/AGENTS.md" > "$FAKE/AGENTS.md.new"
 mv "$FAKE/AGENTS.md.new" "$FAKE/AGENTS.md"
 if grep -q 'check-newgate' "$FAKE/AGENTS.md"; then
@@ -457,7 +457,7 @@ shell-syntax|fn:syntax_member
 untracked-shell|fn:untracked_member
 gate-inventory|fn:inventory_member
 readme-update|sh:scripts/check-readme-update.sh
-propagation-arms|sh:scripts/check-propagation-arms.sh
+propagation-patterns|sh:scripts/check-propagation-patterns.sh
 plan-invariants|sh:scripts/check-plan-invariants.sh
 method-purity|sh:scripts/check-method-purity.sh
 instruction-size|sh:scripts/check-instruction-size.sh

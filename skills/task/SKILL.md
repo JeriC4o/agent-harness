@@ -86,7 +86,7 @@ Agent(subagent_type="general-purpose", prompt="
 
 ### Step 7: Design review
 
-**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the `plan-convergence` reader (`${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **Neither half is optional and neither runs after the review:** the judgement class may never be the only check standing. Both results go into the review spawn. Spawn prompt, what its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
+**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the contradiction reader (`${CLAUDE_PLUGIN_ROOT}/agents/contradiction-reader.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **Neither half is optional and neither runs after the review:** the judgement class may never be the only check standing. Both results go into the review spawn. Spawn prompt, what its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
 
 ```
 Agent(subagent_type="general-purpose", prompt="
@@ -185,13 +185,13 @@ Agent(subagent_type="general-purpose", prompt="
 >
 > **CLOSING GATE — a finding that fired Arm A may not be marked `✅ Fixed` until the cited sentence has been RE-READ in its file and either (a) confirmed true of the post-fix state, or (b) amended.** Record which.
 >
-> **Why Arm A exists, and the shape that defeats a diff-keyed table:** [the procedure page](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md#rationale-moved-out-of-the-always-loaded-step-text).
+> **Why Arm A exists, and the shape that defeats a diff-keyed table:** [the procedure page](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md#rationale-moved-out-of-the-always-loaded-step-text).
 
 > **AXIOM — Scouted-plan sequence (binding).** The orchestrator NEVER applies a review fix in its own context — **every** round carrying at least one `⬜ Open` finding (including a round whose one finding is a single-line `nit`) runs all five beats, with no size-based or severity-based carve-out and no per-round discretion to skip them:
 >
 > `baseline` (orchestrator, 1 call) → **plan** (`fix-scout`, fresh context, fills the stub's table) → `plan` gate (orchestrator, 1 call) → **apply** (`fix-apply`, fresh context, `fix` rows only) → **the post-apply micro-loop** (beat 5 below) → **correct** (`design`, fresh context, **once** per round carrying a `correction:` row, and skipped when none does).
 >
-> **The correction beat runs AFTER the micro-loop, before the round's review, and the order is load-bearing:** a correction describes code that exists. One invocation corrects every item the round's rows name. Why: [the procedure page](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md#rationale-moved-out-of-the-always-loaded-step-text).
+> **The correction beat runs AFTER the micro-loop, before the round's review, and the order is load-bearing:** a correction describes code that exists. One invocation corrects every item the round's rows name. Why: [the procedure page](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md#rationale-moved-out-of-the-always-loaded-step-text).
 >
 > Both gate calls are `"${CLAUDE_SKILL_DIR}"/scripts/check-fix-plan.sh <verb> <progress-file>`. **Read the `decision=` token, not the exit status** — one status covers five decisions:
 >
@@ -212,9 +212,9 @@ Agent(subagent_type="general-purpose", prompt="
 > 4. **On a burned cap** surface to the user in the fixed shape, recommending exactly one of `re-fix` / `amend-the-plan` / `accept`.
 > 5. **The full review pass runs either way** — a burned cap ends the LOOP, not the gate.
 >
-> **Then record the loop, once:** `check-fix-plan.sh record <progress-file> <iterations> <cost_tool_calls> <answer>`, all three required. **Each step's detail is binding and lives on [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md), Beat 5 — read it before running the beat.**
+> **Then record the loop, once:** `check-fix-plan.sh record <progress-file> <iterations> <cost_tool_calls> <answer>`, all three required. **Each step's detail is binding and lives on [`${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md), Beat 5 — read it before running the beat.**
 >
-> Spawn prompts, the plan format, the reason-token vocabulary and the narrative behind each beat: [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md).
+> Spawn prompts, the plan format, the reason-token vocabulary and the narrative behind each beat: [`${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md).
 
 Every `⬜ Open` finding in the latest `## Self-Review (Round N)` section carries **at least one** row in the round's plan, each with one disposition from the closed six — `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design`, `correction: <what shipped instead>` — and a finding may hold several rows when its remedy spans several files. The gate refuses a plan that omits a finding, and one that raises a row the review never raised. Statuses are marked only after the applied diff has been gated.
 
@@ -229,7 +229,7 @@ After all findings resolved, run gates (`%BUILD_CMD%`, the touched-scope checks 
 1. **Step-skip gate.** Read `**current_step:**`. MUST be `Step 10 — self-review APPROVE (Round N)` or `Step 10 — cap burned, user authorised finalise (Round N)`. Else **STOP**, surface the gap, loop back to the missing step. No "too simple" exemption. **`Step 11 — review fixes complete (Round N)` is NOT admissible and used to be** — it means fixes were applied and the review has not been re-run over them, which is why Step 11 ends by returning to Step 10. Why: [reference.md § Step 12](reference.md#step-12--full-run-digest-compare-failure-route).
 2. **Confirm `.progress.md` is NOT staged.** Gitignored (`ai-docs/plans/**/*.progress.md`); should not appear in `git status`. If accidentally tracked, unstage.
 3. Confirm the branch is not the default one. Otherwise stop and apply recovery ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Recovery`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#recovery-from-accidental-edits-on-the-default-branch)).
-4. **Move plan files:** `git mv` spec/design — and `<spec-base>.excuses.md` and `<spec-base>.links.md` if the task wrote them — to `ai-docs/plans/done/`.
+4. **Move plan files:** `git mv` spec/design — and the task's `.accepted.md` (or earlier `.excuses.md`) and `.links.md` records, if any — to `ai-docs/plans/done/`.
 5. `%BUILD_CMD% <module-path>` — sanity build before staging.
 6. **The single full run:** `%FULL_CHECK_CMD%` once; its record goes into `**last_passed_gate:**`, digest included. Immediately before the closing commit, compare that digest with `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh` — a difference owes the run again. On a failure: [reference.md § Step 12](reference.md#step-12--full-run-digest-compare-failure-route).
 7. **The closing commit**, without asking: stage by name what is still uncommitted — the move into `done/`, `ai-docs/learnings/` if this task wrote an entry (`ai-docs/learnings.md` only if the archive itself changed), `ai-docs/context.md` if touched. When the project uses ticket keys, the `<TICKET-KEY>:` title prefix is mandatory. Stats lines belong in the commit body, NOT the PR body.

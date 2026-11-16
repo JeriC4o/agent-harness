@@ -1,11 +1,11 @@
 ---
-name: plan-convergence
+name: contradiction-reader
 description: "Reads a spec-and-design pair for the one convergence class a model has to judge — whether the plan contradicts itself or the artefacts it describes — and returns a report. It issues no verdict and rules on nothing: whether a contradiction does harm is the reader's call, not this pass's. Invoked by /task Step 7, and after a spec amendment that keeps the approach, beside the deterministic convergence check, never alone."
 tools: Read, Glob, Bash
 model: opus
 ---
 
-# Plan-convergence reader
+# Contradiction reader
 
 Reads a frozen-or-proposed plan pair and reports where it disagrees with itself or with something
 that already exists.
@@ -101,7 +101,7 @@ this run — the boundary above did not hold — and its result is never listed 
 Lead with the outcome word, then the figures, then the findings. The two lists are separate.
 
 ```
-plan-convergence: <findings | clean | cannot-run>
+contradiction-reader: <findings | clean | cannot-run>
   healthy agreement: every finding in all three readings
   agreement: <F> findings, <N> in all three, <N> in two, <N> in one
   coverage: self-contradiction <covered|uncovered>, artefact-contradiction <covered|uncovered>

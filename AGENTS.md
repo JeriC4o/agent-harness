@@ -71,7 +71,7 @@ is the same commands.
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
    `scripts/test-check-readme-update.sh`, `scripts/test-loop-metrics.sh`,
    `scripts/test-bin-of.sh`, `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh`,
-   `scripts/test-tree-digest.sh`, `scripts/test-review-ledger.sh`, `scripts/test-human-findings.sh`,
+   `scripts/test-tree-digest.sh`, `scripts/test-checklist-ledger.sh`, `scripts/test-human-findings.sh`,
    `scripts/test-plan-archive.sh`, `scripts/test-plan-freeze.sh`,
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
    `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-ledger-write.sh`,
@@ -82,8 +82,8 @@ is the same commands.
    `skills/report-defect/scripts/test-file-report.sh`,
    `skills/pr-merged/scripts/test-cleanup-progress.sh`,
    `skills/task/scripts/test-check-fix-plan.sh`,
-   `scripts/test-check-plan-invariants.sh`, `scripts/test-check-propagation-arms.sh`,
-   `scripts/test-check-redline.sh`, `scripts/test-check-release.sh`,
+   `scripts/test-check-plan-invariants.sh`, `scripts/test-check-propagation-patterns.sh`,
+   `scripts/test-check-spec-criteria.sh`, `scripts/test-check-release.sh`,
    `scripts/test-check-plan-convergence.sh`, `scripts/test-check-plan-links.sh`,
    `scripts/test-hook-behaviour.sh`,
    `scripts/test-run-checks.sh`, `scripts/test-check-method-purity.sh`,
@@ -99,7 +99,7 @@ is the same commands.
    cannot upgrade: a fenced `plugin install` outside the Install section, a fenced `marketplace update`
    with no `plugin update` beside it, or an Update section carrying no upgrade verb at all. Needs no
    `claude` CLI, so it runs wherever the checks above it run.
-5a. `bash scripts/check-propagation-arms.sh` — DERIVES the propagation reminder's path classes from the
+5a. `bash scripts/check-propagation-patterns.sh` — DERIVES the propagation reminder's path classes from the
    Propagation Rule table in `docs/propagation.md` and asserts the `case` arms in `hooks/hooks.json`
    agree: every derived class has an arm that fires on an absolute representative, every control stays
    silent, and no path the pre-fix arms matched is silent under the current set. Catches "a sync group
@@ -198,17 +198,17 @@ at that heading.
 
 | Touched path | Selects |
 |---|---|
-| `hooks/hooks.json` | `scripts/test-hook-behaviour.sh`, `propagation-arms`, `plan-invariants`, `scripts/test-plugin-manifest.sh` |
+| `hooks/hooks.json` | `scripts/test-hook-behaviour.sh`, `propagation-patterns`, `plan-invariants`, `scripts/test-plugin-manifest.sh` |
 | `hooks/hooks.json` | `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`, `hooks/lib/test-loop-verdict.sh` |
 | `hooks/hooks.json` | `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-skill-gate.sh`, `hooks/lib/test-plan-invariants-guard.sh` |
 | `hooks/hooks.json`, `docs/glossary.md` | `hooks/lib/test-glossary-context.sh` |
-| `docs/propagation.md` | `propagation-arms` |
+| `docs/propagation.md` | `propagation-patterns` |
 | `README.md` | `readme-update` |
 | `docs/plan-invariants.md`, any instruction file on the surfaces it examines, `hooks/lib/plan-invariants-guard.sh` | `plan-invariants` |
 | `AGENTS.md` § Build & Test, or a `test-*.sh` added or removed | `gate-inventory`, `scripts/test-run-checks.sh` |
 | `hooks/lib/loop-*`, `scripts/bin-of.jq`, `ai-docs/fixtures/loop-corpus/` | `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh` |
-| `scripts/tree-digest.sh` | `scripts/test-review-ledger.sh`, `hooks/lib/test-gate-record.sh` |
-| `scripts/plan-freeze.sh` | `scripts/test-review-ledger.sh` |
+| `scripts/tree-digest.sh` | `scripts/test-checklist-ledger.sh`, `hooks/lib/test-gate-record.sh` |
+| `scripts/plan-freeze.sh` | `scripts/test-checklist-ledger.sh` |
 | `scripts/check-plan-convergence-holding.py` | `scripts/test-check-plan-links.sh` |
 | `scripts/deliberate-absence.sh` | `scripts/test-check-plan-links.sh`, `scripts/test-check-plan-convergence.sh`, `scripts/test-plan-archive.sh` |
 | `docs/plan-invariants.md`, `ai-docs/plans/done/` | `scripts/test-plan-archive.sh` |

@@ -109,11 +109,11 @@ A field added to the entry format without parallel coverage in all five targets 
 | AGENTS.md `## Learning Log` *Entry format* | Declaration of field name, allowed values, default-when-omitted semantics |
 | `${CLAUDE_PLUGIN_ROOT}/agents/self-improve.md` Step 5 | Mention where the workflow branches on its value |
 | `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` Steps 2/3/4 | Parse-site usage (verdict routing, sweep predicates) |
-| `${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md` field glossary | Declaration mirror — same allowed-values list, same default-when-omitted note |
+| `${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md` field glossary | Declaration mirror — same allowed-values list, same default-when-omitted note |
 
 ## Checklist M — `agent-writing-style.md` conformance
 
-`${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` is the canonical style reference for fail-loud rules in instruction files. Checklist M sweeps the audited corpus for drift against the Patterns + Anti-patterns. **Audited corpus**: `AGENTS.md` + every `skills/**/SKILL.md` + every `${CLAUDE_PLUGIN_ROOT}/agents/**.md` + `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md` + `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md` + `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` + `${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md` + `${CLAUDE_PLUGIN_ROOT}/rules/**/*.md`.
+`${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` is the canonical style reference for fail-loud rules in instruction files. Checklist M sweeps the audited corpus for drift against the Patterns + Anti-patterns. **Audited corpus**: `AGENTS.md` + every `skills/**/SKILL.md` + every `${CLAUDE_PLUGIN_ROOT}/agents/**.md` + `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md` + `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md` + `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` + `${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md` + `${CLAUDE_PLUGIN_ROOT}/rules/**/*.md`.
 
 | # | Sub-check | Severity |
 |---|---|---|

@@ -6,7 +6,7 @@
 
 set -uo pipefail -f
 
-PROG=review-ledger
+PROG=checklist-ledger
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 PREFIX=12
 TRIGGERS=' first-round scope-changed rule-changed objected new-file record-invalid amendment '

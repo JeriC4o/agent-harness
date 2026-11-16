@@ -42,7 +42,7 @@ Read up front:
 
 Multiple values comma-separated (`AGENTS.md, hook`). Each must independently verify.
 
-The last three are bare file names, not an `ai-docs:[name]` form, because the log is append-only and ~27 existing entries already carry those spellings. Treat a NEW `ai-docs:[name]` value as off-schema (`${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md § Entry format`).
+The last three are bare file names, not an `ai-docs:[name]` form, because the log is append-only and ~27 existing entries already carry those spellings. Treat a NEW `ai-docs:[name]` value as off-schema (`${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md § Entry format`).
 
 ## Workflow
 
