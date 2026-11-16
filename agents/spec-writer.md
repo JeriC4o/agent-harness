@@ -206,7 +206,7 @@ The spec is a MODEL-facing artefact. The question you emit is read by a develope
 
 - A workflow-artefact path or name: `*.spec.md`, `*.design.md`, `*.state.md`, `.progress.md`, "the spec", "the design doc", "§ Technical constraints".
 - An acceptance-criterion id (`AC3`), a decomposition-task id (`T7`), a round number, or any other handle whose meaning lives in a file.
-- Agent-internal vocabulary: `spec-writer`, `design`, `design-review`, `GO` / `ITERATE`, `status: ask`, "the subagent", "the orchestrator".
+- A harness name carrying the meaning, an agent's or a status value's included: [`${CLAUDE_PLUGIN_ROOT}/docs/glossary.md` § Text for a person](${CLAUDE_PLUGIN_ROOT}/docs/glossary.md#text-for-a-person).
 - A bare symbol / class / table name as the whole subject, with no plain-language gloss of what it is for.
 
 If a question only makes sense given a constraint recorded elsewhere, **restate that constraint inline in plain words** — never point at it. A ticket key is allowed only when that ticket is itself the subject of the decision, and then with a one-line summary of what it says.

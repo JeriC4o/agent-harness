@@ -46,6 +46,13 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Lifecycle.** Section-keyed.
 **When to read.** When promoting a rule to AGENTS.md / a skill / an agent.
 
+### `${CLAUDE_PLUGIN_ROOT}/docs/glossary.md`
+
+**Purpose.** One entry per harness concept — its one name, the names it no longer goes by, a plain description and where it is defined — with the rule for text for a person at the head and the retired names at the foot.
+**Writer.** Any change that adds, renames or retires a concept, in that same change; a Vocabulary-group member.
+**Lifecycle.** Grows by an entry per concept; the fixed form of an entry is a contract, because a program reads the names from it.
+**When to read.** Before writing to a person, and when a harness word is unclear.
+
 ### `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md`
 
 **Purpose.** Embedded inventory of Tool / Subagent / Skill / Hook names so `/ai-audit` Checklist O can flag clashes.

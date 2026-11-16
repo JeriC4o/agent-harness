@@ -408,6 +408,10 @@ meaning: it stops nothing, and no check reads the ticket or the description.
   design at the head the description is written against, which the correction pass's hand-back carries —
   and asks for nothing: the cap is a soft limit, and this is where the human sees a correction's effect
   on the length.
+- **Proposed glossary entries.** A concept the task's text needed and the glossary lacks is described by
+  what it does, and its proposed entry goes under a "Proposed glossary entries" line, in the entry's form
+  ([`${CLAUDE_PLUGIN_ROOT}/docs/glossary.md` § Text for a person](${CLAUDE_PLUGIN_ROOT}/docs/glossary.md#text-for-a-person)).
+  No such line when there is none.
 - **Keep a small, self-contained PR to the files the task changes.** The plan's spec and design are among
   them: the task's steps commit them as they are written, and the task's closing step moves them into
   `ai-docs/plans/done/` in the same PR.
