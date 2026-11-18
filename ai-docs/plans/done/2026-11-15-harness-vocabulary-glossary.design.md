@@ -74,7 +74,7 @@ Five pieces of work surround the page.
    declared flag names could have been changed by the line or is not a regular file: that file is read
    only when nothing but a `cd` comes before the command in the line, no redirection in the line writes a
    file, no other word of the line names it, a relative one is looked up from a known directory, and it
-   is a readable regular file. Each text is read twice side by side: the listed names are matched outside quotation and code marks, and a model reads it
+   is a readable regular file. Each text is read twice side by side: the listed names are matched outside double quotation marks, guillemets and code marks, and a model reads it
    with the glossary for three breaches — a name translated word for word and used as a term, a name
    invented for a concept, a harness name carrying the meaning with no plain description. A refused
    question or post names what was found, and the agent rewrites and retries. After each refusal made by
@@ -123,16 +123,16 @@ statements must change together is the design author.
 | Canonical name | What it is | Other names |
 |---|---|---|
 | main agent | the agent the person talks to, which starts every other agent | "main thread" |
-| orchestrator | the main agent while it runs a workflow: it starts the other agents, commits, and keeps the progress file | — |
+| orchestrator | the main agent while it runs a workflow: it starts the other agents, hands each its part of the work and keeps the progress file current | — |
 | subagent | an agent started by another for one job, in a fresh context, which ends by handing back a report | — |
 | skill | a named workflow started by a slash command, by the person or by an agent | — |
 | spec workflow | the ordered steps a task runs today, from interview to pull request, with a spec of its own: interview, spec, design, design review, implementation, verification, self-review | "spec flow", "task workflow" |
-| interview | the questions put to the owner, a round at a time, before a spec is written | — |
+| interview | the questions put to the owner, a round at a time, while the spec is drafted | — |
 | spec writer | the agent drafting the spec from the interview's answers | — |
 | design author | the agent writing a task's design, its working plan and its record of declared links | "design subagent" |
 | fix scout | the agent writing a review-fix round's fix plan in a fresh context | — |
 | fix-apply agent | the agent applying the fix rows of a plan the fix-plan check passed, and nothing else | — |
-| finding | one problem a review or a check reports, with its severity: blocker, major or minor | — |
+| finding | one problem a review or a check reports, with its severity: blocker, major, minor, nit or note | — |
 | session inspection | reading a finished session for loops, repeated checks and review rounds that burned their cap: a script counts, an agent judges | — |
 
 #### Plans
@@ -148,7 +148,7 @@ statements must change together is the design author.
 | design amendment | a rewrite of the approach while the task runs, reviewed again and frozen again | — |
 | earlier-shape design | a design written before the working plan moved to the progress file; it carries its own decomposition table, and the length cap does not bind it; every other design is in the new shape | — |
 | length cap | the soft limit the owner set on a design's length | — |
-| working plan | the design author's table of subtasks and their groups, kept in the progress file, which the implementation runs from | — |
+| working plan | the design author's table of subtasks and their groups, kept in the progress file, which the implementation runs from group by group, two groups at once only where it shows them independent | — |
 | in-place correction | rewriting an item of a frozen design so it states what shipped, the approach unchanged | "correction pass", "correction beat" |
 | working in the review notes | putting design review's notes into the design or the working plan before the freeze | "fold-in", "folded in", "unfolded note" |
 | cut-down spec | an archived spec that a since-removed last step cut down to three sections; the checks still recognise it, and the commit that made it, and skip both | "folded spec", "collapsed spec" |
@@ -175,7 +175,7 @@ statements must change together is the design author.
 | record of declared links | the committed list of statement pairs in a plan that must change together, written by the design author | "link record" |
 | declared link | one row of it: two quoted statements and why they move together | — |
 | link check | the script telling, for each declared link, whether both statements still stand | — |
-| record of accounted positions | a project's recorded list of line-number references that predate their ban; the reference kind reports only new ones | "baseline record", "positional baseline" |
+| record of accounted positions | a project's recorded list of accepted line-number references, mostly ones written before their ban and the rest added by hand; the reference kind reports only references the list does not hold | "baseline record", "positional baseline" |
 | plan invariants | the fixed rules on what a spec and a design are and must contain, and the pages stating them | — |
 | base principle | one numbered rule of the plan invariants | — |
 | required element | a section a spec or a design must carry | — |
@@ -196,8 +196,8 @@ statements must change together is the design author.
 | checklist ledger | the table ending each self-review round, fingerprinting each file and rule reviewed, so the next round reviews only what changed | "review ledger" |
 | review-fix round | after a REJECT: take the round baseline, write the fix plan, check it, apply it, check the applied change against the plan, correct the design where a row says so, review again | "review-and-fix round", "scouted fix", "scouted-plan", "scouted flow" |
 | round baseline | the snapshot of the files when a review-fix round starts; the applied fixes are measured against it | — |
-| fix plan | one row per open finding: what to change, where, and how much | — |
-| fix-plan check | the script deciding whether a fix plan is applied, sent back or routed to an amendment, by a fixed set of tests each printing its own line | — |
+| fix plan | at least one row per open finding, one per file its fix touches: what to change, where, and how much | — |
+| fix-plan check | the script deciding whether a fix plan is applied, sent back, routed to an amendment, or put to the owner when the declared change is over a size threshold, by a fixed set of tests each printing its own line | — |
 | amendment trigger | two tests on a finding: Arm A, closing it would leave a spec or design sentence untrue; Arm B, the fix edits the spec or the design | — |
 | correction row | a fix-plan row saying the shipped code departs from the design without breaking the approach | — |
 | post-apply micro-loop | one question whether the applied change matches the plan, with a bounded number of re-fixes | — |
@@ -218,7 +218,7 @@ statements must change together is the design author.
 | Canonical name | What it is | Other names |
 |---|---|---|
 | Learning Log | the record of each instruction the agent broke, and the rule drawn from it | "corrections log", "corrections-log", "instruction-violation log", "learning record" |
-| Learning Log archive | the file holding every entry once its branch merged | "learnings archive" |
+| Learning Log archive | the file of older entries, into which merged branches' entry files are moved; with the entry files not yet moved, it makes up the one history the audits read | "learnings archive" |
 | Learning Log fold | moving merged branches' entry files into the archive unchanged, then deleting them | — |
 | promotion candidate | a lesson about the method itself, stripped of project names, kept for a sweep across projects | — |
 | redaction gate | the check refusing a promotion candidate that names one project's material | — |
@@ -235,12 +235,12 @@ statements must change together is the design author.
 | check-list member | one named check in the check list | — |
 | check runner | the script running the check list, one verdict per member | "gate runner" |
 | structural check | a check of the harness's own files, as against a delivery gate | — |
-| verdict line | the first line a check prints: clean, findings or could-not-run, with how much it examined, followed by a roster of what it read | — |
+| verdict line | the line stating a check's result — clean, findings or could-not-run — and how much it examined | — |
 | spec-criteria check | the script refusing a spec criterion that names how it is tested, and a review taking leave to skip a finding from anything but a finished spec | — |
 | plan-invariants check | the script checking that the base principles, the required elements and the plan-invariants guard agree with the pages stating them | — |
 | touched-scope run | inside a loop, only the checks the changed files select | — |
 | full run | the whole check list, once, after review approves | — |
-| delivery gate | a check that what the plugin ships reaches a project: it installs, it upgrades, its version moved | — |
+| delivery gate | a check that what the plugin ships reaches a project; there are three, each testing one step: the plugin installs and loads, a shipped change raised the version, the documented upgrade moves an installed copy | — |
 | result masking | hiding a gate's failure behind another command's success; a hook refuses its common shapes | "gate-pipe-guard" |
 | gate record | the hook recording each gate run, with the state of the files it ran on | — |
 | tree digest | a fingerprint of the files as version control sees them | — |
@@ -261,8 +261,8 @@ statements must change together is the design author.
 | profile | a project's own half: its commands, language, permissions and facts, among them which commands post to the review surface or the tracker | — |
 | project registry | the list of projects set up with the harness, kept in the user's home folder | — |
 | deployed configuration | files holding environment-specific settings, read only after asking | — |
-| instruction file | a file of rules the agents read; those loaded whole at every agent start are capped in size | — |
-| instruction size cap | the method's limit on the size of a file loaded whole at agent start, with an early warning below it | — |
+| instruction file | a file of rules the agents read; those loaded whole when a session, an agent or a workflow starts are capped in size | — |
+| instruction size cap | the method's limit on the size of a file loaded whole when a session, an agent or a workflow starts, with an early warning below it | — |
 | AXIOM | a rule the method marks as binding with no exception | — |
 | defect report | a report a project files back to the harness about a defect in it | — |
 
@@ -286,7 +286,7 @@ statements must change together is the design author.
 
 | Canonical name | What it is | Other names |
 |---|---|---|
-| glossary | the page holding one entry per harness concept, opening with the rule for text for a person; hooks put it into the agents' context, and both checks read its names through one shared reader | — |
+| glossary | the page holding one entry per harness concept, opening with the rule for text for a person; hooks put it into the main agent's context at session start and append it to the briefs of the three agents that write or review a plan — the spec writer, the design author and the design reviewer — and both checks read its names through one shared reader | — |
 | listed name | an other name or a retired name the glossary lists, which the checks refuse | — |
 | vocabulary check | the check failing when a listed name appears in the harness's own files | — |
 | plain-words check | the hooks reading what the agent writes to a person for listed names and coined words, recording each reading with the session's hook records | — |
@@ -470,11 +470,12 @@ makes is covered by that review's entry.
   and functions and the lines under the internals mark; in every covered file, the bracketed ids a
   script's comments carry, which documents cite in the script's own spelling. Rejected: a per-file allowance — it would hide a printed message
   in the same file; reading only comments and strings — misses unquoted shell text.
-- **Entries are short.** The page holds its 125 entries in 30,182 characters, 241 an entry on average,
+- **Entries are short.** The page holds its 125 entries in 30,959 characters, 248 an entry on average,
   and with the rule, the section on words a script must keep, the five retired names and the headings
-  comes to 33,956 characters (each figure measured by a character count of the page on this branch,
-  2026-11-16), below the 35,000-character early warning (a threshold the method hands down), with room
-  for about 4 more entries ((35,000 − 33,956) / 241). Rejected: the
+  comes to 34,772 characters (each figure measured by a character count of the page on this branch,
+  2026-11-18), 228 below the 35,000-character early warning (a threshold the method hands down), with
+  room for about one more entry, and only one shorter than the average ((35,000 − 34,772) / 248 ≈ 0.9).
+  Rejected: the
   spec's estimate of about 410 characters an entry — the page then holds about 85 entries, fewer than the
   required list.
 - **Posting commands are declared in the project's profile**, as the deployed-configuration patterns are,
@@ -518,9 +519,10 @@ makes is covered by that review's entry.
   repository's project context page, 698, 978 and 1,239 characters below it (measured by a character
   count of each file on this branch, 2026-11-16). Mitigation: in those files a canonical name is no longer
   than what it replaces where a shorter one exists; otherwise explanation moves to a page reached by link.
-- **The glossary itself sits near the warning**, 1,044 characters below it by the measurement above,
-  leaving little room for later entries. Mitigation: a later entry for one part of a concept already
-  present merges into that entry.
+- **The glossary itself sits near the warning**, 228 characters below it by the measurement above, less
+  than one entry of average length. Mitigation: a later entry for one part of a concept already present
+  merges into that entry; an entry for a new concept that takes the page past the warning turns the size
+  check on files loaded whole red, so the change adding it makes room on the page in the same change.
 - **Three host behaviours are documented by the host and observed here at most in part (verify)**: a
   brief rewritten at an agent's start reaching the agent and a denied question never reaching the
   person, both not observed, tried in a throwaway session that stops at the login before any model turn;

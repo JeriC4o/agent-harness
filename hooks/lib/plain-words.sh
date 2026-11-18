@@ -121,7 +121,7 @@ model_read() { # <what the text is> <text file>
     printf 'TRANSLATED: a harness name translated word for word into another language and used as a term.\n'
     printf 'INVENTED: a name the agent made up for a concept and uses as if the person knew it.\n'
     printf 'UNEXPLAINED: a harness name carrying the meaning of a sentence with no plain description of it beside it.\n'
-    printf 'A name inside quotation marks or code marks, written to talk about the name itself, is a mention and not a breach. Ordinary words in their ordinary sense are not breaches.\n'
+    printf 'A name inside double quotation marks, guillemets or code marks, written to talk about the name itself, is a mention and not a breach. Ordinary words in their ordinary sense are not breaches.\n'
     printf 'Answer with one line per breach, in the form: KIND | the words | why. When there is none, answer with the single word NONE.\n\n'
     printf '<glossary>\n'; cat "$PAGE"; printf '\n</glossary>\n\n<text kind="%s">\n' "$1"
     cat "$2"; printf '\n</text>\n'
