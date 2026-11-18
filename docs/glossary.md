@@ -162,7 +162,7 @@ next blank line.
 | loop ledger | — | The per-session file where the plugin's guards record each tool call and what they noticed. | Later reviews of the session read it to find loops and repeated work. | `docs/loop-ledger.md` § The loop ledger |
 | loop detector | — | The guards flagging a repeated call, or one kind of call repeated within a turn. | They ask before a repeat runs, or note a loop when a turn ends, and never block the turn. | `docs/hook-inventory.md` § The hooks |
 | measurement setup | "measurement arm" | One of the setups a measurement compares. | Each is run the same way, so the difference between them is the effect measured. | `docs/glossary.md` § Checks and hooks |
-| payload sibling | — | A file in another language that a shell script loads from its own folder. | Callers always run the shell script, which checks for the other language's interpreter first. | `AGENTS.md` § Language profile |
+| payload sibling | — | A file in another language that a shell script loads. | Callers always run the shell script, never the file itself. | `AGENTS.md` § Language profile |
 
 ## The harness and a project
 

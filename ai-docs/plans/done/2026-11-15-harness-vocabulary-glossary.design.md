@@ -248,7 +248,7 @@ statements must change together is the design author.
 | loop ledger | the per-session file where the harness's hooks record each tool call and what they noticed | — |
 | loop detector | the hooks flagging a repeated call, or one kind of call repeated within a turn | — |
 | measurement setup | one of the setups a measurement compares | "measurement arm" |
-| payload sibling | a file in another language that a shell script loads from its own folder | — |
+| payload sibling | a file in another language that a shell script loads | — |
 
 #### The harness and a project
 
@@ -470,11 +470,11 @@ makes is covered by that review's entry.
   and functions and the lines under the internals mark; in every covered file, the bracketed ids a
   script's comments carry, which documents cite in the script's own spelling. Rejected: a per-file allowance — it would hide a printed message
   in the same file; reading only comments and strings — misses unquoted shell text.
-- **Entries are short.** The page holds its 125 entries in 30,959 characters, 248 an entry on average,
+- **Entries are short.** The page holds its 125 entries in 30,905 characters, 247 an entry on average,
   and with the rule, the section on words a script must keep, the five retired names and the headings
-  comes to 34,772 characters (each figure measured by a character count of the page on this branch,
-  2026-11-18), 228 below the 35,000-character early warning (a threshold the method hands down), with
-  room for about one more entry, and only one shorter than the average ((35,000 − 34,772) / 248 ≈ 0.9).
+  comes to 34,718 characters (each figure measured by a character count of the page on this branch,
+  2026-11-19), 282 below the 35,000-character early warning (a threshold the method hands down), with
+  room for about one more entry of average length ((35,000 − 34,718) / 247 ≈ 1.1).
   Rejected: the
   spec's estimate of about 410 characters an entry — the page then holds about 85 entries, fewer than the
   required list.
@@ -519,8 +519,8 @@ makes is covered by that review's entry.
   repository's project context page, 698, 978 and 1,239 characters below it (measured by a character
   count of each file on this branch, 2026-11-16). Mitigation: in those files a canonical name is no longer
   than what it replaces where a shorter one exists; otherwise explanation moves to a page reached by link.
-- **The glossary itself sits near the warning**, 228 characters below it by the measurement above, less
-  than one entry of average length. Mitigation: a later entry for one part of a concept already present
+- **The glossary itself sits near the warning**, 282 characters below it by the measurement above, room
+  for one entry of average length and not two. Mitigation: a later entry for one part of a concept already present
   merges into that entry; an entry for a new concept that takes the page past the warning turns the size
   check on files loaded whole red, so the change adding it makes room on the page in the same change.
 - **Three host behaviours are documented by the host and observed here at most in part (verify)**: a
