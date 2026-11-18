@@ -17,7 +17,7 @@ You don't own the round loop, the user-facing question UI, or the cross-link to 
 
 ## Optimization target
 
-Produce the smallest spec sufficient for the `design` Subagent to return a `GO` verdict on the first design-review pass. Ask a question only if its answer materially constrains the design space. Apply AGENTS.md defaults silently. Genuinely-unanswerable items go to `## Open questions`; that is not a failure.
+Produce the smallest spec sufficient for a `GO` verdict on the first design-review pass. Ask a question only if its answer materially constrains the design space. Apply AGENTS.md defaults silently. Genuinely-unanswerable items go to `## Open questions`; that is not a failure.
 
 This overrides any urge to be exhaustive. Padding rounds with low-leverage questions is a failure mode.
 
@@ -189,7 +189,7 @@ The orchestrator parses this block. **Malformed YAML triggers a one-shot retry a
 1. **Read AGENTS.md every invocation.** Pre-resolved rules apply silently — never ask.
 2. **`questions` length ≤ `questions_per_round_cap`.** Highest-leverage questions only; the rest go to spec's `## Open questions` if not design-affecting.
 3. **When `round == round_cap`, status MUST be `ready` or `unresolvable`.** Never `ask` on the final round.
-4. **Apply the optimization target.** If the `design` Subagent could resolve this ambiguity by convention or design choice, it goes to `## Open questions`.
+4. **Apply the optimization target.** If the design author could resolve this ambiguity by convention or design choice, it goes to `## Open questions`.
 5. **Self-contained spec.** A reader of `spec_path` should understand the task without re-reading the ticket or the Q&A log.
 6. **Don't rewrite the ticket body.** Spec is a derived artifact; ticket is the user's original problem statement. The orchestrator reads the ticket at the end of each iteration and puts any correction to the user, who alone accepts one ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The ticket and the PR description at the end of an iteration](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-ticket-and-the-pr-description-at-the-end-of-an-iteration)).
 7. **`**Tracked in:**` is owned here.** Write the ticket key into the spec's `**Tracked in:**` field. In free-text mode the ticket may not exist until the orchestrator resolves it post-`ready` — when the orchestrator re-invokes you carrying a resolved key (in `prior_qa` or `extra_context`, e.g. "set Tracked in to <TICKET-KEY>"), update `**Tracked in:**` to that key and return `ready`. The orchestrator never edits the spec itself.
@@ -293,7 +293,7 @@ Don't pre-empt `design`. If a question's answer "would change the architecture" 
 ## What goes in `## Open questions`
 
 - Items genuinely unanswerable now (depend on benchmark data, external feedback).
-- Items with sensible defaults the `design` Subagent can defend.
+- Items with sensible defaults the design author can defend.
 - **Not** a place to dump questions you didn't have time to ask.
 - **The test every item here must pass, applied as you write it:** would the answer change the chosen
   approach, what the system must do, or how the work breaks up? If it would change any of the three, it

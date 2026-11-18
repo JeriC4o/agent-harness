@@ -46,9 +46,10 @@ acting as its own plugin marketplace. Consuming projects keep their own profile 
 ## Fix plan
 
 - **What it is.** A `## Fix Plan (Round N)` section appended to a task's `*.progress.md` by
-  `agents/fix-scout.md`: one row per `⬜ Open` finding, carrying its disposition, the target it will
-  change, an expected changed-line figure on the `max(added,removed)` basis, and the artefact sentence
-  the finding puts at stake quoted with its `file:line`.
+  `agents/fix-scout.md`: at least one row per `⬜ Open` finding and one per file its remedy touches, each
+  carrying its disposition, the target, an expected changed-line figure on the `max(added,removed)`
+  basis, and the artefact sentence the finding puts at stake quoted with its
+  `file:line`, or `none`.
 - **Identity.** The round number. One section per round, highest round is the one gated; a second
   section for the same round is refused rather than appended.
 - **Code.** `skills/task/scripts/check-fix-plan.sh` — four verbs (`baseline`, `plan`, `applied`,

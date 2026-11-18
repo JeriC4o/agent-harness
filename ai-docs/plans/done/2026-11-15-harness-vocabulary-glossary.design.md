@@ -132,7 +132,7 @@ statements must change together is the design author.
 | design author | the agent writing a task's design, its working plan and its record of declared links | "design subagent" |
 | fix scout | the agent writing a review-fix round's fix plan in a fresh context | — |
 | fix-apply agent | the agent applying the fix rows of a plan the fix-plan check passed, and nothing else | — |
-| finding | one problem a review or a check reports, with its severity: blocker, major, minor, nit or note | — |
+| finding | one problem a review or a check reports | — |
 | session inspection | reading a finished session for loops, repeated checks and review rounds that burned their cap: a script counts, an agent judges | — |
 
 #### Plans
@@ -160,8 +160,8 @@ statements must change together is the design author.
 | Canonical name | What it is | Other names |
 |---|---|---|
 | convergence check | the script reading a spec and a design for six kinds of defect | "deterministic half" |
-| completeness | the kind: every criterion is delivered by some step, every object has a use | — |
-| arithmetic | the kind: a sum or count the plan states actually holds | — |
+| completeness | the kind: no loose end, such as a criterion no step delivers or an object with no stated use | — |
+| arithmetic | the kind: a calculation the plan writes out actually holds | — |
 | provenance | the kind: every number says where it came from | — |
 | reference | the kind: no reference to a line or position that goes stale | — |
 | pairing | the kind: an id the plan cites matches the id beside the code, both ways | — |
@@ -181,7 +181,7 @@ statements must change together is the design author.
 | required element | a section a spec or a design must carry | — |
 | protected page | a page that defines or enforces a required element | — |
 | near miss | a page close to the protected set and deliberately outside it | — |
-| plan-invariants guard | the hook asking before an edit changes a protected page, in a session improving the harness | "edit-time refusal" |
+| plan-invariants guard | the hook guarding edits to protected pages, in a session improving the harness | "edit-time refusal" |
 | learning mode | the state of a session that ran one of the workflows turning the Learning Log into rules | — |
 
 #### Reviews
@@ -194,7 +194,7 @@ statements must change together is the design author.
 | self-review verdict | APPROVE: ready to push; REJECT: problems remain open | — |
 | whole-repository review | the review of a whole branch's code rather than one change | "whole-branch review", "codebase review", "whole-codebase review" |
 | checklist ledger | the table ending each self-review round, fingerprinting each file and rule reviewed, so the next round reviews only what changed | "review ledger" |
-| review-fix round | after a REJECT: take the round baseline, write the fix plan, check it, apply it, check the applied change against the plan, correct the design where a row says so, review again | "review-and-fix round", "scouted fix", "scouted-plan", "scouted flow" |
+| review-fix round | after a REJECT in the spec workflow: take the round baseline, write the fix plan, check it, apply it, check the applied change against the plan, correct the design where a row says so, review again | "review-and-fix round", "scouted fix", "scouted-plan", "scouted flow" |
 | round baseline | the snapshot of the files when a review-fix round starts; the applied fixes are measured against it | — |
 | fix plan | at least one row per open finding, one per file its fix touches: what to change, where, and how much | — |
 | fix-plan check | the script deciding whether a fix plan is applied, sent back, routed to an amendment, or put to the owner when the declared change is over a size threshold, by a fixed set of tests each printing its own line | — |
@@ -210,7 +210,7 @@ statements must change together is the design author.
 |---|---|---|
 | Propagation Rule | editing one instruction file means updating, in the same pull request, the files that describe the same thing | — |
 | sync group | one named set of files the Propagation Rule keeps in step | — |
-| propagation reminder | the hook naming a file's sync group when the agent edits it | — |
+| propagation reminder | the hook that, when the agent edits a file of a sync group, points to where the sync groups are listed and gives the search to run | — |
 | path pattern | one file-path pattern the propagation reminder matches | "propagation arm", "reminder arm", "pre-fix arm" |
 
 #### Learning Log
@@ -221,13 +221,13 @@ statements must change together is the design author.
 | Learning Log archive | the file of older entries, into which merged branches' entry files are moved; with the entry files not yet moved, it makes up the one history the audits read | "learnings archive" |
 | Learning Log fold | moving merged branches' entry files into the archive unchanged, then deleting them | — |
 | promotion candidate | a lesson about the method itself, stripped of project names, kept for a sweep across projects | — |
-| redaction gate | the check refusing a promotion candidate that names one project's material | — |
+| redaction gate | the check refusing a promotion candidate or a defect report that names one project's material | — |
 
 #### Checks and hooks
 
 | Canonical name | What it is | Other names |
 |---|---|---|
-| hook | a script the host runs at a fixed moment — session start, before or after a tool call, a turn's end — through which the harness reminds, records or refuses | — |
+| hook | a script the host runs at a fixed moment, such as session start or before a tool call, through which the harness acts on the agent's work unasked | — |
 | gate | a check whose result decides whether work goes on | — |
 | could-not-run | a check's result when it measured nothing; never a pass | — |
 | positive control | a planted fault shown to be caught by the check meant to catch it | — |
@@ -242,7 +242,7 @@ statements must change together is the design author.
 | full run | the whole check list, once, after review approves | — |
 | delivery gate | a check that what the plugin ships reaches a project; there are three, each testing one step: the plugin installs and loads, a shipped change raised the version, the documented upgrade moves an installed copy | — |
 | result masking | hiding a gate's failure behind another command's success; a hook refuses its common shapes | "gate-pipe-guard" |
-| gate record | the hook recording each gate run, with the state of the files it ran on | — |
+| gate record | the hook recording each run of a gate it covers, with the state of the files it ran on | — |
 | tree digest | a fingerprint of the files as version control sees them | — |
 | fixture | a recorded real input a check replays, with the results it must reproduce, never refreshed casually | "frozen fixture" |
 | loop ledger | the per-session file where the harness's hooks record each tool call and what they noticed | — |
@@ -286,10 +286,10 @@ statements must change together is the design author.
 
 | Canonical name | What it is | Other names |
 |---|---|---|
-| glossary | the page holding one entry per harness concept, opening with the rule for text for a person; hooks put it into the main agent's context at session start and append it to the briefs of the three agents that write or review a plan — the spec writer, the design author and the design reviewer — and both checks read its names through one shared reader | — |
+| glossary | the page holding one entry per harness concept, opening with the rule for text for a person; hooks put it into the main agent's context at session start and append it to the brief of an agent whose type or brief names one of the three agents that write or review a plan — the spec writer, the design author and the design reviewer — and both checks read its names through one shared reader | — |
 | listed name | an other name or a retired name the glossary lists, which the checks refuse | — |
 | vocabulary check | the check failing when a listed name appears in the harness's own files | — |
-| plain-words check | the hooks reading what the agent writes to a person for listed names and coined words, recording each reading with the session's hook records | — |
+| plain-words check | the hooks checking what the agent writes to a person against the glossary's rule, recording each reading with the session's hook records | — |
 | internals mark | the comment, `vocabulary-internal:` and why, marking a line of a script, or the lines below it, that must keep an old word | — |
 | model-call marker | the setting a harness hook puts in the environment of a model it calls, so the hooks that load the glossary or read text for a person do nothing inside that call | — |
 
@@ -470,11 +470,11 @@ makes is covered by that review's entry.
   and functions and the lines under the internals mark; in every covered file, the bracketed ids a
   script's comments carry, which documents cite in the script's own spelling. Rejected: a per-file allowance — it would hide a printed message
   in the same file; reading only comments and strings — misses unquoted shell text.
-- **Entries are short.** The page holds its 125 entries in 30,905 characters, 247 an entry on average,
+- **Entries are short.** The page holds its 125 entries in 30,642 characters, 245 an entry on average,
   and with the rule, the section on words a script must keep, the five retired names and the headings
-  comes to 34,718 characters (each figure measured by a character count of the page on this branch,
-  2026-11-19), 282 below the 35,000-character early warning (a threshold the method hands down), with
-  room for about one more entry of average length ((35,000 − 34,718) / 247 ≈ 1.1).
+  comes to 34,455 characters (each figure measured by a character count of the page on this branch,
+  2026-11-19), 545 below the 35,000-character early warning (a threshold the method hands down), with
+  room for two more entries of average length ((35,000 − 34,455) / 245 ≈ 2.22).
   Rejected: the
   spec's estimate of about 410 characters an entry — the page then holds about 85 entries, fewer than the
   required list.
@@ -516,11 +516,11 @@ makes is covered by that review's entry.
 ## Risks
 
 - **Three files loaded whole sit close to the early warning**: the method page, the task skill and this
-  repository's project context page, 698, 978 and 1,239 characters below it (measured by a character
-  count of each file on this branch, 2026-11-16). Mitigation: in those files a canonical name is no longer
+  repository's project context page, 696, 960 and 1,011 characters below it (measured by a character
+  count of each file on this branch, 2026-11-19). Mitigation: in those files a canonical name is no longer
   than what it replaces where a shorter one exists; otherwise explanation moves to a page reached by link.
-- **The glossary itself sits near the warning**, 282 characters below it by the measurement above, room
-  for one entry of average length and not two. Mitigation: a later entry for one part of a concept already present
+- **The glossary itself sits near the warning**, 545 characters below it by the measurement above, room
+  for two entries of average length and not three. Mitigation: a later entry for one part of a concept already present
   merges into that entry; an entry for a new concept that takes the page past the warning turns the size
   check on files loaded whole red, so the change adding it makes room on the page in the same change.
 - **Three host behaviours are documented by the host and observed here at most in part (verify)**: a

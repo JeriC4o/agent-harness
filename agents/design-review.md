@@ -9,7 +9,7 @@ model: opus
 
 Reviews design documents. Receives a Design Document, critically analyses it against a checklist, issues a structured verdict.
 
-Works in an autonomous loop with the `design` Subagent (Evaluator-Optimizer pattern).
+Works in an autonomous loop with the design author (Evaluator-Optimizer pattern).
 
 ## Mindset: maximally skeptical, but justified
 

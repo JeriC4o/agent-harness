@@ -126,9 +126,9 @@ See [`${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`](${CLAUDE_PLUGIN_ROOT}/docs/code
 >
 > | If you see... | Action |
 > |---|---|
-> | `design` subagent returned with the full design text in its response, but `ls ai-docs/plans/*.design.md` is missing OR doesn't reflect the response | **Stop.** RE-RUN the `design` subagent (do NOT transcribe its text). The design author owns the `Write`. |
+> | The design author returned with the full design text in its response, but `ls ai-docs/plans/*.design.md` is missing OR doesn't reflect the response | **Stop.** RE-RUN `design`, the design author (do NOT transcribe its text). The design author owns the `Write`. |
 > | `spec-writer` returned `status: ready`, user picked "Tweak first", and you're tempted to `Edit` the spec | **Stop.** Append the Q&A to state's `prior_qa`, increment `round`, RE-INVOKE the spec-writer. The spec-writer owns the `Write`. |
-> | Design Amendment recipe step says "update the design" | Spawn the `design` subagent with the amendment description. Orchestrator role: (1) surface to user, (2) spawn `design`, (3) spawn `design-review` on the result. NEVER `Edit` `*.design.md` inline — even for one-line fixes. |
+> | Design Amendment recipe step says "update the design" | Spawn the design author with the amendment description. Orchestrator role: (1) surface to user, (2) spawn `design`, (3) spawn `design-review` on the result. NEVER `Edit` `*.design.md` inline — even for one-line fixes. |
 > | Spec Amendment recipe step says "amend the spec" | Re-invoke `spec-writer` with the amendment in `prior_qa`; for `/task` Step 11 amendments, then run `design` → `design-review` chain. NEVER `Edit` `*.spec.md` inline. |
 > | A reviewer comment on a PR proposes a one-line spec/design fix | The fix is NOT a "trivial edit" — it routes through the Spec / Design Amendment recipe. |
 > | A finding says a spec/design sentence is false, stale, or unsupported, and you are about to fix it in CODE | The amendment trigger fires on the finding's SUBJECT, not on where the fix lands. Route it, and do not close it until the cited sentence is re-read and confirmed or amended. → [§ Spec-Amendment group](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#spec-amendment-group) |
