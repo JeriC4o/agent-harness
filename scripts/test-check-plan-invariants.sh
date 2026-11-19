@@ -304,7 +304,7 @@ RULES = {
     'learning-log': lambda p: p == 'ai-docs/learnings.md' or p.startswith('ai-docs/learnings/'),
     'repository-mechanics': lambda p: (p.startswith(('.claude-plugin/', '.claude/',
                                                      'ai-docs/fixtures/loop-corpus/'))
-                                       or p in ('.gitignore', 'README.md',
+                                       or p in ('.gitignore', 'README.md', 'LICENSE',
                                                 'ai-docs/fixtures/positional-references.baseline',
                                                 'ai-docs/fixtures/plan-convergence-planted.md')),
 }

@@ -126,7 +126,7 @@ EXCLUDED_SURFACES = (
     # The committed data under the fixtures root is NAMED file by file rather than reached by a prefix on that root: a prefix widens what the exclusion claims. The cost of that choice is that every further record under the root is owed its own name here, which is what the planted-fault control below is.
     ('repository-mechanics', 'they configure or declare the repository, or are committed measurement data, so none of them states a rule a spec or a design is held to -- read by an agent in three cases, but never as instruction material',
      lambda p: (p.startswith(('.claude-plugin/', '.claude/', 'ai-docs/fixtures/loop-corpus/'))
-                or p in ('.gitignore', 'README.md', 'ai-docs/fixtures/positional-references.baseline', 'ai-docs/fixtures/plan-convergence-planted.md'))),
+                or p in ('.gitignore', 'README.md', 'LICENSE', 'ai-docs/fixtures/positional-references.baseline', 'ai-docs/fixtures/plan-convergence-planted.md'))),
 )
 
 
