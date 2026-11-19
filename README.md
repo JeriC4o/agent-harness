@@ -464,3 +464,8 @@ intuitive:
 Validation work, waiting on real use rather than on code:
 [`GH-10`](../../issues/10) (the ≥2-projects threshold has never met a real corpus) and
 [`GH-11`](../../issues/11) (`/harness:improve` Step 5b has never produced a candidate on a real log).
+
+## License
+
+Copyright 2026 JeriC4o. Licensed under the Apache License, Version 2.0; the full text is in
+[`LICENSE`](LICENSE).

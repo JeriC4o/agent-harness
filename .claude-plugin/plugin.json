@@ -1,12 +1,13 @@
 {
   "name": "harness",
   "displayName": "Agent Harness",
-  "version": "0.1.67",
+  "version": "0.1.68",
   "description": "Spec workflow from interview to pull request, reactive bugfix loop, and skeptical review subagents, with per-project learning and instruction-surface auditing.",
   "author": {
     "name": "JeriC4o"
   },
   "repository": "https://github.com/JeriC4o/agent-harness",
+  "license": "Apache-2.0",
   "keywords": [
     "workflow",
     "spec-driven",
