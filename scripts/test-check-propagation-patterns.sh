@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #
-# Tests for scripts/check-propagation-arms.sh.
+# Tests for scripts/check-propagation-patterns.sh.
 #
-# Run: bash scripts/test-check-propagation-arms.sh
+# Run: bash scripts/test-check-propagation-patterns.sh
 #
 # Every planted defect is applied to a COPY in a temp tree, never to the live
 # method file -- a gate whose own tests mutate the documents it reads is one
@@ -16,7 +16,7 @@
 set -uo pipefail
 HERE=$(cd -- "$(dirname -- "$0")" && pwd)
 ROOT=$(cd -- "${HERE}/.." && pwd -P)
-GATE="${ROOT}/scripts/check-propagation-arms.sh"
+GATE="${ROOT}/scripts/check-propagation-patterns.sh"
 PASS=0; FAIL=0
 ok(){ PASS=$((PASS+1)); printf '  ok   %s\n' "$1"; }
 bad(){ FAIL=$((FAIL+1)); printf '  FAIL %s\n' "$1"; }
@@ -58,7 +58,7 @@ plant_row(){ # <fixture> <row text>
     "$1/docs/propagation.md" > "$1/t" && mv "$1/t" "$1/docs/propagation.md"
 }
 
-drop_arm(){ # <fixture> <arm text>
+drop_arm(){ # <fixture> <pattern text>
   jq --arg a "$2" '(.hooks.PreToolUse[] | select(.matcher=="Edit|Write") | .hooks[0].command) |= (split($a) | join(""))' \
     "$1/hooks/hooks.json" > "$1/t" && mv "$1/t" "$1/hooks/hooks.json"
 }
@@ -75,7 +75,7 @@ drop_arm(){ # <fixture> <arm text>
 # control there is.
 anchor_line(){ # <fixed substring> -> the single line number it occurs on
   hits=$(grep -cF -- "$1" "$GATE")
-  [ "$hits" = "1" ] || { printf 'test-check-propagation-arms: anchor matched %s lines, not 1: %s\n' "$hits" "$1" >&2; return 1; }
+  [ "$hits" = "1" ] || { printf 'test-check-propagation-patterns: anchor matched %s lines, not 1: %s\n' "$hits" "$1" >&2; return 1; }
   grep -nF -- "$1" "$GATE" | cut -d: -f1
 }
 gate_replace(){ # <out> <fixed substring> <replacement line>
@@ -89,7 +89,7 @@ gate_delete(){ # <out> <fixed substring>
 
 printf '\n== the live tree is clean ==\n'
 bash "$GATE" > "${TMPD}/real.out" 2>&1
-if [ $? -eq 0 ]; then ok "check-propagation-arms is green on the working tree"; else bad "check-propagation-arms is RED on the working tree"; sed -n '/^FINDING/p' "${TMPD}/real.out"; fi
+if [ $? -eq 0 ]; then ok "check-propagation-patterns is green on the working tree"; else bad "check-propagation-patterns is RED on the working tree"; sed -n '/^FINDING/p' "${TMPD}/real.out"; fi
 REAL_COUNTS=$(counts_of "${TMPD}/real.out")
 [ -n "$REAL_COUNTS" ] && ok "the gate reports its member and control counts beside their enumerations (${REAL_COUNTS})" \
                       || bad "the gate printed no summary counts"
@@ -100,7 +100,7 @@ for c in scripts/session-events.sh scripts/loop-metrics.sh docs/agents-method.md
   grep -qF "  fires   ${c}" "${TMPD}/real.out" && ok "derived: ${c}" || bad "derived set is missing ${c}"
 done
 grep -qF '  silent  ai-docs/learnings/probe-probe.md' "${TMPD}/real.out" \
-  && ok "the excluded learning-log class stays silent under the arms" \
+  && ok "the excluded learning-log class stays silent under the patterns" \
   || bad "the excluded learning-log class is not reported silent"
 
 printf '\n== the clean fixture reproduces the live run ==\n'
@@ -112,13 +112,13 @@ rc=$?
   && ok "the fixture derives the same member and control counts as the live tree" \
   || bad "fixture counts [$(counts_of "${TMPD}/clean.out")] differ from live [$REAL_COUNTS] -- the fixture is not a copy of the thing under test"
 
-printf '\n== AC9: a planted member row the arms do not cover ==\n'
+printf '\n== AC9: a planted member row the patterns do not cover ==\n'
 F="${TMPD}/ac9"; mk_fixture "$F"
-plant_row "$F" '> | `${CLAUDE_PLUGIN_ROOT}/templates/project/AGENTS.md` | a member class no arm matches |'
+plant_row "$F" '> | `${CLAUDE_PLUGIN_ROOT}/templates/project/AGENTS.md` | a member class no pattern matches |'
 if changed "AC9 fixture" "${ROOT}/docs/propagation.md" "$F/docs/propagation.md"; then
   bash "$GATE" --root "$F" > "${TMPD}/ac9.out" 2>&1
   [ $? -ne 0 ] && ok "the gate FAILS on an uncovered member class" || bad "the gate passed with an uncovered member class"
-  grep -qF "no arm fires on derived class 'templates/project/AGENTS.md'" "${TMPD}/ac9.out" \
+  grep -qF "no path pattern fires on derived class 'templates/project/AGENTS.md'" "${TMPD}/ac9.out" \
     && ok "and it names the class" || bad "it failed without naming the uncovered class"
 fi
 
@@ -153,49 +153,49 @@ if changed "dead-exclusion fixture" "${ROOT}/docs/propagation.md" "$F/docs/propa
   fi
 fi
 
-printf '\n== the carve-in cannot double-count ==\n'
+printf '\n== the pattern added by hand cannot be counted twice ==\n'
 F="${TMPD}/carve"; mk_fixture "$F"
-plant_row "$F" '> | `${CLAUDE_PLUGIN_ROOT}/.claude/skills/<name>/SKILL.md` | a token that now yields the carve-in |'
-if changed "dead-carve-in fixture" "${ROOT}/docs/propagation.md" "$F/docs/propagation.md"; then
+plant_row "$F" '> | `${CLAUDE_PLUGIN_ROOT}/.claude/skills/<name>/SKILL.md` | a token that now yields the pattern added by hand |'
+if changed "derivable-pattern fixture" "${ROOT}/docs/propagation.md" "$F/docs/propagation.md"; then
   bash "$GATE" --root "$F" > "${TMPD}/carve.out" 2>&1
-  [ $? -ne 0 ] && ok "the gate FAILS once the table itself yields the carve-in" || bad "a derivable carve-in passed"
+  [ $? -ne 0 ] && ok "the gate FAILS once the table itself yields the pattern added by hand" || bad "a derivable pattern added by hand passed"
   grep -qF 'is now derivable from the table' "${TMPD}/carve.out" \
-    && ok "and it says to delete the carve-in" || bad "it failed for some other reason"
+    && ok "and it says to delete the pattern added by hand" || bad "it failed for some other reason"
 fi
 
-printf '\n== AC13: the pre-fix arms are the carve-in independent witness ==\n'
+printf '\n== AC13: the earlier patterns check the pattern added by hand ==\n'
 F="${TMPD}/arm"; mk_fixture "$F"
 drop_arm "$F" '|"$pd"/.claude/skills/*/SKILL.md'
-if changed "dropped-arm fixture" "${ROOT}/hooks/hooks.json" "$F/hooks/hooks.json"; then
+if changed "dropped-pattern fixture" "${ROOT}/hooks/hooks.json" "$F/hooks/hooks.json"; then
   [ "$(grep -cF '.claude/skills' "$F/hooks/hooks.json")" = "0" ] \
-    && ok "the fixture manifest carries no .claude/skills arm" \
-    || bad "the arm is still in the fixture manifest"
+    && ok "the fixture manifest carries no .claude/skills pattern" \
+    || bad "the pattern is still in the fixture manifest"
   bash "$GATE" --root "$F" > "${TMPD}/arm.out" 2>&1
-  [ $? -ne 0 ] && ok "the gate FAILS with the tenth arm removed" || bad "the gate passed with the tenth arm removed"
-  grep -qF "matched the pre-fix arms and is SILENT under the new set" "${TMPD}/arm.out" \
+  [ $? -ne 0 ] && ok "the gate FAILS with the tenth pattern removed" || bad "the gate passed with the tenth pattern removed"
+  grep -qF "matched the earlier patterns and is SILENT under the current set" "${TMPD}/arm.out" \
     && ok "and the regression leg names it" || bad "the regression leg stayed quiet"
 
-  # THE assertion the whole carve-in exists for. With the carve-in absent from
-  # the gate the member leg is blind to the class, so if the gate still fails
-  # here the verdict came from the pre-fix pattern alone -- evidence authored
-  # before this gate existed, which is what stops the carve-in certifying
-  # itself from its own class string.
+  # THE assertion the pattern added by hand exists for. With it absent from the
+  # gate the member leg is blind to the class, so if the gate still fails here
+  # the verdict came from the earlier pattern alone -- evidence written before
+  # this gate existed, which is what stops the added pattern certifying itself
+  # from its own class string.
   gate_replace "${TMPD}/g-nocarve.sh" 'CARVE_IN" >> ' '  :'
-  if changed "carve-in-blind gate" "$GATE" "${TMPD}/g-nocarve.sh"; then
+  if changed "hand-pattern-blind gate" "$GATE" "${TMPD}/g-nocarve.sh"; then
     bash "${TMPD}/g-nocarve.sh" --root "$F" > "${TMPD}/nocarve.out" 2>&1
     rc=$?
-    [ "$rc" -ne 0 ] && ok "a carve-in-blind gate STILL fails on the dropped arm" \
-                    || bad "a carve-in-blind gate passed on the dropped arm -- the witness is not independent"
-    grep -qF "no arm fires on derived class '.claude/skills/*/SKILL.md'" "${TMPD}/nocarve.out" \
-      && bad "the member leg still saw the class, so this run does not isolate the witness" \
-      || ok "and the member leg is silent about it, so the verdict is the witness alone"
+    [ "$rc" -ne 0 ] && ok "a gate blind to the pattern added by hand STILL fails on the dropped pattern" \
+                    || bad "a gate blind to the pattern added by hand passed on the dropped pattern -- the earlier patterns do not check it"
+    grep -qF "no path pattern fires on derived class '.claude/skills/*/SKILL.md'" "${TMPD}/nocarve.out" \
+      && bad "the member leg still saw the class, so this run does not isolate the earlier patterns" \
+      || ok "and the member leg is silent about it, so the verdict is the earlier patterns alone"
     bash "${TMPD}/g-nocarve.sh" --root "${TMPD}/clean" > "${TMPD}/nocarve2.out" 2>&1
-    [ $? -eq 0 ] && ok "the carve-in-blind gate is still green on an unmutated copy" \
-                 || bad "the carve-in-blind gate fails everywhere, so it discriminates nothing"
+    [ $? -eq 0 ] && ok "the blind gate is still green on an unmutated copy" \
+                 || bad "the blind gate fails everywhere, so it discriminates nothing"
   fi
 fi
 
-printf '\n== the controls bound the arms, not just decorate them ==\n'
+printf '\n== the controls bound the patterns, not just decorate them ==\n'
 F="${TMPD}/wide"; mk_fixture "$F"
 jq '(.hooks.PreToolUse[] | select(.matcher=="Edit|Write") | .hooks[0].command) |= (split("\"$pd\"/.claude/skills/*/SKILL.md") | join("\"$pd\"/.claude/skills/*.md"))' \
   "$F/hooks/hooks.json" > "$F/t" && mv "$F/t" "$F/hooks/hooks.json"
@@ -203,8 +203,8 @@ if changed "rejected-spelling fixture" "${ROOT}/hooks/hooks.json" "$F/hooks/hook
   bash "$GATE" --root "$F" > "${TMPD}/wide.out" 2>&1
   [ $? -ne 0 ] && ok "the gate FAILS on the rejected .claude/skills/*.md spelling" || bad "the rejected spelling passed"
   for c in .claude/skills/deploy/reference.md .claude/skills/notes.md; do
-    grep -qF "an arm fires on control '${c}'" "${TMPD}/wide.out" \
-      && ok "and it names control ${c}" || bad "control ${c} did not fire on the widened arm"
+    grep -qF "a path pattern fires on control '${c}'" "${TMPD}/wide.out" \
+      && ok "and it names control ${c}" || bad "control ${c} did not fire on the widened pattern"
   done
 fi
 

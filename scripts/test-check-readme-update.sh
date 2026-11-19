@@ -12,7 +12,7 @@
 #
 # Two kinds of input, deliberately:
 #
-#   - a FROZEN heredoc of the README as it stood at bb81cd6 (the commit this
+#   - a FIXED heredoc of the README as it stood at bb81cd6 (the commit this
 #     branch forked from, identical to origin/main at the time). That is the
 #     historical defect this ticket exists for, and it must not track the
 #     README: once this PR merges the live file is the CORRECTED text, and a
@@ -50,7 +50,7 @@ run() { OUT=$(bash "$CHECK" --root "$1" 2>&1); RC=$?; }
 
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT INT TERM
 
-printf '\n== the frozen defect: README.md as of bb81cd6 ==\n'
+printf '\n== the recorded defect: README.md as of bb81cd6 ==\n'
 FROZEN="$T/frozen"; mkdir -p "$FROZEN"
 cat > "$FROZEN/README.md" <<'FIXTURE_EOF'
 # agent-harness

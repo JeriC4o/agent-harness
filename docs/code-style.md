@@ -82,7 +82,7 @@ language**). A comment asserting an invariant is a CLAIM about the code, held to
 other claim: "this branch order is load-bearing" over an exhaustive match on a closed type is false by
 construction, because the branches are pairwise disjoint and reordering cannot change behaviour. Prose that
 invents a fragility the type system already excludes is worse than no comment — it propagates into the
-design doc and every downstream summary as ground truth. If the invariant is real, pin it with a test and
+design and every downstream summary as ground truth. If the invariant is real, pin it with a test and
 write nothing. `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md` governs the SHAPE of a doc-comment when one is genuinely
 warranted; it is not a mandate to comment every public symbol.
 
@@ -125,7 +125,7 @@ a second tool's format because it is more familiar.
 own migration file**, never aggregated into a shared cross-object file. Match the surrounding directory's
 id format, its rollback posture (present or deliberately omitted), and its naming — these are conventions
 of the directory, not of the tool, so inspect the adjacent migrations rather than reasoning from the
-tool's documentation. Describe file path, migration id, and rollback plan in the design doc.
+tool's documentation. Describe file path, migration id, and rollback plan in the design.
 
 ## File size
 
@@ -284,8 +284,8 @@ review noise scales with the duplication factor.
 
 Detection trigger: any draft text that proposes copying a constant / helper / fixture across modules and
 justifies it with "minimal surface" / "no new module" / "trivial duplication" without naming the call-site
-count and growth trajectory — STOP and count. If count ≥ 3 (or ≥ 2 with open-ended growth), flip to a
-shared module and record the decision in the task's design doc (`ai-docs/plans/*.design.md`, archived to
+count and growth trajectory — stop and count. If count ≥ 3 (or ≥ 2 with open-ended growth), flip to a
+shared module and record the decision in the task's design (`ai-docs/plans/*.design.md`, archived to
 `done/` on merge).
 
 ## Patterns

@@ -135,7 +135,7 @@ has "  and it says which calls those numbers count" "$o3" \
 # original falsehood -- the message said "in the last 20 steps" while the number
 # counted ledger LINES -- so a drift back to it is a regression even when the
 # number is right, and a reader of the old noun cannot tell lines from calls
-# from model turns. Asserted on all three arms, which must agree.
+# from model turns. Asserted on all three kinds, which must agree.
 hasnt "  and never says steps, the noun that hid the unit" "$o3" "steps"
 e3=$(fire_err Bash "git status" "$MAIN_TP")
 has "  the stderr half carries it too" "$e3" "[loop-index] loop"
@@ -236,17 +236,17 @@ has "  named as a retry, not as a loop"             "$o" "already FAILED 2 times
 # 4 prior calls plus this one is 5 calls of judgement, not the 20 requested.
 has "  quoting the span it COUNTED, not the window it asked for" "$o" "in the last 5 calls"
 hasnt "  so the requested 20 never reaches the agent"            "$o" "in the last 20 calls"
-# THE ASYMMETRY, and the reason the parenthetical is not uniform across arms.
-# This arm's count is `fails` -- recorded error outcomes, every one of them
+# THE ASYMMETRY, and the reason the parenthetical is not uniform across kinds.
+# This kind's count is `fails` -- recorded error outcomes, every one of them
 # PRIOR, because a call that has not run cannot have failed. The span still
 # counts the interrupted call. A blanket "including the current one" here would
-# be false, so this arm gets wording of its own.
+# be false, so this kind gets wording of its own.
 has "  naming the failures as PRIOR, since this call has not run" "$o" \
     "(the failures are all prior; this call has not run yet, though the call count includes it)"
 # The substantive negative: 2 results were recorded as errors, so 3 would mean
-# the arm had folded the interrupted call into its own failure count.
+# the hook had counted the interrupted call among its own failures.
 hasnt "  and it never counts the interrupted call among the failures" "$o" "FAILED 3 times"
-hasnt "  nor borrows the other arms' blanket clause"                  "$o" "numbers counting this call"
+hasnt "  nor borrows the other kinds' blanket clause"                  "$o" "numbers counting this call"
 hasnt "  nor the fanout one"                                          "$o" "all three numbers including this call"
 hasnt "  and it counts in calls, never in steps"                      "$o" "steps"
 has "  and it says why the edits do not excuse it"  "$o" "attempt that did not work"
@@ -273,7 +273,7 @@ printf '\n== POSITIVE CONTROL: make the edit filter unconditional again ==\n'
 #
 # The mutation lands in loop-window.awk, where the program now lives, and the
 # whole tree is relocated so the mutated copy still resolves its own detector
-# and bin-of.jq. BOTH arms are asserted, because "silent" is the cheapest thing
+# and bin-of.jq. BOTH outcomes are asserted, because "silent" is the cheapest thing
 # in this file to get for free: a copy that cannot resolve its siblings is also
 # silent, and the version of this control that copied the hook alone passed for
 # that reason rather than for the mutation's.
@@ -371,7 +371,7 @@ check "  with nothing at the other end of it" \
 printf '\n== AC5: a subagent-SHAPED transcript_path is not an agent_id ==\n'
 # The pre-fix hook read the agent out of this path. In production that path is
 # always the PARENT's, so the read never once succeeded -- and a payload of this
-# shape, carrying no agent_id, must be recorded as the main thread.
+# shape, carrying no agent_id, must be recorded as the main agent.
 reset
 fire Bash "rg needle" "$SUB_TP" >/dev/null
 check "no agent_id in the payload -> main" "$(jq -r '.agent_id' < "$LED")" "main"
@@ -409,20 +409,20 @@ has "  naming how many agents" "$o" "3 different agents"
 # The span includes the call being judged, so the count can never exceed it.
 # Without that, this very case reads "3 times in the last 2 calls".
 has "  and a span the count fits inside" "$o" "3 times in the last 3 calls"
-# Three numbers on this arm, and the current call is in every one: na counts
+# Three numbers on this kind, and the current call is in every one: na counts
 # `cur`, count is n + 1, span is prior + 1. The clause has to say so for all
 # three, not for the two in the parenthesis.
 has "  declaring the convention for all three numbers" "$o" \
     "all three numbers including this call, which has not run yet"
-hasnt "  in calls, the same noun the other two arms use" "$o" "steps"
+hasnt "  in calls, the same noun the other two kinds use" "$o" "steps"
 # AC14. The old closing line told a sibling subagent to "check whether one
 # result can be reused" -- an action it has no handle on, in its own context,
 # with no access to another agent's result. The replacement names two it does
-# have. The arm stays an `ask`: fanout is not a quieter signal than loop.
+# have. The fanout kind stays an `ask`: fanout is not a quieter signal than loop.
 hasnt "  and no longer advises an action its reader cannot take" "$o" "one result can be reused"
 has "  it says to narrow the call instead"   "$o" "narrow this call to the part your own task needs"
 has "  or to report it upwards if it cannot" "$o" "so the parent can stop re-issuing it"
-has "  and the arm is still an ask"          "$o" '"permissionDecision":"ask"'
+has "  and the fanout kind is still an ask"          "$o" '"permissionDecision":"ask"'
 check "  and every pointer resolves under the ONE parent transcript" \
       "$(jq -rs "[.[] | select(.kind==\"call\") | .transcript
                   | select(startswith(\"/tmp/proj/${SID}/subagents/agent-\"))] | length" < "$LED")" "3"
@@ -461,14 +461,14 @@ WANTFP=$(jq -r 'select(.kind=="call" and .tool=="Bash") | .fp' < "$LED" | head -
 cp "$LED" "${WORK}/interleaved.jsonl"
 rid; o=$(HARNESS_LOOP_TAIL=7 rcall Bash "same call")
 has "a 7-CALL window reaches both repeats" "$o" '"permissionDecision":"ask"'
-# POSITIVE CONTROL. The frozen pre-fix pair, fed the SAME ledger at the SAME K
+# POSITIVE CONTROL. The earlier detector pair, fed the SAME ledger at the SAME K
 # but in LINES, sees the last 7 lines -- which hold no matching call at all.
 # That silence IS defect 1, and it is why the control is this wrapper and not a
 # restored `tail -n` (the awk is call-bounded now, so a narrow chunk would just
 # emit RETRY and the shell would widen back to the right answer).
-check "POSITIVE CONTROL: at K = 7 LINES the frozen pair sees no repeat" \
+check "POSITIVE CONTROL: at K = 7 LINES the earlier pair sees no repeat" \
       "$("$WRAP" 7 "${WORK}/interleaved.jsonl" "$WANTFP" Bash)" ""
-# Three fields, not four: the frozen pair predates the counted span and must
+# Three fields, not four: the earlier pair predates the counted span and must
 # never grow it. A fourth field here would mean someone updated the control.
 check "  and it is not silent for want of a working control -- 14 lines reach both" \
       "$("$WRAP" 14 "${WORK}/interleaved.jsonl" "$WANTFP" Bash)" "loop 3 1"
@@ -650,7 +650,7 @@ has "a three-field detector still produces a verdict" "$o" '"permissionDecision"
 has "  falling back to the requested window" "$o" "within the last 20 calls"
 check "  at exit status 0" "$rc" "0"
 
-printf '\n== the frozen control is TWO halves, and the wrapper carries the other one ==\n'
+printf '\n== the earlier-detector control is TWO halves, and the wrapper carries the other one ==\n'
 # loop-window-prefix.awk holds only the dismissal rule. The pre-fix WINDOW was
 # `tail -n "$TAIL_N"` in the shell -- LINES. This ledger has 6 lines and 2
 # matching calls, so the two units disagree about every K between them, and that
@@ -742,9 +742,9 @@ check "and it is NOT guarded -- a loop is never project-specific" \
                  | select(.command | test("harness-managed"))] | length' "$HOOKS_JSON")" "0"
 check "the entry point the hook invokes by full path is executable" \
       "$( [ -x "$HOOK" ] && echo yes || echo no )" "yes"
-# The frozen control must stay out of the live path. Wired in, it would be a
+# The earlier-detector control must stay out of the live path. Wired in, it would be a
 # second detector running the pre-fix rule beside the fixed one.
-check "no hook names the frozen pre-fix control" \
+check "no hook names the earlier-detector control" \
       "$(grep -c 'loop-window-prefix' "$HOOKS_JSON")" "0"
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"

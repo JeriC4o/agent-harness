@@ -42,7 +42,7 @@ Read up front:
 
 Multiple values comma-separated (`AGENTS.md, hook`). Each must independently verify.
 
-The last three are bare file names, not an `ai-docs:[name]` form, because the log is append-only and ~27 existing entries already carry those spellings. Treat a NEW `ai-docs:[name]` value as off-schema (`${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md § Entry format`).
+The last three are bare file names, not an `ai-docs:[name]` form, because the log is append-only and ~27 existing entries already carry those spellings. Treat a NEW `ai-docs:[name]` value as off-schema (`${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md § Entry format`).
 
 ## Workflow
 
@@ -61,7 +61,7 @@ Each entry follows:
 
 Extract `(date, category, description, rule, kind, escalated, superseded_by)`.
 
-**`Kind:` is a closed enum — validate the VALUE, not just its presence.** Legal values are exactly `correction`, `validation`, or the field omitted (defaults to `correction`). Anything else — `confirmed-approach`, `insight`, `note` — is an ❌ **Off-schema Kind** finding. An off-schema value does not fail loudly: it removes the entry from BOTH `/improve` passes (the Correction pass matches `correction`, the Carrot pass matches `validation`) while still looking well-formed, so it stays invisible until a full-file read happens to surface it. Sweep:
+**`Kind:` is a closed enum — validate the VALUE, not just its presence.** Legal values are exactly `correction`, `validation`, or the field omitted (defaults to `correction`). Anything else — `confirmed-approach`, `insight`, `note` — is an ❌ **Off-schema Kind** finding. An off-schema value does not fail loudly: it removes the entry from BOTH `/improve` passes (the pass over correction entries matches `correction`, the Carrot pass matches `validation`) while still looking well-formed, so it stays invisible until a full-file read happens to surface it. Sweep:
 
     grep -Hn '^\*\*Kind:\*\*' ai-docs/learnings.md ai-docs/learnings/*.md | grep -vE '\*\*Kind:\*\*[[:space:]]+(correction|validation)[[:space:]]*$'
 
@@ -71,7 +71,7 @@ The `## Format` template block at the top of the archive is an EXPECTED hit (it 
 
 **Use the known-bad fixture as your positive control.** The archive carries one genuine off-schema entry — the 2026-08-07 subagent-socket-drop entry, tagged `confirmed-approach`. Across the union a correct sweep returns **exactly two** hits and nothing else: that entry plus the `## Format` line, both in `ai-docs/learnings.md`. If your sweep does NOT surface it, the sweep is broken, not the log clean: a known-bad fixture proves the pattern matches, where a known-good one only proves it stays quiet. A third hit is a real finding — never add a line-anchor exclusion filter to suppress it.
 
-Boundary rule 1 permits in-place edits to `Escalated?` and `Superseded by:` ONLY, so a wrong `Kind:` can NEVER be repaired in place — **report the ENTRY by its date, its category and its short description, which is the identity its own heading declares, and never a line number**, then let the user append a correcting entry. The reason is the same reason the report exists: the report cannot be a fix, so it must identify the entry it is about. And it travels the applying step that writes into the committed learning record, which outlives this pass and which nobody re-derives — so a position stored there resolves later to whatever has moved into its place. Use a position freely while acting on the file in front of you; never let one travel into the entry. Held in agreement with the same instruction in [`${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/reference.md`](${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/reference.md) Checklist L — change one and change the other.
+Boundary rule 1 permits in-place edits to `Escalated?` and `Superseded by:` ONLY, so a wrong `Kind:` can NEVER be repaired in place — **report the ENTRY by its date, its category and its short description, which is the identity its own heading declares, and never a line number**, then let the user append a correcting entry. The reason is the same reason the report exists: the report cannot be a fix, so it must identify the entry it is about. And it travels the applying step that writes into the committed Learning Log, which outlives this pass and which nobody re-derives — so a position stored there resolves later to whatever has moved into its place. Use a position freely while acting on the file in front of you; never let one travel into the entry. Held in agreement with the same instruction in [`${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/reference.md`](${CLAUDE_PLUGIN_ROOT}/skills/ai-audit/reference.md) Checklist L — change one and change the other.
 
 ### Step 2: Verify each escalation target
 

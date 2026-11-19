@@ -59,7 +59,7 @@ same "the event name is echoed" "$(printf '%s' "$OUT" | jq -r .hookSpecificOutpu
 same "one gate row" "$(grep -c '"kind":"gate"' "$LD/plain.jsonl")" 1
 same "the row carries the fields" \
   "$(field '[has("ts","gate","args","artefact","repo","digest","ok","agent_id","tool_use_id","cwd","signal")] | all')" true
-same "a main-thread row is agent main" "$(field .agent_id)" '"main"'
+same "a row the main agent made is agent main" "$(field .agent_id)" '"main"'
 for c in 'ls -la' 'grep -n check src.txt' 'git check-ignore src.txt' '/usr/bin/test -f src.txt' 'bash scripts/run.sh'; do
   pass "$c"
   same "not a gate: $c" "$OUT" ""

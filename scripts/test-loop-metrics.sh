@@ -263,7 +263,7 @@ check "attribution: the main agent's calls" \
       "$(printf '%s' "$r" | jq -r '.attribution.by_agent.main')" "2"
 check "attribution: the subagent's, which the stored agent_id cannot give" \
       "$(printf '%s' "$r" | jq -r '.attribution.by_agent.AAA')" "1"
-check "a call in no transcript stays unattributed, never folded into main" \
+check "a call in no transcript stays unattributed, never merged into main" \
       "$(printf '%s' "$r" | jq -r '.attribution.unattributed')" "1"
 check "  and the stored field is shown beside it, wrong and visible" \
       "$(printf '%s' "$r" | jq -r '.attribution.stored_agent_ids | join(",")')" "main"
@@ -320,7 +320,7 @@ M1="$W/mut-subagent-path.sh"
 perl -0pe 's/SESSION=\$\(basename "\$\(dirname "\$\(dirname "\$TRANSCRIPT"\)"\)"\)/SESSION=\$(basename "\$TRANSCRIPT" .jsonl)/' \
   "$READER" > "$M1"
 check "the mutation applied" "$(grep -c 'dirname "\$(dirname' "$M1")" "1"
-check "without the subagent-path arm, a subagent transcript finds no ledger at all" \
+check "without the subagent-path branch, a subagent transcript finds no ledger at all" \
       "$(HARNESS_LOOP_DIR="$FD/loops" bash "$M1" --for "$SUBTX" --json | jq -r '.available')" "false"
 
 M2="$W/mut-no-subagent-scan.sh"
@@ -651,7 +651,7 @@ check "without the leg, a ledger naming an unread agent reads as complete" \
 M13="$W/mut-no-unread-clause.sh"
 perl -0pe 's/\+ \(if \.every_stored_agent_read then "" else [^\n]*end\)\n//' "$READER" > "$M13"
 check "the mutation applied" "$(grep -c 'whose transcript was never opened' "$M13")" "0"
-# The reason arm comes FIRST. Asking only whether the header and the closing
+# The reason branch comes FIRST. Asking only whether the header and the closing
 # sentence are both present matches the unmutated reader too, which prints the
 # reason between them -- a control that passes whether or not it mutated.
 case "$(HARNESS_LOOP_DIR="$UR/loops" bash "$M13" --for "$URTX")" in

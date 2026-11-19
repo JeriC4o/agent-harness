@@ -47,7 +47,7 @@ check "20,000 three-byte characters (60,000 bytes) -> rc 0" "$RC" "0"
 
 printf '\n== the whole-load class, and only it ==\n'
 for p in CLAUDE.md CLAUDE.local.md .claude/agents/x.md .claude/skills/s/SKILL.md \
-         ai-docs/context.md docs/agents-method.md templates/project/AGENTS.md \
+         ai-docs/context.md docs/agents-method.md docs/glossary.md templates/project/AGENTS.md \
          templates/project/CLAUDE.md templates/project/ai-docs/context.md; do
   tree; fill "$D/$p" 36000; git -C "$D" add -A; run "$D"
   check "$p at 36,000 -> rc 1" "$RC" "1"

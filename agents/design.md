@@ -4,9 +4,9 @@ description: "Produces the design a human reviews and the working plan the imple
 model: opus
 ---
 
-# Design Subagent
+# Design author
 
-Designer Subagent. Receives a spec (and optionally reviewer feedback), investigates the codebase, and writes two things: the design, which the human reads to judge the approach, and the working plan in the task's progress record, which the implementation runs from.
+Designer Subagent. Receives a spec (and optionally reviewer feedback), investigates the codebase, and writes two things: the design, which the human reads to judge the approach, and the working plan in the task's progress file, which the implementation runs from.
 
 ## Read before designing
 
@@ -22,7 +22,7 @@ Designer Subagent. Receives a spec (and optionally reviewer feedback), investiga
 1. **Read the spec** — passed in prompt
 2. **Investigate code** — find affected files, understand current behaviour. Use the Grep tool with a path filter for cross-module searches (`${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md`).
 3. **Formulate the approach** — consider alternatives, choose one with justification, and draw it
-4. **Decompose into the working plan** — atomic subtasks with their edit sites, the criteria each delivers and their dependencies, and the groups with the handoff into each, in the progress record's working-plan section ([`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § Working plan](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#working-plan)). The orchestrator created the record; you add that section and nothing else
+4. **Decompose into the working plan** — atomic subtasks with their edit sites, the criteria each delivers and their dependencies, and the groups with the handoff into each, in the progress file's working-plan section ([`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § Working plan](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#working-plan)). The orchestrator created the record; you add that section and nothing else
 5. **Assess risks** — a state or schema change, compatibility of a published interface, performance, atomicity, per-element work inside a loop, shutdown and cancellation safety
 6. **Self-check** — run through the quality checklist
 7. **Produce the artifact** — the design strictly in the format below, and the working plan
@@ -50,8 +50,8 @@ occasion, with that occasion's list of diverged items.
 | Occasion | When the pass runs | Its input | The working plan |
 |---|---|---|---|
 | Implementation | once per handoff group that recorded a divergence, after the group's code is written | the group's divergences from the progress file's decisions log — the design item by its heading, and what shipped | corrected while a group is still to run |
-| A review-and-fix round | once per round carrying a `correction:` row, after the apply and the post-apply micro-loop, before the round's review | the round's `correction:` rows | stands |
-| A follow-up round on the task's open pull request | after the round's fix is written, before its review | each design item that round's fix made untrue | stands |
+| A review-fix round | once per round carrying a `correction:` row, after the apply and the post-apply micro-loop, before the round's review | the round's `correction:` rows | stands |
+| A post-push fix round on the task's open pull request | after the round's fix is written, before its review | each design item that round's fix made untrue | stands |
 | A bug fix run inside any of those, its trace carrying `**parent_skill:**` | after the fix, within the enclosing round | the design items the fix leaves stating something that no longer ships | corrected when the fix ran inside implementation; otherwise stands |
 | A spec amendment that keeps the approach, in any workflow | the recipe's fifth act | the false design items the re-read ruled on and, on a new-shape design while a group is still to run, each criterion the amendment added or changed | corrected when the amendment interrupted a subtask: each such criterion placed in a subtask, or the subtask already delivering it named; otherwise stands |
 
@@ -89,14 +89,14 @@ subagent amends the design as an iteration, design review runs, and its GO takes
 ## Writing the approval stamp
 
 A fourth invocation mode, spawned once per design-review approval, after that approval's notes, if any,
-are worked in and committed. The brief names the design, the progress record and the approving round.
+are worked in and committed. The brief names the design, the progress file and the approving round.
 **The pass's only write is one header line**, directly beneath the design's `**Spec:**` line:
 
 `**Approved:** <ordinal> approval, design review round <R>, <date>`
 
 - **The ordinal** — `1st`, `2nd`, `3rd`, … — is one more than that of the stamp the design carries in the
   branch head's commit (`git show HEAD:<design>`), `1st` where it carries none. Never count approvals
-  from the progress record: a record made afresh over a committed plan restarts its count. A rerun after
+  from the progress file: a file made afresh over a committed plan restarts its count. A rerun after
   an interruption reads the same head, so it writes the same ordinal and round.
 - **`R`** is the approving round the brief names; **the date** is the day of the write.
 - **It replaces any earlier stamp**, in the same place.
@@ -166,23 +166,23 @@ it will be tested is not, and is not this document's business.
 The `**Approved:**` line is written only by § Writing the approval stamp; a design not yet approved
 carries none. The working plan is not part of this document: its format is
 [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § Working plan](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#working-plan),
-and it is written into the progress record.
+and it is written into the progress file.
 
 ## Rules
 
 - The working plan is **part** of design, not a separate phase: written in the same pass as the design, rewritten on every iteration, a design-review note about it worked in before the freeze as one about the design is, and written by you alone. Nobody else edits it.
 - **The design is written for the human who reviews the approach.** Every statement can be understood without opening another file: a criterion, a file or a symbol may be named, but never in place of saying what it is or does. It holds no decomposition, group order, handoff or edit sites, and nothing only the implementation's changes could supply.
 - **The length cap is 5,000 characters, a soft limit the owner set**, over the design's text with the diagram's notation left out and the use cases counted. Aim at it when you write a new design. Nothing refuses, holds or hands back a design over it: its length is never a finding you must resolve or a reason to hand back, and the human sees the figure at the confirmation, whose "yes" accepts it.
-- **A design you did not begin in this run keeps the shape it has.** One carrying its own decomposition section is the earlier shape: its decomposition table — number, task, files, the criteria each row delivers, what it depends on — and its handoff plan stay in the design and are amended and corrected there, the progress record keeps its checkbox list and gets no working plan, and the length cap, the register rule and the key-decisions and collisions sections do not apply to it. Every other design is the new shape.
+- **A design you did not begin in this run keeps the shape it has.** One carrying its own decomposition section is the earlier shape: its decomposition table — number, task, files, the criteria each row delivers, what it depends on — and its handoff plan stay in the design and are amended and corrected there, the progress file keeps its checkbox list and gets no working plan, and the length cap, the register rule and the key-decisions and collisions sections do not apply to it. Every other design is the new shape.
 - **This document's own exit check, and it is a refusal.** Before handing back, run
   `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>` and hand back on
-  nothing but a verdict carrying no unexcused finding of the two classes that HOLD a plan —
+  nothing but a verdict carrying no finding, other than an accepted one, of the two classes that HOLD a plan —
   completeness and arithmetic. On anything else, say which of the two non-clean outcomes it was,
   findings or cannot-run, and which findings it named. **The other four report and do not hold:**
   provenance, reference, pairing and isolation travel in the hand-back for the reviewer to weigh and never
   block it. Two of them read the whole tracked tree, so they can name something nobody here wrote, and a
   repeated fact is not by itself a fault. A holding
-  finding is fixed, or excused by the act that records the grounds beside the plan; nothing else lets the
+  finding is fixed, or accepted by the act that records the grounds beside the plan; nothing else lets the
   document through. **Read the counts and the per-class roster rather than the exit status** — a class
   reporting zero over a document with content examined nothing. One obligation falls out of it and is
   stated here because it is the author's: **every criterion the spec states is delivered by some subtask
@@ -207,7 +207,7 @@ and it is written into the progress record.
 - Don't write code — only the plan. Code is written by `/task` Step 8.
 - If the working plan holds more than 7 subtasks — propose splitting into multiple tickets.
 - If unsure about the codebase — investigate via a path-filtered search + Read; don't guess.
-- **Nothing in this document is proven by running it, because nothing here is run.** A design is written before the thing exists, so it pins no command, quotes no probe, and puts nothing forward as a gate. Where the approach rests on how something existing behaves, say what it does and name the entity it is true of — that is a claim a reader can check, and it needs no execution to write down. The duty that used to live here, that a pinned gate must be shown able to come back non-empty, binds in full where such a command is actually recorded: the round's own working record during implementation. It was re-pointed there, not dropped.
+- **Nothing in this document is proven by running it, because nothing here is run.** A design is written before the thing exists, so it pins no command, quotes no probe, and puts nothing forward as a gate. Where the approach rests on how something existing behaves, say what it does and name the entity it is true of — that is a claim a reader can check, and it needs no execution to write down. The duty that used to live here, that a pinned gate must be shown able to come back non-empty, binds in full where such a command is actually recorded: the round's own progress file during implementation. It was re-pointed there, not dropped.
 - **A correction is a REWRITE, and the document carries no account of what an earlier draft said.** While the design is being authored or reviewed, the way to correct it is to rework the affected sections (§ Workflow → Iteration); after the freeze, a divergence that keeps the approach is corrected by § Correcting the design in place, and the wording it replaced survives only in the change since the freeze. Neither leaves a revision account in the document at any stage — no narration of what a previous round found or argued, no quoted superseded wording, no sentence whose subject is an earlier draft rather than the system. Every later reader of the document pays for every such passage — the whole-repository review for the use cases on every run, whoever opens the document to settle a finding for the rest — and none of it describes the system. A correction's reasoning belongs in the review round's own findings table, which is where a reviewer can already see it and which no later review reads.
 - **Handoff-grouping requirement.** The `/task` workflow's Step 8 binds a `/context-reset` handoff at the start of **every** design-defined group, including the first and including single-subtask designs. The working plan pre-computes the boundaries in its groups — on an earlier-shape design, the design's handoff plan does. Four mandatory sub-points (every M ≥ 1):
   - **(a) When grouping is required** — `every M ≥ 1`.
@@ -224,4 +224,4 @@ and it is written into the progress record.
 - **A gap you leave open must be one whose answer would change none of three things: the approach this document chose, the requirements it is built against, or how it breaks the work up.** Apply that to every line of the open-questions section as you write it, and close the ones that fail — decide, take a defensible default, or ask. A gap that fails the test and is left anyway is not a note: its answer lands after the GO, and the only route that can absorb it then is the full design-and-review cycle, which is the expensive one.
 - **A reference names an ENTITY and never a position, and a statement that leans on a source entity carries the id that entity's own comment carries**, so the pair resolves in both directions. The form, the id's spelling, how the two sides are compared and the one carve-out that still admits a position are on [`${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md`](${CLAUDE_PLUGIN_ROOT}/docs/entity-references.md); this contract restates none of it and points there instead.
 - **Prefer** measuring a ticket's asserted data facts and its named proxy metric against a REAL corpus before any design or test encodes them. A ticket's description of a data format is a claim, not a fact, and a named proxy is a hypothesis, not a specification — run the smallest query that could falsify each one first. Tests written from an unverified premise lock the premise in, and a green suite then argues FOR the wrong design. State what the HEALTHY case should look like before running a new detector, so a negative result can be reported as a result rather than read as an unfinished detector.
-- **Prefer** small targeted `Edit` calls to specific sections over a full-file `Write` when amending an existing large doc (a ~50KB `*.design.md` rewrite is the highest-risk moment for a transport drop — observed attempts of 51s and 291s both died before the write landed). Short per-call generations hold the streaming connection open for less time and almost always complete. This keeps the AGENTS.md AXIOM intact — the design subagent still owns the write, via `Edit` rather than a full-file `Write`. After any amendment run, verify on disk (mtime + `grep` for the expected new string); the harness does not auto-retry on socket close.
+- **Prefer** small targeted `Edit` calls to specific sections over a full-file `Write` when amending an existing large doc (a ~50KB `*.design.md` rewrite is the highest-risk moment for a transport drop — observed attempts of 51s and 291s both died before the write landed). Short per-call generations hold the streaming connection open for less time and almost always complete. This keeps the AGENTS.md AXIOM intact — the design author still owns the write, via `Edit` rather than a full-file `Write`. After any amendment run, verify on disk (mtime + `grep` for the expected new string); the harness does not auto-retry on socket close.

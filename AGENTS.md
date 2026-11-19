@@ -22,7 +22,7 @@ This repo ships instruction files and shell scripts; it has no compiler.
 | `%LINT_CMD%` | Lint as the gate | `git ls-files -z '*.sh' \| xargs -0 -n1 bash -n` and `jq -e .` on every manifest — the `xargs` form is load-bearing, see check 4. `run-checks.sh` runs both as its `shell-syntax` and `manifests` members |
 | `<module-path>` | How a module is addressed | a top-level dir: `skills/`, `agents/`, `docs/`, `rules/`, `hooks/` |
 
-**Structural checks that stand in for a test suite** — run all nine before any commit that touches
+**Structural checks that stand in for a test suite** — run all ten before any commit that touches
 instruction files.
 
 **`bash scripts/run-checks.sh` runs every one of them in a single call**, reporting a verdict per member
@@ -55,7 +55,7 @@ is the same commands.
    exists: the Propagation Rule's Spec-Amendment sync group pointed its final
    member at `ai-docs/workflow.md`, so that member was never once updated by a sweep, and neither
    hand-run check above could see it.
-3. (folded into 2)
+3. (merged into 2)
 4. `bash -n` on every `*.sh` — **as `git ls-files -z '*.sh' | xargs -0 -n1 bash -n`, and not otherwise.**
    The three natural spellings all report success on a file that does not parse, verified against a
    deliberately broken fixture: `-exec bash -n {} +` batches, so only the first file is parsed and the
@@ -71,22 +71,23 @@ is the same commands.
    `scripts/test-backlog-metrics.sh`, `scripts/test-fold.sh`, `scripts/test-check-references.sh`,
    `scripts/test-check-readme-update.sh`, `scripts/test-loop-metrics.sh`,
    `scripts/test-bin-of.sh`, `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh`,
-   `scripts/test-tree-digest.sh`, `scripts/test-review-ledger.sh`, `scripts/test-human-findings.sh`,
+   `scripts/test-tree-digest.sh`, `scripts/test-checklist-ledger.sh`, `scripts/test-human-findings.sh`,
    `scripts/test-plan-archive.sh`, `scripts/test-plan-freeze.sh`,
    `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`,
    `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-ledger-write.sh`,
    `hooks/lib/test-loop-verdict.sh`, `hooks/lib/test-skill-gate.sh`,
    `hooks/lib/test-plan-invariants-guard.sh`, `hooks/lib/test-gate-record.sh`,
+   `hooks/lib/test-glossary-context.sh`, `hooks/lib/test-plain-words.sh`,
    `skills/harness-init/scripts/test-scaffold.sh`,
    `skills/report-defect/scripts/test-file-report.sh`,
    `skills/pr-merged/scripts/test-cleanup-progress.sh`,
    `skills/task/scripts/test-check-fix-plan.sh`,
-   `scripts/test-check-plan-invariants.sh`, `scripts/test-check-propagation-arms.sh`,
-   `scripts/test-check-redline.sh`, `scripts/test-check-release.sh`,
+   `scripts/test-check-plan-invariants.sh`, `scripts/test-check-propagation-patterns.sh`,
+   `scripts/test-check-spec-criteria.sh`, `scripts/test-check-release.sh`,
    `scripts/test-check-plan-convergence.sh`, `scripts/test-check-plan-links.sh`,
    `scripts/test-hook-behaviour.sh`,
    `scripts/test-run-checks.sh`, `scripts/test-check-method-purity.sh`,
-   `scripts/test-check-instruction-size.sh`.
+   `scripts/test-check-instruction-size.sh`, `scripts/test-check-vocabulary.sh`.
    **Both hazards in this item are mechanised by `scripts/run-checks.sh`**, which reports the processed
    file COUNT beside the syntax verdict and reddens a separate `untracked-shell` member on any `*.sh` the
    index cannot see — but only when it runs, so a hand-run still owes both reads.
@@ -98,21 +99,21 @@ is the same commands.
    cannot upgrade: a fenced `plugin install` outside the Install section, a fenced `marketplace update`
    with no `plugin update` beside it, or an Update section carrying no upgrade verb at all. Needs no
    `claude` CLI, so it runs wherever the checks above it run.
-5a. `bash scripts/check-propagation-arms.sh` — DERIVES the propagation reminder's path classes from the
-   Propagation Rule table in `docs/propagation.md` and asserts the `case` arms in `hooks/hooks.json`
-   agree: every derived class has an arm that fires on an absolute representative, every control stays
-   silent, and no path the pre-fix arms matched is silent under the current set. Catches "a sync group
+5a. `bash scripts/check-propagation-patterns.sh` — DERIVES the propagation reminder's path classes from the
+   Propagation Rule table in `docs/propagation.md` and asserts the `case` path patterns in `hooks/hooks.json`
+   agree: every derived class has a pattern that fires on an absolute representative, every control stays
+   silent, and no path the earlier patterns matched is silent under the current set. Catches "a sync group
    was added to the table and the reminder never learned about it" — drift between a list and the table
    beside it, which no link check or syntax check can see. **Numbered `5a`, not `6`:** this list runs
    1–8 in one continuous sequence, so ANY structural check numbered in that sequence collides with the
-   delivery gate already numbered 6; item 3's `(folded into 2)` is the precedent for a non-sequential
+   delivery gate already numbered 6; item 3's `(merged into 2)` is the precedent for a non-sequential
    entry here, and renumbering would break `AGENTS.md`'s own "invisible to gate 6" reference below. The
    same reasoning numbers the next one `5b`.
 5b. `bash scripts/check-plan-invariants.sh` — three legs over the base principles of a spec and a design:
    each pinned sentence present and unchanged, with an ABSENCE reported distinctly from a WORDING
    difference; the required-element set derived from three loci and cross-checked against the
    enumeration on `docs/plan-invariants.md`, in both directions, so neither a widened template nor a
-   widened enumeration moves on its own; and the live coverage of the edit-time refusal against that
+   widened enumeration moves on its own; and the live coverage of the plan-invariants guard against that
    page's protected-page table, also in both directions. Exits
    `0 clean / 1 findings / 2 cannot run` — **a cannot-run is not a pass**, and an unreadable required
    input, a template that moved, an empty extraction, an unreadable corpus file and an untracked payload
@@ -136,13 +137,24 @@ is the same commands.
    **Numbered `5c` for the reason item `5a` gives.**
 5d. `bash scripts/check-instruction-size.sh` — the size AXIOM in `docs/agents-method.md` § Build & Test,
    for the class it caps: every file that loads whole at agent start, here and in `templates/project/`.
-   Red at the 35,000-character early warning rather than at the 40,000 cap, so a task cannot close
-   without leaving the next one room to add a rule. Counts characters, not bytes. A page reached only by
+   Red at the 35,000-character early warning rather than at the 40,000-character instruction size
+   cap, so a task cannot close without leaving the next one room to add a rule. Counts characters, not bytes. A page reached only by
    link is outside the class by design. Exits `0 clean / 1 findings / 2 cannot run`, needs `python3`.
    **Numbered `5d` for the reason item `5a` gives.**
+5e. `bash scripts/check-vocabulary.sh` — no other name or retired name the glossary lists appears on a
+   covered surface: the shipped `docs/`, `skills/`, `agents/`, `rules/`, `hooks/` and `scripts/`, this
+   repository's `AGENTS.md`, `ai-docs/context.md` and `ai-docs/learnings/README.md`, the scaffolding,
+   `README.md` and the plugin manifests, tracked or untracked-not-ignored, with no exemption for quoting.
+   A script keeps the names it gives its own variables and functions, the bracketed ids its comments
+   carry, and lines under the internals mark. It also refuses a glossary whose names collide or whose
+   "defined at" names a missing page or heading. The names come through `hooks/lib/glossary-names.sh`,
+   the reader the hooks share, so there is one list. Exits `0 clean / 1 findings / 2 cannot run`; a
+   malformed glossary entry, an unreadable covered file and a script its tokenizer refuses are each a
+   could-not-run. Its verdict line carries the counts, then a per-surface roster. Needs `python3`.
+   **Numbered `5e` for the reason item `5a` gives.**
 
 **Delivery gates** — the checks above validate this repository's CONTENTS; these three validate that the
-contents reach a consumer. The nine structural checks cannot see delivery by construction: the first two
+contents reach a consumer. The ten structural checks cannot see delivery by construction: the first two
 gates exist because a bug got past every check there was at the time, the third because nothing above it
 walks an upgrade against a *pre-existing* install:
 
@@ -157,10 +169,18 @@ walks an upgrade against a *pre-existing* install:
    **exits 2 naming the fetch, which is not a pass.** A commit id or a local branch as the base is read as
    given, with no remote contact.
 8. `bash scripts/test-upgrade-smoke.sh` — extracts `README.md`'s own documented update commands and runs
-   them against a deliberately lowered install, then requires the installed payload to have moved.
+   them against a deliberately lowered install, then requires the installed copy to have moved.
    Catches "the documented procedure reports success and upgrades nothing" — invisible to gate 6, which
    installs into an EMPTY sandbox where the short-circuit that defines the failure cannot fire. Requires
    the `claude` CLI; **exits 2 when it cannot run, which is not a pass.**
+
+**A measurement beside them, not a gate:** `bash scripts/test-plain-words-model.sh` sends one planted text
+per kind of finding the plain-words check's model reports, and one unchanged text several times
+(`--readings N`, default 5), through the check itself to the real model, and prints which kinds were caught
+and how often the unchanged text got the same answer. Exempt by name from the check list, as the delivery
+gates are, because every reading is a paid model call. Run it when the check or the glossary changes and
+put its output in the pull request's description. Requires the `claude` CLI with a login; exits 1 when a
+kind is not caught and **2 when the model cannot read, which is not a pass.**
 
 `shellcheck` is **recommended but not required**, and deliberately not named as the gate: it is not
 installed on every machine that edits this repo, and a gate that cannot run is worse than one that is
@@ -186,22 +206,26 @@ at that heading.
 
 | Touched path | Selects |
 |---|---|
-| `hooks/hooks.json` | `scripts/test-hook-behaviour.sh`, `propagation-arms`, `plan-invariants`, `scripts/test-plugin-manifest.sh` |
+| `hooks/hooks.json` | `scripts/test-hook-behaviour.sh`, `propagation-patterns`, `plan-invariants`, `scripts/test-plugin-manifest.sh` |
 | `hooks/hooks.json` | `hooks/lib/test-harness-managed.sh`, `hooks/lib/test-loop-index.sh`, `hooks/lib/test-loop-verdict.sh` |
 | `hooks/hooks.json` | `hooks/lib/test-loop-agent-mark.sh`, `hooks/lib/test-skill-gate.sh`, `hooks/lib/test-plan-invariants-guard.sh` |
-| `docs/propagation.md` | `propagation-arms` |
+| `hooks/hooks.json`, `docs/glossary.md` | `hooks/lib/test-glossary-context.sh` |
+| `docs/propagation.md` | `propagation-patterns` |
 | `README.md` | `readme-update` |
 | `docs/plan-invariants.md`, any instruction file on the surfaces it examines, `hooks/lib/plan-invariants-guard.sh` | `plan-invariants` |
 | `AGENTS.md` § Build & Test, or a `test-*.sh` added or removed | `gate-inventory`, `scripts/test-run-checks.sh` |
 | `hooks/lib/loop-*`, `scripts/bin-of.jq`, `ai-docs/fixtures/loop-corpus/` | `scripts/test-loop-grid.sh`, `scripts/test-loop-corpus.sh` |
-| `scripts/tree-digest.sh` | `scripts/test-review-ledger.sh`, `hooks/lib/test-gate-record.sh` |
-| `scripts/plan-freeze.sh` | `scripts/test-review-ledger.sh` |
+| `scripts/tree-digest.sh` | `scripts/test-checklist-ledger.sh`, `hooks/lib/test-gate-record.sh` |
+| `scripts/plan-freeze.sh` | `scripts/test-checklist-ledger.sh` |
 | `scripts/check-plan-convergence-holding.py` | `scripts/test-check-plan-links.sh` |
 | `scripts/deliberate-absence.sh` | `scripts/test-check-plan-links.sh`, `scripts/test-check-plan-convergence.sh`, `scripts/test-plan-archive.sh` |
 | `docs/plan-invariants.md`, `ai-docs/plans/done/` | `scripts/test-plan-archive.sh` |
 | `hooks/lib/gate-pattern.sh` | `hooks/lib/test-gate-record.sh`, `scripts/test-hook-behaviour.sh`, `hooks/lib/test-harness-managed.sh` |
 | any tracked text file — the foreign-identifier leg reads the whole tree | `method-purity` |
-| `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `ai-docs/context.md`, `docs/agents-method.md`, `agents/*.md`, `skills/*/SKILL.md`, `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, their `templates/project/` copies | `instruction-size` |
+| any file the vocabulary check reads — the glossary, every file under `docs/`, `skills/`, `agents/`, `rules/`, `hooks/`, `scripts/` or `templates/project/`, and `AGENTS.md`, `ai-docs/context.md`, `ai-docs/learnings/README.md`, `README.md`, `.claude-plugin/*.json` | `vocabulary` |
+| `hooks/lib/glossary-names.sh` | `scripts/test-check-vocabulary.sh` |
+| `hooks/hooks.json`, `hooks/lib/glossary-names.sh`, `hooks/lib/ledger-write.sh` | `hooks/lib/test-plain-words.sh` |
+| `AGENTS.md`, `CLAUDE.md`, `CLAUDE.local.md`, `ai-docs/context.md`, `docs/agents-method.md`, `docs/glossary.md`, `agents/*.md`, `skills/*/SKILL.md`, `.claude/agents/*.md`, `.claude/skills/*/SKILL.md`, their `templates/project/` copies | `instruction-size` |
 | `templates/project/**` | `skills/harness-init/scripts/test-scaffold.sh`, `scripts/test-audit-project.sh` |
 
 **Selection flag:** `--only`
@@ -215,6 +239,7 @@ at that heading.
 | Ticket key format | `GH-<issue number>` |
 | Review surface | GitHub PR via `gh` |
 | Merge style | `squash` |
+| Posting commands | `gh pr create --title -t --body -b --body-file:file -F:file --fill:unread -f:unread --fill-first:unread --fill-verbose:unread --recover:unread --template:unread -T:unread --editor:unread -e:unread` `gh pr new --title -t --body -b --body-file:file -F:file --fill:unread -f:unread --fill-first:unread --fill-verbose:unread --recover:unread --template:unread -T:unread --editor:unread -e:unread` `gh pr edit --title -t --body -b --body-file:file -F:file` `gh pr comment --body -b --body-file:file -F:file --editor:unread -e:unread` `gh pr review --body -b --body-file:file -F:file` `gh pr close --comment -c` `gh pr reopen --comment -c` `gh issue create --title -t --body -b --body-file:file -F:file --recover:unread --template:unread -T:unread --editor:unread -e:unread` `gh issue new --title -t --body -b --body-file:file -F:file --recover:unread --template:unread -T:unread --editor:unread -e:unread` `gh issue edit --title -t --body -b --body-file:file -F:file` `gh issue comment --body -b --body-file:file -F:file --editor:unread -e:unread` `gh issue close --comment -c` `gh issue reopen --comment -c` — the commands that post text to the review surface or the tracker, each command under every name it answers to, as its leading words and the flags carrying the text, each flag in every spelling the command takes; a flag ending in :file names a file holding it, and a flag ending in :unread takes the text from somewhere the line does not show, so a post carrying it is a could-not-run. The plain-words check reads that text before it is posted |
 | Diagram form | `mermaid` — Mermaid, which GitHub renders in a PR description and in a committed Markdown file |
 | File link form | `https://github.com/JeriC4o/agent-harness/blob/<ref>/<path>` — GitHub's address of a file at a branch or a commit; a pull request's commits stay reachable under its own `refs/pull/<N>/head` after its branch is deleted |
 
@@ -246,8 +271,8 @@ in a branch name and a spec header, where a bare `#` does not belong. It maps on
 
 See [`ai-docs/context.md`](ai-docs/context.md) § Language profile. In short: Markdown instruction files
 plus POSIX shell, with nine non-shell payload files in three other languages — two `awk`, one `jq` and
-six `python3`; no compiled sources. Each is a SIBLING a `.sh` entry point loads from its own directory,
-never an entry point itself, so every caller still invokes a shell script. **The count in this sentence
+six `python3`; no compiled sources. Each is a SIBLING a `.sh` entry point loads, never an entry
+point itself, so every caller still invokes a shell script. **The count in this sentence
 moves whenever a payload sibling is added**, and nothing derives it — the sibling list it summarises is on
 the profile page, and the two have already fallen out of step once.
 
@@ -284,7 +309,7 @@ the profile page, and the two have already fallen out of step once.
   `scripts/check-candidate.sh` in the same act.** That gate derives a promotion candidate's deny
   vocabulary from the project's own `ai-docs/context.md`, which starts life as a copy of that template,
   and subtracts a hand-written list of generic section names. Nothing derives either list from the other.
-  Today most arms are inert, because a later stage of the same pipeline admits only single-word tokens —
+  Today most entries of that list are inert, because a later stage of the same pipeline admits only single-word tokens —
   the live ones are `%`, `Overview`, `Registry` and `Layout`. The hazard is forward: rename a heading to
   a **single word** and it silently becomes a deny term, refusing any candidate that contains that common
   word, with no visible cause. This is recorded here rather than beside the Propagation Rule's sync

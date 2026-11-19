@@ -15,7 +15,7 @@ trap 'rm -rf "$D"' EXIT
 
 P="$D/plugin"
 mkdir -p "$P/scripts" "$P/agents"
-cp "$HERE/review-ledger.sh" "$HERE/tree-digest.sh" "$HERE/plan-freeze.sh" "$P/scripts/"
+cp "$HERE/checklist-ledger.sh" "$HERE/tree-digest.sh" "$HERE/plan-freeze.sh" "$P/scripts/"
 cat > "$P/agents/self-review.md" <<'EOF'
 # Reviewer
 ## Checklist
@@ -27,7 +27,7 @@ No narration.
 Reasons.
 ## Rules
 EOF
-RL="$P/scripts/review-ledger.sh"
+RL="$P/scripts/checklist-ledger.sh"
 
 R="$D/repo"
 mkdir -p "$R/src" "$R/plans"
@@ -288,9 +288,9 @@ has "and plan with none passed carries" "$out" "3 carried"
 printf '\n== CLAUDE_PLUGIN_ROOT locates the contract ==\n'
 mkdir -p "$D/bare"
 cp "$RL" "$P/scripts/tree-digest.sh" "$D/bare/"
-out=$(CLAUDE_PLUGIN_ROOT="$P" bash "$D/bare/review-ledger.sh" plan progress.md --base "$BASE"); rc=$?
+out=$(CLAUDE_PLUGIN_ROOT="$P" bash "$D/bare/checklist-ledger.sh" plan progress.md --base "$BASE"); rc=$?
 same "a script outside the plugin finds it through the variable" "$rc" 0
-out=$(env -u CLAUDE_PLUGIN_ROOT bash "$D/bare/review-ledger.sh" plan progress.md --base "$BASE" 2>&1); rc=$?
+out=$(env -u CLAUDE_PLUGIN_ROOT bash "$D/bare/checklist-ledger.sh" plan progress.md --base "$BASE" 2>&1); rc=$?
 same "and without it cannot run" "$rc" 2
 
 printf '\n== cannot run ==\n'

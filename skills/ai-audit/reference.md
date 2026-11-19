@@ -100,7 +100,7 @@ A field added to the entry format without parallel coverage in all five targets 
 
 **Declared-schema fields (no `/improve`-time mutation).** Some fields (currently: `Kind:`) are *declared* and *parsed* but **never** mutated. For each such field verify BOTH legs — a declared enum whose values are never checked is not enforced.
 
-**Leg 1 — value conformance across every entry in the union (`ai-docs/learnings.md` + `ai-docs/learnings/*.md`):** `grep -Hn '^\*\*Kind:\*\*' ai-docs/learnings.md ai-docs/learnings/*.md | grep -vE '\*\*Kind:\*\*[[:space:]]+(correction|validation)[[:space:]]*$'`. Both operands and the `-H` are load-bearing: an off-schema `Kind:` in a per-branch file is exactly as invisible to `/improve` as one in the archive, and with a single readable operand grep drops the `filename:` prefix. This command string is held character-identical with the copy in `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` Step 1 — change one and change the other. The `## Format` template block at the top of the archive is an EXPECTED hit (enum declaration, not an entry value); every OTHER hit is `major` — it removes the entry from both `/improve` passes while looking well-formed. Report the ENTRY — its date, its category and its short description, which is the identity the entry's own heading declares — and never a line number. The reason is the same reason the report exists: Boundary rule 1 forbids fixing `Kind:` in place, so the report cannot be a fix and must identify the entry it is about. That report travels the same applying step as every other finding here, including the route that writes into the committed learning record, which outlives the pass and which nobody re-derives — so a position would be stored where no reader re-derives it. Use a position freely while acting on the file in front of you; never let one travel into the entry. **Falsify the sweep before trusting a clean result:** the shorter `:\s*(correction|validation)\s*$` form is broken (its `:` binds inside `**Kind:**`, so nothing matches and the inverted grep flags every entry) — run it once against a known-good entry and confirm silence.
+**Leg 1 — value conformance across every entry in the union (`ai-docs/learnings.md` + `ai-docs/learnings/*.md`):** `grep -Hn '^\*\*Kind:\*\*' ai-docs/learnings.md ai-docs/learnings/*.md | grep -vE '\*\*Kind:\*\*[[:space:]]+(correction|validation)[[:space:]]*$'`. Both operands and the `-H` are load-bearing: an off-schema `Kind:` in a per-branch file is exactly as invisible to `/improve` as one in the archive, and with a single readable operand grep drops the `filename:` prefix. This command string is held character-identical with the copy in `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` Step 1 — change one and change the other. The `## Format` template block at the top of the archive is an EXPECTED hit (enum declaration, not an entry value); every OTHER hit is `major` — it removes the entry from both `/improve` passes while looking well-formed. Report the ENTRY — its date, its category and its short description, which is the identity the entry's own heading declares — and never a line number. The reason is the same reason the report exists: Boundary rule 1 forbids fixing `Kind:` in place, so the report cannot be a fix and must identify the entry it is about. That report travels the same applying step as every other finding here, including the route that writes into the committed Learning Log, which outlives the pass and which nobody re-derives — so a position would be stored where no reader re-derives it. Use a position freely while acting on the file in front of you; never let one travel into the entry. **Falsify the sweep before trusting a clean result:** the shorter `:\s*(correction|validation)\s*$` form is broken (its `:` binds inside `**Kind:**`, so nothing matches and the inverted grep flags every entry) — run it once against a known-good entry and confirm silence.
 
 **Leg 2 — documentation coverage in:**
 
@@ -109,11 +109,11 @@ A field added to the entry format without parallel coverage in all five targets 
 | AGENTS.md `## Learning Log` *Entry format* | Declaration of field name, allowed values, default-when-omitted semantics |
 | `${CLAUDE_PLUGIN_ROOT}/agents/self-improve.md` Step 5 | Mention where the workflow branches on its value |
 | `${CLAUDE_PLUGIN_ROOT}/agents/learnings-escalation-audit.md` Steps 2/3/4 | Parse-site usage (verdict routing, sweep predicates) |
-| `${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md` field glossary | Declaration mirror — same allowed-values list, same default-when-omitted note |
+| `${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md` field glossary | Declaration mirror — same allowed-values list, same default-when-omitted note |
 
 ## Checklist M — `agent-writing-style.md` conformance
 
-`${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` is the canonical style reference for fail-loud rules in instruction files. Checklist M sweeps the audited corpus for drift against the Patterns + Anti-patterns. **Audited corpus**: `AGENTS.md` + every `skills/**/SKILL.md` + every `${CLAUDE_PLUGIN_ROOT}/agents/**.md` + `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md` + `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md` + `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` + `${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md` + `${CLAUDE_PLUGIN_ROOT}/rules/**/*.md`.
+`${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` is the canonical style reference for fail-loud rules in instruction files. Checklist M sweeps the audited corpus for drift against the Patterns + Anti-patterns. **Audited corpus**: `AGENTS.md` + every `skills/**/SKILL.md` + every `${CLAUDE_PLUGIN_ROOT}/agents/**.md` + `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md` + `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md` + `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md` + `${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md` + `${CLAUDE_PLUGIN_ROOT}/rules/**/*.md`.
 
 | # | Sub-check | Severity |
 |---|---|---|
@@ -124,7 +124,7 @@ A field added to the entry format without parallel coverage in all five targets 
 | 5 | **Pattern 5 (lock-step verbs)** — verb shape matches rule shape. Stick verbs on carrot rules / carrot verbs on stick rules → `major`. |
 | 6 | **Pattern 6 (link, don't duplicate)** — cross-surface duplicate rule with `[link]` to canonical sibling. | `minor` |
 | 7 | **Pattern 7 (extract verbose detail)** — body > 5KB and no extraction anchor in `ai-docs/` → `nit`. |
-| 8 | **Pattern 8 (file-size cap)** — every instruction file that loads whole at agent start < 40,000 chars; 35,000–39,999 is `minor`. | see body |
+| 8 | **Pattern 8 (instruction size cap)** — every instruction file that loads whole at agent start < 40,000 chars; 35,000–39,999 is `minor`. | see body |
 | 9 | **Anti-patterns table audit** — no row of the Anti-patterns table appears verbatim as a positive rule. | `major` |
 | 10 | **Cross-shape verbs** — carrot blocks must NOT use stick verbs; stick blocks must NOT use carrot verbs. | `major` |
 | 11 | **Compaction-recovery callout consistency** — role-aware presence of the locked invariant tiers across the callout-carrying skills, whose population is DERIVED (see detail note below). | `major` |
@@ -152,7 +152,7 @@ numbers. At the last derivation it returned five carriers: `task`, `project-revi
 
 A missing Tier-1 or Tier-2 invariant, or an invented variant of either, is `major`.
 
-**NOT keyed — documented acceptable variance.** Three phrases vary by role and are NOT keyed: `STOP before any tool call`; `top-to-bottom in one pass`; `Re-enter this skill from the top of its body`. Keying them would false-positive on `context-reset` (carrier variant).
+**NOT keyed — documented acceptable variance.** Three phrases vary by role and are NOT keyed: `stop before any tool call`; `top-to-bottom in one pass`; `Re-enter this skill from the top of its body`. Keying them would false-positive on `context-reset` (carrier variant).
 
 **Refinement note (vs the spec).** The spec Key-decisions row lists 5 phrases as "invariant", but live audit found only the opening line (every carrier) + the cross-link (the consumer carriers only) are truly universal — the other 3 are acceptable variance, not keyed.
 
@@ -218,7 +218,7 @@ Enforces the `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Naming clash-renam
 
 | Trigger | Action |
 |---|---|
-| `comm -12` output is empty | no flag — clash-scan baseline holds |
+| `comm -12` output is empty | no flag — the clash scan finds no clash |
 | `comm -12` output is non-empty | `major` finding per name: "Project-defined `<name>` clashes with embedded `<name>` enumerated at `claude-tools-hierarchy.md` §§<sections>. Rename the project side." |
 
 Severity `major` — the clash makes ambiguous which name resolves at dispatch time.

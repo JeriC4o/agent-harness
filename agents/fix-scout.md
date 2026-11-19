@@ -30,7 +30,7 @@ The plan section already exists when you start: the gate's `baseline` verb appen
 
 1. Read the progress file's `## Self-Review (Round N)` section — the round's findings table. The live rows are the ones whose status is open.
 2. For **every** open finding, read the `file:line` it cites and the surrounding lines. An anchor that does not resolve is a real signal, not a transcription slip: the reviewer re-derives anchors, so a non-resolving one means the finding is about a file that moved or never existed. Record it as you found it; the gate refuses the plan and the round gets a rewrite.
-3. Decide each finding's **disposition** from the closed vocabulary below. Every open finding gets exactly one row — no merging two findings into one row, no dropping one as already covered.
+3. Decide each finding's **disposition** from the closed vocabulary below. Every open finding gets at least one row — no merging two findings into one row, no dropping one as already covered.
 4. Estimate each row's expected changed lines **on the basis below**.
 5. Answer the Arm A question per finding: *would closing this finding leave a sentence in a spec or design artefact untrue?* — the task's own plan, wherever it sits, or a plan still in the active folder; never a plan another task archived in `done/`, which no later work amends, so a finding whose closing would touch it is fixed in the work's own files and its cell is `none`. Record the **sentence**, not your verdict about it. A spec sentence that is only broader than what shipped, or that another spec sentence overrides, is not left untrue — only a genuine conflict under [the base principles](${CLAUDE_PLUGIN_ROOT}/docs/plan-invariants.md#the-base-principles) counts — so its Arm A cell is `none`.
 6. Name the verification the round expects to re-run: the touched-scope checks for the round's target files, selected per [`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md) and stated with the path that selected each. **Never the full list** — it runs once, after review approves.
@@ -68,7 +68,7 @@ A placeholder in these examples is written without a space and with a numeric li
 | `resolved: <reason>` | The tree already satisfies this finding, no edit is owed this round, and this is **not** a dispute — typically a finding closed before the round began by an approved amendment. Routes nothing, declares 0, and like `object:` refuses an empty reason |
 | `amendment: spec` | Closing this needs a spec artefact changed, which is not a fix |
 | `amendment: design` | Closing this needs a design artefact changed, which is not a fix |
-| `correction: <what shipped instead>` | The fix leaves a sentence of the task's own design untrue WITHOUT breaking the agreed approach; the payload says what shipped. The design is not reopened — once the round's fix exists, its correction pass rewrites the item in place |
+| `correction: <what shipped instead>` | The fix leaves a sentence of the task's own design untrue WITHOUT breaking the agreed approach; the payload says what shipped. The design is not reopened — once the round's fix exists, its in-place correction rewrites the item |
 
 Anything else is refused by the gate. A round whose every finding plans no edit is a legitimate plan — every row `object:`, every row `resolved:`, or any mix — and its declared total is 0. It still runs the whole sequence.
 

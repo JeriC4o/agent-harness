@@ -10,7 +10,7 @@
 # The install smoke test proves the plugin LOADS; it installs into a clean
 # sandbox, so by construction it can never catch the other delivery failure:
 # content changed, version did not, and an already-installed copy silently keeps
-# the old payload while `marketplace update` reports success.
+# the old installed copy while `marketplace update` reports success.
 #
 # Shipped paths are the ones a consumer receives. README.md and ai-docs/ are
 # this repo's own profile -- they do not travel, so they need no bump.
@@ -69,7 +69,7 @@ if [ "$here_version" = "$base_version" ]; then
   printf 'check-release: REFUSED -- shipped content changed but the version is still %s.\n\n' "$here_version" >&2
   printf '%s\n' "$changed" | sed 's/^/  /' >&2
   printf '\nThe install cache is keyed by version: without a bump this reaches nobody, and\n' >&2
-  printf '`marketplace update` will report success while leaving the old payload in place.\n' >&2
+  printf '`marketplace update` will report success while leaving the old installed copy in place.\n' >&2
   printf 'Bump the patch version in %s (see README.md section Releasing).\n' "$MANIFEST" >&2
   exit 1
 fi

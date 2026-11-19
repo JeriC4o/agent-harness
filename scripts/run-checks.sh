@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Run this repository's whole pre-commit gate list, one member at a time, and
+# Run this repository's whole pre-commit check list, one member at a time, and
 # report a verdict per member.
 #
 # Run:  run-checks.sh [--root <dir>] [--list | --only <member>[,<member>...]]
@@ -29,8 +29,8 @@
 #   - THE MEMBER LIST IS DERIVED, NEVER DECLARED. Suites come from the tree
 #     (`git ls-files`), so a suite added to the tree is covered the day it lands.
 #     A hardcoded list is how a gate stops covering something while staying
-#     green -- the same drift check-propagation-arms.sh exists to catch between
-#     the hook arms and the propagation table.
+#     green -- the same drift check-propagation-patterns.sh exists to catch between
+#     the hook's path patterns and the propagation table.
 #   - ABSENCE IS NEVER SUCCESS. A member whose file is gone is MISSING (red), a
 #     tracked-file set of zero is red, an untracked `*.sh` is red because
 #     `git ls-files` cannot see it, and a gate that exits 0 having processed
@@ -138,10 +138,11 @@ shell-syntax|fn:syntax_member
 untracked-shell|fn:untracked_member
 gate-inventory|fn:inventory_member
 readme-update|sh:scripts/check-readme-update.sh
-propagation-arms|sh:scripts/check-propagation-arms.sh
+propagation-patterns|sh:scripts/check-propagation-patterns.sh
 plan-invariants|sh:scripts/check-plan-invariants.sh
 method-purity|sh:scripts/check-method-purity.sh
-instruction-size|sh:scripts/check-instruction-size.sh'
+instruction-size|sh:scripts/check-instruction-size.sh
+vocabulary|sh:scripts/check-vocabulary.sh'
 
 member_names()   { printf '%s\n' "$MEMBERS" | sed 's/|.*//'; }
 member_scripts() { printf '%s\n' "$MEMBERS" | sed -n 's/^[^|]*|sh:\(..*\)$/\1/p'; }
@@ -170,10 +171,10 @@ $MEMBERS
 MEMBERS_EOF
 }
 
-# Delivery gates run at a different moment and have a different rc contract, so
-# they are exempt BY NAME: adding a third one is then a decision, not an
-# omission that nothing reports.
-EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
+# Delivery gates, and the plain-words check's measurement against the real model,
+# run at a different moment and have a different rc contract, so they are exempt
+# BY NAME: adding another is then a decision, not an omission that nothing reports.
+EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh scripts/test-plain-words-model.sh'
 # A delivery gate; the promotion gate a skill calls on its own; the fix-plan
 # gate a skill calls per review round; and the three plan-document gates a skill
 # or a plan's author calls with path arguments. The last four cannot instead be
@@ -182,7 +183,7 @@ EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
 # reasoned ones.
 # documented_checks recognises only the `bash scripts/<name>.sh` spelling inside
 # AGENTS.md's structural-checks span, and a skill-local path cannot take it.
-# scripts/check-redline.sh, scripts/check-plan-convergence.sh and
+# scripts/check-spec-criteria.sh, scripts/check-plan-convergence.sh and
 # scripts/check-plan-links.sh COULD take that spelling and still must not: a
 # member is invoked with no arguments, and all three require at least one --
 # every verb of the first, and both document paths of the other two -- so a
@@ -190,7 +191,7 @@ EXEMPT_SUITES='scripts/test-install-smoke.sh scripts/test-upgrade-smoke.sh'
 # Either way the two directions of the comparison could never agree, and each
 # gate's own test-*.sh suite is its entire mechanical coverage.
 # [exempt-checks]
-EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh scripts/check-redline.sh scripts/check-plan-convergence.sh scripts/check-plan-links.sh'
+EXEMPT_CHECKS='scripts/check-release.sh scripts/check-candidate.sh skills/task/scripts/check-fix-plan.sh scripts/check-spec-criteria.sh scripts/check-plan-convergence.sh scripts/check-plan-links.sh'
 
 in_list() { case " $2 " in *" $1 "*) return 0 ;; *) return 1 ;; esac; }
 
@@ -392,7 +393,7 @@ if [ "$LIST_ONLY" -eq 1 ]; then
   exit 0
 fi
 
-printf 'gate list for %s\n' "$ROOT"
+printf 'check list for %s\n' "$ROOT"
 if [ -n "$IGNORED_ARG" ]; then
   printf 'note: [%s] ignored — a positional argument selects nothing; select with --only.\n' "$IGNORED_ARG"
 fi

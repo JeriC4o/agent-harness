@@ -35,7 +35,7 @@
       # further back and what was seen is the whole window there is. The retry
       # loop is therefore bounded by the file and needs no iteration cap.
       # RETRY outranks an emittable verdict because a wider chunk can change
-      # both the count and the agent set, and so the arm itself.
+      # both the count and the agent set, and so which signal fires.
       if (calls < want_calls && NR == chunk) { print "RETRY"; exit }
 
       # The scan starts at the want_calls-th most recent CALL row. Rows older

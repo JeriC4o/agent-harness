@@ -7,13 +7,13 @@ allowed-tools: Read, Edit, Write, Glob, Grep, Bash(git branch:*), Bash(git check
 
 Orchestrator for the spec-drafting interview. Drives the round loop, surfaces the subagent's questions, applies user's answers — but does **not** draft the spec itself. Spec drafting + question generation live in `${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` (subagent on `model: opus`).
 
-> **MUST run before:** code investigation, `design` Subagent, or writing code. **Carve-out — grounding reads are not "code investigation".** The `spec-writer` § Patterns rules require reading the live/deployed state and the sources that generate it before accepting a ticket's "blocked on deploy" premise, and Step 3a-bis requires grounding an `ask` round's options in real code. Both are permitted here: what this gate forbids is *designing the solution* ahead of the spec, not *verifying the premises the spec rests on*. **What you can actually run:** the source leg — a filtered search for the symbol in the repo, where a hit on the default branch proves *merged*. Proving something is *deployed* needs a fetch neither this skill nor `spec-writer` is granted: ask the user. Sync group: `${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` — keep this carve-out and its § Patterns rules aligned.
+> **MUST run before:** code investigation, the design author, or writing code. **Carve-out — grounding reads are not "code investigation".** The `spec-writer` § Patterns rules require reading the live/deployed state and the sources that generate it before accepting a ticket's "blocked on deploy" premise, and Step 3a-bis requires grounding an `ask` round's options in real code. Both are permitted here: what this gate forbids is *designing the solution* ahead of the spec, not *verifying the premises the spec rests on*. **What you can actually run:** the source leg — a filtered search for the symbol in the repo, where a hit on the default branch proves *merged*. Proving something is *deployed* needs a fetch neither this skill nor `spec-writer` is granted: ask the user. Sync group: `${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` — keep this carve-out and its § Patterns rules aligned.
 > **Branch gate — first action, before round 1.** Run `git branch --show-current`. If it is the default branch, `git checkout -b <TICKET-KEY>-<slug> main` before writing anything: this skill writes `*.spec.md` + `*.state.md`, and AGENTS.md AXIOM 1 binds on any file edit, not just code. Invoked from `/task`? Step 0 already branched — just confirm.
 > Run standalone when you want a spec without committing to implementation (defer it to `ai-docs/plans/deferred/` afterward).
-> For the full task workflow use `/task` — it delegates Steps 1–5 to this skill, then continues with design → implementation.
+> For the full spec workflow use `/task` — it delegates Steps 1–5 to this skill, then continues with design → implementation.
 
 > **⚡ Compaction recovery check — read FIRST on every invocation.**
-> If you are re-entering this skill after auto-compaction (a summary/compaction block at the top of context, or workflow context feels thin), STOP before any tool call and:
+> If you are re-entering this skill after auto-compaction (a summary/compaction block at the top of context, or workflow context feels thin), stop before any tool call and:
 >
 > 1. **Locate the durable-state file** — `ls ai-docs/plans/*.spec.md.state.md 2>/dev/null` (read both the matched `.state.md` AND its sibling `<spec_path>`). If exactly one in-flight artefact exists, that's the durable state. None → fresh invocation. Multiple → surface to user.
 > 2. Read it **top-to-bottom in one pass**. Recorded `round` is a cross-check, never an instruction to skip the read.
@@ -121,7 +121,7 @@ Validate:
 - `len(questions) <= questions_per_round_cap` — if exceeded, one-shot Subagent re-spawn with trim instruction.
 - Each `header` ≤ 12 chars; each `options` list 2..4 entries.
 - No question contains a pre-resolved-rule blacklist substring (defence in depth; the Subagent should have caught it).
-- **Every question, option label and option description is human-facing and self-contained** — no `*.spec.md` / `*.design.md` / artefact path, no "the spec" / "the design doc", no acceptance-criterion or decomposition-task id (`AC3`, `T7`), no agent-internal vocabulary (`design-review`, `GO`/`ITERATE`, "the subagent"), and enough context in the prose to answer **without opening any file** ([`${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` § Question wording](${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md#question-wording--for-a-human-not-for-the-model)). The orchestrator MAY rewrite the surfaced wording to meet this — it owns the `AskUserQuestion` text, which is NOT a spec write — and persists the text **as surfaced** into `prior_qa`. Expand, don't shorten. A question that cannot be rewritten without losing the decision → one-shot re-spawn with a rewrite instruction.
+- **Every question, option label and option description is human-facing and self-contained** — no `*.spec.md` / `*.design.md` / artefact path, no "the spec" / "the design", no acceptance-criterion or decomposition-task id (`AC3`, `T7`), no harness name carrying the meaning ([the glossary's rule](${CLAUDE_PLUGIN_ROOT}/docs/glossary.md#text-for-a-person)), and enough context in the prose to answer **without opening any file** ([`${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` § Question wording](${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md#question-wording--for-a-human-not-for-the-model)). The orchestrator MAY rewrite the surfaced wording to meet this — it owns the `AskUserQuestion` text, which is NOT a spec write — and persists the text **as surfaced** into `prior_qa`. Expand, don't shorten. A question that cannot be rewritten without losing the decision → one-shot re-spawn with a rewrite instruction.
 
 Call `AskUserQuestion(questions=[...])` with the entire list.
 
@@ -129,7 +129,7 @@ Append each `(question, proposed_options, answer)` to state's `prior_qa` with `r
 
 #### 3e. Action chooser on `unresolvable`
 
-Build `AskUserQuestion` with the Subagent's `reason.detail` as the question prose — **restated in human terms if it names an artefact, an acceptance-criterion id or agent-internal vocabulary** (same bar as 3d). The user must see why the interview stopped, not a status enum. Options: Subagent's `suggested_action` first, plus the other applicable actions:
+Build `AskUserQuestion` with the Subagent's `reason.detail` as the question prose — **restated in human terms if it names an artefact, an acceptance-criterion id or a harness name carrying the meaning** (same bar as 3d). The user must see why the interview stopped, not a status enum. Options: Subagent's `suggested_action` first, plus the other applicable actions:
 
 | Category | Actions to offer (recommended first) |
 |---|---|
@@ -155,9 +155,9 @@ Execute the chosen action:
    - **Commit the spec** by name, without asking, once that capture is on disk — standalone and inside `/task` alike ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § Each step commits what it wrote](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#each-step-commits-what-it-wrote)).
    - Post the cross-link comment on the ticket when the project has a tracker (`gh issue comment <N> --body "Spec: \`<spec_path>\`"`); skip it otherwise.
    - Delete the state file.
-4. Skill exits. `/task` (the caller) resumes at Step 6 (`design` Subagent).
+4. Skill exits. `/task` (the caller) resumes at Step 6 (the design author).
 
-> **Forward-handoff of explored constraints.** Any code-level constraint surfaced during a 3a-bis option-grounding pass (e.g. "the REQUIRES_NEW heartbeat call site is intra-class → must use `transactionTemplate.execute`, not the annotated method"; "the module enables allopen → no manual `open`") MUST be carried into the spec's scope/constraints so the `design` Subagent inherits it. Re-invoke the spec-writer to record the constraint — the orchestrator does NOT edit the spec directly. A constraint discovered at interview time but not written into the spec is re-litigated (or violated) at design time.
+> **Forward-handoff of explored constraints.** Any code-level constraint surfaced during a 3a-bis option-grounding pass (e.g. "the REQUIRES_NEW heartbeat call site is intra-class → must use `transactionTemplate.execute`, not the annotated method"; "the module enables allopen → no manual `open`") MUST be carried into the spec's scope/constraints so the design author inherits it. Re-invoke the spec-writer to record the constraint — the orchestrator does NOT edit the spec directly. A constraint discovered at interview time but not written into the spec is re-litigated (or violated) at design time.
 
 > **Skip the tracking-ticket resolution when the user explicitly states "no tracking ticket", or when the project has no tracker.** Note the reason in the spec header (`**Tracked in:** none — <reason>`) and skip the cross-link comment.
 

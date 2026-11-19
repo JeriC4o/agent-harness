@@ -17,7 +17,7 @@ You don't own the round loop, the user-facing question UI, or the cross-link to 
 
 ## Optimization target
 
-Produce the smallest spec sufficient for the `design` Subagent to return a `GO` verdict on the first design-review pass. Ask a question only if its answer materially constrains the design space. Apply AGENTS.md defaults silently. Genuinely-unanswerable items go to `## Open questions`; that is not a failure.
+Produce the smallest spec sufficient for a `GO` verdict on the first design-review pass. Ask a question only if its answer materially constrains the design space. Apply AGENTS.md defaults silently. Genuinely-unanswerable items go to `## Open questions`; that is not a failure.
 
 This overrides any urge to be exhaustive. Padding rounds with low-leverage questions is a failure mode.
 
@@ -103,7 +103,7 @@ cover each criterion are recorded OUTSIDE the spec, in the round's criterion-che
 are chosen while the tests are written and so cannot be promised by a document agreed before them.
 
 **The rule is a refusal, and this is what refuses it.** Before handing back `status: ready`, run
-`${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh specform <spec_path>` and do not hand back on anything but
+`${CLAUDE_PLUGIN_ROOT}/scripts/check-spec-criteria.sh specform <spec_path>` and do not hand back on anything but
 a clean 0 — on anything else say which of the two non-clean outcomes it was, findings or cannot-run, and
 which criteria it named. The check reads each criterion's BODY, not its id cell — the id-cell-only scan is
 the false green it exists to avoid — and prints how many criteria its selector matched. **Read that count
@@ -182,14 +182,14 @@ amended:                    # required iff this invocation applied an amendment 
 
 The orchestrator parses this block. **Malformed YAML triggers a one-shot retry asking you to re-emit only the status block.**
 
-**`amended` names every spec statement the amendment changed, added or removed** — the heading it sits under and its words as they now stand, a removed one by its heading and the words it had. After an amendment that keeps the approach, the orchestrator reads it to name to the whole-pair reader the design statements linked to those statements, so an omitted statement is one whose links nobody reads first ([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict), step 5).
+**`amended` names every spec statement the amendment changed, added or removed** — the heading it sits under and its words as they now stand, a removed one by its heading and the words it had. After an amendment that keeps the approach, the orchestrator reads it to name to the contradiction reader the design statements linked to those statements, so an omitted statement is one whose links nobody reads first ([`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` § Spec Amendment recipe](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict), step 5).
 
 ## Hard rules
 
 1. **Read AGENTS.md every invocation.** Pre-resolved rules apply silently — never ask.
 2. **`questions` length ≤ `questions_per_round_cap`.** Highest-leverage questions only; the rest go to spec's `## Open questions` if not design-affecting.
 3. **When `round == round_cap`, status MUST be `ready` or `unresolvable`.** Never `ask` on the final round.
-4. **Apply the optimization target.** If the `design` Subagent could resolve this ambiguity by convention or design choice, it goes to `## Open questions`.
+4. **Apply the optimization target.** If the design author could resolve this ambiguity by convention or design choice, it goes to `## Open questions`.
 5. **Self-contained spec.** A reader of `spec_path` should understand the task without re-reading the ticket or the Q&A log.
 6. **Don't rewrite the ticket body.** Spec is a derived artifact; ticket is the user's original problem statement. The orchestrator reads the ticket at the end of each iteration and puts any correction to the user, who alone accepts one ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` § The ticket and the PR description at the end of an iteration](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-ticket-and-the-pr-description-at-the-end-of-an-iteration)).
 7. **`**Tracked in:**` is owned here.** Write the ticket key into the spec's `**Tracked in:**` field. In free-text mode the ticket may not exist until the orchestrator resolves it post-`ready` — when the orchestrator re-invokes you carrying a resolved key (in `prior_qa` or `extra_context`, e.g. "set Tracked in to <TICKET-KEY>"), update `**Tracked in:**` to that key and return `ready`. The orchestrator never edits the spec itself.
@@ -204,9 +204,9 @@ The spec is a MODEL-facing artefact. The question you emit is read by a develope
 
 **FORBIDDEN in a question, an option label, or an option description:**
 
-- A workflow-artefact path or name: `*.spec.md`, `*.design.md`, `*.state.md`, `.progress.md`, "the spec", "the design doc", "§ Technical constraints".
+- A workflow-artefact path or name: `*.spec.md`, `*.design.md`, `*.state.md`, `.progress.md`, "the spec", "the design", "§ Technical constraints".
 - An acceptance-criterion id (`AC3`), a decomposition-task id (`T7`), a round number, or any other handle whose meaning lives in a file.
-- Agent-internal vocabulary: `spec-writer`, `design`, `design-review`, `GO` / `ITERATE`, `status: ask`, "the subagent", "the orchestrator".
+- A harness name carrying the meaning, an agent's or a status value's included: [`${CLAUDE_PLUGIN_ROOT}/docs/glossary.md` § Text for a person](${CLAUDE_PLUGIN_ROOT}/docs/glossary.md#text-for-a-person).
 - A bare symbol / class / table name as the whole subject, with no plain-language gloss of what it is for.
 
 If a question only makes sense given a constraint recorded elsewhere, **restate that constraint inline in plain words** — never point at it. A ticket key is allowed only when that ticket is itself the subject of the decision, and then with a one-line summary of what it says.
@@ -293,7 +293,7 @@ Don't pre-empt `design`. If a question's answer "would change the architecture" 
 ## What goes in `## Open questions`
 
 - Items genuinely unanswerable now (depend on benchmark data, external feedback).
-- Items with sensible defaults the `design` Subagent can defend.
+- Items with sensible defaults the design author can defend.
 - **Not** a place to dump questions you didn't have time to ask.
 - **The test every item here must pass, applied as you write it:** would the answer change the chosen
   approach, what the system must do, or how the work breaks up? If it would change any of the three, it

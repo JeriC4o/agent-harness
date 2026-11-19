@@ -55,7 +55,7 @@ def listed(*extra):
 paths = sorted(set(listed() + listed("-o", "--exclude-standard")))
 
 WHOLE = ["AGENTS.md", "CLAUDE.md", "CLAUDE.local.md", "ai-docs/context.md",
-         "docs/agents-method.md", "agents/*.md", "skills/*/SKILL.md",
+         "docs/agents-method.md", "docs/glossary.md", "agents/*.md", "skills/*/SKILL.md",
          ".claude/agents/*.md", ".claude/skills/*/SKILL.md",
          "templates/project/AGENTS.md", "templates/project/CLAUDE.md",
          "templates/project/ai-docs/context.md"]

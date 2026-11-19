@@ -227,34 +227,34 @@ check "an unreadable source for the kept sections -> rc 2" "$rc" "2"
 has "  and says they are borrowed" "$out" 'borrowed'
 mv "$T/scripts/gone-absence.sh" "$T/scripts/deliberate-absence.sh"
 
-printf '\n== a folded spec is skipped, never clean ==\n'
+printf '\n== a cut-down spec is skipped, never clean ==\n'
 KEPT=$(sed -n "/^RETAINED='/,/'\$/p" "$T/scripts/deliberate-absence.sh" | sed "s/^RETAINED='//; s/'\$//")
 [ "$(printf '%s\n' "$KEPT" | grep -c .)" -ge 2 ] \
   && ok "the kept sections were derived from the record of deliberate absence" \
   || bad "the kept sections were derived from the record of deliberate absence"
-FOLDED=$(printf '%s\n' "$KEPT" | while IFS= read -r h; do printf '%s\n\n- Kept.\n\n' "$h"; done)
-pair "$FOLDED"; record "$L1
+CUT_DOWN=$(printf '%s\n' "$KEPT" | while IFS= read -r h; do printf '%s\n\n- Kept.\n\n' "$h"; done)
+pair "$CUT_DOWN"; record "$L1
 $L2"
 out=$(run); rc=$?
-check "a folded spec with every examined link silent -> rc 2" "$rc" "2"
+check "a cut-down spec with every examined link silent -> rc 2" "$rc" "2"
 has "  and the verdict word is skipped" "$out" 'check-plan-links: skipped'
 has "  and the spec-end link is reported skipped, not moved" "$out" 'skipped L1'
 hasnt "  and never as moved" "$out" 'moved L1'
 has "  and the design-to-design link was still examined" "$out" 'silent=1'
 has "  and the skip is counted" "$out" 'skipped=1'
-pair "$FOLDED" "${DESIGN_TEXT/A count/One count}"
+pair "$CUT_DOWN" "${DESIGN_TEXT/A count/One count}"
 out=$(run); rc=$?
-check "a folded spec with a moved design-to-design link -> rc 1" "$rc" "1"
+check "a cut-down spec with a moved design-to-design link -> rc 1" "$rc" "1"
 has "  and the link is reported" "$out" 'moved L2'
-pair "$FOLDED"; no_record
+pair "$CUT_DOWN"; no_record
 out=$(run); rc=$?
-check "a folded spec with no record -> rc 2" "$rc" "2"
+check "a cut-down spec with no record -> rc 2" "$rc" "2"
 has "  and reads skipped, not cannot-run" "$out" 'check-plan-links: skipped'
 record "$L1"; unstage
 out=$(run); rc=$?
-check "a folded spec with an unstaged record -> rc 2" "$rc" "2"
+check "a cut-down spec with an unstaged record -> rc 2" "$rc" "2"
 has "  and that is a cannot-run" "$out" 'CANNOT RUN'
-pair "$FOLDED
+pair "$CUT_DOWN
 
 ## Width
 
@@ -263,10 +263,10 @@ out=$(run); rc=$?
 check "control: one heading beyond the kept ones and the spec is read as a plan" "$rc" "0"
 
 printf '\n== the record suffix against THIS repository own ignore rules ==\n'
-# Run rather than reasoned about: the working record beside it is swallowed, and this one must not be.
+# Run rather than reasoned about: the progress file beside it is swallowed, and this one must not be.
 git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.progress.md" \
-  && ok "the working record's suffix IS ignored here" \
-  || bad "the working record's suffix IS ignored here"
+  && ok "the progress file's suffix IS ignored here" \
+  || bad "the progress file's suffix IS ignored here"
 git -C "$ROOT" check-ignore -q "ai-docs/plans/probe.links.md" \
   && bad "the record of declared links' suffix is NOT ignored here" \
   || ok "the record of declared links' suffix is NOT ignored here"

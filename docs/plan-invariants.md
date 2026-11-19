@@ -9,7 +9,7 @@ requirement, and which pages deliberately do not.
 **The limit, stated first because a reader who takes a clean verification for a proof has misread it.** An
 edit that contradicts a principle, or that adds a required element, is **caught and named — never
 prevented**. The mechanism makes such an edit impossible to make *silently*; it does not make it
-impossible to make. One further bound follows from that one, and it is the widest: the edit-time refusal
+impossible to make. One further bound follows from that one, and it is the widest: the plan-invariants guard
 recognises an edit by its SHAPE, so a writer it does not recognise reaches the page, and what reads the
 change there is a human reading a diff. Two classes of change are from now on caught by the pull-request
 diff and by nothing mechanical: a mandate arriving on an examined page that the element derivation does
@@ -116,8 +116,8 @@ page's own history repeating:** the correction left the design stating a per-cri
 intent, that intent was then found to be the same promise in a shorter form, and the rule now in force
 is that a design says nothing about tests at all. Every narrowed version regrew — a per-criterion
 command, then an intent line, then a suite total — which is why the prohibition is the whole class.
-Where a concrete command, identifier or path is wanted, it is recorded in the implementation round's own
-working record, outside the frozen base and deleted with the task.
+Where a concrete command, identifier or path is wanted, it is recorded in the task's own
+progress file, outside the frozen base and deleted with the task.
 
 **A principle is present only with its reason.** Each numbered sentence carries its own one-clause
 `*Because …*`; a sentence stripped of it is not this principle in shorter form, because the reason is what
@@ -158,7 +158,7 @@ anything mandatory.
 
 **Three headings make up the spec's record of deliberate absence** — `## Out of scope`, `## Deferred`
 and `## Key decisions`: the sections the archive listing extracts from every completed spec, and all that
-a collapsed spec in the archive still carries. The list is held as data in
+a cut-down spec in the archive still carries. The list is held as data in
 `${CLAUDE_PLUGIN_ROOT}/scripts/deliberate-absence.sh`, which the element derivation reads as spec
 elements.
 
@@ -171,24 +171,24 @@ acquires such a rule joins the set rather than becoming the unguarded route.
 | Page | What about it defines or enforces a required element |
 |---|---|
 | `${CLAUDE_PLUGIN_ROOT}/agents/spec-writer.md` | Enumerates the spec's required sections as a template, and separately states what a criterion may and may not contain. Both are composition |
-| `${CLAUDE_PLUGIN_ROOT}/agents/design.md` | Enumerates the design's required sections as a template, and the measured damaging edit was of exactly this class. **It held four loci until the per-criterion verification line was removed as an element, three until the closing fold's retained spec sections left it, and two until the handoff plan its rules mandated left the design for the working plan** — recorded because a locus count that only ever grows is the shape this row warns about |
+| `${CLAUDE_PLUGIN_ROOT}/agents/design.md` | Enumerates the design's required sections as a template, and the measured damaging edit was of exactly this class. **It held four loci until the per-criterion verification line was removed as an element, three until the spec sections kept by the removed last step of a task left it, and two until the handoff plan its rules mandated left the design for the working plan** — recorded because a locus count that only ever grows is the shape this row warns about |
 | `${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` | Makes the absence of named elements a blocking finding under its own severity rubric. The quieter of the two routes to a new requirement: an element becomes mandatory here with no template changing anywhere |
 | `${CLAUDE_PLUGIN_ROOT}/skills/task/SKILL.md` | Its step rule requires the spec's acceptance criteria to exist, approved, before the design step may open. **Its binding handoff rule required the design's handoff plan until the handoff left the design for the working plan** |
 | `${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md` | Its step-gate checklists assert the presence of individual sections before a step may close; an element asserted there is required in practice whatever the templates say |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/deliberate-absence.sh` | Carries the spec's record of deliberate absence — the sections a collapsed spec keeps and the archive listing extracts — as a shell assignment of section names, which the element derivation reads as spec elements. Widening it adds a required element without touching one word of prose |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/deliberate-absence.sh` | Carries the spec's record of deliberate absence — the sections a cut-down spec keeps and the archive listing extracts — as a shell assignment of section names, which the element derivation reads as spec elements. Widening it adds a required element without touching one word of prose |
 
-**The refusal is armed by learning mode, and while armed it asks only about a section change.** The
+**The refusal is switched on by learning mode, and while on it asks only about a section change.** The
 measured damage came from a self-improvement pass, so the refusal fires only in a session that ran one of
-the automated learning passes — `/improve`, `/improve-global`, or `/ai-audit`, whose escalation audit
+the automated learning workflows — `/improve`, `/improve-global`, or `/ai-audit`, whose escalation audit
 edits instruction files on its own — read from that session's transcript by structure: a mention of the
-name is not a run. While armed, an edit to one of these six is judged by the page before it against the
+name is not a run. While it is on, an edit to one of these six is judged by the page before it against the
 page after it, and put to the author when it adds, removes or renames a heading of level two or deeper, or
 adds or drops a name from the required-element record above; a typo fix in an unrelated paragraph passes.
 A shell write to one of them is put to the author whenever it is recognised, because its content is not
 visible to the refusal. A change the refusal cannot read — an unreadable record, an unreadable page, an
 edit whose text the payload does not carry — fails toward asking. **A mandate written in plain prose
 inside an existing section, spelling neither a heading nor a recorded name, passes the refusal even when
-armed;** what reads it is the pull-request diff, the class the opening limit of this page already names.
+switched on;** what reads it is the pull-request diff, the class the opening limit of this page already names.
 Outside learning mode the refusal is silent, and an element arriving or leaving is what the verification
 catches, in the full check list and in the pull-request diff. This replaced a refusal that asked on every
 edit, and measured, almost none of the edits it stopped changed a section.
@@ -199,19 +199,19 @@ These pages touch document composition, or could, and are deliberately outside t
 stays inside the detection, in the width § Two surfaces states for it: every page named here is on one of
 the five examined surfaces. **What reads a page FOR a rule that makes an element required is narrower than
 that**, and two rows below sit partly outside it — the coverage sweep skips the principles page,
-the guard and every `test-*.sh` before it inspects anything, so the row naming `scripts/test-check-redline.sh`
+the guard and every `test-*.sh` before it inspects anything, so the row naming `scripts/test-check-spec-criteria.sh`
 and its siblings is a corpus member and nothing more, and the enforcement row holds for `hooks/hooks.json`,
 which the sweep does read, but not for the guard or the seven `hooks/lib/test-*.sh` beside it.
 
 | Page | Why it is out |
 |---|---|
-| `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` | Reads only the criteria list from the spec, and reads the per-round working record for content. It mandates no element of either document today, and it is the most-edited of the candidate contracts, so admitting it on its capability alone would buy no protection at the highest price of any candidate |
+| `${CLAUDE_PLUGIN_ROOT}/agents/self-review.md` | Reads only the criteria list from the spec, and reads the progress file for content. It mandates no element of either document today, and it is the most-edited of the candidate contracts, so admitting it on its capability alone would buy no protection at the highest price of any candidate |
 | `${CLAUDE_PLUGIN_ROOT}/agents/review-findings.md` | Makes a use case no test covers a blocking finding, which is about the coverage of an element the design template already requires rather than about requiring a new one. **Its predicate was rewritten when the per-criterion verification line stopped being an element**, and the near-miss verdict survives the rewrite for the same reason it was granted: it still scores coverage of a section the template mandates, and mandates nothing itself |
 | `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` | Defines the composition of the round record that deliberately sits OUTSIDE the frozen base, and is the sanctioned home for the identifiers the third principle keeps out of the design. It also holds the working plan, which is never committed, frozen or archived, so its sections are not a third document of the record: every reader of the record keys on a spec or a design row, and a composition nothing commits has nothing for the refusal to protect. Its working-plan template uses no heading the record carries. Protecting it would guard the relief valve, not the documents |
 | `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` | Measured, and it reproduces: a sweep of the whole method-documentation directory for any section name of either document returns only this page, whose record table spells all thirteen element tokens as data and mandates nothing for the reason given under that table. This row's page is not among the hits, so it defines no element — and it is the single most-edited file in the tree. The pointer it carries to this page names the document and its authority, and restates no element mandate; a pointer that restated one would make that file element-defining |
 | `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` and the shared code under `${CLAUDE_PLUGIN_ROOT}/hooks/lib/` | Out of the REFUSAL set, and out of that set only. Neither mandates an element today, and this is where the refusal itself registers — so refusing edits here would make the protection unable to arrive without authorising its own arrival. The text this layer writes into an agent's context as a session or a tool use begins is instruction material, so it is INSIDE the detection |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/check-redline.sh` | Carries the criterion-content rule as data, and that rule is composition — what a criterion may say — while the refusal asks only about headings and element names. **It was a protected page while it carried the design headings a closing pass had to remove**, and it left the table when that list went |
-| `${CLAUDE_PLUGIN_ROOT}/scripts/test-check-redline.sh` and its siblings | They reproduce both documents' section names as fixture text. A fixture asserts nothing about what a real document must contain, and the fixtures move with every change to the checks |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/check-spec-criteria.sh` | Carries the criterion-content rule as data, and that rule is composition — what a criterion may say — while the refusal asks only about headings and element names. **It was a protected page while it carried the design headings a closing pass had to remove**, and it left the table when that list went |
+| `${CLAUDE_PLUGIN_ROOT}/scripts/test-check-spec-criteria.sh` and its siblings | They reproduce both documents' section names as fixture text. A fixture asserts nothing about what a real document must contain, and the fixtures move with every change to the checks |
 | `${CLAUDE_PLUGIN_ROOT}/skills/interview/SKILL.md` and `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md` | Measured: neither enumerates a section of either document; both point at the contracts instead |
 
 A consuming project's own profile is a separate question and is deferred; this page and the contracts it
@@ -234,7 +234,7 @@ decision to leave a surface freely editable must not quietly also remove it from
 
 Three surfaces are deliberately out of the detection, and the report names each one with its reason
 rather than omitting it: the plan documents themselves, which are the artefacts under these rules and
-which quote principle text by construction; the learning record, where an entry is a proposal rather than
+which quote principle text by construction; the Learning Log, where an entry is a proposal rather than
 a rule; and the repository's own mechanics — what configures the repository, what declares the plugin, and
 committed measurement data — where the ground is not that nobody reads them but that none of them states a
 rule a spec or a design is held to. Each exclusion carries a membership rule and not only a name, so the
@@ -258,7 +258,7 @@ halves, which is exactly what "not silently" means.
 | Adding or removing a required element | Edit the page that mandates it and the record on this page; a one-sided edit is reported in whichever direction it went |
 | An edit to a protected page that the refusal stops | Allow it. Allowing it lets the edit proceed, so installing or repairing this protection never requires switching it off |
 
-**A correction recorded in the learning record never travels this route automatically.** An entry whose
+**A correction recorded in the Learning Log never travels this route automatically.** An entry whose
 remedy would change either document's composition, or change, weaken or remove a principle, is surfaced
 to the author as a decision and is never converted into a diff against an instruction file. The automated
 improvement pass declines such a change and says that it declined.

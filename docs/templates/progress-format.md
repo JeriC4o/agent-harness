@@ -101,18 +101,18 @@ flow's own row in the table below does not list the field its skill mandates. --
 
 <!-- Written by the orchestrator the moment a GO verdict is in hand, BEFORE the freeze. The verdict is a
 subagent RESPONSE and nothing else persists it, so this section is the only durable copy: the response
-text is gone at the next compaction, and BOTH parties that enforce the fold-in read it afterwards —
+text is gone at the next compaction, and BOTH parties that enforce working the notes in read it afterwards —
 Step 8's opening action, which after a compaction-resumed entry has no other source, and the
 `self-review` agent, which is spawned fresh and never saw the response at all. One table per approval,
 under a line naming the round that approved, appended below any earlier approval's; readers take the
 last. One row per `note` / `minor` row of the verdict's Issues table and per bullet of its
 Recommendations section. A verdict that carried neither is recorded as `(none)` rather than by omitting
 the table, because an absent table cannot be told apart from an unrecorded one. The last column is
-filled by the orchestrator as it finds each note worked in, so a blank there is an unfolded note. -->
+filled by the orchestrator as it finds each note worked in, so a blank there is a note not yet worked in. -->
 
 Round 2 approved:
 
-| # | Severity | The note, verbatim | Folded in as |
+| # | Severity | The note, verbatim | Worked in as |
 |---|---|---|---|
 | 1 | note | <the verdict's own words, not a paraphrase> | <the design item or working-plan item it became, or `withdrawn — <reason>`> |
 
@@ -209,7 +209,7 @@ Written ONCE at file creation, read-only thereafter. The original `$ARGUMENTS` v
 
 ### `parent_skill`
 
-Written when the file is owned by a nested skill (`/bugfix` called from `/task` or a post-push round's Step 4, `/context-reset` from any parent). The parent's compaction-recovery callout reads this to identify which orchestrator owns the file.
+Written when the file is owned by a nested skill (`/bugfix` called from `/task` or a post-push fix round's Step 4, `/context-reset` from any parent). The parent's compaction-recovery callout reads this to identify which orchestrator owns the file.
 
 ### `Issue` / `Spec` / `Design`
 
@@ -297,12 +297,12 @@ Appended by the `self-review` Subagent. Count existing `## Self-Review` sections
 One per review round carrying at least one `⬜ Open` finding. The heading, the three header fields and the table heading are appended by the gate script's `baseline` verb; the `fix-scout` agent fills the table and the two empty header fields; the gate then parses the section and decides whether it may be applied. `N` matches the `## Self-Review (Round N)` the findings come from, and the section with the highest `N` is the one the gate reads.
 
 - **`#` is the finding's own number from that round's findings table**, copied and never renumbered. **A finding may occupy more than one row** — one per file its remedy touches, since the `Target` cell holds a single path — and the gate measures the applied diff against the union of a finding's rows. What the `#` still decides is the two refusing directions: a plan missing an open finding is refused, and so is a row whose number matches no open finding, the latter because it would otherwise pre-authorise a file the review never raised.
-- **`Disposition` is a closed vocabulary of six:** `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design`, `correction: <what shipped instead>`. Every reason-carrying token refuses an empty reason, because the reason is part of the value. `correction:` is the disposition for a divergence between the task's own design — the one `**Design:**` names, matched by file name so its archived path matches too — and what shipped that does **not** break the agreed approach: the code fix proceeds in the same round, and once the round's micro-loop closes its single correction pass rewrites the item the row's `Arm A` cell quotes. It declares **0**, because it briefs the fix agent with nothing to do — the correction pass makes its own writes. A `correction:` row may name the design as its `Target` without routing the round, because the routing arms key on a row that proposes a fix; one whose `Arm A` cell cites a spec sentence or another plan's design routes the round instead, since the in-place correction reaches the task's own design alone. A `fix` row whose `Arm A` cell names a sentence of the task's own design with no `correction:` row for the same finding is refused, and so is one naming a spec sentence or another plan's design with no amendment row — which is what makes the accounting unavoidable rather than advisable. `resolved:` asserts that the tree already satisfies the finding, that no edit is owed this round, and that this is not a dispute — the case `object:` would otherwise be stretched to cover. A round whose every row plans no edit is a legitimate plan whose declared total is 0, and it still fires the whole sequence.
-- **The counting basis rides in the column heading** rather than in prose beside it, so it travels with every plan: per file, `max(added, removed)`, summed across files, and a modified line counts once. A new file contributes its line count; a deleted file the count it had at the baseline; a rename counts as a delete plus an add, so an N-line rename is declared as 2N; a binary file contributes 0 and is named in the verdict; and a path `.gitignore` excludes contributes 0, on the declared side and the measured side alike, because the two totals are comparable only while both count the same way. The gitignored case is why the plan itself — which lives in this gitignored file — never charges against the round it describes, and it is a different exclusion from the short in-round list of **tracked** paths the verdict counts out loud. That list holds the learnings archive, the per-branch learnings files, the record of declared links `ai-docs/plans/*.links.md`, and the two routing suffixes `ai-docs/plans/*.spec.md` and `ai-docs/plans/*.design.md` — the last because an approved amendment writes those artefacts mid-round: it rewrites one and then resumes the round against a baseline taken before it. A diff cannot tell that write from a fix agent's unbriefed edit to the same file, which is why each excluded path is named rather than merely counted. **It is those suffixes and NOT the whole directory**, because the two routing ones are exactly what the routing arms key on and no `fix` row names the record: a tracked path under `ai-docs/plans/` that is none of the three *can* be briefed by a passing plan, and excluding it would drop briefed lines from the measured total while they still counted on the declared side. Those paths are excluded from the applied diff only; a plan can never brief an **edit** to one of the two suffixes, since a `fix` row naming a spec or design artefact routes the round instead of passing — and a row proposing no edit may name one but briefs nothing, so every change there is unbriefed either way. Each excluded path is **named** on the verdict's `excluded-in-round` line, which the orchestrator reads and accounts for.
-- **The `Target` cell opens with its anchor, unquoted** — `path` or `path:line` — and anything after the first space is guidance for the fix agent. Every gate arm reads the anchor alone: the plan arm resolves it, the routing arms test it for a spec or design path, and the applied arm matches the round's changed paths against its path.
+- **`Disposition` is a closed vocabulary of six:** `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design`, `correction: <what shipped instead>`. Every reason-carrying token refuses an empty reason, because the reason is part of the value. `correction:` is the disposition for a divergence between the task's own design — the one `**Design:**` names, matched by file name so its archived path matches too — and what shipped that does **not** break the agreed approach: the code fix proceeds in the same round, and once the round's micro-loop closes its single in-place correction rewrites the item the row's `Arm A` cell quotes. It declares **0**, because it briefs the fix agent with nothing to do — the in-place correction makes its own writes. A `correction:` row may name the design as its `Target` without routing the round, because the routing tests key on a row that proposes a fix; one whose `Arm A` cell cites a spec sentence or another plan's design routes the round instead, since the in-place correction reaches the task's own design alone. A `fix` row whose `Arm A` cell names a sentence of the task's own design with no `correction:` row for the same finding is refused, and so is one naming a spec sentence or another plan's design with no amendment row — which is what makes the accounting unavoidable rather than advisable. `resolved:` asserts that the tree already satisfies the finding, that no edit is owed this round, and that this is not a dispute — the case `object:` would otherwise be stretched to cover. A round whose every row plans no edit is a legitimate plan whose declared total is 0, and it still fires the whole sequence.
+- **The counting basis rides in the column heading** rather than in prose beside it, so it travels with every plan: per file, `max(added, removed)`, summed across files, and a modified line counts once. A new file contributes its line count; a deleted file the count it had at the round baseline; a rename counts as a delete plus an add, so an N-line rename is declared as 2N; a binary file contributes 0 and is named in the verdict; and a path `.gitignore` excludes contributes 0, on the declared side and the measured side alike, because the two totals are comparable only while both count the same way. The gitignored case is why the plan itself — which lives in this gitignored file — never charges against the round it describes, and it is a different exclusion from the short in-round list of **tracked** paths the verdict counts out loud. That list holds the Learning Log archive, the per-branch learnings files, the record of declared links `ai-docs/plans/*.links.md`, and the two routing suffixes `ai-docs/plans/*.spec.md` and `ai-docs/plans/*.design.md` — the last because an approved amendment writes those artefacts mid-round: it rewrites one and then resumes the round against a round baseline taken before it. A diff cannot tell that write from a fix agent's unbriefed edit to the same file, which is why each excluded path is named rather than merely counted. **It is those suffixes and NOT the whole directory**, because the two routing ones are exactly what the routing tests key on and no `fix` row names the record: a tracked path under `ai-docs/plans/` that is none of the three *can* be briefed by a passing plan, and excluding it would drop briefed lines from the measured total while they still counted on the declared side. Those paths are excluded from the applied diff only; a plan can never brief an **edit** to one of the two suffixes, since a `fix` row naming a spec or design artefact routes the round instead of passing — and a row proposing no edit may name one but briefs nothing, so every change there is unbriefed either way. Each excluded path is **named** on the verdict's `excluded-in-round` line, which the orchestrator reads and accounts for.
+- **The `Target` cell opens with its anchor, unquoted** — `path` or `path:line` — and anything after the first space is guidance for the fix agent. Every test of the check reads the anchor alone: the plan's anchor test resolves it, the routing tests check it for a spec or design path, and the applied-diff test matches the round's changed paths against its path.
 - **The Arm A cell is never blank** — either the literal `none`, written deliberately, or a quoted sentence carrying its own backticked `file:line`. The gate resolves that anchor **and** checks that the quoted sentence is at it, within a window of three lines either side on whitespace-normalised text, with `…` elision honoured while every retained fragment is at least 24 characters and in order. So the cell records a sentence copied from the file, not a plausible one: a resolvable anchor whose quote is nowhere near it is refused, which is what a file-exists-plus-line-in-range check could not do.
 - **A literal `|` inside either free-text column is written `\|`.** A raw pipe shifts every later field; the parser normalises the escaped form and refuses a row whose cell count is wrong rather than misreading it.
-- **`round_base` is never hand-edited or re-derived.** It is the baseline the post-apply arm measures the round against, written before the plan was gated so no later party can substitute one of its own choosing.
+- **`round_base` is never hand-edited or re-derived.** It is the round baseline the post-apply test measures the round against, written before the plan was gated so no later party can substitute one of its own choosing.
 - **The post-apply micro-loop's attempt count lives in this section, as bullets after the table** — one per re-fix attempt, written by the orchestrator before it re-spawns the fix agent, capped at three:
 
   ```
@@ -334,19 +334,21 @@ wrong one.
 wrap is invisible to a single-line search; a fragment, or `grep -c` on a distinctive token, is what
 settles it.
 
-## The record of excused findings (committed)
+## The record of accepted findings (committed)
 
-`ai-docs/plans/<spec-base>.excuses.md` — named by the spec base, the spec's file name without `.spec.md`,
+`ai-docs/plans/<spec-base>.accepted.md` — named by the spec base, the spec's file name without `.spec.md`,
 as the plan's other documents are, and **committed**, because it is read by every later run over the
 archived pair, long after the gitignored progress file is gone. **The suffix is not matched by the ignore rules**, which is
-confirmed rather than assumed: `git check-ignore -v` on both reports the working record ignored and this
-one not. Each row waives **one** finding of the plan-convergence check, for **this plan and no other**.
+confirmed rather than assumed: `git check-ignore -v` on both reports the progress file ignored and this
+one not. Each row accepts **one** finding of the convergence check, for **this plan and no other**.
+A record a task wrote before the rename, `<spec-base>.excuses.md`, is still read beside it; new rows go to
+the current name.
 
 | Column | Holds | Why that and not something else |
 |---|---|---|
 | `Class` | the class the check's own finding line names | one fault in two classes is two findings |
-| `Spot` | **an entity** — the document plus the heading or numbered item the finding sits under, or the file a tree-wide finding is in | a position here is the anti-pattern the check's own reference class reports, and it moves when the passage is edited — the case a waiver must survive |
-| `Subject` | the figure, object, requirement, id, position token or repeated span the finding is about | it makes the key specific without quoting the passage, so rewording the sentence keeps the waiver |
+| `Spot` | **an entity** — the document plus the heading or numbered item the finding sits under, or the file a tree-wide finding is in | a position here is the anti-pattern the check's own reference class reports, and it moves when the passage is edited — the case an accepted finding must survive |
+| `Subject` | the figure, object, requirement, id, position token or repeated span the finding is about | it makes the key specific without quoting the passage, so rewording the sentence keeps the finding accepted |
 | `Grounds` | why the finding does no harm **here**, in terms a later reader can check | a reason nobody can check is indistinguishable from suppression |
 
 ```markdown
@@ -355,28 +357,28 @@ one not. Each row waives **one** finding of the plan-convergence check, for **th
 | completeness | <design-path> § <heading or numbered item> | <the figure, object, id or span> | <why it does no harm here> |
 ```
 
-- **Granted by an act that shows the finding first**, and by nothing else: the check's
-  `--excuse '<class>|<spot>|<subject>' --grounds '<why>'` runs every class with waiving suspended, prints
+- **Written by the accepting act, which shows the finding first**, and by nothing else: the check's
+  `--accept '<class>|<spot>|<subject>' --grounds '<why>'` runs every class with accepting suspended, prints
   the finding carrying that key, and only then appends the row. **No ordinary run writes here**, and a key
-  matching no finding of the run is refused — an excuse for a finding nobody can see excuses nothing.
-- **A waived finding stays visible**, reported as excused with its grounds, and the waived count prints
+  matching no finding of the run is refused — accepting a finding nobody can see accepts nothing.
+- **An accepted finding stays visible**, reported as accepted with its grounds, and the accepted count prints
   beside the verdict **split by whether its class holds the plan**: one mixed figure cannot say whether ten
-  waivers let a plan proceed over ten holds or merely quieted ten reports.
-- **Editing the passage does not revoke a waiver**, and the same fault returning at that spot comes back
-  waived. **The one bound:** where the subject *is* a passage — a repeated span — rewriting it does change
+  accepted findings let a plan proceed over ten holds or merely quieted ten reports.
+- **Editing the passage does not revoke an acceptance**, and the same fault returning at that spot comes back
+  accepted. **The one bound:** where the subject *is* a passage — a repeated span — rewriting it does change
   the key, which is correct, because the two sites then no longer say the same thing.
-- **Removing a row is an act of the same kind as granting one**, done by hand, which is why this is a table
-  a reader can find a row in. **Lifecycle:** created by the task's first grant act, moved to
+- **Removing a row is an act of the same kind as adding one**, done by hand, which is why this is a table
+  a reader can find a row in. **Lifecycle:** created by the task's first accepting act, moved to
   `ai-docs/plans/done/` with the spec and the design at the task's close, and **kept in the archive**. A
-  later run over the archived pair still reads it, and removing the record would un-excuse every waiver in
+  later run over the archived pair still reads it, and removing the record would reopen every accepted finding in
   it permanently, against a plan nobody will act on. Its rows stay scoped to this plan; nothing inherits
   them.
 
 ## The record of declared links (committed)
 
-`ai-docs/plans/<spec-base>.links.md` — named by the construction the excuse record above is named by and
+`ai-docs/plans/<spec-base>.links.md` — named by the construction the record of accepted findings above is named by and
 committed for the same lifecycle reason; `git check-ignore -v` reports the suffix not ignored. Each row
-declares **one link**: two statements of the plan pair that must move together, quoted verbatim, which
+declares **one link**: two statements of the plan that must move together, quoted verbatim, which
 `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-links.sh <spec> <design>` checks against the current documents.
 What a link is, the states the check reports, where each leads and how a row is cleared:
 [`${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md`](${CLAUDE_PLUGIN_ROOT}/docs/declared-links.md).

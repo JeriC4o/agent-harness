@@ -1,4 +1,4 @@
-# NEVER UPDATE THIS FILE TO MATCH loop-window.awk. It is a frozen copy of the
+# NEVER UPDATE THIS FILE TO MATCH loop-window.awk. It is a fixed copy of the
 # detector as it stood before GH-86, and every control built on it dies the
 # moment the two agree. It is not a second implementation of the current rule --
 # it is a historical one that must DISAGREE.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# The spec's record of deliberate absence: the sections a collapsed spec keeps,
+# The spec's record of deliberate absence: the sections a cut-down spec keeps,
 # and the sections the archive listing extracts from every completed spec. This
 # is the one list of them, and no reader names them itself.
 #
@@ -13,7 +13,7 @@
 #     declared-link check also reaches through folded_spec();
 #   scripts/plan-archive.sh, the spec sections the listing extracts;
 #   scripts/test-check-plan-convergence.sh and scripts/test-check-plan-links.sh,
-#     which build their collapsed-spec fixtures from it.
+#     which build their cut-down spec fixtures from it.
 
 # [retained-list]
 RETAINED='## Out of scope

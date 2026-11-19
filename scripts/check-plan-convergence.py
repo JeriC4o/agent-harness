@@ -1,7 +1,7 @@
-# The logic half of check-plan-convergence.sh: the plan pair, what every class
-# reads, the excuse route and the report. Invoked as
+# The logic half of check-plan-convergence.sh: the plan, what every class
+# reads, the record of accepted findings and the report. Invoked as
 # `python3 check-plan-convergence.py <method-root> <method-indexed> <project-root>
-# <spec> <design> [<excuse-key> <grounds>]` by the wrapper beside it, which owns
+# <spec> <design> [<key-to-accept> <grounds>]` by the wrapper beside it, which owns
 # the flags, the preflights, the root resolution and the exit convention.
 #
 # There are three payload files: this one, check-plan-convergence-holding.py
@@ -14,11 +14,11 @@
 #
 # NO NAME THE REQUIRED-ELEMENT RECORD CARRIES APPEARS IN THIS FILE IN A SHAPE
 # THE COVERAGE SWEEP READS AS DEFINING OR ENFORCING AN ELEMENT, and that is a
-# condition on which the check stays OUT of the edit-time refusal's page set
+# condition on which the check stays OUT of the plan-invariants guard's page set
 # rather than a stylistic preference. A page joins that set by defining or by
 # enforcing a required element, so a script carrying a section token beside a
 # presence word reads as enforcing one -- and a check in that set has any edit
-# that changes its section data put to the author during a learning pass. The
+# that changes its section data put to the author in learning mode. The
 # names it needs are derived from the required-element record at run time, the
 # way the propagation gate derives its path classes from the table beside them.
 # The one set it holds is the earlier design shape's two section names, as data
@@ -41,8 +41,8 @@ METHOD_INDEXED = sys.argv[2] == '1'
 PROJECT_ROOT = sys.argv[3]
 SPEC = sys.argv[4]
 DESIGN = sys.argv[5]
-# Empty on an ordinary run. Non-empty only on the grant act, which is the one
-# route that writes the excuse record -- see THE GRANT ACT below.
+# Empty on an ordinary run. Non-empty only on the accepting act, which is the
+# one route that writes the record -- see THE ACCEPTING ACT below.
 GRANT_KEY = sys.argv[6] if len(sys.argv) > 6 else ''
 GRANT_GROUNDS = sys.argv[7] if len(sys.argv) > 7 else ''
 
@@ -59,11 +59,11 @@ cannot = []
 HOLDING = ('completeness', 'arithmetic')
 
 # ---------------------------------------------------------------------------
-# The excuse route.
+# The record of accepted findings: how a run reads it and the one act that writes it.
 # ---------------------------------------------------------------------------
 # THE KEY IS CLASS, SPOT AND SUBJECT, and every part of that is chosen against
 # one requirement: editing the passage a finding is about must not revoke the
-# excuse, and the same fault returning at that spot must come back excused. So
+# acceptance, and the same fault returning at that spot must come back accepted. So
 # the statement's own text is NOT in the key. The spot NAMES AN ENTITY -- a
 # document and the heading its statement sits under, or the file a tree-wide
 # finding is in -- because a position in the key would be the very anti-pattern
@@ -72,40 +72,45 @@ HOLDING = ('completeness', 'arithmetic')
 #
 # WHERE THE SUBJECT IS THE PASSAGE ITSELF the bound is reached and is stated
 # rather than hidden: a repeated SPAN has no smaller subject than the span, so
-# rewriting it does change the key and the excuse lapses. That is the honest
+# rewriting it does change the key and the acceptance lapses. That is the honest
 # answer rather than a gap -- once one of the two sites is rewritten the two
-# sites no longer say the same thing, so the excuse is about a fault that is no
+# sites no longer say the same thing, so the acceptance is about a fault that is no
 # longer there.
 #
 # THE RECORD IS PER-PLAN AND ITS ABSENCE IS THE EMPTY STATE, which is a third
-# polarity beside the two records above it. Most plans excuse nothing, so an
-# absent record means nothing is excused and the run proceeds. What is NOT
+# polarity beside the two records above it. Most plans accept nothing, so an
+# absent record means nothing is accepted and the run proceeds. What is NOT
 # tolerated is a record that exists while being invisible to every other clone,
 # or one this check cannot read: the first makes this run quieter than everyone
-# else's and the second leaves it guessing what is excused, so both take the
+# else's and the second leaves it guessing what is accepted, so both take the
 # cannot-run branch.
 #
-# THE GRANT ACT IS THE ONLY ROUTE THAT WRITES IT. An ordinary run reports an
-# excused finding as excused and writes nothing at all. The act takes a key off
-# a finding line, runs every class with excusing suspended so the finding is
-# still there to be seen, PRINTS IT IN FULL, and only then appends the row --
-# which is what "shows the finding it is about to excuse before excusing it"
+# THE ACCEPTING ACT IS THE ONLY ROUTE THAT WRITES IT. An ordinary run reports
+# an accepted finding as accepted and writes nothing at all. The act takes a key
+# off a finding line, runs every class with accepting suspended so the finding
+# is still there to be seen, PRINTS IT IN FULL, and only then appends the row --
+# which is what "shows the finding it is about to accept before accepting it"
 # asks for. Removing a row is the same kind of act done by hand, which is why
 # the record is a table a reader can find a row in rather than a digest.
 EXCUSE_FIELD = '|'
 SPEC_SUFFIX = '.spec.md'
-EXCUSE_SUFFIX = '.excuses.md'
+EXCUSE_SUFFIX = '.accepted.md'
+# vocabulary-internal: a task in progress when the plugin updated holds its record under the earlier name
+EARLIER_SUFFIX = '.excuses.md'
+# vocabulary-internal: a row recorded before the pairing kind's spot was reworded still names its finding
+EARLIER_SPOTS = {'the plan pair': 'the plan'}
 
 EXCUSES = {}
+KEPT_IN = {}
 EXCUSE_PATH = None
 SUSPEND_EXCUSES = bool(GRANT_KEY)
 
-EXCUSE_HEADER = """# Excused convergence findings: %s
+EXCUSE_HEADER = """# Accepted convergence findings: %s
 
-Each row waives ONE finding of `check-plan-convergence.sh` for this plan and no other. Granted by
-`check-plan-convergence.sh --excuse '<class>%s<spot>%s<subject>' --grounds '<why>'`, which prints the
+Each row accepts ONE finding of `check-plan-convergence.sh` for this plan and no other. Written by
+`check-plan-convergence.sh --accept '<class>%s<spot>%s<subject>' --grounds '<why>'`, which prints the
 finding before writing the row. Removed by deleting its row, which is an act of the same kind. The
-format is `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § The record of excused findings
+format is `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md` § The record of accepted findings
 (committed).
 
 | Class | Spot | Subject | Grounds |
@@ -123,9 +128,9 @@ def key_of(cls, spot, subject):
 
 def finding(cls, spot, subject, text):
     key = key_of(cls, spot, subject)
-    line = 'finding %s [excuse: %s]: %s' % (cls, key, text)
+    line = 'finding %s [accept: %s]: %s' % (cls, key, text)
     if not SUSPEND_EXCUSES and key in EXCUSES:
-        excused.append((cls, 'excused %s [%s]: %s -- on the grounds: %s'
+        excused.append((cls, 'accepted %s [%s]: %s -- on the grounds: %s'
                         % (cls, key, text, EXCUSES[key])))
         return
     findings.append((cls, line))
@@ -252,8 +257,8 @@ def region(body, token):
 # a semicolon is still that sentence -- cutting there would report a figure
 # whose own sentence named its kind.
 # ---------------------------------------------------------------------------
-# The heading each statement sits under, which is the entity half of an excuse
-# key. The segmenter is the only pass that knows it, so it records it here as it
+# The heading each statement sits under, which is the entity half of the key
+# that accepts a finding. The segmenter is the only pass that knows it, so it records it here as it
 # goes rather than a second walk recovering it.
 SECTION_OF = {}
 
@@ -626,9 +631,9 @@ def built_paths(body, tokens, shape):
 
 
 # ---------------------------------------------------------------------------
-# The excuse record's persistence: where it lives, how a run reads it, and the
-# one act that writes it. It belongs to the excuse route stated at the top of
-# this file, and it is here rather than in a sibling for that reason -- a
+# The record of accepted findings on disk: where it lives, how a run reads it,
+# and the one act that writes it. It belongs to the section on that record at
+# the top of this file, and it is here rather than in a sibling for that reason -- a
 # boundary drawn at the next banner rather than at the route would have put it
 # inside the pairing class, which neither reads nor writes it.
 # ---------------------------------------------------------------------------
@@ -637,9 +642,9 @@ SEPARATOR_CELL = re.compile(r'^[-: ]+$')
 
 def excuse_path():
     """Derived from the spec's own path, so the record moves into the archive with
-    the pair and a later run over the archived pair still finds it."""
+    the plan and a later run over the archived plan still finds it."""
     if not SPEC.endswith(SPEC_SUFFIX):
-        blocked('the spec at %s does not end in %s, so the record beside it cannot be named and this run cannot know what is excused'
+        blocked('the spec at %s does not end in %s, so the record beside it cannot be named and this run cannot know what is accepted'
                 % (SPEC, SPEC_SUFFIX))
         return None
     return SPEC[:-len(SPEC_SUFFIX)] + EXCUSE_SUFFIX
@@ -648,21 +653,27 @@ def excuse_path():
 def read_excuses(paths):
     global EXCUSE_PATH
     EXCUSE_PATH = excuse_path()
-    if EXCUSE_PATH is None or not os.path.exists(EXCUSE_PATH):
+    if EXCUSE_PATH is None:
         return
+    for path in (EXCUSE_PATH, EXCUSE_PATH[:-len(EXCUSE_SUFFIX)] + EARLIER_SUFFIX):
+        if os.path.exists(path):
+            read_record(path, paths)
+
+
+def read_record(path, paths):
     # BOTH SIDES THROUGH realpath, because the root arrives already resolved
     # while a path given on the command line does not: under a temporary
     # directory behind a symlink the two disagree, the relative path comes out
     # full of parent steps, and a staged record read as untracked.
-    rel = os.path.relpath(os.path.realpath(EXCUSE_PATH), os.path.realpath(PROJECT_ROOT))
+    rel = os.path.relpath(os.path.realpath(path), os.path.realpath(PROJECT_ROOT))
     if rel not in set(paths):
         blocked('%s exists and is not in the index, so this run is quieter than every other clone of this repository -- stage it'
-                % EXCUSE_PATH)
+                % path)
         return
-    body = read_path(EXCUSE_PATH)
+    body = read_path(path)
     if body is None:
-        blocked('%s could not be read, so this run cannot know which of its findings are excused'
-                % EXCUSE_PATH)
+        blocked('%s could not be read, so this run cannot know which of its findings are accepted'
+                % path)
         return
     for line in body.split('\n'):
         if not line.lstrip().startswith('|'):
@@ -672,31 +683,33 @@ def read_excuses(paths):
             continue
         # A row this check cannot read leaves it guessing, and a guess in either
         # direction is wrong: ignoring the row raises a finding the author
-        # believes is excused, and admitting it excuses something nobody stated.
+        # believes is accepted, and admitting it accepts something nobody stated.
         if not all(cells[:4]):
-            blocked('%s carries a row with an empty cell -- class, spot, subject and grounds are all required, and a row short of one excuses nothing checkably: %s'
-                    % (EXCUSE_PATH, norm(line)[:160]))
+            blocked('%s carries a row with an empty cell -- class, spot, subject and grounds are all required, and a row short of one accepts nothing checkably: %s'
+                    % (path, norm(line)[:160]))
             continue
-        EXCUSES[key_of(cells[0], cells[1], cells[2])] = cells[3]
+        key = key_of(cells[0], EARLIER_SPOTS.get(norm(cells[1]), cells[1]), cells[2])
+        EXCUSES[key] = cells[3]
+        KEPT_IN[key] = path
 
 
 def grant():
-    """Show the finding, then excuse it. The only route that writes the record."""
+    """Show the finding, then accept it. The only route that writes the record."""
     parts = GRANT_KEY.split(EXCUSE_FIELD)
     if len(parts) != 3 or not all(part.strip() for part in parts):
-        print('check-plan-convergence: cannot run -- an excuse key is class%sspot%ssubject, copied off a finding line, and this one is not: %s'
+        print('check-plan-convergence: cannot run -- a key to accept is class%sspot%ssubject, copied off a finding line, and this one is not: %s'
               % (EXCUSE_FIELD, EXCUSE_FIELD, GRANT_KEY))
         sys.exit(2)
     if GRANT_KEY in EXCUSES:
-        print('check-plan-convergence: ALREADY EXCUSED -- %s carries this key and nothing was written: %s'
-              % (EXCUSE_PATH, GRANT_KEY))
+        print('check-plan-convergence: ALREADY ACCEPTED -- %s carries this key and nothing was written: %s'
+              % (KEPT_IN[GRANT_KEY], GRANT_KEY))
         sys.exit(0)
-    hits = [line for _cls, line in findings if ('[excuse: %s]' % GRANT_KEY) in line]
+    hits = [line for _cls, line in findings if ('[accept: %s]' % GRANT_KEY) in line]
     if not hits:
-        print('check-plan-convergence: cannot run -- no finding of this run carries that key, and an excuse for a finding nobody can see excuses nothing: %s'
+        print('check-plan-convergence: cannot run -- no finding of this run carries that key, and accepting a finding nobody can see accepts nothing: %s'
               % GRANT_KEY)
         sys.exit(2)
-    print('check-plan-convergence: the finding this act is about to excuse, in full:')
+    print('check-plan-convergence: the finding this act is about to accept, in full:')
     for line in hits:
         print('  %s' % line)
     row = '| %s |\n' % ' | '.join(part.strip() for part in parts + [norm(GRANT_GROUNDS)])
@@ -707,10 +720,10 @@ def grant():
                 fh.write(EXCUSE_HEADER % (os.path.basename(SPEC), EXCUSE_FIELD, EXCUSE_FIELD))
             fh.write(row)
     except OSError as exc:
-        print('check-plan-convergence: cannot run -- %s could not be written, so nothing was excused (%s)'
+        print('check-plan-convergence: cannot run -- %s could not be written, so nothing was accepted (%s)'
               % (EXCUSE_PATH, exc))
         sys.exit(2)
-    print('check-plan-convergence: EXCUSED -- the row above is now recorded at %s' % EXCUSE_PATH)
+    print('check-plan-convergence: ACCEPTED -- the row above is now recorded at %s' % EXCUSE_PATH)
     if fresh:
         print('  it is a COMMITTED record and this run did not stage it: git add %s' % EXCUSE_PATH)
     sys.exit(0)
@@ -725,7 +738,7 @@ def grant():
 # one sibling, the ones that report into the other. What this file keeps is
 # what BOTH groups read: the section-name derivation, the design's shape, the
 # segmenter, the numeral readers, the three relation patterns, the built-path
-# marking, the excuse route and the report, the length reading among it. No
+# marking, the record of accepted findings and the report, the length reading among it. No
 # helper of any class is called from any other class, which is what let the
 # seam be drawn at the groups at all.
 #
@@ -792,8 +805,8 @@ BUILT = []
 CONTEXT = {}
 
 # THE RECORD IS READ BEFORE ANY CLASS RUNS, and that order is the whole of what
-# makes a waiver effective: `finding` consults EXCUSES as each finding is made,
-# so a class running ahead of this would report what the record waives.
+# makes an acceptance effective: `finding` consults EXCUSES as each finding is
+# made, so a class running ahead of this would report what the record accepts.
 if not cannot:
     read_excuses(TRACKED_PATHS)
 
@@ -829,8 +842,8 @@ if not cannot:
 
 # EACH GROUP IS ASKED IN TURN AND THE BLOCK IS RE-TESTED BETWEEN THEM, because
 # each group preflights an input it BORROWS rather than chooses -- the holding
-# group the sections a folded spec keeps, the reporting group the baseline
-# record and the minimum fragment length --
+# group the sections a cut-down spec keeps, the reporting group the record of
+# accounted positions and the minimum fragment length --
 # and a preflight that could not read its source must stop the classes behind it
 # instead of letting them report against a bound nobody established.
 if not cannot and HOLDING_CLASSES is not None:
@@ -845,7 +858,7 @@ if GRANT_KEY and not cannot:
 def counts():
     held = sum(1 for cls, _line in findings if cls in HOLDING)
     # SPLIT BY WHETHER THE CLASS HOLDS, because one mixed figure cannot say
-    # whether ten excuses waived ten holds or quieted ten reports: the first is
+    # whether ten acceptances let ten holds through or quieted ten reports: the first is
     # a plan proceeding over ten findings, the second is noise management.
     waived = sum(1 for cls, _line in excused if cls in HOLDING)
     minimum = tally(REPORTING_CLASSES, 'MINIMUM', None)
@@ -854,7 +867,7 @@ def counts():
             'relations=%d not-evaluable=%d built=%d objects=%d criteria=%d '
             'delivery-column=%s section-refs=%d/%d fragment-min=%s repeats=%d '
             'swept=%d positions=%d accounted=%d undecodable=%d '
-            'claims=%d marks=%d pairs=%d excused-holding=%d excused-reporting=%d '
+            'claims=%d marks=%d pairs=%d accepted-holding=%d accepted-reporting=%d '
             'holding=%d reporting=%d findings=%d'
             % (len(DOCUMENTS), STATEMENTS, REGIONS_PRESENT, REGIONS_DERIVED,
                tally(REPORTING_CLASSES, 'NUMBERS'), IDENTITIES,
@@ -879,10 +892,10 @@ def counts():
 
 
 def criteria_reach():
-    """A folded spec states no criterion by construction, and a zero beside it
+    """A cut-down spec states no criterion by construction, and a zero beside it
     would read as a spec that forgot them."""
     if tally(HOLDING_CLASSES, 'FOLDED', False):
-        return 'criteria not examined (the spec is folded: it carries only the sections the closing fold keeps)'
+        return 'criteria not examined (a cut-down spec: it carries only the sections the removed last step kept)'
     return '%d criteria' % tally(HOLDING_CLASSES, 'CRITERIA')
 
 
@@ -930,7 +943,7 @@ def roster():
         else:
             state = 'examined-with-findings (%d)' % len(mine) if mine else 'examined-clean'
         if waived:
-            state += ', %d excused' % len(waived)
+            state += ', %d accepted' % len(waived)
         print('  class %-13s %s -- %s%s'
               % (cls, examined, state, '  HOLDS' if cls in HOLDING else '  reports'))
     print('  %s' % length_line())
@@ -938,7 +951,7 @@ def roster():
 
 for _cls, line in findings:
     print(line)
-# AN EXCUSED FINDING IS REPORTED RATHER THAN OMITTED, so a plan carrying ten of
+# AN ACCEPTED FINDING IS REPORTED RATHER THAN OMITTED, so a plan carrying ten of
 # them cannot read as a clean one.
 for _cls, line in excused:
     print(line)
@@ -950,17 +963,17 @@ if cannot:
     roster()
     sys.exit(2)
 
-# THE WORD `clean` IS RESERVED FOR A RUN THAT WAIVED NOTHING. A plan whose every
-# finding is excused exits 0, because the caller refuses on the unexcused
-# holding count and there is none -- but it must not READ as clean, which is
-# what the requirement behind the waived count asks for and what a fourth
+# THE WORD `clean` IS RESERVED FOR A RUN THAT ACCEPTED NOTHING. A plan whose
+# every finding is accepted exits 0, because the caller refuses on the holding
+# count left unaccepted and there is none -- but it must not READ as clean, which
+# is what the requirement behind the accepted count asks for and what a fourth
 # verdict word delivers where a count beside `clean` would not.
 if findings and excused:
-    STATE = '%d findings and %d excused' % (len(findings), len(excused))
+    STATE = '%d findings and %d accepted' % (len(findings), len(excused))
 elif findings:
     STATE = '%d findings' % len(findings)
 elif excused:
-    STATE = 'no unexcused finding, proceeding over %d excused' % len(excused)
+    STATE = 'no finding left unaccepted, proceeding over %d accepted' % len(excused)
 else:
     STATE = 'clean'
 

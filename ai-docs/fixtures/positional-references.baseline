@@ -345,8 +345,8 @@ path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	docs/age
 path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	docs/agents-method.md:187
 path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	docs/propagation.md:24
 path-line	ai-docs/plans/done/2026-10-10-redline-corrections-log.spec.md	docs/workflow.md:86
-path-line	scripts/test-check-redline.sh	ai-docs/plans/t.design.md:9
-path-line	scripts/test-check-redline.sh	x.md:1
+path-line	scripts/test-check-spec-criteria.sh	ai-docs/plans/t.design.md:9
+path-line	scripts/test-check-spec-criteria.sh	x.md:1
 path-line	scripts/test-promotion.sh	ai-docs/context.md:14
 path-line	scripts/test-promotion.sh	scripts/session-events.sh:14
 path-line	skills/project-review/SKILL.md	doc-convention.md:14
@@ -408,7 +408,7 @@ prose-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	Line 128
 prose-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	line 192
 prose-line	ai-docs/plans/done/2026-10-06-scouted-fix-plan.spec.md	line 211
 prose-line	hooks/lib/loop-verdict.sh	line 2
-prose-line	scripts/test-check-redline.sh	line 5
+prose-line	scripts/test-check-spec-criteria.sh	line 5
 prose-line	scripts/test-loop-grid.sh	lines 11
 prose-line	scripts/test-promotion.sh	line 12
 prose-line	scripts/test-promotion.sh	line 14
@@ -419,8 +419,8 @@ path-line	scripts/test-check-plan-convergence.sh	docs/plan-invariants.md:120
 path-line	scripts/test-check-plan-convergence.sh	docs/elsewhere.md:12
 path-line	scripts/test-check-plan-convergence.sh	docs/plugin-only.md:7
 prose-line	scripts/test-check-plan-convergence.sh	line 42
-path-line	scripts/test-review-ledger.sh	src/a.sh:1
-path-line	scripts/test-review-ledger.sh	src/b.sh:1
+path-line	scripts/test-checklist-ledger.sh	src/a.sh:1
+path-line	scripts/test-checklist-ledger.sh	src/b.sh:1
 path-line	scripts/test-check-method-purity.sh	skills/s/SKILL.md:1
 path-line	scripts/test-check-method-purity.sh	ai-docs/plan.md:1
 path-line	scripts/test-check-method-purity.sh	scripts/x.sh:1

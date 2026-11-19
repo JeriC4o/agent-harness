@@ -93,7 +93,7 @@ Show the user:
 - the registry path and this project's entry (`jq '.projects[] | select(.path=="<dir>")' <registry>`),
 - anything still carrying a `%PLACEHOLDER%`.
 
-**An unresolved placeholder is a STOP, not a default.** A skill that hits one must ask, never guess a
+**An unresolved placeholder means stop and ask, not a default.** A skill that hits one must ask, never guess a
 command — guessing is how a fake green enters the workflow at step one.
 
 ## Registry

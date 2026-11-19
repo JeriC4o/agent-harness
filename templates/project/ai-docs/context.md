@@ -78,7 +78,7 @@ migration tool, metrics library) belong here, not in the harness's language-agno
 
 **Deployed-config globs:** `%DEPLOYED_CONFIG_GLOBS%`
 
-The file class whose CONTENTS are ASK-gated by `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Permissions
+The file class the agent asks before reading, per `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md` § Permissions
 — deploy manifests and anything else holding environment-specific values, in this project's own spelling.
 The harness search guard reads the line above at search time, so a content search whose file filter can
 match one of these globs is refused before it runs. One glob per backticked token, all on that one line;

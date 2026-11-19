@@ -4,11 +4,11 @@
 # criteria spell no instrument, and the whole-repository review takes its
 # suppression authority from completed specs alone.
 #
-# Run:  check-redline.sh specform    <spec>
-#       check-redline.sh suppression <file>
+# Run:  check-spec-criteria.sh specform    <spec>
+#       check-spec-criteria.sh suppression <file>
 # Exit: 0 clean, 1 findings, 2 cannot run -- which is NOT a pass.
 #
-# Tests: scripts/test-check-redline.sh
+# Tests: scripts/test-check-spec-criteria.sh
 #
 # `suppression`'s PREDICATE IS CONTRACT, and the disjunction is the whole of
 # it. The enumeration pattern is `done/` OR `design\.md` OR the archive
@@ -42,10 +42,10 @@
 
 set -uo pipefail
 
-die() { printf 'check-redline: %s\n' "$2" >&2; exit "$1"; }
+die() { printf 'check-spec-criteria: %s\n' "$2" >&2; exit "$1"; }
 
-USAGE='usage: check-redline.sh specform    <spec>
-       check-redline.sh suppression <file>'
+USAGE='usage: check-spec-criteria.sh specform    <spec>
+       check-spec-criteria.sh suppression <file>'
 
 for tool in grep awk tr cut mktemp; do
   command -v "$tool" >/dev/null 2>&1 || die 2 "${tool} is not on PATH, so this gate cannot run"
@@ -139,7 +139,7 @@ do_specform() { # <spec>
     [ -n "$id" ] || continue
     finding "${id} spells an instrument -- a criterion states the behaviour, never the command, script, tool or test identifier that checks it"
   done < "${WORK}/sf"
-  printf 'check-redline: verb=specform verdict=%s criteria=%s findings=%s\n' \
+  printf 'check-spec-criteria: verb=specform verdict=%s criteria=%s findings=%s\n' \
     "$(verdict_word)" "$n" "$FINDINGS"
   [ "$FINDINGS" -eq 0 ]
 }
@@ -171,7 +171,7 @@ verdict_word() { if [ "$FINDINGS" -eq 0 ]; then printf clean; else printf dirty;
 do_suppression() {
   local file=$1 line no rest body lower marker confers disp listing_only enumerated=0
   readable "$file" 'file'
-  printf 'check-redline: verb=suppression file=%s pattern=done/|design\\.md|(?i)plan-archive|(?i)\\blisting\\b\n' "$file"
+  printf 'check-spec-criteria: verb=suppression file=%s pattern=done/|design\\.md|(?i)plan-archive|(?i)\\blisting\\b\n' "$file"
   awk '{ l = tolower($0) }
        /done\/|design\.md/ { print NR ":0:" $0; next }
        l ~ /plan-archive/ || l ~ /(^|[^a-z0-9_])listing([^a-z0-9_]|$)/ { print NR ":1:" $0 }' \
@@ -210,7 +210,7 @@ EOF
     fi
     printf '  %s:%s %s\n' "$file" "$no" "$disp"
   done < "${WORK}/enumerated"
-  printf 'check-redline: verb=suppression verdict=%s enumerated=%s findings=%s\n' \
+  printf 'check-spec-criteria: verb=suppression verdict=%s enumerated=%s findings=%s\n' \
     "$(verdict_word)" "$enumerated" "$FINDINGS"
   [ "$FINDINGS" -eq 0 ]
 }

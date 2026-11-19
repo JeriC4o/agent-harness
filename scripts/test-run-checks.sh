@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
 # Tests for run-checks.sh -- the single entry point for this repository's
-# pre-commit gate list.
+# pre-commit check list.
 #
 # Run: bash scripts/test-run-checks.sh
 #
-# WHY THESE LEGS. The runner's whole job is to run every member of the gate
+# WHY THESE LEGS. The runner's whole job is to run every member of the check
 # list and report a verdict per member, so each of its characteristic failures
 # is a FALSE GREEN:
 #
@@ -56,7 +56,7 @@ make_tree() {
   printf '{"name":"harness","version":"0.0.1"}\n' > "$d/.claude-plugin/plugin.json"
   printf '{"name":"agent-harness"}\n' > "$d/.claude-plugin/marketplace.json"
   local s
-  for s in check-references check-readme-update check-propagation-arms check-plan-invariants check-method-purity check-instruction-size check-release; do
+  for s in check-references check-readme-update check-propagation-patterns check-plan-invariants check-method-purity check-instruction-size check-vocabulary check-release; do
     printf '#!/usr/bin/env bash\nexit 0\n' > "$d/scripts/$s.sh"
   done
   printf '#!/usr/bin/env bash\nexit 0\n' > "$d/scripts/test-alpha.sh"
@@ -72,10 +72,11 @@ make_tree() {
    Then every test suite green:
    `scripts/test-alpha.sh`, `hooks/lib/test-beta.sh`.
 5. `bash scripts/check-readme-update.sh` — the README gate.
-5a. `bash scripts/check-propagation-arms.sh` — the arms gate.
+5a. `bash scripts/check-propagation-patterns.sh` — the path-pattern gate.
 5b. `bash scripts/check-plan-invariants.sh` — the plan-invariants gate.
 5c. `bash scripts/check-method-purity.sh` — the method-purity gate.
 5d. `bash scripts/check-instruction-size.sh` — the instruction-size gate.
+5e. `bash scripts/check-vocabulary.sh` — the vocabulary gate.
 
 **Delivery gates** — below this heading, so the span must not reach them:
 `bash scripts/check-release.sh`.
@@ -94,17 +95,18 @@ has "  the manifests member reported"   "$OUT" "ok   manifests"
 has "  the references member reported"  "$OUT" "ok   references"
 has "  the shell-syntax member reported" "$OUT" "ok   shell-syntax"
 has "  the readme member reported"      "$OUT" "ok   readme-update"
-has "  the propagation member reported" "$OUT" "ok   propagation-arms"
+has "  the propagation member reported" "$OUT" "ok   propagation-patterns"
 has "  the plan-invariants member reported" "$OUT" "ok   plan-invariants"
 has "  the method-purity member reported" "$OUT" "ok   method-purity"
 has "  the instruction-size member reported" "$OUT" "ok   instruction-size"
+has "  the vocabulary member reported" "$OUT" "ok   vocabulary"
 has "  the inventory member reported"   "$OUT" "ok   gate-inventory"
 has "  the first derived suite ran"     "$OUT" "ok   hooks/lib/test-beta.sh"
 has "  the second derived suite ran"    "$OUT" "ok   scripts/test-alpha.sh"
-# The count is the anti-narrowing assertion AGENTS.md check 4 demands: seven
+# The count is the anti-narrowing assertion AGENTS.md check 4 demands: eight
 # structural stubs plus two stub suites are tracked, and a runner that processed
 # fewer has silently reduced its own input set while exiting 0.
-has "  and shell-syntax carries its file COUNT" "$OUT" "9 files"
+has "  and shell-syntax carries its file COUNT" "$OUT" "10 files"
 
 printf '\n== a failing suite: red, named, and the rest still run ==\n'
 make_tree "$FAKE"
@@ -172,7 +174,7 @@ printf '#!/usr/bin/env bash\nexit 1\n' > "$FAKE/scripts/check-references.sh"
 run "$FAKE"
 check "the references gate failing -> rc 1" "$RC" "1"
 has "  it is named"                  "$OUT" "FAIL references"
-has "  and later members still ran"  "$OUT" "ok   propagation-arms"
+has "  and later members still ran"  "$OUT" "ok   propagation-patterns"
 
 printf '\n== drift between the tree and the documented list ==\n'
 # The inventory member is the one check here that no link check, syntax check or
@@ -342,7 +344,7 @@ else
   bad "the missing-function mutation did not apply, so its leg would measure nothing"
 fi
 
-# The predicate matters here, not just the arm: `command -v` resolves external
+# The predicate matters here, not just the branch: `command -v` resolves external
 # commands, so `fn:true` passed the earlier check, ran `true`, printed no
 # verdict line at all, and the run exited 0 one member short of its own list.
 # `declare -F` is the discriminating one -- verified under bash 3.2 directly:
@@ -389,7 +391,7 @@ printf '\n== a structural check can be documented and never wired in ==\n'
 make_tree "$FAKE"
 printf '#!/usr/bin/env bash\nexit 0\n' > "$FAKE/scripts/check-newgate.sh"
 git -C "$FAKE" add scripts/check-newgate.sh
-sed 's|^5a\. `bash scripts/check-propagation-arms.sh` — the arms gate.|&\n5b. `bash scripts/check-newgate.sh` — a gate nobody runs.|' \
+sed 's|^5a\. `bash scripts/check-propagation-patterns.sh` — the path-pattern gate.|&\n5b. `bash scripts/check-newgate.sh` — a gate nobody runs.|' \
   "$FAKE/AGENTS.md" > "$FAKE/AGENTS.md.new"
 mv "$FAKE/AGENTS.md.new" "$FAKE/AGENTS.md"
 if grep -q 'check-newgate' "$FAKE/AGENTS.md"; then
@@ -455,11 +457,12 @@ shell-syntax|fn:syntax_member
 untracked-shell|fn:untracked_member
 gate-inventory|fn:inventory_member
 readme-update|sh:scripts/check-readme-update.sh
-propagation-arms|sh:scripts/check-propagation-arms.sh
+propagation-patterns|sh:scripts/check-propagation-patterns.sh
 plan-invariants|sh:scripts/check-plan-invariants.sh
 method-purity|sh:scripts/check-method-purity.sh
-instruction-size|sh:scripts/check-instruction-size.sh'
-check "the member table is exactly the pinned ten, in order" "$table" "$expected"
+instruction-size|sh:scripts/check-instruction-size.sh
+vocabulary|sh:scripts/check-vocabulary.sh'
+check "the member table is exactly the pinned eleven, in order" "$table" "$expected"
 
 printf '\n== a module path is accepted, ignored, and SAID to be ignored ==\n'
 # AGENTS.md resolves %TEST_CMD% to this runner, and skills invoke that as
@@ -548,12 +551,14 @@ check "the live tree and AGENTS.md agree" "$real_rc" "0"
 [ "$real_rc" = "0" ] || printf '%s\n' "$real"
 has "  the four-minute suite is a member" "$real" "scripts/test-loop-corpus.sh"
 has "  this file is a member"             "$real" "scripts/test-run-checks.sh"
-has "  and so is the runner's own gate list head" "$real" "manifests"
-# Delivery gates run at a different moment (before opening a PR, not before
-# every commit) and exit 2 when the claude CLI is absent, which this runner
-# would have to translate. They are exempt BY NAME, so assert that.
+has "  and so is the runner's own check list head" "$real" "manifests"
+# Delivery gates and the model measurement run at a different moment (before
+# opening a PR, not before every commit) and exit 2 when the claude CLI is
+# absent, which this runner would have to translate. They are exempt BY NAME,
+# so assert that.
 hasnt "  the install smoke test is not a member" "$real" "test-install-smoke.sh"
 hasnt "  the upgrade smoke test is not a member" "$real" "test-upgrade-smoke.sh"
+hasnt "  the model measurement is not a member" "$real" "test-plain-words-model.sh"
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"
 [ "$FAIL" -eq 0 ]

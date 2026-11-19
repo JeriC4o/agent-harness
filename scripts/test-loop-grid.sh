@@ -61,7 +61,7 @@ relocate() { # $1 destination root
 
 printf '\n== the entry points are driven the way production drives them ==\n'
 check "the hook hooks.json invokes by path is executable" "$( [ -x "$HOOK" ] && echo yes || echo no )" "yes"
-check "the frozen control the suites invoke by path is too" "$( [ -x "$WRAP" ] && echo yes || echo no )" "yes"
+check "the earlier rule's control the suites invoke by path is too" "$( [ -x "$WRAP" ] && echo yes || echo no )" "yes"
 
 # The matched fingerprint comes from the HOOK, never from a second djb2 written
 # here: a hand-computed fp that is one byte wrong matches nothing, and then
@@ -235,7 +235,7 @@ drive() { # $1 hook, $2 fixture basename, $3 K ("default" = the shipped setting)
   else
     OUT=$(payload "$4" "$5" "${6:-}" | HARNESS_LOOP_TAIL="$3" "$1" 2>"$ERRF")
   fi
-  # The arm is read off the stderr marker rather than off the prose or off the
+  # The signal is read off the stderr marker rather than off the prose or off the
   # ledger: the fixtures carry verdict rows of their own, so "the last verdict
   # row" is not necessarily the one this run wrote.
   SIG=$(sed -n 's/^\[loop-index\] \([a-z-]*\):.*/\1/p' "$ERRF" | tail -1)
@@ -257,10 +257,10 @@ score() { # $1 expect, $2 desc, $3 mode
       elif [ -z "$OUT" ]; then
         A_FN=$((A_FN+1)); [ "$3" = assert ] && bad "fn    $2 -- silent where [$want] was required"
       else
-        # A wrong ARM counts in both columns: the finding it owed was missed AND
+        # A wrong SIGNAL counts in both columns: the finding it owed was missed AND
         # one it did not owe was emitted. Scoring it once would let a detector
-        # that answers every question with the same arm keep a clean precision
-        # column while being wrong about every arm but one.
+        # that answers every question with the same signal keep a clean precision
+        # column while being wrong about every signal but one.
         A_FN=$((A_FN+1)); A_FP=$((A_FP+1))
         [ "$3" = assert ] && bad "fn+fp $2 -- fired [$SIG], wanted [$want]"
       fi ;;
@@ -275,7 +275,7 @@ score() { # $1 expect, $2 desc, $3 mode
 axis_min() { # echoes "<min_tp> <min_tn>"
   case "$1" in
     "call identity")      printf '1 2' ;;
-    # Both cases here are positive: the near-miss is a different ARM rather than
+    # Both cases here are positive: the near-miss is a different SIGNAL rather than
     # silence, because three calls from one agent is still a loop.
     "agent multiplicity") printf '2 0' ;;
     # No silent case by design -- the control is that a time gap changes
@@ -352,18 +352,18 @@ drive "$HOOK" ratio-2.4 6 Bash "$TARGET_CMD" ""
 has "a 6-CALL window reaches both repeats" "$OUT" '"permissionDecision":"ask"'
 drive "$HOOK" ratio-2.4 5 Bash "$TARGET_CMD" ""
 check "a 5-CALL window leaves the older of them out" "$OUT" ""
-check "POSITIVE CONTROL: at K = 6 LINES the frozen pre-fix pair sees no repeat" \
+check "POSITIVE CONTROL: at K = 6 LINES the earlier pair sees no repeat" \
       "$("$WRAP" 6 "$R24F" "$FP_T" Bash)" ""
 check "  and it is not silent for want of a working control -- all 24 lines fire" \
       "$("$WRAP" 24 "$R24F" "$FP_T" Bash)" "loop 3 1"
-# THREE fields is itself the freeze check: the control predates the counted span
-# and a fourth field here would mean someone updated it, which the freeze forbids.
+# THREE fields is itself the check that it is unchanged: the control predates
+# the counted span and a fourth field here would mean someone updated it.
 check "  in three fields, because the control predates the span" \
       "$("$WRAP" 24 "$R24F" "$FP_T" Bash | awk '{print NF}')" "3"
 
 printf '\n== AC2: the number the agent is shown is the span actually counted ==\n'
 # span = min(calls in the chunk, K) + 1 -- prior calls examined plus the call
-# being judged. At K = 6 over this fixture that is 7 on every arm, so the arm
+# being judged. At K = 6 over this fixture that is 7 on every signal, so the signal
 # cannot be what decides the unit.
 drive "$HOOK" ratio-2.4 6 Bash "$TARGET_CMD" ""
 has   "loop quotes the counted span"              "$OUT" "3 times within the last 7 calls"
@@ -450,7 +450,7 @@ check "  and the pre-fix pair agrees, so the rules differ only where the defect 
 drive "$HOOK" mut-outside 20 Bash "$TARGET_CMD" ""
 has "an Edit outside the counted span does not" "$OUT" '"permissionDecision":"ask"'
 
-printf '\n== AC5: the error-retry arm reads the same under both rules ==\n'
+printf '\n== AC5: the error-retry signal reads the same under both rules ==\n'
 # "Unchanged" is only testable once each side's window is pinned in its OWN
 # unit: `fails` is counted over the result rows the window admits, so a
 # call-counted K and a line-counted K are not the same question at the same
@@ -458,7 +458,7 @@ printf '\n== AC5: the error-retry arm reads the same under both rules ==\n'
 for fxn in out-fail2 out-fail1; do
   drive "$HOOK" "$fxn" 999 Bash "$TARGET_CMD" ""
   frozen=$("$WRAP" unbounded "${FX}/${fxn}.jsonl" "$FP_T" Bash | awk '{print $1}')
-  check "$fxn: the shipped hook and the frozen pair agree on the arm" "$SIG" "$frozen"
+  check "$fxn: the shipped hook and the earlier pair agree on the signal" "$SIG" "$frozen"
 done
 drive "$HOOK" out-fail2 999 Bash "$TARGET_CMD" ""
 has "two failures fire as a retry even with an Edit between them" "$OUT" "already FAILED 2 times"

@@ -24,8 +24,8 @@
 # would want switched off.
 #
 # LEARNING MODE IS ON IN EVERY PAYLOAD UNLESS A CASE SAYS OTHERWISE. Each one
-# names a transcript recording a run of /improve, so the shell-arm cases measure
-# the arm itself. The learning-mode section pairs each arming shape with a
+# names a transcript recording a run of /improve, so the shell-route cases measure
+# the route itself. The learning-mode section pairs each shape that switches it on with a
 # transcript that only mentions the names, and the content-key section pairs
 # each section change with an edit that leaves the sections alone.
 #
@@ -59,7 +59,7 @@ PLAIN=$(mktemp -d /tmp/gh116-plain.XXXXXX)
 # harness-managed guard and each control below passes while measuring nothing.
 cp "${HERE}/harness-managed.sh" "${HERE}/plugin-ref.sh" "$WORK/"
 
-# Session transcripts. ARMED carries a slash-command run of /improve and
+# Session transcripts. ARMED, the guard switched on, carries a slash-command run of /improve and
 # SKILLRUN a Skill tool call to /improve-global. MENTIONS carries the names in
 # every place they appear WITHOUT a run: the skill listing, a tool result quoting
 # the slash-command text, a tool call quoted in prose, a request typed in prose.
@@ -99,8 +99,8 @@ agents/review-findings.md
 docs/templates/progress-format.md
 docs/agents-method.md
 hooks/hooks.json
-scripts/check-redline.sh
-scripts/test-check-redline.sh
+scripts/check-spec-criteria.sh
+scripts/test-check-spec-criteria.sh
 skills/interview/SKILL.md
 docs/workflow.md'
 
@@ -148,12 +148,12 @@ silent(){ # <label> <payload> [root] [guard]
 sh_asks(){   asks   "$1" "$(sh_payload "$2")" ;}
 sh_silent(){ silent "$1" "$(sh_payload "$2")" ;}
 
-printf '\n== the tool arm: every protected page, on an edit that adds a heading ==\n'
+printf '\n== the tool route: every protected page, on an edit that adds a heading ==\n'
 for rel in $PROTECTED_PAGES; do
   asks "an edit to ${rel} is put to the author" "$(ed_payload "${PROJ}/${rel}")"
 done
 
-printf '\n== the tool arm: the near misses and the outside are silent ==\n'
+printf '\n== the tool route: the near misses and the outside are silent ==\n'
 for rel in $NEAR_MISSES; do
   silent "an edit to the near miss ${rel} is not" "$(ed_payload "${PROJ}/${rel}")"
 done
@@ -188,13 +188,13 @@ EOF
 then bad "an unexpanded plugin-root token reached the reason"
 else ok "no unexpanded plugin-root token in the reason" ; fi
 
-printf '\n== learning mode: armed only in a session that ran /improve or /improve-global ==\n'
+printf '\n== learning mode: switched on only in a session that ran /improve or /improve-global ==\n'
 P="${PROJ}/agents/design.md"
-asks   "a slash-command run of /improve arms it" \
+asks   "a slash-command run of /improve switches it on" \
        "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$ARMED")"
-asks   "a Skill tool call to /improve-global arms it" \
+asks   "a Skill tool call to /improve-global switches it on" \
        "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$SKILLRUN")"
-asks   "a run early in a long transcript still arms it" \
+asks   "a run early in a long transcript still switches it on" \
        "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$LONG")"
 check  "  and the long transcript does stop grep early, so it measures the SIGPIPE shape" \
        "$(grep -F improve "$LONG" | jq -n -R 'any(inputs; true)' >/dev/null 2>&1 && echo no || echo yes)" "yes"
@@ -207,20 +207,20 @@ silent "an unreadable transcript does not" \
 silent "outside learning mode a shell write to a protected page is silent too" \
        "$(sh_payload 'printf x >> agents/design.md' "$MENTIONS")"
 
-printf '\n== learning mode: which runs arm it, by name ==\n'
+printf '\n== learning mode: which runs switch it on, by name ==\n'
 BARE="${WORK}/bare.jsonl"
 AUDIT="${WORK}/audit.jsonl"
 OTHER="${WORK}/other.jsonl"
 printf '%s\n' '{"type":"user","message":{"content":"<command-message>improve</command-message>"}}' > "$BARE"
 printf '%s\n' '{"type":"user","message":{"content":"<command-message>harness:ai-audit</command-message>"}}' > "$AUDIT"
 printf '%s\n' '{"type":"user","message":{"content":"<command-message>harness:improve-docs</command-message>"}}' > "$OTHER"
-asks   "a run under the bare skill name arms it" "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$BARE")"
-asks   "a run of /ai-audit arms it -- its escalation audit edits instruction files" \
+asks   "a run under the bare skill name switches it on" "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$BARE")"
+asks   "a run of /ai-audit switches it on -- its escalation audit edits instruction files" \
        "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$AUDIT")"
 silent "a run of a skill whose name only STARTS with improve does not" \
        "$(ed_payload "$P" '## Approach' "$NEWHEAD" "$OTHER")"
 
-printf '\n== while armed, an Edit asks only when it changes the page element signature ==\n'
+printf '\n== while on, an Edit asks only when it changes the page element signature ==\n'
 # The page carries every text the cases below replace, so each one is judged by
 # the page before it against the page after it -- the route a real edit takes.
 printf '%s\n' '## Approach' 'a typo teh' '## Risks' 'old text' \
@@ -263,14 +263,14 @@ asks   "a replace_all edit that reaches a heading asks" "$(ra_payload true)"
 silent "  while the same edit replacing only the first occurrence, in prose, is silent" "$(ra_payload false)"
 : > "$RA"
 
-printf '\n== while armed, a Write is judged against the page it replaces ==\n'
+printf '\n== while on, a Write is judged against the page it replaces ==\n'
 W="${PROJ}/agents/spec-writer.md"
 printf '## Scope\nold text\n' > "$W"
 silent "a Write that keeps every heading is silent" "$(wr_payload "$W" $'## Scope\nnew text\n')"
 asks   "a Write that adds a heading asks" "$(wr_payload "$W" $'## Scope\n## Rollout\n')"
 : > "$W"
 
-printf '\n== while armed, a change it cannot read is put to the author ==\n'
+printf '\n== while on, a change it cannot read is put to the author ==\n'
 mkdir -p "${WORK}/no-record"
 out=$(printf '%s' "$(ed_payload "$P" 'teh' 'the')" \
   | ( cd "$PROJ" && CLAUDE_PLUGIN_ROOT="${WORK}/no-record" CLAUDE_PROJECT_DIR="$PROJ" "$GUARD" ) 2>/dev/null)
@@ -282,7 +282,7 @@ asks   "an edit to a page that cannot be read asks" "$(ed_payload "$P" 'a typo t
 chmod 644 "$P"
 : > "$P"; : > "$R"
 
-printf '\n== the shell arm, direct write forms ==\n'
+printf '\n== the shell route, direct write forms ==\n'
 sh_asks   "an in-place edit fires"            "sed -i '' agents/design.md"
 sh_asks   "an append redirect fires"          "printf x >> agents/design.md"
 sh_asks   "a truncating redirect fires"       "printf x > agents/design.md"
@@ -292,7 +292,7 @@ sh_asks   "a dd of= fires"                    "dd if=/dev/null of=agents/design.
 sh_asks   "an rm fires"                       "rm agents/design.md"
 sh_asks   "a git checkout -- fires"           "git checkout -- agents/design.md"
 
-printf '\n== the shell arm, each directory-change-completed form ==\n'
+printf '\n== the shell route, each directory-change-completed form ==\n'
 sh_asks   "cd <dir> && <write> fires"         "cd agents && printf x >> design.md"
 sh_asks   "cd <dir>; <write> fires too"       "cd agents; printf x >> design.md"
 sh_asks   "a chained cd a && cd b fires"      "cd skills && cd task && printf x >> SKILL.md"
@@ -434,7 +434,7 @@ sh_silent "  while the same cd with a read is silent"         "cd agents && grep
 
 printf '\n== the basename collision the resolution exists to get right ==\n'
 # SKILL.md names two protected pages and eleven unprotected ones; reference.md
-# one of four. A basename arm would over-fire on all of the rest.
+# one of four. A basename match would over-fire on all of the rest.
 sh_asks   "cd skills/task && write to SKILL.md fires"  "cd skills/task && printf x >> SKILL.md"
 sh_silent "cd skills/interview && write to SKILL.md is silent" \
           "cd skills/interview && printf x >> SKILL.md"
@@ -564,13 +564,13 @@ for m in 'Edit|Write' 'Bash'; do
     *) bad "  the ${m} command is not the quoted plugin-root path: [$c]" ;;
   esac
 done
-# The propagation gate extracts the FIRST entry of this group and reads its
-# inline arm pattern, so appending is the registration that leaves what that
+# The propagation-pattern check extracts the FIRST entry of this group and reads its
+# inline case pattern, so appending is the registration that leaves what that
 # gate computes untouched.
 FIRST=$(jq -r '.hooks.PreToolUse[] | select(.matcher=="Edit|Write") | .hooks[0].command' "$HOOKS")
 case "$FIRST" in
   *'propagation-rule-reminder'*) ok "the file-editing group's first entry is still the propagation reminder" ;;
-  *) bad "the guard was inserted ahead of the propagation reminder, which changes what the arms gate extracts" ;;
+  *) bad "the guard was inserted ahead of the propagation reminder, which changes what the propagation-pattern check extracts" ;;
 esac
 check "the entry point the manifest invokes by path is executable" \
   "$(git -C "$ROOT" ls-files -s hooks/lib/plan-invariants-guard.sh | awk '{print $1}')" "100755"

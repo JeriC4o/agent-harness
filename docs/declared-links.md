@@ -1,6 +1,6 @@
 # Declared links
 
-The contract for a plan pair's record of statements that must move together, and for the check that
+The contract for a plan's record of statements that must move together, and for the check that
 reads it. Pointed at from [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Rules](${CLAUDE_PLUGIN_ROOT}/agents/design.md#rules),
 which gives the design author the record, and from the Spec Amendment recipe on
 [`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md`](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict),
@@ -12,7 +12,7 @@ a report: none refuses on it, and a could-not-run of it travels in the hand-back
 
 ## What a link is
 
-Two statements of a plan pair that must move together, so that editing one and not the other leaves the
+Two statements of a plan that must move together, so that editing one and not the other leaves the
 plan contradicting itself:
 
 - **a design statement that restates or depends on a statement of the spec** — a figure, a criterion it
@@ -45,11 +45,11 @@ orchestrator.
 ## The check
 
 `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-links.sh <spec> <design>`. It reads the record, the two documents,
-the index of the work tree the spec sits in, and the sections a collapsed spec keeps, borrowed from the
+the index of the work tree the spec sits in, and the sections a cut-down spec keeps, borrowed from the
 record of deliberate absence, `${CLAUDE_PLUGIN_ROOT}/scripts/deliberate-absence.sh` — nothing else, so its
 result depends on no history.
 
-Each quote and each document is normalised the same way — whitespace folded to one space, `\|` read as `|`,
+Each quote and each document is normalised the same way — whitespace collapsed to one space, `\|` read as `|`,
 and every asterisk removed — so a re-wrap or a change of emphasis never moves a link. Each document is
 split into sections at its heading lines, outside fenced blocks and through blockquote markers, and each
 quote is counted in every section of its own end's document:
@@ -63,14 +63,14 @@ quote is counted in every section of its own end's document:
 
 - **A non-silent row's report names both ends**: each end's document, the heading the row records, and the
   headings its quote was found under, if any. A silent row prints nothing.
-- **A folded spec is skipped, never clean.** Every link with a spec end is reported skipped and not
+- **A cut-down spec is skipped, never clean.** Every link with a spec end is reported skipped and not
   examined; every link with both ends in the design is still examined and printed under its state. The run
   takes the findings exit when one of those is non-silent, and otherwise the could-not-run exit with the
   verdict word `skipped`, an absent record included. An unstaged or malformed record is still a
   could-not-run.
-- **Outcomes.** `0` when the spec is not folded, the record is present and staged, and every link is
+- **Outcomes.** `0` when the spec is not cut down, the record is present and staged, and every link is
   silent; `1` when an examined link is `moved`, `re-confirm` or `ambiguous`; `2` when the check could not
-  run, or the spec is folded and no examined link is non-silent. The verdict line names the record, or the
+  run, or the spec is cut down and no examined link is non-silent. The verdict line names the record, or the
   record it found missing, and counts links per state, skipped included — read the counts, not only the
   exit status ([`${CLAUDE_PLUGIN_ROOT}/docs/gate-outcomes.md`](${CLAUDE_PLUGIN_ROOT}/docs/gate-outcomes.md#the-three-outcomes-this-page-defines)).
 
@@ -82,8 +82,8 @@ At the end of every pass that edits the pair after the design is first written:
 
 | Pass | Site that runs it |
 |---|---|
-| Every write of the design author: Step 6's first write, each revision a review round sends back, each design amendment and each fold-in of design-review notes | [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Rules](${CLAUDE_PLUGIN_ROOT}/agents/design.md#rules), beside the author's convergence exit check — a second call, read as a report and never part of the refusal |
-| Every in-place correction of the design after its freeze — after an implementation group, in a review-and-fix round or a follow-up round, after a nested bug fix, and the direct correction of an amendment that keeps the approach | [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Correcting the design in place](${CLAUDE_PLUGIN_ROOT}/agents/design.md#correcting-the-design-in-place), which ends with the same two calls of § Rules |
+| Every write of the design author: Step 6's first write, each revision a review round sends back, each design amendment and each working-in of design-review notes | [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Rules](${CLAUDE_PLUGIN_ROOT}/agents/design.md#rules), beside the author's convergence exit check — a second call, read as a report and never part of the refusal |
+| Every in-place correction of the design after its freeze — after an implementation group, in a review-fix round or a post-push fix round, after a nested bug fix, and the direct correction of an amendment that keeps the approach | [`${CLAUDE_PLUGIN_ROOT}/agents/design.md` § Correcting the design in place](${CLAUDE_PLUGIN_ROOT}/agents/design.md#correcting-the-design-in-place), which ends with the same two calls of § Rules |
 | Every spec amendment, once the spec writer has applied it, in whichever workflow entered the recipe | the Spec Amendment recipe's step 4 on [`${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md`](${CLAUDE_PLUGIN_ROOT}/skills/task/reference.md#spec-amendment-recipe-re-entrant--triggered-from-a-step-7-verdict) — the orchestrator's own call, whenever a design exists |
 
 The design review does not run it, because the review edits nothing and the design author's hand-back already carries the report of the write it reviews.
@@ -94,7 +94,7 @@ What follows depends on the state and, for a moved link, on where the unchanged 
 
 | State | Unchanged end | What follows |
 |---|---|---|
-| `moved` | design | The design author brings that end into line in its pass and rewrites the row. After a spec amendment that keeps the approach the design is past its GO, so that amendment's route takes the row instead: its design end is named to the whole-pair reader first, the orchestrator rules on it from its two quotes with the reader's finding as one input and the reader's silence as none, and a false end is corrected directly by the design author |
+| `moved` | design | The design author brings that end into line in its pass and rewrites the row. After a spec amendment that keeps the approach the design is past its GO, so that amendment's route takes the row instead: its design end is named to the contradiction reader first, the orchestrator rules on it from its two quotes with the reader's finding as one input and the reader's silence as none, and a false end is corrected directly by the design author |
 | `moved` | spec | Put to the human as a possible spec amendment. The spec changes only through a spec amendment the human approves, and is never narrowed to match the design |
 | `moved`, the changed end's statement deleted with nothing in its place | either | The link no longer exists. Once the unchanged end is dealt with — a design end as the first row says, a spec end by the three cases below — the design author removes the row |
 | `re-confirm` | — | The design author rewrites the row with the current quotes and fresh grounds, or removes it when the link no longer exists |
@@ -120,8 +120,8 @@ What follows depends on the state and, for a moved link, on where the unchanged 
   Step 6 re-entry, when the amendment changes the approach or the entry was an iteration; the
   amendment's own pass, when it keeps the approach. A moved row between two spec statements, one of which
   the amendment changed, has its unchanged end in the spec and takes the remedy question above.
-- **An in-place correction pass rewrites every row whose design end it changed**, with grounds naming the
-  corrected item, so the report it hands back is the one that leaves the pass.
+- **An in-place correction rewrites every row whose design end it changed**, with grounds naming the
+  corrected item, so the report it hands back is the one that leaves the correction.
 
 ## Clearing a row
 

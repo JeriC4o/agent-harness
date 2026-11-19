@@ -2,7 +2,7 @@
 
 Read THIS for the Learning Log entry format — do **not** re-read the log just to recall the shape. Reserve reading the log for its CONTENT (recurrence / escalation audit, dedup check, prior entries), and read it as the union: `ai-docs/learnings.md` **plus** every `ai-docs/learnings/*.md` are one single history.
 
-The authoritative rules live in **${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log**; field semantics in **`${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md`**. This file is the quick-reference template only.
+The authoritative rules live in **${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log**; field semantics in **`${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md`**. This file is the quick-reference template only.
 
 ## Target file
 
@@ -61,7 +61,7 @@ independently and then joined.
 ```
 
 - `category` ∈ `code-style | process | architecture | testing | documentation | tooling | search | other`.
-- `Kind: validation` = a working protocol/pattern to KEEP doing (carrot). `Kind: correction` (or omitted) = a violation to STOP doing (stick). **`Kind:` is a CLOSED enum — those two values or omitted, nothing else.** An invented third value (`confirmed-approach`, `insight`, `note`) does not fail loudly: the Correction pass matches `correction`, the Carrot pass matches `validation`, so an off-schema entry falls through BOTH and becomes invisible to `/improve` — the one thing the log exists to feed. It also cannot be repaired in place (Hard rule 1), so the only remedy is appending a correcting entry.
+- `Kind: validation` = a working protocol/pattern to KEEP doing (carrot). `Kind: correction` (or omitted) = a violation to stop doing (stick). **`Kind:` is a CLOSED enum — those two values or omitted, nothing else.** An invented third value (`confirmed-approach`, `insight`, `note`) does not fail loudly: the pass over correction entries matches `correction`, the pass over validation entries matches `validation`, so an off-schema entry falls through BOTH and becomes invisible to `/improve` — the one thing the log exists to feed. It also cannot be repaired in place (Hard rule 1), so the only remedy is appending a correcting entry.
 - Convert relative dates to absolute (`YYYY-MM-DD`).
 
 ## Hard rules (see ${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Learning Log for the full text)

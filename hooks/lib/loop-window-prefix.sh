@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # NEVER UPDATE THIS FILE TO TRACK loop-index.sh. With loop-window-prefix.awk it
-# is the frozen pre-fix detector, and a control that is kept in step with its
+# is the fixed pre-fix detector, and a control that is kept in step with its
 # subject controls nothing.
 #
 # THIS IS THE OTHER HALF. The pre-fix window was bound HERE, in the shell, by

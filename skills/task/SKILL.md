@@ -1,6 +1,6 @@
 ---
 name: task
-description: "Full task workflow from a user description OR a ticket key: interview → spec → design → design-review → impl → verify → self-review. Steps are strictly ordered and cannot be skipped."
+description: "Full spec workflow from a user description OR a ticket key: interview → spec → design → design-review → impl → verify → self-review. Steps are strictly ordered and cannot be skipped."
 when_to_use: "Activate when the user asks for implementation work that needs a spec and a design before any code: a new feature, a ticket key to implement, a change spanning several files or modules. The call is PUT TO THE USER for confirmation rather than taken, and a subagent asking for it is refused outright — the `skill-gate` hook decides both, and neither decision is absolute: it fails open where `jq` is unavailable, and the confirmation is a permission `ask`, which a project that allow-lists the `Skill` tool would let through unprompted. Treat both as the rule rather than as a wall. SKIP for a reported defect or regression (that is /bugfix), for questions and codebase exploration, and for a one-line change the user has already specified."
 argument-hint: "[TICKET-KEY | task description]"
 allowed-tools: Bash(git diff:*), Bash(git rev-parse:*), Bash(git checkout:*), Bash(git branch:*), Bash(git stash:*), Bash(git status:*), Bash(git log:*), Bash(git mv:*), Bash(gh pr view:*), Bash(ls:*), Bash(grep:*)
@@ -15,7 +15,7 @@ The task may originate from either:
 - a **user description** (e.g. `/task add foo to bar`) or empty (`/interview` interviews the user).
 
 > **⚡ Compaction recovery check — read FIRST on every invocation.**
-> If you are re-entering this skill after auto-compaction (summary block at top of context, or workflow context feels thin), STOP before any tool call and:
+> If you are re-entering this skill after auto-compaction (summary block at top of context, or workflow context feels thin), stop before any tool call and:
 >
 > 1. **Locate the durable-state file via this skill's active-state probe** — run the preamble glob (`ls ai-docs/plans/*.progress.md 2>/dev/null`) and apply the validation it documents.
 > 2. Once the probe identifies the correct durable-state file, read it **top-to-bottom in one pass** — every line, including older sections and the `## Decisions log`. Do not skim. Recorded `current_step` is where backward validation starts before implementation and a cross-check during it — never an instruction to skip the read.
@@ -69,7 +69,7 @@ Run `git branch --show-current`. If it is the default branch (`main`), run `git 
 
 **Before Step 6:** confirm the spec exists at `ai-docs/plans/YYYY-MM-DD-name.spec.md` and the user has approved its `## Acceptance Criteria`.
 
-### Step 6: Design Subagent
+### Step 6: Design author
 
 First action: confirm the spec exists, and create `ai-docs/plans/YYYY-MM-DD-name.progress.md` when none exists ([schema](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)) with every header field but `**base_commit:**`, which Step 8 writes. A record that exists stands — after an ITERATE or a "no" it is neither recreated nor cleared. **Until Step 8, mark a step done in `**current_step:**` only after its outputs are written and, where shared, committed, recording the head in `**step_commit:**`** ([reference.md § Re-entry before implementation](reference.md#re-entry-before-implementation)). Spawn `design`:
 
@@ -82,16 +82,16 @@ Agent(subagent_type="general-purpose", prompt="
 ")
 ```
 
-**After return — verify the file exists** (`ls ai-docs/plans/*.design.md` → `YYYY-MM-DD-name.design.md`). The `design` subagent owns the `Write`; if the design-doc text appeared in the response but no file landed on disk, **STOP and RE-RUN the `design` subagent** — do NOT transcribe its text output into the file using `Write` / `Edit` yourself (AGENTS.md AXIOM: orchestrator never writes `*.design.md`). Once it is on disk, commit the design with the link record — and the excuse record when one exists — by name, then mark `Step 6 — design written`.
+**After return — verify the file exists** (`ls ai-docs/plans/*.design.md` → `YYYY-MM-DD-name.design.md`). The design author owns the `Write`; if the design text appeared in the response but no file landed on disk, **stop and RE-RUN `design`, the design author** — do NOT transcribe its text output into the file using `Write` / `Edit` yourself (AGENTS.md AXIOM: orchestrator never writes `*.design.md`). Once it is on disk, commit the design with its declared links — and its accepted findings when it has any — by name, then mark `Step 6 — design written`.
 
 ### Step 7: Design review
 
-**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the `plan-convergence` reader (`${CLAUDE_PLUGIN_ROOT}/agents/plan-convergence.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **Neither half is optional and neither runs after the review:** the judgement class may never be the only check standing. Both results go into the review spawn. Spawn prompt, what its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
+**First, both convergence halves — then the review, which reads both.** Two calls, each its own: `${CLAUDE_PLUGIN_ROOT}/scripts/check-plan-convergence.sh <spec_path> <design_path>`, read by its per-class roster and counts rather than its exit status; and a spawn of the contradiction reader (`${CLAUDE_PLUGIN_ROOT}/agents/contradiction-reader.md`), whose output is a report and never a verdict. A cannot-run from either is not a pass. **Neither half is optional and neither runs after the review:** a model's reading may never be the only check standing. Both results go into the review spawn. Spawn prompt, what its report must carry, and what blocks on what: [reference.md § Step 7 — the two convergence halves (detail)](reference.md#step-7--the-two-convergence-halves-detail).
 
 ```
 Agent(subagent_type="general-purpose", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/design-review.md and follow it.
-  Design doc: ai-docs/plans/YYYY-MM-DD-name.design.md
+  Design: ai-docs/plans/YYYY-MM-DD-name.design.md
   Spec: ai-docs/plans/YYYY-MM-DD-name.spec.md
   Progress: ai-docs/plans/YYYY-MM-DD-name.progress.md
 ")
@@ -99,13 +99,13 @@ Agent(subagent_type="general-purpose", prompt="
 
 Verdict: GO / ITERATE / STOP.
 
-- **GO** → **transcribe the verdict's `note` / `minor` rows and recommendation bullets, verbatim, as a new table of the progress file's `## Design-review notes` FIRST** (`(none)` when there are none) — [why, and its shape](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#design-review-notes). **Then the fold-in:** the `design` subagent works the notes into the design or the working plan; you find each there — one you cannot find goes back first — commit the design's change, then fill each row's last column. **Then the freeze, notes or `(none)`:** the design author's approval-stamp pass, the design confirmed on disk to differ from the head by that line alone, the freeze committed carrying it with the trailer `Plan-Freeze: <spec-base>` ([why](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)), marked; then, on a new-shape design, the one confirmation question, whose "yes" Step 8 waits for. Sequence and spawn: [reference.md § Step 7 — the freeze](reference.md#step-7--the-freeze).
+- **GO** → **transcribe the verdict's `note` / `minor` rows and recommendation bullets, verbatim, as a new table of the progress file's `## Design-review notes` FIRST** (`(none)` when there are none) — [why, and its shape](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#design-review-notes). **Then the notes are worked in:** the design author works them into the design or the working plan; you find each there — one you cannot find goes back first — commit the design's change, then fill each row's last column. **Then the freeze, notes or `(none)`:** the design author's approval-stamp pass, the design confirmed on disk to differ from the head by that line alone, the freeze committed carrying it with the trailer `Plan-Freeze: <spec-base>` ([why](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-plan-freeze)), marked; then, on a new-shape design, the one confirmation question, whose "yes" Step 8 waits for. Sequence and spawn: [reference.md § Step 7 — the freeze](reference.md#step-7--the-freeze).
 - **ITERATE** → write its issues verbatim under `## Design-review issues (Round N)`, then back to Step 6 (max 3 rounds); a genuine-conflict row first takes the *Spec Amendment recipe*'s remedy question, and Step 6 follows the user's pick. **A round whose findings are only about the DOCUMENT's accuracy is not a reason to spend one**, and repeated ones are a size signal: fix them as text and split rather than iterate (`${CLAUDE_PLUGIN_ROOT}/agents/design-review.md` § Rules). At the cap with a genuine DESIGN blocker still open the verdict stays ITERATE and the exhausted cap is surfaced to the user — a burned cap ends the loop, not the gate, and fixes applied after it still get one verification pass.
 - **STOP** → fundamental flaw with the approach. Surface verdict + `Issues` table; do not start Step 8.
 
 ### Design Amendment (re-entrant — triggered from Step 8 or Step 11)
 
-**From Step 11, when a self-review finding's divergence BREAKS the agreed approach; from Step 8, when a group's divergence breaks it and the user approves the rebuild** — nothing restarts on its own account. On either entry: stop the step, surface to user for approval, spawn the `design` subagent to apply the amendment (NEVER edit `*.design.md` inline), re-run Step 7 (max 3 rounds). On GO → its freeze and, on a new-shape design, the confirmation, then resume. **A transport-level drop is not a returned amendment**: Step 8's backoff clause governs, and the write is verified on disk before the round counts as spent. **Deviating from the design without either triggering Design Amendment or — for a divergence that does not break the agreed approach — having it corrected in place — FORBIDDEN.** Full recipe (spawn-prompts, ITERATE/STOP handling): [reference.md § Design Amendment recipe (re-entrant — triggered from Step 8 or Step 11)](reference.md#design-amendment-recipe-re-entrant--triggered-from-step-8-or-step-11).
+**From Step 11, when a self-review finding's divergence BREAKS the agreed approach; from Step 8, when a group's divergence breaks it and the user approves the rebuild** — nothing restarts on its own account. On either entry: stop the step, surface to user for approval, spawn `design`, the design author, to apply the amendment (NEVER edit `*.design.md` inline), re-run Step 7 (max 3 rounds). On GO → its freeze and, on a new-shape design, the confirmation, then resume. **A transport-level drop is not a returned amendment**: Step 8's backoff clause governs, and the write is verified on disk before the round counts as spent. **Deviating from the design without either triggering Design Amendment or — for a divergence that does not break the agreed approach — having it corrected in place — FORBIDDEN.** Full recipe (spawn-prompts, ITERATE/STOP handling): [reference.md § Design Amendment recipe (re-entrant — triggered from Step 8 or Step 11)](reference.md#design-amendment-recipe-re-entrant--triggered-from-step-8-or-step-11).
 
 ### Spec Amendment recipe
 
@@ -121,20 +121,20 @@ Full recipe (spawn-prompts, and why no interview state file is involved): [refer
 
 ### Step 8: Implementation
 
-> First action: verify spec + design + GO verdict exist, that `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find <design>` names a freeze — a could-not-compute is a STOP — that on a new-shape design `**confirmation:**` is `yes` naming that freeze, AND that every row of the last table in the progress file's `## Design-review notes` has its last column filled — **read the notes there, never from the response text**. A section absent on a task that reached Step 7 is a STOP, not a clean pass. "Applied in code later" ≠ "resolved in the design or the working plan".
+> First action: verify spec + design + GO verdict exist, that `${CLAUDE_PLUGIN_ROOT}/scripts/plan-freeze.sh find <design>` names a freeze — a could-not-compute stops it — that on a new-shape design `**confirmation:**` is `yes` naming that freeze, AND that every row of the last table in the progress file's `## Design-review notes` has its last column filled — **read the notes there, never from the response text**. A section absent on a task that reached Step 7 is a stop, not a clean pass. "Applied in code later" ≠ "resolved in the design or the working plan".
 >
 > Transport-level drop: [reference.md § Step 8](reference.md#step-8--transport-drop-backoff).
 
 - **Confirm the Step-0 branch** — `git branch --show-current` must show `<TICKET-KEY>-<slug>`, not `main`. If Step 0 was skipped (resumed or legacy run), create it now off the default branch: `git checkout -b <TICKET-KEY>-<slug> main`. The gate is **any file edit** — the writes in Steps 1–7 already counted (AXIOM 1).
 - **Before any `git commit`:** confirm the branch is not the default one, and check `git status` for `ai-docs/learnings.md` **and** `ai-docs/learnings/` (a first-write per-branch entry file is untracked, and `git status` collapses it to one `ai-docs/learnings/` line). Hook behaviour: [reference.md § Commits and hooks](reference.md#commits-and-hooks).
-- Write `**base_commit:**` (`git rev-parse HEAD`, after the confirmed freeze) in place of `**step_commit:**`; create the progress record first only when none exists, for a task begun before Step 6 created it ([reference.md § Step 8 — progress-file creation template (detail)](reference.md#step-8--progress-file-creation-template-detail)).
+- Write `**base_commit:**` (`git rev-parse HEAD`, after the confirmed freeze) in place of `**step_commit:**`; create the progress file first only when none exists, for a task begun before Step 6 created it ([reference.md § Step 8 — progress-file creation template (detail)](reference.md#step-8--progress-file-creation-template-detail)).
 - After each subtask:
   1. `%BUILD_CMD% <module-path>` — PASS; the touched-scope checks, selection stated ([`${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md`](${CLAUDE_PLUGIN_ROOT}/docs/check-scope.md)); `%FORMAT_CMD%` on changed files. **Then commit the subtask** by name, without asking.
   2. **Update `.progress.md`:** rewrite `**current_step:**` to `Step 8 — subtask N of M complete`; rewrite `**last_passed_gate:**` (`<gate command> | <UTC ts> | <git rev-parse HEAD> | <tree digest>`); **rewrite `## Next action` to the move actually next and write the closed subtask's `## Completed subtasks` line**, naming the id that commit printed — not the branch head, which a group running beside it may have moved (its box, on an earlier-shape record); append a `## Decisions log` bullet for any non-trivial choice (prefixed `Step 8 subtask N:`). **Every later *Write progress* in this skill names only its own `current_step` value — the other three are owed there too** ([why](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md#next-action)).
   3. **Every-group handoff (binding).** During Step 8 the orchestrator NEVER executes subtask code in its own context — every group (including the first, including M=1) fans out through `/context-reset` at the start of each group per the working plan's groups (an earlier-shape design: its handoff plan). Rationale: [reference.md § Every-group handoff (rationale)](reference.md#every-group-handoff-rationale).
 - Unknown API → read sources → search the codebase (`${CLAUDE_PLUGIN_ROOT}/rules/ast-index.md`) → ask user. Don't guess.
 - Bug report during impl → activate `/bugfix`, then return.
-- **Implementation diverges from the frozen design → the group records it; nothing restarts on its own account.** The group writes each divergence to the decisions log — the design item by its heading, and what shipped — and on its hand-back you ask one question: does it break the agreed approach? No → once the group's code is written, spawn the `design` subagent's in-place correction once, given those entries; commit it alone, then mark `Step 8 — group <X> corrected`, rewrite `## Next action`, and append a decisions-log entry naming the group and the commit. Yes → stop and surface; on approval, *Design Amendment* above. [Why](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-implementation-step-corrects-after-each-group).
+- **Implementation diverges from the frozen design → the group records it; nothing restarts on its own account.** The group writes each divergence to the decisions log — the design item by its heading, and what shipped — and on its hand-back you ask one question: does it break the agreed approach? No → once the group's code is written, spawn `design`, the design author, for its in-place correction once, given those entries; commit it alone, then mark `Step 8 — group <X> corrected`, rewrite `## Next action`, and append a decisions-log entry naming the group and the commit. Yes → stop and surface; on approval, *Design Amendment* above. [Why](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#the-implementation-step-corrects-after-each-group).
 
 ### Step 9: Verify
 
@@ -178,20 +178,20 @@ Agent(subagent_type="general-purpose", prompt="
 >
 > | Arm A or B names a… | Action |
 > |---|---|
-> | `*.design.md` under `ai-docs/plans/` whose divergence **breaks the agreed approach**, or another active plan's design | **STOP.** Trigger Design Amendment — surface, update design, re-run Step 7 (max 3 rounds), then resume Step 11. Mark originating finding `✅ Fixed (design amended)`. |
-> | `*.spec.md` under `ai-docs/plans/` | **STOP.** Trigger Spec Amendment — surface, update spec, take the route its one question names, then resume Step 11. Mark `✅ Fixed (spec amended)`. |
-> | The task's own design, and the divergence does **not** break the agreed approach | **No stop, and no re-run.** The plan row carries `correction: <what shipped instead>` with the sentence quoted in its Arm A cell; the code fix lands in the round and the round's one correction pass then rewrites the item. Mark `✅ Fixed (corrected in place)`. |
-> | Neither arm fires — no artefact claim at stake, fix touches only source / build manifests / non-`ai-docs/plans/` `*.md` | Normal Step 11 code-fix path — hand it to the scouted-plan sequence below, which plans, gates and applies it. The orchestrator itself never edits. |
+> | `*.design.md` under `ai-docs/plans/` whose divergence **breaks the agreed approach**, or another active plan's design | **Stop.** Trigger Design Amendment — surface, update design, re-run Step 7 (max 3 rounds), then resume Step 11. Mark originating finding `✅ Fixed (design amended)`. |
+> | `*.spec.md` under `ai-docs/plans/` | **Stop.** Trigger Spec Amendment — surface, update spec, take the route its one question names, then resume Step 11. Mark `✅ Fixed (spec amended)`. |
+> | The task's own design, and the divergence does **not** break the agreed approach | **No stop, and no re-run.** The plan row carries `correction: <what shipped instead>` with the sentence quoted in its Arm A cell; the code fix lands in the round and the round's one in-place correction then rewrites the item. Mark `✅ Fixed (corrected in place)`. |
+> | Neither arm fires — no artefact claim at stake, fix touches only source / build manifests / non-`ai-docs/plans/` `*.md` | Normal Step 11 code-fix path — hand it to the review-fix round below, which plans, gates and applies it. The orchestrator itself never edits. |
 >
 > **CLOSING GATE — a finding that fired Arm A may not be marked `✅ Fixed` until the cited sentence has been RE-READ in its file and either (a) confirmed true of the post-fix state, or (b) amended.** Record which.
 >
-> **Why Arm A exists, and the shape that defeats a diff-keyed table:** [the procedure page](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md#rationale-moved-out-of-the-always-loaded-step-text).
+> **Why Arm A exists, and the shape that defeats a diff-keyed table:** [the procedure page](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md#rationale-moved-out-of-the-always-loaded-step-text).
 
-> **AXIOM — Scouted-plan sequence (binding).** The orchestrator NEVER applies a review fix in its own context — **every** round carrying at least one `⬜ Open` finding (including a round whose one finding is a single-line `nit`) runs all five beats, with no size-based or severity-based carve-out and no per-round discretion to skip them:
+> **AXIOM — The review-fix round (binding).** The orchestrator NEVER applies a review fix in its own context — **every** round carrying at least one `⬜ Open` finding (including a round whose one finding is a single-line `nit`) runs every step, with no size-based or severity-based carve-out and no per-round discretion to skip them:
 >
-> `baseline` (orchestrator, 1 call) → **plan** (`fix-scout`, fresh context, fills the stub's table) → `plan` gate (orchestrator, 1 call) → **apply** (`fix-apply`, fresh context, `fix` rows only) → **the post-apply micro-loop** (beat 5 below) → **correct** (`design`, fresh context, **once** per round carrying a `correction:` row, and skipped when none does).
+> `baseline` (orchestrator, 1 call) → **plan** (`fix-scout`, fresh context, fills the stub's table) → `plan` gate (orchestrator, 1 call) → **apply** (`fix-apply`, fresh context, `fix` rows only) → **the post-apply micro-loop** (below) → **correct** (`design`, fresh context, **once** per round carrying a `correction:` row, and skipped when none does).
 >
-> **The correction beat runs AFTER the micro-loop, before the round's review, and the order is load-bearing:** a correction describes code that exists. One invocation corrects every item the round's rows name. Why: [the procedure page](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md#rationale-moved-out-of-the-always-loaded-step-text).
+> **The in-place correction runs AFTER the micro-loop, before the round's review, and the order is load-bearing:** a correction describes code that exists. One invocation corrects every item the round's rows name. Why: [the procedure page](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md#rationale-moved-out-of-the-always-loaded-step-text).
 >
 > Both gate calls are `"${CLAUDE_SKILL_DIR}"/scripts/check-fix-plan.sh <verb> <progress-file>`. **Read the `decision=` token, not the exit status** — one status covers five decisions:
 >
@@ -199,22 +199,22 @@ Agent(subagent_type="general-purpose", prompt="
 > |---|---|
 > | `PASS` | spawn `fix-apply`. |
 > | `REFUSE` | hand the verdict back to `fix-scout` for a rewrite; max 3 rounds, then surface to the user. |
-> | `ROUTE-SPEC` / `ROUTE-DESIGN` | **STOP.** The Arm A / Arm B table above owns it; no fix agent runs this round. |
+> | `ROUTE-SPEC` / `ROUTE-DESIGN` | **Stop.** The Arm A / Arm B table above owns it; no fix agent runs this round. |
 > | `ESCALATE` | surface to the user with the declared total and the threshold the verdict carries. |
 >
 > **Three acts never leave the orchestrator:** the user's consent on any escalation or on a `major` / `blocker` objection, routing into a Spec or Design Amendment, and confirming the write landed (mtime + `grep`) once `fix-apply` or the correction returns.
 >
-> **BEAT 5 — the post-apply micro-loop. Unconditional: after the apply, before the full review pass, every round.**
+> **The post-apply micro-loop. Unconditional: after the apply, before the full review pass, every round.**
 >
 > 1. `check-fix-plan.sh applied <progress-file>` — act on its `reason=unplanned-file` token and account for every path on an `excluded-in-round` line; one you cannot account for is a finding.
-> 2. **ONE bounded question** on exactly three inputs — the plan section, the applied change, beat 1's unplanned files — answering exactly `MATCH` or `DIVERGE` plus a reason.
+> 2. **ONE bounded question** on exactly three inputs — the plan section, the applied change, item 1's unplanned files — answering exactly `MATCH` or `DIVERGE` plus a reason.
 > 3. **On `DIVERGE`** re-spawn `fix-apply` with the divergence named and nothing new; **cap three attempts**, one `- attempt N — …` bullet each in the plan section, never starting with `|`.
 > 4. **On a burned cap** surface to the user in the fixed shape, recommending exactly one of `re-fix` / `amend-the-plan` / `accept`.
 > 5. **The full review pass runs either way** — a burned cap ends the LOOP, not the gate.
 >
-> **Then record the loop, once:** `check-fix-plan.sh record <progress-file> <iterations> <cost_tool_calls> <answer>`, all three required. **Each step's detail is binding and lives on [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md), Beat 5 — read it before running the beat.**
+> **Then record the loop, once:** `check-fix-plan.sh record <progress-file> <iterations> <cost_tool_calls> <answer>`, all three required. **Each step's detail is binding and lives on [`${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md) — read it before running the loop.**
 >
-> Spawn prompts, the plan format, the reason-token vocabulary and the narrative behind each beat: [`${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/scouted-fix-round.md).
+> Spawn prompts, the plan format, the reason-token vocabulary and the narrative behind each step: [`${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md`](${CLAUDE_PLUGIN_ROOT}/docs/review-fix-round.md).
 
 Every `⬜ Open` finding in the latest `## Self-Review (Round N)` section carries **at least one** row in the round's plan, each with one disposition from the closed six — `fix`, `object: <reason>`, `resolved: <reason>`, `amendment: spec`, `amendment: design`, `correction: <what shipped instead>` — and a finding may hold several rows when its remedy spans several files. The gate refuses a plan that omits a finding, and one that raises a row the review never raised. Statuses are marked only after the applied diff has been gated.
 
@@ -226,10 +226,10 @@ After all findings resolved, run gates (`%BUILD_CMD%`, the touched-scope checks 
 
 ### Step 12: Finalise docs, the closing commit
 
-1. **Step-skip gate.** Read `**current_step:**`. MUST be `Step 10 — self-review APPROVE (Round N)` or `Step 10 — cap burned, user authorised finalise (Round N)`. Else **STOP**, surface the gap, loop back to the missing step. No "too simple" exemption. **`Step 11 — review fixes complete (Round N)` is NOT admissible and used to be** — it means fixes were applied and the review has not been re-run over them, which is why Step 11 ends by returning to Step 10. Why: [reference.md § Step 12](reference.md#step-12--full-run-digest-compare-failure-route).
+1. **Step-skip gate.** Read `**current_step:**`. MUST be `Step 10 — self-review APPROVE (Round N)` or `Step 10 — cap burned, user authorised finalise (Round N)`. Else **stop**, surface the gap, loop back to the missing step. No "too simple" exemption. **`Step 11 — review fixes complete (Round N)` is NOT admissible and used to be** — it means fixes were applied and the review has not been re-run over them, which is why Step 11 ends by returning to Step 10. Why: [reference.md § Step 12](reference.md#step-12--full-run-digest-compare-failure-route).
 2. **Confirm `.progress.md` is NOT staged.** Gitignored (`ai-docs/plans/**/*.progress.md`); should not appear in `git status`. If accidentally tracked, unstage.
 3. Confirm the branch is not the default one. Otherwise stop and apply recovery ([`${CLAUDE_PLUGIN_ROOT}/docs/workflow.md § Recovery`](${CLAUDE_PLUGIN_ROOT}/docs/workflow.md#recovery-from-accidental-edits-on-the-default-branch)).
-4. **Move plan files:** `git mv` spec/design — and `<spec-base>.excuses.md` and `<spec-base>.links.md` if the task wrote them — to `ai-docs/plans/done/`.
+4. **Move plan files:** `git mv` spec/design — and the task's `.accepted.md` (or earlier `.excuses.md`) and `.links.md` records, if any — to `ai-docs/plans/done/`.
 5. `%BUILD_CMD% <module-path>` — sanity build before staging.
 6. **The single full run:** `%FULL_CHECK_CMD%` once; its record goes into `**last_passed_gate:**`, digest included. Immediately before the closing commit, compare that digest with `${CLAUDE_PLUGIN_ROOT}/scripts/tree-digest.sh` — a difference owes the run again. On a failure: [reference.md § Step 12](reference.md#step-12--full-run-digest-compare-failure-route).
 7. **The closing commit**, without asking: stage by name what is still uncommitted — the move into `done/`, `ai-docs/learnings/` if this task wrote an entry (`ai-docs/learnings.md` only if the archive itself changed), `ai-docs/context.md` if touched. When the project uses ticket keys, the `<TICKET-KEY>:` title prefix is mandatory. Stats lines belong in the commit body, NOT the PR body.

@@ -1,12 +1,12 @@
 # The two classes of check-plan-convergence.py that HOLD a plan: arithmetic and
-# completeness. The payload beside this file owns the plan pair, the
-# segmentation, the numeral readers, the excuse route and the report; this
+# completeness. The payload beside this file owns the plan, the segmentation,
+# the numeral readers, the record of accepted findings and the report; this
 # carries these two classes.
 #
 # THE ISOLATION CLASS USED TO BE THE THIRD, and it moved to the reporting
 # sibling when it stopped holding. It flags a fact stated twice inside one
 # document, which is not the event that does harm -- a one-sided edit to one of
-# two linked sites is -- and its whole record held no drift catch, only waived
+# two linked sites is -- and its whole record held no drift catch, only accepted
 # noise. It is a report the reviewer weighs now.
 #
 # WHY IT IS A SECOND FILE AT ALL. The single payload reached 1,447 lines against
@@ -22,7 +22,7 @@
 # THE TWO GROUPS HAVE NO EDGE BETWEEN THEM, and that is what made the seam free.
 # Every helper here is called only by a class here, except `folded_spec`, the
 # one helper reached from outside a class here: the declared-link check asks it
-# whether a spec is folded, so the rule the completeness class applies is stated
+# whether a spec is a cut-down one, so the rule the completeness class applies is stated
 # once. The three patterns the
 # arithmetic class and the provenance class BOTH read stayed in the core for
 # that reason: either sibling holding them would make the other depend on it.
@@ -214,7 +214,7 @@ def arithmetic(doc, body, units):
 # document mentions the object somewhere other than the row that schedules it
 # and the bullet that lists its uses, never whether what it says there is a
 # reason. A clause that names a case while saying nothing about what the object
-# does in it is a judgement too, and belongs to the judgement class.
+# does in it is a judgement too, and belongs to the contradiction reader.
 #
 # THE MENTION IS SOUGHT DOCUMENT-WIDE RATHER THAN IN THE APPROACH ALONE, which
 # is WIDER than the locus the plan behind this class names, and the reason is
@@ -243,17 +243,18 @@ SECTION_REFS = 0
 QUALIFIED_REFS = 0
 DELIVERY_COLUMN = 'absent'
 
-# A FOLDED SPEC IS RECOGNISED, NOT REPORTED. A spec the closing fold collapsed
-# keeps only its record of deliberate absence, so no criterion survives for a
-# delivery cell to name, and every row of a correctly-folded plan read as
-# claiming a requirement the spec does not state. The criterion leg has nothing to check in
-# that state and says so in the roster instead. The sign is the spec's own
-# headings at the depth the fold keeps: exactly the kept set, every kept one
-# present and nothing else. A spec carrying any other heading at that depth, or
-# missing a kept one, is read as a plan however few criteria it has. Requiring
-# every kept section costs no correctly folded plan, because a fold that dropped
-# one was refused by the fold's own gate; it is what keeps a draft that so far
-# holds only one of them from reading as folded.
+# A CUT-DOWN SPEC IS RECOGNISED, NOT REPORTED. A spec the removed last step of a
+# task cut down keeps only its record of deliberate absence, so no criterion
+# survives for a delivery cell to name, and every row of a plan whose spec was
+# correctly cut down read as claiming a requirement the spec does not state. The
+# criterion leg has nothing to check in that state and says so in the roster
+# instead. The sign is the spec's own headings at the depth that step kept:
+# exactly the kept set, every kept one present and nothing else. A spec carrying
+# any other heading at that depth, or missing a kept one, is read as a plan
+# however few criteria it has. Requiring every kept section costs no correctly
+# cut-down plan, because a cut that dropped one was refused by that step's own
+# gate; it is what keeps a draft that so far holds only one of them from reading
+# as cut down.
 #
 # THE KEPT SECTIONS ARE BORROWED, NOT NAMED, from the one record of deliberate
 # absence, which the plan-invariants check derives spec elements from too.
@@ -269,13 +270,13 @@ FOLDED = False
 # [retained-sections]
 def retained_sections():
     body = read_method(RETAINED_SOURCE,
-                       'and the sections a folded spec keeps are borrowed from it rather than named here')
+                       'and the sections a cut-down spec keeps are borrowed from it rather than named here')
     if body is None:
         return None
     m = re.search(r"(?ms)^%s='(.*?)'" % RETAINED_NAME, body)
     kept = [norm(t) for t in m.group(1).split('\n') if t.strip()] if m is not None else []
     if not kept:
-        blocked('%s no longer states %s, so a folded spec could not be told from an incomplete one and guessing is the thing this class refuses'
+        blocked('%s no longer states %s, so a cut-down spec could not be told from an incomplete one and guessing is the thing this class refuses'
                 % (RETAINED_SOURCE, RETAINED_NAME))
         return None
     return kept

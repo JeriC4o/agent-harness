@@ -6,7 +6,7 @@ allowed-tools: Bash(git status:*), Bash(git rev-parse:*), Bash(git branch:*), Ba
 ---
 
 > **⚡ Compaction recovery check — read FIRST on every invocation.**
-> If you are re-entering `/context-reset` after auto-compaction (a summary/compaction block at the top of context, or workflow context feels thin), STOP before any tool call and:
+> If you are re-entering `/context-reset` after auto-compaction (a summary/compaction block at the top of context, or workflow context feels thin), stop before any tool call and:
 >
 > 1. Identify the **parent workflow** (`/task`, `/project-review`) whose handoff `/context-reset` is performing. The parent's identity is recorded as the active progress file's `parent_skill:` field (or `current_step:` mentions a parent step name).
 > 2. Run the parent skill's own compaction-recovery callout against its durable-state file (see `/task`, `/project-review` SKILL.md for the parent's variant). `/context-reset`'s body is the shared handoff + re-prime action, not a separate durable surface.
@@ -20,7 +20,7 @@ When triggered (every design-defined group OR compaction detected):
 
 1. `%BUILD_CMD% <module-path>` — PASS.
 2. Update `ai-docs/plans/YYYY-MM-DD-name.progress.md` per canonical schema at [`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md).
-3. Launch ONE `Agent` Tool call per **group** (per the working plan in the progress record; an earlier-shape design: its own handoff plan). The Subagent owns all subtasks in its group and runs them sequentially in-context, committing each without asking once its checks pass and before marking it, the completion line naming the id that commit printed; a group running beside another names its paths on the commit, any learning-log file it wrote among them:
+3. Launch ONE `Agent` Tool call per **group** (per the working plan in the progress file; an earlier-shape design: its own handoff plan). The Subagent owns all subtasks in its group and runs them sequentially in-context, committing each without asking once its checks pass and before marking it, the completion line naming the id that commit printed; a group running beside another names its paths on the commit, any learning-log file it wrote among them:
 
    ```
    Agent(subagent_type="general-purpose",
@@ -73,7 +73,7 @@ Three callout variants address three structurally-different probe shapes:
 
 ## `.progress.md` format (canonical)
 
-Full format spec at **[`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)**. Required fields include `**current_step:**`, `**last_passed_gate:**`, and a `## Decisions log` section in addition to `**Branch:**` / `**base_commit:**` / `**Last build:**`. A `/task` record also carries `## Design-review notes`, which is **read-only to a per-group subagent**: it is the only surviving copy of the plan review's non-blocking remarks, and its note column is never reworded to match what was built. Its `## Working plan` is read-only to a per-group subagent too.
+Full format spec at **[`${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`](${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md)**. Required fields include `**current_step:**`, `**last_passed_gate:**`, and a `## Decisions log` section in addition to `**Branch:**` / `**base_commit:**` / `**Last build:**`. A `/task` record also carries `## Design-review notes`, which is **read-only to a per-group subagent**: it is the only surviving copy of the design review's non-blocking remarks, and its note column is never reworded to match what was built. Its `## Working plan` is read-only to a per-group subagent too.
 
 ## Rules
 

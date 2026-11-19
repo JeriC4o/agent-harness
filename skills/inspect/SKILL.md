@@ -97,7 +97,7 @@ so a zero is never evidence that attribution is sound.
 number of covered gate runs, `repeats` the runs of one gate with the same arguments over an unchanged tree,
 `contradictions` one gate's opposite verdicts about one artefact over an unchanged tree, and `signals` one
 entry per firing with its time, gate, agent and the earlier invocation it matched. Neither signal blocked
-anything, and the row is the record of both. The hook's line tells the causing agent live, in the main thread
+anything, and the row is the record of both. The hook's line tells the causing agent live, in the main agent
 or a subagent alike; the row, not the delivery, is the evidence. The agent reports both counts
 and names each contradiction.
 
@@ -118,7 +118,8 @@ ${CLAUDE_PLUGIN_ROOT}/scripts/human-findings.sh --branch <that branch> --json
 
 The transcript records the branch each entry ran on; the last one names the session's branch. The script
 counts, for the pull request whose head is that branch, each comment a person posted and each fix commit
-pushed after it opened — the closing fold, version bumps and merge commits excluded. A non-zero count is
+pushed after it opened — commits made by a task's since-removed last step, version bumps and merge commits
+excluded. A non-zero count is
 what the automated review let through. **rc 2 is a cannot-compute, never a zero**: no branch, no pull
 request, the site unreachable, the profile's version-bump line missing, or a push record that does not
 reach back to the opening. Put its reason in the `unavailable` list.

@@ -96,7 +96,7 @@ run_mark() { # <payload>  -> sets RC, writes $OUT / $ERR
 bytes() { printf '%s' "$(( $(wc -c < "$OUT") + $(wc -c < "$ERR") ))"; }
 
 # ---------------------------------------------------------------------------
-printf '\n== the arm is registered, and it is the one hooks.json actually runs ==\n'
+printf '\n== the hook is registered, and it is the one hooks.json actually runs ==\n'
 # ---------------------------------------------------------------------------
 check "hooks.json registers a SubagentStart event" \
   "$(jq -r 'if .hooks.SubagentStart then "yes" else "no" end' "$HOOKS_JSON")" "yes"
@@ -107,9 +107,9 @@ check "exactly one SubagentStart command, and it names loop-agent-mark.sh" \
 # would be green on a file the real caller cannot execute.
 check "the script hooks.json invokes by path is executable" \
   "$( [ -x "$MARK" ] && echo yes || echo no )" "yes"
-# A SubagentStart hook has no permissionDecision at all, so an arm that tried to
+# A SubagentStart hook has no permissionDecision at all, so a hook that tried to
 # gate a spawn would be writing a field the client drops in silence.
-check "the arm declares no permission decision, which the event cannot carry" \
+check "the hook declares no permission decision, which the event cannot carry" \
   "$(jq -r '[.hooks.SubagentStart[].hooks[] | select(.command | test("permissionDecision"))] | length' "$HOOKS_JSON")" "0"
 
 # ---------------------------------------------------------------------------
@@ -310,7 +310,7 @@ reset
 seed_call plain t1
 seed_call plain t2
 plain=$(judge_call plain)
-has "the baseline fires without any mark present" "$plain" "[loop-index] loop:"
+has "the unmarked case fires without any mark present" "$plain" "[loop-index] loop:"
 has "  and it counts 3 in a span of 3 calls" "$plain" "has run 3 times within the last 3 calls"
 
 reset
@@ -356,7 +356,7 @@ solo=$(judge_call solo)
 fired_or_silent() { case "$1" in *'[loop-index]'*) printf 'fired' ;; *) printf 'silent' ;; esac; }
 check "one prior call plus four marks stays BELOW the threshold" \
   "$(fired_or_silent "$solo")" "silent"
-check "control: that reading calls the baseline firing what it is" \
+check "control: that reading calls the unmarked firing what it is" \
   "$(fired_or_silent "$plain")" "fired"
 
 printf '\n%s passed, %s failed\n' "$PASS" "$FAIL"

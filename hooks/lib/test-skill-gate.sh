@@ -3,8 +3,8 @@
 # Behaviour of hooks/lib/skill-gate.sh.
 #
 # THE POINT OF THIS SUITE IS THE PAIR, NOT THE DENY. A gate that denies a
-# subagent is worthless if it also denies the main thread, and a gate that asks
-# the main thread is worthless if the subagent slips through. Every case below
+# subagent is worthless if it also denies the main agent, and a gate that asks
+# the main agent is worthless if the subagent slips through. Every case below
 # therefore comes with its opposite, and the agent_id type check -- the one line
 # that decides which branch a malformed payload takes -- carries a positive
 # control that shows the suite can see its removal.
@@ -33,9 +33,9 @@ MAIN='{"tool_name":"Skill","tool_input":{"skill":"harness:task"}}'
 BARE='{"tool_name":"Skill","tool_input":{"skill":"task"}}'
 SUB='{"tool_name":"Skill","tool_input":{"skill":"task"},"agent_id":"a601d47b93e8d7bc6","agent_type":"general-purpose"}'
 
-printf '\n== the main thread is ASKED, never denied ==\n'
+printf '\n== the main agent is ASKED, never denied ==\n'
 out=$(fire "$MAIN")
-check "main thread -> ask" "$(decision "$out")" "ask"
+check "main agent -> ask" "$(decision "$out")" "ask"
 case "$(reason "$out")" in
   CONFIRM:*task*) ok "  the reason names the skill it is about" ;;
   *) bad "  the reason does not name the skill: [$(reason "$out")]" ;;
@@ -96,13 +96,13 @@ check "a deny still exits 0" "$(printf '%s' "$SUB" | "$GATE" >/dev/null 2>&1; ec
 
 printf '\n== a malformed agent_id fails toward the USER, not against them ==\n'
 # A number or an array is not an agent. Treating it as present would deny the
-# main thread its own workflow, which is the expensive direction to be wrong in.
+# main agent its own workflow, which is the expensive direction to be wrong in.
 for bogus in '42' '["a"]' 'null' '{}'; do
   p=$(jq -nc --argjson a "$bogus" '{tool_name:"Skill", tool_input:{skill:"task"}, agent_id:$a}')
   check "agent_id ${bogus} -> ask, not deny" "$(decision "$(fire "$p")")" "ask"
 done
 
-printf '\n== POSITIVE CONTROL: drop the type check, the main thread gets denied ==\n'
+printf '\n== POSITIVE CONTROL: drop the type check, the main agent gets denied ==\n'
 MUT="${WORK}/mutated.sh"
 # @ as the delimiter: the filter being replaced contains a jq pipe, and `|` as a
 # sed delimiter would cut the pattern in half -- which is how this control
@@ -115,7 +115,7 @@ else
   ok "the mutation applied"
   p=$(jq -nc '{tool_name:"Skill", tool_input:{skill:"task"}, agent_id:42}')
   mout=$(printf '%s' "$p" | "$MUT" 2>/dev/null)
-  check "  without it, a numeric agent_id denies the main thread" "$(decision "$mout")" "deny"
+  check "  without it, a numeric agent_id denies the main agent" "$(decision "$mout")" "deny"
 fi
 
 printf '\n== the gated set is data: HARNESS_SKILL_GATE is honoured ==\n'

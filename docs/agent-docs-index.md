@@ -32,7 +32,7 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Lifecycle.** Section-keyed.
 **When to read.** When AGENTS.md `## Workflow` AXIOMs link out.
 
-### `${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md`
+### `${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md`
 
 **Purpose.** Learning Log field glossary + boundary-rule exceptions.
 **Writer.** `self-improve` (rare — when a new `Escalated?` value or a new exception clause is introduced).
@@ -45,6 +45,13 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Writer.** `self-improve` (on writing-style escalations); `/ai-audit` Checklist M is the enforcer.
 **Lifecycle.** Section-keyed.
 **When to read.** When promoting a rule to AGENTS.md / a skill / an agent.
+
+### `${CLAUDE_PLUGIN_ROOT}/docs/glossary.md`
+
+**Purpose.** One entry per harness concept — its one name, the names it no longer goes by, a plain description and where it is defined — with the rule for text for a person at the head and the retired names at the foot.
+**Writer.** Any change that adds, renames or retires a concept, in that same change; a Vocabulary-group member.
+**Lifecycle.** Grows by an entry per concept; the fixed form of an entry is a contract, because a program reads the names from it.
+**When to read.** Before writing to a person, and when a harness word is unclear.
 
 ### `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md`
 
@@ -100,7 +107,7 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 **Purpose.** Which checks run inside a loop that ends in a commit (only those a touched path selects) and the single full run after review approves, with its tree-unchanged condition and its failure route.
 **Writer.** A task that changes check selection or the final run; the Check-Scope group's anchor, so it moves with every loop step that applies it.
 **Lifecycle.** Stable.
-**When to read.** Before running checks inside a task, bugfix, whole-branch review or post-push fix loop, and before the final full run.
+**When to read.** Before running checks inside a task, bugfix, whole-repository review or post-push fix round, and before the final full run.
 
 ### `${CLAUDE_PLUGIN_ROOT}/docs/templates/progress-format.md`
 
@@ -111,8 +118,8 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 
 ### `ai-docs/plans/*.spec.md` / `*.design.md` / `*.progress.md`
 
-**Purpose.** Active task artefacts: the spec, for the model; the design, for the human who reviews the approach; the progress record, which from the design step on also holds the executor's working plan.
-**Writer.** `spec-writer` (spec), `design` (design, and the progress record's `## Working plan`), `/task` Step 6 (progress, when none exists; Step 8 for a task begun before the working plan moved there).
+**Purpose.** Active task artefacts: the spec, for the model; the design, for the human who reviews the approach; the progress file, which from the design step on also holds the executor's working plan.
+**Writer.** `spec-writer` (spec), `design` (design, and the progress file's `## Working plan`), `/task` Step 6 (progress, when none exists; Step 8 for a task begun before the working plan moved there).
 **Lifecycle.** `*.progress.md` is gitignored, local-only; deleted by `/pr-merged` — its working plan is never committed, frozen or archived. `*.spec.md` + `*.design.md` move to `plans/done/` at Step 12.
 **When to read.** During the active task.
 
@@ -136,7 +143,7 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 
 ### `ai-docs/learnings.md`
 
-**Purpose.** Corrections-log ARCHIVE — the history half of the `/improve` feed, and the destination of `/improve`'s fold. **No NEW entry is authored here.**
+**Purpose.** Learning Log ARCHIVE — the history half of the `/improve` feed, and the destination of `/improve`'s fold. **No NEW entry is authored here.**
 **Writer.** `/improve`'s fold (appends folded per-branch files verbatim at EOF); `self-improve` for `Escalated?` / `Superseded by:` backfills.
 **Lifecycle.** Append-only; never edited or deleted.
 
@@ -156,8 +163,8 @@ Companion to `${CLAUDE_PLUGIN_ROOT}/docs/agents-method.md § Agent Docs`. That t
 
 ### `ai-docs/fixtures/`
 
-**Purpose.** Real inputs, captured once and frozen, that a gate replays so a detector is exercised against the thing it ships against rather than against a hand-written approximation of it. One subdirectory per corpus; each carries the input, any derived mapping, and a baseline file holding the MEASURED expectation plus the input's own checksum, so a regenerated fixture fails by name instead of surfacing as a detector regression.
+**Purpose.** Real inputs, captured once and never changed casually, that a gate replays so a detector is exercised against the thing it ships against rather than against a hand-written approximation of it. One subdirectory per corpus; each carries the input, any derived mapping, and an expectations file (`<id>.baseline.json`) holding the MEASURED expectation plus the input's own checksum, so a regenerated fixture fails by name instead of surfacing as a detector regression.
 **Writer.** The task that needs the corpus, once. A fixture is not refreshed as routine maintenance.
-**Lifecycle.** Committed and long-lived. Anything captured from a real session is scrubbed before it lands — and the scrub is a gate in the replaying suite, not a step someone remembers, because the needle is usually present in more than one spelling. Changing a fixture means changing its baseline on purpose, in the same commit.
-**When to read.** When a replay gate fails: read the baseline first, since it names whether the input or the detector moved.
+**Lifecycle.** Committed and long-lived. Anything captured from a real session is scrubbed before it lands — and the scrub is a gate in the replaying suite, not a step someone remembers, because the needle is usually present in more than one spelling. Changing a fixture means changing its expectations file on purpose, in the same commit.
+**When to read.** When a replay gate fails: read the expectations file first, since it names whether the input or the detector moved.
 

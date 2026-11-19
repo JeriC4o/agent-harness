@@ -126,7 +126,7 @@ t2row=$(jq -nc --arg b "$bin" --argjson r "$repeats" --argjson n "$turn_calls" \
      min_bin_repeats: $mb, judged: ($m != "off")}' 2>/dev/null) || t2row=""
 [ -z "$t2row" ] || harness_ledger_append "$sid" "$ledger" "$t2row" || true
 
-printf '[loop-index] coarse repeat: %s ran %s times in this turn of %s calls, under different arguments each time. Same shape of command, no exact repeat -- which is what retrying one intent looks like. If that is what happened, say what the next attempt would do differently; if it was distinct work, the threshold is in the verdict line and is meant to be tuned.\n' \
+printf '[loop-index] coarse repeat: %s ran %s times in this turn of %s calls, under different arguments each time. Same shape of command, no exact repeat -- which is what retrying one intent looks like. If that is what happened, say what the next attempt would do differently; if it was distinct work, the threshold is in the row this hook wrote to the loop ledger and is meant to be tuned.\n' \
   "$bin" "$repeats" "$turn_calls" >&2
 
 [ "$MODEL" != "off" ] || mark_turn
@@ -192,7 +192,9 @@ prompt=$(printf '%s\n\n%s\n\n%s\n%s\n' \
   "Question: is this one intent being retried with variations -- circling the same sub-goal without new information -- or distinct steps of deliberate work?" \
   "Answer with exactly one word on the first line: CIRCLING or PROGRESS. Then one short sentence of reason on the same line, after a space.")
 
-answer=$(printf '%s' "$prompt" | claude -p --model "$MODEL" 2>/dev/null) || mark_turn
+# The model-call marker keeps the session this call starts from loading the glossary
+# and from reading its own answer for words a person cannot follow.
+answer=$(printf '%s' "$prompt" | HARNESS_MODEL_CALL=1 claude -p --model "$MODEL" 2>/dev/null) || mark_turn
 [ -n "$answer" ] || mark_turn
 
 # The reason is taken from the WHOLE first line, not from a second line: asking

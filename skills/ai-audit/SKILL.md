@@ -87,7 +87,7 @@ letters (A, C, L, M, N) to the profile files:
 ${CLAUDE_PLUGIN_ROOT}/scripts/audit-project.sh <project-dir>
 ```
 
-Output is `severity|check|message`, one per line; exit 1 means at least one blocker. Fold each line into
+Output is `severity|check|message`, one per line; exit 1 means at least one blocker. Copy each line into
 the findings table as-is — the script owns Q–U and has already done the work.
 
 Two of those checks are **executed, not read** (`R` runs `command -v` on each recorded command; `U` asks
@@ -117,7 +117,7 @@ Agent(subagent_type="claude-code-guide", prompt="
 Read every file in:
 
 - `AGENTS.md` and `CLAUDE.md`.
-- `ai-docs/context.md`, `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`, `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md`, `ai-docs/learnings.md` + `ai-docs/learnings/*.md` (one union), `${CLAUDE_PLUGIN_ROOT}/docs/corrections-log.md`, `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/agent-docs-index.md`, `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md`, `${CLAUDE_PLUGIN_ROOT}/docs/skill-size-exemptions.md`, `${CLAUDE_PLUGIN_ROOT}/docs/considerations-link-reading.md`, `${CLAUDE_PLUGIN_ROOT}/docs/instruction-file-validation.md`.
+- `ai-docs/context.md`, `${CLAUDE_PLUGIN_ROOT}/docs/doc-convention.md`, `${CLAUDE_PLUGIN_ROOT}/docs/code-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/workflow.md`, `ai-docs/learnings.md` + `ai-docs/learnings/*.md` (one union), `${CLAUDE_PLUGIN_ROOT}/docs/learning-log.md`, `${CLAUDE_PLUGIN_ROOT}/docs/agent-writing-style.md`, `${CLAUDE_PLUGIN_ROOT}/docs/agent-docs-index.md`, `${CLAUDE_PLUGIN_ROOT}/docs/claude-tools-hierarchy.md`, `${CLAUDE_PLUGIN_ROOT}/docs/skill-size-exemptions.md`, `${CLAUDE_PLUGIN_ROOT}/docs/considerations-link-reading.md`, `${CLAUDE_PLUGIN_ROOT}/docs/instruction-file-validation.md`.
 - Any active `*.spec.md` / `*.design.md` under `ai-docs/plans/`.
 - Every `${CLAUDE_PLUGIN_ROOT}/skills/*/SKILL.md`.
 - Every `${CLAUDE_PLUGIN_ROOT}/agents/*.md`.
@@ -132,7 +132,7 @@ For each violation: record the file, the ENTITY inside it the violation sits on 
 item, or a named method, class or variable — the rule it conflicts with, and the proposed fix. **Not a line
 number.** A finding recorded here travels two routes out of one step: Step 2.5 presents it and applies the
 approved fix against the tree in front of you, where a position would be re-derived anyway, and the same
-step writes an entry into the committed learning record, which outlives this pass and which nobody
+step writes an entry into the committed Learning Log, which outlives this pass and which nobody
 re-derives. A position is admissible on the first route and merely stored on the second, and this
 instruction cannot tell them apart — so it names the entity, which is correct on both. Use a position
 freely while acting on the file in front of you; never let one travel into the entry.
@@ -147,7 +147,7 @@ freely while acting on the file in front of you; never let one travel into the e
 | F | Hooks (`${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json`) — event names, matchers, exit codes, env-var quoting |
 | G | `propagation.md` coherence — sync groups intact; exemptions replicated everywhere |
 | H | Documentation conformance pointers — `doc-convention.md` references resolve; section order matches |
-| I | File-size & structure — a Subagent file > ~500 lines without sectioning; 40,000-char cap not crossed by a file that loads whole at agent start. **`SKILL.md` line count belongs to K**, which owns the soft target and the exemption index |
+| I | File-size & structure — a Subagent file > ~500 lines without sectioning; the 40,000-char instruction size cap not crossed by a file that loads whole at agent start. **`SKILL.md` line count belongs to K**, which owns the soft target and the exemption index |
 | J | Allow-list / permission consistency — `allowed-tools` covered by `permissions.allow`; no dead entries |
 | K | Skill-directory layout — oversized SKILL.md, multi-consumer supporting files, inline-script extraction candidates |
 | L | Learning-Log field coherence — every Entry-format field covered in all five mandatory locations; declared-enum fields (`Kind:`) additionally value-conformant across every log entry in the union (`ai-docs/learnings.md` + `ai-docs/learnings/*.md`) |
@@ -160,7 +160,7 @@ freely while acting on the file in front of you; never let one travel into the e
 
 | Letter | Purpose |
 |---|---|
-| Q | Profile completeness — no unresolved `%PLACEHOLDER%` left in `AGENTS.md` / `ai-docs/context.md` (`blocker`: an unresolved placeholder is a STOP, not a default) |
+| Q | Profile completeness — no unresolved `%PLACEHOLDER%` left in `AGENTS.md` / `ai-docs/context.md` (`blocker`: an unresolved placeholder means stop and ask, not a default) |
 | R | Command liveness — the binary each `%*_CMD%` names exists on PATH or in the repo; a gate that cannot run is not a gate |
 | S | Registry coherence — this path is registered, with a valid `scope` |
 | T | Candidate hygiene — every `.promote/*.md` still passes the redaction gate; a refused candidate will silently never be swept |

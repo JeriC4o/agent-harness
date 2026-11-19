@@ -8,7 +8,7 @@
 # WHY THIS SUITE EXISTS. The manifest's human-readable messages carried the
 # literal string ${CLAUDE_PLUGIN_ROOT} in EVERY delivery ever measured, because
 # they sat inside single-quoted printf formats where no shell expands anything.
-# No delivery count is frozen here on purpose: the corpus it would come from
+# No delivery count is fixed here on purpose: the corpus it would come from
 # keeps growing until the fixed version is installed, so any figure written
 # down is stale the day after. Worse, the corpus CONTAMINATES ITSELF when
 # measured: grepping the transcripts writes the grep into the transcripts, and
@@ -37,7 +37,7 @@
 # stdout alone.
 #
 # A HOOK THAT ERRORS LOOKS EXACTLY LIKE A HOOK THAT FIRED, so no assertion here
-# is "output is non-empty". An arm probe in this task reported all twelve paths
+# is "output is non-empty". A path-pattern probe in this task reported all twelve paths
 # firing, negative control included, because the extracted command file did not
 # exist and every run printed an error to stderr.
 
@@ -142,7 +142,7 @@ jq -r '.hooks | to_entries[] | .key as $ev | .value[] | (.matcher // "-") as $m
        | .hooks | to_entries[] | [$ev, $m, (.key|tostring)] | @tsv' "$HOOKS" > "${WORK}/keys.tsv"
 TOTAL=$(wc -l < "${WORK}/keys.tsv" | tr -d ' ')
 DISTINCT=$(sort -u "${WORK}/keys.tsv" | wc -l | tr -d ' ')
-check "every hook command has a triple" "$TOTAL" "23"
+check "every hook command has a triple" "$TOTAL" "32"
 check "the ${TOTAL} triples are distinct" "$DISTINCT" "$TOTAL"
 SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS" | sort -u | wc -l | tr -d ' ')
 [ "$SM_DISTINCT" -lt "$TOTAL" ] \
@@ -164,6 +164,12 @@ SM_DISTINCT=$(jq -r '.hooks[][] | .hooks[] | .statusMessage // "<none>"' "$HOOKS
 #         none = an accepted non-emitter proved behaviourally below.
 # ---------------------------------------------------------------------------
 TABLE='SessionStart|-|0|session|jq|REQUIRED SESSION START: read
+SessionStart|startup|clear|compact|0|glossary_piece|jq|Glossary of the harness, part 1 of
+SessionStart|startup|clear|compact|1|glossary_piece|jq|Glossary of the harness, part 2 of
+SessionStart|startup|clear|compact|2|glossary_piece|jq|Glossary of the harness, part 3 of
+SessionStart|startup|clear|compact|3|glossary_piece|jq|Glossary of the harness, part 4 of
+SessionStart|startup|clear|compact|4|glossary_piece|jq|Glossary of the harness, part 5 of
+PreToolUse|Agent|0|glossary_brief|brief|The harness glossary follows.
 PreToolUse|Bash|0|commit_on_default|err|BLOCKED: git commit/push on
 PreToolUse|Bash|1|commit_dirty_learnings|err|[auto-stage-learnings]
 PreToolUse|Bash|2|find_home|err|BLOCKED: broad find/bfs/grep -r over
@@ -172,6 +178,8 @@ PreToolUse|Bash|4|three_dot_diff|err|BLOCKED: `git diff <base>...HEAD` on a bran
 PreToolUse|Bash|5|deployed_config_filter|err|BLOCKED: this content search can surface deployed-config files
 PreToolUse|Bash|6|piped_gate|err|BLOCKED: a gate (build / test / lint / format / shellcheck / manifest parse) is
 PreToolUse|Bash|7|plan_inv_shell|jq|CONFIRM: this command writes to a protected plan-invariants page
+PreToolUse|Bash|8|plain_post|jq|[plain-words] This post was not sent
+PreToolUse|AskUserQuestion|0|plain_question|jq|[plain-words] This question was not sent
 PreToolUse|Edit|Write|0|member_path|err|[propagation-rule-reminder] You are editing
 PreToolUse|Edit|Write|1|learnings_headers|err|[archive-protection-reminder]
 PreToolUse|Edit|Write|2|plan_inv_edit|jq|CONFIRM: this edit changes a required section on a protected plan-invariants page
@@ -182,6 +190,7 @@ PostToolUse|Write|Edit|1|broken_sh|err|[sh-syntax-check]
 PostToolUse|Bash|0|gate_pass|jq|[gate-record] scripts/test-thing.sh exited zero; tree digest
 PostToolUse|*|0|result_ok|none|
 Stop|-|0|turn_verdict|err|[loop-index] coarse repeat:
+Stop|-|1|plain_turn|jq|[plain-words] Your reply this turn
 SubagentStart|-|0|agent_mark|none|
 SubagentStop|-|0|turn_verdict_sub|err|[loop-index] coarse repeat:
 PostToolUseFailure|*|0|result_fail|none|
@@ -192,6 +201,21 @@ PostToolUseFailure|Bash|0|gate_fail|jq|[gate-record] scripts/test-thing.sh exite
 EXTRA_MARKER='[loop-index] loop: '
 
 LEDGER="${WORK}/loops"
+GLOSSARY_FIXTURE="${WORK}/glossary.md"
+{
+  printf '# Glossary\n\n## Things\n\n| Canonical name | Other names | What it is | What it does | Defined at |\n|---|---|---|---|---|\n'
+  i=1
+  while [ "$i" -le 400 ]; do
+    printf '| doohickey %s | — | A made-up thing filling one row of this page. | It takes up room. | planned |\n' "$i"
+    i=$((i+1))
+  done
+} > "$GLOSSARY_FIXTURE"
+PLAIN_FIXTURE="${WORK}/plain-glossary.md"
+printf '# Glossary\n\n## Things\n\n| Canonical name | Other names | What it is | What it does | Defined at |\n|---|---|---|---|---|\n| widget ledger | "gadget book" | A made-up record. | It holds made-up rows. | planned |\n' > "$PLAIN_FIXTURE"
+PLAIN_T="${WORK}/plain-turn.jsonl"
+mkdir -p "${WORK}/plain-bin"
+printf '#!/usr/bin/env bash\ncat > /dev/null\nprintf "NONE\\n"\n' > "${WORK}/plain-bin/claude"
+chmod +x "${WORK}/plain-bin/claude"
 # A bare `wc -l < missing` makes the SHELL report the redirection, which no
 # `2>/dev/null` on wc can suppress; the absence is an expected state here.
 ledger_rows(){ if [ -f "${LEDGER}/$1.jsonl" ]; then wc -l < "${LEDGER}/$1.jsonl" | tr -d ' '; else printf '0'; fi; }
@@ -199,6 +223,10 @@ ledger_rows(){ if [ -f "${LEDGER}/$1.jsonl" ]; then wc -l < "${LEDGER}/$1.jsonl"
 payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture state
   case "$1" in
     session) printf '%s' '{"hook_event_name":"SessionStart","session_id":"s0"}' ;;
+    glossary_piece) printf '%s' '{"hook_event_name":"SessionStart","session_id":"s0","source":"startup"}' ;;
+    glossary_brief)
+      jq -nc --arg p "$ROOT/agents/design.md" \
+        '{tool_name:"Agent", tool_input:{subagent_type:"general-purpose", description:"d", prompt:("Read " + $p)}}' ;;
     commit_on_default)
       git -C "$PROJ" checkout -q main
       jq -nc '{tool_input:{command:"git commit -m seed"}}' ;;
@@ -234,7 +262,7 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
     plan_inv_shell) learn_transcript
       jq -nc --arg t "$LEARN_T" '{tool_name:"Bash", tool_input:{command:"printf x >> agents/design.md"}, transcript_path:$t}' ;;
     skill_task_main)
-      # No agent_id: the MAIN-thread branch, which must ASK rather than deny.
+      # No agent_id: the MAIN-agent branch, which must ASK rather than deny.
       # The plugin spelling is used deliberately -- the gate strips the prefix,
       # and a fixture written as bare `task` would not exercise that.
       jq -nc '{tool_name:"Skill", tool_input:{skill:"harness:task"}}' ;;
@@ -257,6 +285,17 @@ payload_for(){ # <trigger-id>  -> prints the payload, and may prepare fixture st
       jq -nc '{session_id:"s-result", hook_event_name:"SubagentStart",
                agent_id:"a17de311aa309cb52", agent_type:"general-purpose",
                prompt_id:"p-1", transcript_path:"/tmp/transcript.jsonl", cwd:"/tmp"}' ;;
+    plain_question)
+      jq -nc '{session_id:"s-plain-q", tool_name:"AskUserQuestion",
+               tool_input:{questions:[{question:"Shall I update the gadget book?", header:"Next", options:[{label:"Yes", description:"Go on"}]}]}}' ;;
+    plain_post)
+      grep -q '^| Posting commands |' "$PROJ/AGENTS.md" \
+        || printf '\n| Setting | Value |\n|---|---|\n| Posting commands | `ticketctl post --text` |\n' >> "$PROJ/AGENTS.md"
+      jq -nc --arg d "$PROJ" '{session_id:"s-plain-p", cwd:$d, tool_input:{command:"ticketctl post --text \"The gadget book is ready.\""}}' ;;
+    plain_turn)
+      printf '%s\n' '{"type":"user","message":{"content":"Go."},"timestamp":"2999-01-01T00:00:00.000Z"}' \
+        '{"type":"assistant","message":{"content":[{"type":"text","text":"The gadget book is updated."}]}}' > "$PLAIN_T"
+      jq -nc --arg t "$PLAIN_T" '{session_id:"s-plain-t", hook_event_name:"Stop", transcript_path:$t, stop_hook_active:false, last_assistant_message:"The gadget book is updated."}' ;;
     turn_verdict)     seed_turn s-turn;     printf '%s' '{"session_id":"s-turn","hook_event_name":"Stop"}' ;;
     turn_verdict_sub) seed_turn s-turn-sub; printf '%s' '{"session_id":"s-turn-sub","hook_event_name":"SubagentStop"}' ;;
     *) return 1 ;;
@@ -324,6 +363,11 @@ while IFS= read -r row; do
   pay=$(payload_for "$trig") || { bad "${key}: no trigger defined for ${trig}"; continue; }
 
   RUN_ENV="HARNESS_LOOP_DIR=\"$LEDGER\" CLAUDE_PLUGIN_ROOT=\"$ROOT\" CLAUDE_PROJECT_DIR=\"$PROJ\""
+  # A page long enough for every registered piece, so the last registration is
+  # read against output rather than against the shipped page's current length.
+  case "$trig" in glossary_*) RUN_ENV="$RUN_ENV HARNESS_GLOSSARY_PAGE=\"$GLOSSARY_FIXTURE\"" ;; esac
+  # The model is a stub that finds nothing, so no real model is called and the names alone refuse.
+  case "$trig" in plain_*) RUN_ENV="$RUN_ENV HARNESS_GLOSSARY_PAGE=\"$PLAIN_FIXTURE\" PATH=\"$WORK/plain-bin:\$PATH\"" ;; esac
   rows_before=$(ledger_rows s-result)
   run_hook "$ev" "$matcher" "$idx" "$pay" || continue
 
@@ -331,11 +375,17 @@ while IFS= read -r row; do
     err) anchored "${key}: emits its own marker on stderr" "$ERR" "$marker" ;;
     out) anchored "${key}: emits its own marker on stdout" "$OUT" "$marker" ;;
     jq)
-      ctx=$(jq -r '.hookSpecificOutput.additionalContext // .hookSpecificOutput.permissionDecisionReason // empty' "$OUT" 2>/dev/null)
+      ctx=$(jq -r '.hookSpecificOutput.additionalContext // .hookSpecificOutput.permissionDecisionReason // .reason // empty' "$OUT" 2>/dev/null)
       if [ -z "$ctx" ]; then bad "${key}: no jq-readable field on stdout alone"
       else case "$ctx" in "$marker"*) ok "${key}: the jq field carries its marker" ;;
                           *) bad "${key}: jq field [${ctx}] does not start with [${marker}]" ;; esac
       fi ;;
+    brief)
+      ctx=$(jq -r '.hookSpecificOutput.updatedInput.prompt // empty' "$OUT" 2>/dev/null)
+      case "$ctx" in
+        "Read "*"$marker"*) ok "${key}: the rewritten brief keeps the original and carries its marker" ;;
+        *) bad "${key}: rewritten brief [${ctx:0:120}] lacks [${marker}]" ;;
+      esac ;;
     none)
       emitted=$(( $(wc -c < "$OUT") + $(wc -c < "$ERR") ))
       rows_after=$(ledger_rows s-result)
@@ -367,7 +417,7 @@ printf '\n== AC15a: the markers are pairwise disjoint over the distinguishable c
 MARKERS=$(printf '%s\n' "$TABLE" | awk -F'|' '{print $NF}' | grep -v '^$')
 MARKERS=$(printf '%s\n%s' "$MARKERS" "$EXTRA_MARKER" | sort -u)
 MCOUNT=$(printf '%s\n' "$MARKERS" | wc -l | tr -d ' ')
-check "distinct marker strings in the table" "$MCOUNT" "20"
+check "distinct marker strings in the table" "$MCOUNT" "29"
 clash=0
 while IFS= read -r a; do
   while IFS= read -r b; do
@@ -600,22 +650,22 @@ TOTAL_BYTES=$(( $(wc -c < "$OUT") + $(wc -c < "$ERR") ))
 check "part 2: the FULL command emits 0 bytes on the same anchor (the shadowing is real)" "$TOTAL_BYTES" "0"
 
 # ---------------------------------------------------------------------------
-printf '\n== AC8 + AC13: the real hook on a class the pre-fix arms matched ==\n'
+printf '\n== AC8 + AC13: the real hook on a class the earlier path patterns matched ==\n'
 # ---------------------------------------------------------------------------
-PREFIX_PATTERN=$(bash "${ROOT}/scripts/check-propagation-arms.sh" --print-prefix-pattern)
-[ -n "$PREFIX_PATTERN" ] && ok "the pre-fix case pattern is a committed constant, read from one place" \
-                         || bad "could not read the pre-fix pattern"
+PREFIX_PATTERN=$(bash "${ROOT}/scripts/check-propagation-patterns.sh" --print-prefix-pattern)
+[ -n "$PREFIX_PATTERN" ] && ok "the earlier case pattern is a committed constant, read from one place" \
+                         || bad "could not read the earlier pattern"
 matched_before(){ CLAUDE_PLUGIN_ROOT="${WORK}/elsewhere/plugin" eval "case \"\$1\" in ${PREFIX_PATTERN}) return 0 ;; esac; return 1"; }
 matched_before "${PROJ_PHYS}/.claude/skills/deploy/SKILL.md" \
-  && ok "the pre-fix arms matched a project-local .claude/skills/*/SKILL.md" \
-  || bad "the pre-fix arms no longer match that class, so AC13 has lost its witness"
+  && ok "the earlier path patterns matched a project-local .claude/skills/*/SKILL.md" \
+  || bad "the earlier path patterns no longer match that class, so AC13 has lost its witness"
 matched_before "${PROJ_PHYS}/agents/design.md" \
-  && bad "the pre-fix arms matched agents/design.md, which they could not in a consuming project" \
+  && bad "the earlier path patterns matched agents/design.md, which they could not in a consuming project" \
   || ok "and they did NOT match agents/design.md -- the dead half of the old set, reproduced"
 
 fire_prop "$PROP" "$PROJ_PHYS" "${PROJ_PHYS}/.claude/skills/deploy/SKILL.md" "$PROJ_PHYS"
 fired && ok "the REAL hook fires on .claude/skills/deploy/SKILL.md" \
-      || bad "the real hook is silent on the class the tenth arm restored"
+      || bad "the real hook is silent on the class the tenth path pattern restored"
 
 printf '\n== AC11: the five bound controls stay silent through the real hook ==\n'
 for c in my-agents/notes.md sub-agents/x.md src/docs/readme.md node_modules/x/docs/a.md vendor/scripts/build.sh; do
@@ -1204,15 +1254,15 @@ printf '\n== the deployed-config search guard: the class is the project profile,
 # THE INDEX IS THE SELECTOR. Every row of the trigger table, and every deep leg
 # in this file, reaches its hook by ordinal within the matcher group -- so a
 # hook removed or reordered in the Bash matcher re-points each row after it at
-# the wrong command while the suite stays green. These four pin the Bash arms
-# this file selects by ordinal to a token only that arm carries.
-check "Bash arm 0 is still the branch guard the BP_CMD legs degrade" \
+# the wrong command while the suite stays green. These four pin the Bash entries
+# this file selects by ordinal to a token only that entry carries.
+check "Bash entry 0 is still the branch guard the BP_CMD legs degrade" \
   "$(cmd_of PreToolUse Bash 0 | grep -c 'BLOCKED: git commit/push on')" "1"
-check "Bash arm 5 is still the deployed-config search guard" \
+check "Bash entry 5 is still the deployed-config search guard" \
   "$(cmd_of PreToolUse Bash 5 | grep -c 'deployed-config-guard\.sh')" "1"
-check "Bash arm 6 is still the result-masking guard the GATE_CMD legs degrade" \
+check "Bash entry 6 is still the result-masking guard the GATE_CMD legs degrade" \
   "$(cmd_of PreToolUse Bash 6 | grep -c 'BLOCKED: a gate')" "1"
-check "Bash arm 7 is still the plan-invariants guard" \
+check "Bash entry 7 is still the plan-invariants guard" \
   "$(cmd_of PreToolUse Bash 7 | grep -c 'plan-invariants-guard\.sh')" "1"
 
 DC_IDX=5

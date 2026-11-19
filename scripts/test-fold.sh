@@ -165,9 +165,9 @@ hasnt  "a .txt beside the entries is not folded" "$A" "looseplain-marker"
 exists "  its file survives"                     "$W/ai-docs/learnings/notes.txt"
 
 printf '\n== POSITIVE CONTROL: delete the extension guard, the .txt is folded ==\n'
-# Both arms carry the marker, so stripping removes the whole `*.md` / `*`
+# Both branches carry the marker, so stripping removes the whole `*.md` / `*`
 # discrimination and lets a non-entry file through -- rather than removing only
-# the accept arm, which would make the catch-all swallow EVERYTHING and prove
+# the accept branch, which would make the catch-all swallow EVERYTHING and prove
 # something else entirely.
 strip '# G3' g3; V="$STRIPPED"
 W6=$(make_fixture)

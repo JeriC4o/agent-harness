@@ -70,7 +70,7 @@ Reporter: <quote from user message>
 ```
 Agent(subagent_type="general-purpose", prompt="
   Read ${CLAUDE_PLUGIN_ROOT}/agents/self-review.md and follow it.
-  This is a /bugfix self-review (no /task spec; no design doc).
+  This is a /bugfix self-review (no /task spec; no design).
 
   Spec-equivalent: ai-docs/bugfix/trace-YYYY-MM-DD-<name>.md
     — use the trace's 'Actual behaviour', 'Expected behaviour', and
@@ -102,7 +102,7 @@ Bug report → Edit → regression → bug report → Edit → regression → ..
 
 **Breaking the loop:**
 
-1. STOP — close all Edits.
+1. Stop — close all Edits.
 2. Draw a full system diagram: all components + data flow + interactions.
 3. Show to user.
 4. Wait for understanding confirmation.

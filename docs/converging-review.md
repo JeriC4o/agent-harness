@@ -78,17 +78,17 @@ commit id, so the plan's move into the archive and a rebase of the branch leave 
 file-local items reach it; the `diff` row itself resets through `scope-changed` when the change's path set
 moves.
 
-**The full reset is the plan digest, and only the task workflow passes plan documents.** Its rounds and
-its follow-up rounds on the open pull request pass `--plan <spec> --frozen <spec> --frozen <design>`. The
+**The full reset is the plan digest, and only the spec workflow passes plan documents.** Its rounds and
+its post-push fix rounds pass `--plan <spec> --frozen <spec> --frozen <design>`. The
 frozen half moves when a new freeze is taken at a design-review GO, and the live half when an approved
 amendment changes the spec, so either sends the next round to sweep every item. A design corrected in
 place after the freeze moves neither half; the code change the correction describes resets the rows
-covering the files it touched. The bug-fix workflow and the whole-branch review pass no plan documents, record `none`,
+covering the files it touched. The bug-fix workflow and the whole-repository review pass no plan documents, record `none`,
 and never reset on this ground.
 
 ## The script
 
-`${CLAUDE_PLUGIN_ROOT}/scripts/review-ledger.sh` does all the hashing and comparing; the reviewer computes
+`${CLAUDE_PLUGIN_ROOT}/scripts/checklist-ledger.sh` does all the hashing and comparing; the reviewer computes
 no digest by hand. Invoke it as its own call, like any other shell script.
 
 - **`plan <findings-file> --base <rev> [--plan <path>]… [--frozen <path>]…`** — at the start of every

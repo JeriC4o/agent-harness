@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Are the base principles of a spec and a design intact, has nothing added a
-# required element, and does the edit-time refusal still cover the pages that
+# required element, and does the plan-invariants guard still cover the pages that
 # define one?
 #
 # Run:  check-plan-invariants.sh [--root <dir>]
@@ -33,7 +33,7 @@
 # COMPARISON COLLAPSES INTERNAL WHITESPACE. These documents hard-wrap, so a
 # reflow is not a wording change while any change to the words is. A
 # byte-for-byte comparison would pin the wrap column of a document nobody
-# intends to freeze at a column.
+# intends to hold to one column.
 #
 # THE BOUND, stated here because every other check in this tree states its own.
 # Two classes of change are from now on caught by the pull-request diff and by

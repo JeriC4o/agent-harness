@@ -21,7 +21,7 @@
 # sends a fork's reports to somebody else's repository. Both come from the
 # manifest of whichever tree is running, so a fork files against itself.
 #
-# THE DUPLICATE STOP LIVES IN `file`, NOT ONLY IN `check`. A stop that lived in
+# THE REFUSAL OF A DUPLICATE LIVES IN `file`, NOT ONLY IN `check`. A stop that lived in
 # `check` alone would rest on the caller remembering to run it first, which is a
 # claim about agent behaviour and cannot be asserted. `file` re-reads the ledger
 # as its first act and refuses before any `gh` invocation. `check` stays as the
