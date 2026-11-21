@@ -3,6 +3,7 @@
 **Ticket:** GH-189
 **Date:** 2026-11-20
 **Spec:** ai-docs/plans/2026-11-20-history-and-ref-reads.spec.md
+**Approved:** 1st approval, design review round 2, 2026-11-21
 
 ## Approach
 
