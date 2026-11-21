@@ -6,9 +6,10 @@
 
 ## Approach
 
-In the scripts and page steps this task changes, a read that cannot answer stops as a could-not-run and
-names the command that cures it, instead of handing its caller an empty answer to read as a fact. No
-script fetches. The hooks' exceptions are in § Risks.
+In the scripts and page steps this task changes, a read that cannot answer stops as a could-not-run,
+naming the command that cures it where one exists, instead of handing its caller an empty answer to read
+as a fact. No script fetches. The exceptions to this rule and to the shallow refusal below, the hooks'
+reads and the bugfix workflow's diff window, are in § Risks.
 
 **Two shared pieces.**
 
